@@ -39,6 +39,8 @@
 #include "player/rd_waveform.hpp"
 #include "player/rd_waveform_item.hpp"
 #include "player/rd_subtitle_lift.hpp"
+#include "player/rd_subtitle_timeline.hpp"
+#include "player/rd_subtitle_timeline_item.hpp"
 #include "player/rd_now_playing.hpp"
 #include "dialogs/toolbar/rd_profiles.hpp"
 #include "player/rd_media_info.hpp"
@@ -367,6 +369,11 @@ void MainUI::registerQMLTypes()
         qmlRegisterSingletonInstance<RdSubtitleLift>(uri, versionMajor, versionMinor, "RdSubtitleLift",
                                                      new RdSubtitleLift(m_intf->p_mainPlayerController, this));
         qmlRegisterType<RdWaveformItem>(uri, versionMajor, versionMinor, "RdWaveformItem");
+        // redesign: subtitle timeline seek bar (P3-16): the selected external subtitle file's
+        // cue times, and their blocks
+        qmlRegisterSingletonInstance<RdSubtitleTimeline>(uri, versionMajor, versionMinor, "RdSubtitleTimeline",
+                                                         new RdSubtitleTimeline(m_intf, m_intf->p_mainPlayerController, this));
+        qmlRegisterType<RdSubtitleTimelineItem>(uri, versionMajor, versionMinor, "RdSubtitleTimelineItem");
         // redesign (W8.1b / W8.2): what the Customize Player items show about the playing
         // media, and the profiles (top bar layout, settings)
         qmlRegisterSingletonInstance<RdNowPlaying>(uri, versionMajor, versionMinor, "RdNowPlaying",

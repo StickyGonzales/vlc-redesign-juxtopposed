@@ -73,7 +73,11 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
         if (track.m_external)
         {
             if (track.m_fileName.isEmpty())
-                track.m_fileName = externalFileName(track.m_id.get());
+            {
+                const QByteArray uri = externalUri(track.m_id.get());
+                if (!uri.isEmpty())
+                    track.m_fileName = QUrl(QString::fromUtf8(uri)).fileName();
+            }
             if (!track.m_fileName.isEmpty())
                 return track.m_fileName;
         }
@@ -83,10 +87,12 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
         return QVariant::fromValue<bool>(track.m_selected);
     else if (role == ExternalRole)
         return track.m_external;
+    else if (role == ExternalUriRole)
+        return track.m_external ? QString::fromUtf8(externalUri(track.m_id.get())) : QString();
     return QVariant{};
 }
 
-QString TrackListModel::externalFileName(vlc_es_id_t* id) const
+QByteArray TrackListModel::externalUri(vlc_es_id_t* id) const
 {
     const QByteArray slaveId = QByteArray(vlc_es_id_GetStrId(id), kSlaveIdLength);
 
@@ -99,7 +105,7 @@ QString TrackListModel::externalFileName(vlc_es_id_t* id) const
     {
         const QByteArray uri(item->pp_slaves[i]->psz_uri);
         if (QCryptographicHash::hash(uri, QCryptographicHash::Md5).toHex() == slaveId)
-            return QUrl(QString::fromUtf8(uri)).fileName();
+            return uri;
     }
     return {};
 }
@@ -207,6 +213,7 @@ QHash<int, QByteArray> TrackListModel::roleNames() const
     QHash<int, QByteArray> roleNames = this->QAbstractListModel::roleNames();
     roleNames[Qt::CheckStateRole] = QByteArrayLiteral("checked");
     roleNames[ExternalRole] = QByteArrayLiteral("external");
+    roleNames[ExternalUriRole] = QByteArrayLiteral("externalUri");
     return roleNames;
 }
 
