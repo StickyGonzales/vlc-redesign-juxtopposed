@@ -24,7 +24,7 @@ class QWidget;
 
 // redesign (W6.4): the Figma dialog look (redesign/reference/figma/styles.txt colors,
 // Inter 14, radius 6 fields and buttons, accent Save-style primary button) for the
-// dialogs that stay Qt widgets (open sources, Open URL, Convert, Stream Output).
+// dialogs that stay Qt widgets (open sources, Open URL, Convert, Stream Output, About).
 // The style sheet is set on the dialog only, never application wide, and follows the
 // color scheme and the accent color live. Without a main interface (dialogs provider
 // mode) the dialog keeps the native look.

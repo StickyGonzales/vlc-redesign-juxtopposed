@@ -65,10 +65,6 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-     <property name="styleSheet">
-      <string notr="true">background-color: rgb(245, 245, 245);
-color:rgb(0,0,0);</string>
-     </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="2" column="2" rowspan="4">
        <widget class="QStackedWidget" name="stackedWidget">
@@ -228,6 +224,9 @@ color:rgb(0,0,0);</string>
       </item>
       <item row="0" column="2">
        <widget class="QLabel" name="title">
+        <property name="rdTitle" stdset="0">
+         <bool>true</bool>
+        </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -288,8 +287,8 @@ margin-bottom: 6px;</string>
        <height>60</height>
       </size>
      </property>
-     <property name="styleSheet">
-      <string notr="true">background-color: rgb(230, 230, 230);color:rgb(0,0,0);</string>
+     <property name="rdFooter" stdset="0">
+      <bool>true</bool>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <property name="margin">
@@ -297,6 +296,9 @@ margin-bottom: 6px;</string>
       </property>
       <item>
        <widget class="QLabel" name="authorsButton">
+        <property name="rdLink" stdset="0">
+         <bool>true</bool>
+        </property>
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
         </property>
@@ -310,6 +312,9 @@ margin-bottom: 6px;</string>
       </item>
       <item>
        <widget class="QLabel" name="licenseButton">
+        <property name="rdLink" stdset="0">
+         <bool>true</bool>
+        </property>
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
         </property>
@@ -323,6 +328,9 @@ margin-bottom: 6px;</string>
       </item>
       <item>
        <widget class="QLabel" name="creditsButton">
+        <property name="rdLink" stdset="0">
+         <bool>true</bool>
+        </property>
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
         </property>
