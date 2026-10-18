@@ -78,9 +78,10 @@ T.AbstractButton {
         }
 
         Text {
-            anchors.left: numberText.visible ? numberText.right : parent.left
-            // Figma "Frame 39" of "chapters": 10 px between the number box and the title (x 48)
-            anchors.leftMargin: numberText.visible ? VLCStyle.dp(10) : row.titleInset
+            // Figma "Frame 39" of "chapters": the title at x 48 (number box 4 + 34, gap 10), fixed
+            // from the row's edge: anchored to the number box it landed 3 px further right
+            anchors.left: parent.left
+            anchors.leftMargin: numberText.visible ? VLCStyle.dp(48) : row.titleInset
             anchors.right: detailText.left
             anchors.rightMargin: VLCStyle.dp(10)
             anchors.verticalCenter: parent.verticalCenter
