@@ -146,7 +146,7 @@ SettingsPage {
             available: root._logging
             restartRequired: true
             choices: [
-                { value: 0, text: qsTr("Errors") },
+                { value: 0, text: qsTr("Errors only") },
                 { value: 1, text: qsTr("Errors and warnings") },
                 { value: 2, text: qsTr("Everything (debug)") },
                 { value: -1, text: qsTr("Same as %1's messages").arg(Brand.shortName) }
