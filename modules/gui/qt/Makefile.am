@@ -329,6 +329,8 @@ libqt_plugin_la_SOURCES = \
 	player/rd_waveform.hpp \
 	player/rd_waveform_item.cpp \
 	player/rd_waveform_item.hpp \
+	player/rd_subtitle_lift.cpp \
+	player/rd_subtitle_lift.hpp \
 	player/rd_waveform_scanner.cpp \
 	player/rd_waveform_scanner.hpp \
 	player/rd_now_playing.cpp \
@@ -560,6 +562,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	player/rd_seek_thumbnailer.moc.cpp \
 	player/rd_waveform.moc.cpp \
 	player/rd_waveform_item.moc.cpp \
+	player/rd_subtitle_lift.moc.cpp \
 	player/rd_now_playing.moc.cpp \
 	dialogs/toolbar/rd_profiles.moc.cpp \
 	player/rd_media_info.moc.cpp \

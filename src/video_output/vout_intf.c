@@ -78,6 +78,8 @@ static int SubFilterCallback( vlc_object_t *, char const *,
                               vlc_value_t, vlc_value_t, void * );
 static int SubMarginCallback( vlc_object_t *, char const *,
                               vlc_value_t, vlc_value_t, void * );
+static int SubUiMarginCallback( vlc_object_t *, char const *,
+                                vlc_value_t, vlc_value_t, void * );
 static int SecondarySubMarginCallback( vlc_object_t *, char const *,
                                        vlc_value_t, vlc_value_t, void * );
 static int ViewpointCallback( vlc_object_t *, char const *,
@@ -340,6 +342,11 @@ void vout_CreateVars( vout_thread_t *p_vout )
     var_Create( p_vout, "sub-margin",
                 VLC_VAR_INTEGER | VLC_VAR_DOINHERIT | VLC_VAR_ISCOMMAND );
 
+    /* redesign: margin the interface adds to sub-margin while its controls cover the bottom of
+     * the picture (pixels of the display); not an option and no on-screen message */
+    var_Create( p_vout, "sub-ui-margin", VLC_VAR_INTEGER );
+    var_AddCallback( p_vout, "sub-ui-margin", SubUiMarginCallback, NULL );
+
     /* Add secondary-sub-margin variable (dual subtitles) */
     var_Create( p_vout, "secondary-sub-margin",
                 VLC_VAR_INTEGER | VLC_VAR_DOINHERIT | VLC_VAR_ISCOMMAND );
@@ -412,6 +419,7 @@ void vout_IntfDeinit(vlc_object_t *obj)
 {
     var_DelCallback(obj, "viewpoint", ViewpointCallback, NULL);
     var_DelCallback(obj, "sub-margin", SubMarginCallback, NULL);
+    var_DelCallback(obj, "sub-ui-margin", SubUiMarginCallback, NULL);
     var_DelCallback(obj, "secondary-sub-margin", SecondarySubMarginCallback, NULL);
     var_DelCallback(obj, "sub-filter", SubFilterCallback, NULL);
     var_DelCallback(obj, "sub-source", SubSourceCallback, NULL);
@@ -813,7 +821,19 @@ static int SubMarginCallback( vlc_object_t *p_this, char const *psz_cmd,
     vout_thread_t *p_vout = (vout_thread_t *)p_this;
     VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval); VLC_UNUSED(p_data);
 
-    vout_ChangeSpuChannelMargin(p_vout, VLC_VOUT_ORDER_PRIMARY, newval.i_int);
+    vout_ChangeSpuChannelMargin(p_vout, VLC_VOUT_ORDER_PRIMARY,
+                                newval.i_int + var_GetInteger(p_vout, "sub-ui-margin"));
+    return VLC_SUCCESS;
+}
+
+static int SubUiMarginCallback( vlc_object_t *p_this, char const *psz_cmd,
+                                vlc_value_t oldval, vlc_value_t newval, void *p_data)
+{
+    vout_thread_t *p_vout = (vout_thread_t *)p_this;
+    VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval); VLC_UNUSED(p_data);
+
+    vout_ChangeSpuChannelMargin(p_vout, VLC_VOUT_ORDER_PRIMARY,
+                                var_GetInteger(p_vout, "sub-margin") + newval.i_int);
     return VLC_SUCCESS;
 }
 
