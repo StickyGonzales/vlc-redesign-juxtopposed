@@ -59,9 +59,11 @@ SettingsPage {
     readonly property bool _installPending: !!_selected && !!_installRequested[_selectedKey]
     // VLC's installer has no installer for these kinds (addons_manager: EINVAL): Add would do
     // nothing and stay usable
+    // Cone has no skins interface (Decision 63): a skin add-on would install for nothing
     readonly property bool _unsupportedType: !!_selected
-                                             && [ServicesDiscoveryModel.TYPE_UNKNOWN, ServicesDiscoveryModel.TYPE_PLUGIN,
-                                                 ServicesDiscoveryModel.TYPE_OTHER].map(Number).indexOf(Number(_selected.type)) >= 0
+                                             && ([ServicesDiscoveryModel.TYPE_UNKNOWN, ServicesDiscoveryModel.TYPE_PLUGIN,
+                                                  ServicesDiscoveryModel.TYPE_OTHER].map(Number).indexOf(Number(_selected.type)) >= 0
+                                                 || (Brand.isPublic && Number(_selected.type) === Number(ServicesDiscoveryModel.TYPE_SKIN2)))
     readonly property bool _canInstall: !!_selected && _selected.state === ServicesDiscoveryModel.STATE_NOTINSTALLED
                                         && !_installPending && !_unsupportedType
     readonly property bool _canRemove: !!_selected && _selected.state === ServicesDiscoveryModel.STATE_INSTALLED

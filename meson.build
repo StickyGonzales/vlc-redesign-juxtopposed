@@ -128,6 +128,11 @@ if get_option('brand') == 'public'
     if get_option('update-check').allowed()
         error('-Dbrand=public has no update checker: drop -Dupdate-check')
     endif
+    # Decision 63: Cone has no skins interface, the design is its only one
+    # (modules/gui/skins2/meson.build leaves the module out)
+    if get_option('skins2').enabled()
+        error('-Dbrand=public has no skins interface: drop -Dskins2=enabled')
+    endif
     cdata.set('VLC_BRAND_PUBLIC', 1)
 endif
 

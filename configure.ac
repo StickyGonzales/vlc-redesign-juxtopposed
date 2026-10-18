@@ -4606,6 +4606,13 @@ dnl Skins2 module
 dnl
 AC_ARG_ENABLE([skins2],
   AS_HELP_STRING([--enable-skins2], [skins interface module (default auto)]))
+dnl redesign: brand layer (Decision 63), Cone has no skins interface: the design is its only one
+AS_IF([test "${with_brand}" = "public"], [
+  AS_IF([test "${enable_skins2}" = "yes"], [
+    AC_MSG_ERROR([--with-brand=public has no skins interface: drop --enable-skins2])
+  ])
+  enable_skins2="no"
+])
 AS_IF([test "${enable_skins2}" != "no"], [
   have_skins_deps="yes"
 
