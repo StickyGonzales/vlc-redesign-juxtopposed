@@ -67,6 +67,33 @@ All inside `#ifdef VLC_BRAND_PUBLIC`: the vlc profile compiles VLC's code unchan
 7. **P8-13, 18:12-18:14:** the "Show feedback for" slider's value in the video (built: VLC's 1 s by default; Figma's thumb sits near the middle).
 8. Should the interface's own notifications (Ctrl+B "Bookmark added", above the control bar) also say "Pressed Ctrl + B"? Built: no.
 
+### Answers from the video (PC session, 2026-10-19)
+Frames at 4 fps over 6:50-7:17, 15:22-15:30 and 18:11-18:16, plus 7:17, 7:20, 7:24 and 7:30; transcript lines at the same times. Pixel values are from the 1920x1080 video, where her window fills the frame.
+1. **Buttons:** not answerable from the video. The buttons are never clicked or hovered, and the narration around them only says that the timeline shows when lines appear and that you pause and move the subtitles back. The asterisk labels mark the window's ends, which fits the built reading (`<` / `>` move the window, `-` / `+` change its length). Keep it; it stays a Claude decision.
+2. **Layout:** between the labels and the bar, as built: `00:06:00*  < -  [bar]  + >  00:07:00*` (7:04, and again at 7:24 / 7:30 with the sidebar open). Differences from the build:
+   - **Attached to the bar.** The buttons touch the bar's ends (no gap): the bar starts right after `-` and ends right before `+`. Built: 8 px from the bar.
+   - **As tall as the thick bar.** Buttons 22 px tall, bar 22 px (y 1044-1065).
+   - **Two widths.** `-` / `+` are 20 px wide (about square). `<` / `>` are narrower, 15-16 px (about 0.73 of the bar height).
+   - **4 px apart, small radius** (about 3-4 px at this scale). Glyphs are dark on the orange fill.
+   - **Fill is darker than Accent/Main.** It measures about #AB5611-#B05300, near Accent/DIm #AB6314, while the play button in the same frame is brighter orange. Compare on the build next to the play button.
+3. **Colours (7:00 close-up and the full window at 7:04):**
+   - Played fill: #331902 (about BG/Accent Bright #371F06).
+   - Played-side blocks: **#4A331D / #4C3521**, a lighter brown. That is the played fill with about 9 % white over it, not Accent/DIm #AB6314, which is far brighter.
+   - Unplayed blocks: **#1F1F1F**, BG/A2 (built BG/A1 #222222, close).
+   - Unplayed track: #000000. Playhead: #DD6700 pill, taller than the bar.
+   - Blocks are square-cornered, full bar height, and separated by short gaps of the fill or track.
+   - Change: the played blocks should be about #4A331D (fill + 9 % white), not Accent/DIm.
+4. **Window:** not answerable. From 7:04 to 7:12 the video is paused (identical frames), and the playhead never reaches a window end on screen. The window reads 00:06:00* to 00:07:00* (1 min) throughout. Keep the built paging and the 1 min start.
+5. **Sidebar:** yes. At 7:12-7:16 the camera is on the sidebar; at 7:24 and 7:30 the sidebar is open and the bar still shows the timeline (`00:07:00*`, `+ >`). Nothing in the video ties the timeline to the sidebar, so "shows whenever the toggle is on" matches.
+6. **"Pressed C" (15:23-15:28, close-up):**
+   - **Size:** the capital C of "Pressed C" is 80 px tall against 97 px for the C of "Crop: 2.35:1", **about 82 %** (built 80 %, fine).
+   - **Weight and colour:** same regular weight and white as the first line.
+   - **Gap:** baseline to baseline is about 1.65x the first line's cap height (about 1.15x its font size). Built is to be compared on Windows.
+   - **Alignment:** left aligned (the P's stem sits a little left of the C's curve).
+   - **Position:** the message's text sits about a third of the way down (y 326-372 of 1080 in the full window at 15:22, right edge 140 px from the window's right edge), clear of the top bar. VLC's top-right position under the top bar is a difference to check on the build while the bars show.
+7. **"Show feedback for" (18:12):** the thumb sits at the middle of the 0.5-5 s track, between the 2.5 s and 3 s ticks (about 2.75 s), the same as Figma. "Show filename for" also sits in the middle (1-10 s). Built default VLC's 1 s: Sticky's call whether the default follows her (about 3 s) or VLC.
+8. **Bookmark notification:** the video shows no notification for adding a bookmark (Ctrl+B is Sticky's Decision 22, not hers), so there is nothing to copy. Keep "no".
+
 ## 5. Tested here (Linux sandbox, not verification)
 Built with autotools in VideoLAN's Debian image (`registry.videolan.org/vlc-debian-unstable:20260611225331`, Qt 6.10, `--with-brand=public --disable-skins2 --disable-medialibrary`), run from the build tree under Xvfb (1600x1000, Mesa software OpenGL, no window manager, no sound: `-A dummy`), driven with xdotool, generated test media only (a 150 s testsrc2 video and an .srt with a line every 4 s). The image has no Qt SVG plugin, so every icon is a placeholder square. **Not verification**: no GPU, no Windows, no real mouse.
 - **Build:** clean; no compiler warning in any changed file (one found and fixed: a doubled `KEY_UNSET` test). qmlcheck errors 1 (the known HighResolutionTimeWidget stub) / crashed 0, buildlists 0, privacycheck 0. No QML warning from the changed files at runtime.
