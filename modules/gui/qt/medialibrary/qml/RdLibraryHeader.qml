@@ -468,7 +468,7 @@ Item {
         implicitHeight: VLCStyle.dp(34)
         radius: VLCStyle.rd_radius_normal
         // a little lighter than the page (video 10:44-10:59)
-        color: VLCStyle.palette.rdBgA5
+        color: VLCStyle.palette.rdBgField
         enabled: !!page && page.searchable
         opacity: enabled ? 1 : 0.5
 

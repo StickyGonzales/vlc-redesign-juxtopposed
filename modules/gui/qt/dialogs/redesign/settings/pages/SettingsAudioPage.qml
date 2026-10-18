@@ -508,6 +508,8 @@ SettingsPage {
         SettingsLanguageOption {
             option: "audio-language"
             text: qsTr("Preferred audio language")
+            // the note the sidebar's Audio Defaults had
+            note: qsTr("Applies from the next file.")
         }
 
         SettingsOption {
