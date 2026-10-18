@@ -173,3 +173,35 @@ Text positions measured in pixels from the panel's left edge (Cone screenshot vs
 | P7-06 (#251) | Chapters tab | **fail** (small) | (web fix 5) the 10 px gap is there (number at 25, as Figma), but the title starts at 72 px from the panel edge; Figma 69 (see the bookmark row above: the shared row adds 3 px). Times and the orange numbers match |
 | IB-36 (#249) | Tab glyphs and states | pass | |
 | P5-24 (#193), IB-15 (#194), P5-28 (#199), IB-19 (#200) | Drag to queue, mini player queue | see screen 11 | |
+
+### 8. Main "..." menu (Figma menu.png, Profiles.png)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P2-21 (#61), P6-11 (#221), P7-09 (#255), P7-13 (#260) | Contents and final order | pass | Open File(s), Open Folder, Open Network Stream, Open Disc, Open Capture Device, Convert, Open Recent / Profile / Keyboard Shortcuts, Customize Player, Settings, About Cone, with the shortcuts as Figma; "About Cone" for "About VLC" (brand) |
+| IA-22 (#62), IB-26 (#219), IB-27 (#220), IB-39 (#261), F-21 (#347), P1-07 (#10), IA-03 (#11) | Two-tone icons, accent, typography, spacing | pass | same glyphs, Accent/DIm parts (Decision 16), row height and dividers as Figma |
+| P8-27 (#308), P8-49 (#309) | Profiles entry | pass | "Profile (Default Style)" with submenu arrow (Figma "Profile (Movies)": the run's profile name) |
+| P6-12 (#222) | Each item opens its own dialog | pass | Keyboard Shortcuts opens its dialog; Settings via Ctrl+P (screen 6); Open Network Stream via Ctrl+N (screen 11) |
+| P6-10 (#218), IB-28 (#223) | Old menu, re-order transition | skip | context / video only |
+| P2-13 (#49), P2-19 (#58), P2-22 (#63), P7-02 (#245) | Problem rows | skip | context |
+
+### 9. Keyboard Shortcuts dialog (Figma Keyboard Shortcuts.png)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P7-12 (#258), IB-40 (#259) | Dialog, columns, fields | **fail** (Linux, small) | Layout, columns (Action / Hotkey / Global Hotkey at the same x as Figma), sections, pencil icons and Cancel / Save match; clicking a Hotkey field shows "Press a key" with the orange frame and Ctrl+Shift+Y is captured (then cancelled, nothing saved). But the "Search Keyboard Shortcuts..." field does not take the focus when clicked, so typing does nothing (Open Network Stream and the Settings search take typing in the same session). `modules/gui/qt/dialogs/redesign/KeyboardShortcutsDialog.qml:375` (`T.TextField` with `padding: 0` and no height: its click area is only the text line; check on Windows). Key captions use the first installed monospace font (DejaVu Sans Mono here) while DM Mono waits for StickyGonzales's decision; "Esc" is VLC's key name (Figma "esc") |
+
+### 10. Right-click menu (Figma right-click menu.png)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P2-23 (#64), IA-23 (#65) | Cleaned right-click menu, icon colours and sizes | pass | Play/Pause, Stop, Previous Item, Next Item, Record / Hide UI / Playback, Video, Audio, Subtitle / More Settings, Playlist, Open Media / Quit Cone; opens at the cursor, moved up to stay inside the window. Record shows VLC's Shift + R (Decision 22 keeps VLC's keys) |
+| P2-24 (#66) | Hide UI with Ctrl + \ | pass | item and shortcut shown; the shortcut works (screen 2) |
+| (submenus) | | pass | Playback submenu: Title, Chapter, Program, Bookmarks, Renderer, Speed, Jump Forward / Backward, Jump to Specific Time, Previous / Next Title / Chapter |
+
+### 11. Open Network Stream (Figma Open network stream.png)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P6-13 (#224), IB-29 (#225) | Dialog and styling | pass | Ctrl+N opens it; header, Network URL with its hint, URL box (focused, typing works), divider, Playlist Name (optional), Cancel / Save; every element where the spec has it. Escape closes it |
+| P6-08 (#216) | Old dialog critique | skip | context |
