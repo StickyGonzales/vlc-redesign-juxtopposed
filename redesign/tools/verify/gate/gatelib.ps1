@@ -192,7 +192,8 @@ function Get-ProcSample($proc, [ref]$lastCpu, [ref]$lastTime) {
         if ($dt -gt 0) { $pct = [math]::Round(($cpu - $lastCpu.Value).TotalSeconds / $dt / [Environment]::ProcessorCount * 100, 2) }
     }
     $lastCpu.Value = $cpu; $lastTime.Value = $now
-    [ordered]@{ t = $now.ToString('o'); private_mb = [math]::Round($proc.PrivateMemorySize64 / 1MB, 1); ws_mb = [math]::Round($proc.WorkingSet64 / 1MB, 1)
+    # an object, not a dictionary: Measure-Object reads properties (perf and soak summaries)
+    [pscustomobject][ordered]@{ t = $now.ToString('o'); min = $null; private_mb = [math]::Round($proc.PrivateMemorySize64 / 1MB, 1); ws_mb = [math]::Round($proc.WorkingSet64 / 1MB, 1)
         handles = $proc.HandleCount; threads = $proc.Threads.Count; cpu_pct = $pct }
 }
 

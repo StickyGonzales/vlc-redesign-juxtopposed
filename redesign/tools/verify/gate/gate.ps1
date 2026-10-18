@@ -592,7 +592,7 @@ function Invoke-Soak {
         while ((Get-Date) -lt $end) {
             Start-Sleep -Milliseconds 500
             if ($proc.HasExited) { $died = "the player exited (code $($proc.ExitCode)) after $([math]::Round(((Get-Date) - $t0).TotalMinutes, 1)) min"; break }
-            if ((Get-Date) -ge $next) { $s = Get-ProcSample $proc $lc $lt; $s.min = [math]::Round(((Get-Date) - $t0).TotalMinutes, 2); $samples += $s; $next = $next.AddSeconds(30) }
+            if ((Get-Date) -ge $next) { $s = Get-ProcSample $proc $lc $lt; $s.min = [math]::Round(((Get-Date) - $t0).TotalMinutes, 2); $samples += $s; $next = $next.AddSeconds(30); Save-Json @($samples) (Join-Path $dir 'samples.json') }
             if ((Get-Date) -ge $nextResp) {
                 $proc.Refresh(); $mw = $null; try { $mw = Get-MainWindow 2 } catch {}
                 $hung = if ($mw) { [RdVerifyHang]::IsHungAppWindow($mw.Handle) } else { $true }
