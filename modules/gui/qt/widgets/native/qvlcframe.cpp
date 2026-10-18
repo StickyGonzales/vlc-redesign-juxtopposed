@@ -34,7 +34,7 @@ void QVLCTools::saveWidgetPosition(QSettings *settings, QWidget *widget)
     settings->setValue("geometry", widget->saveGeometry());
 }
 
-void QVLCTools::saveWindowPosition(QSettings *settings, QWindow *window)
+void QVLCTools::saveWindowPosition(QSettings *settings, QWindow *window, const QMargins &nativeFrame)
 {
     //no standard way to do it, mimic what qt is doing internally
     QByteArray array;
@@ -50,7 +50,7 @@ void QVLCTools::saveWindowPosition(QSettings *settings, QWindow *window)
         << window->screen()->devicePixelRatio()
         << window->screen()->geometry()
         << window->position()
-        << window->geometry()
+        << window->geometry().marginsAdded(nativeFrame)
         << quint8(window->windowStates() & Qt::WindowMaximized)
         << quint8(window->windowStates() & Qt::WindowFullScreen);
     settings->setValue("geometry", array);
