@@ -16,7 +16,6 @@
 ## Bugs for the web session (found on the PC, 2026-10-19)
 - Light theme: a 2 px darker grey line (#ACACAC on #D5D5D5) at the top edge of the control bar, across the full width including the frame margin (Sticky saw it; measured on 39079182201 light pass bars__open). Not in Figma Player - Light, not in dark. The earlier fix 2593350797 removed the dark line only.
 - External Tracks names (wip/beta-subs): the video (6:22-6:24, row 81) shows "The_Wand_S01E04 [English]" (file name without extension + language in brackets); the branch shows the full file name with extension.
-- Tracks popup audio rows read "English - English" (track title + language) where Figma shows "English" (P2-17).
 - About dialog: still VLC's white stock dialog in dark mode (fix list: stock dialog look); text check on the beta build pending ("Built by Sticky" on 39079182201 must read StickyGonzales).
 - Ctrl+P: opens Settings on Windows (all smoke runs, screenshot smoke__settings.png); the Linux issue (core "previous title" binding) does not show here. Fix on wip/web-fixes-1 is the web session's; recheck it on Windows after it lands.
 
@@ -33,7 +32,14 @@ One line per screen: controls used by the gate screens part (open, one action, e
 - Settings dialog, every page: opens, every page renders, closes with Escape; General compared closely with Settings - global.png: match (values from the test profile). The other pages are not compared closely yet.
 - Keyboard Shortcuts (open, search): matches Keyboard Shortcuts.png (more of VLC's rows than the sample). Verified: P7-12.
 - About: opens; still the stock white dialog (logged).
-- Rows verified this round: 8 (P2-21, IA-22, P6-11, P2-23, IA-23, P2-24, F-21, P7-12) in about 45 minutes of PC time (screens run 6 min + side-by-side review). Last round: 10 rows over four testing windows on 38829058873 (about 1 row per hour). Now: verified 77, coded but not verified 204.
+- Rows verified this round: 8 (P2-21, IA-22, P6-11, P2-23, IA-23, P2-24, F-21, P7-12) in about 45 minutes of PC time (screens run 6 min + side-by-side review). Last round: 10 rows over four testing windows on 38829058873 (about 1 row per hour). (see round 2 below for the totals)
+- Round 2 on 39120703950 (#51, beta, 2026-10-19, screens part dark + light: 49 of 50 checks pass, only Escape on the library sidebar fails; no update dialog or banner any more):
+  - Tracks popup Subtitles: switching to German works (OSD "Subtitle track: German"), External Tracks header with pencil and +; names read "<title> - <language>" like the video's "Track 1 - English" (4:36; Decision 11: the video's wording), so not a bug. Verified: P3-04, P2-17.
+  - Top bar (every shot, "..." opened the main menu): single row, cone, "...", sidebar icon, folder chip, centred title, window buttons as Player.png. Verified: P2-06, P2-20, IA-21.
+  - Settings > Interface: no Skin section (Decision 63, intended difference from Figma); the rest matches (values from the test profile).
+  - Settings > Subtitles: the build adds an "OpenSubtitles" section (API key, username, password) between Loading Subtitles and Appearance that Figma's page doesn't have. Logged for the web session (move it or record a Decision).
+  - Sidebar Subtitles: structure matches; extra "Applies from the next file" note; lower rows cut by the 900 px window.
+  - Rows verified in round 2: 5, in about 20 minutes of PC time. Totals now: verified 82, coded but not verified 199.
 ## Rules added 2026-10-18 (Sticky)
 - Never delete anything under the Desktop (project folders included) and never create files there outside the work folders; temporary files only in the session scratchpad; no robocopy /MIR into Desktop folders.
 - GitHub handle is now StickyGonzales (repo StickyGonzales/vlc-redesign-juxtopposed; noreply 103277167+StickyGonzales@users.noreply.github.com); all links updated on every branch.
