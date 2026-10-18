@@ -70,7 +70,13 @@
 #include <errno.h>
 #include <unistd.h>
 
-#define DBUS_MPRIS_BUS_NAME "org.mpris.MediaPlayer2.vlc"
+/* redesign (brand layer, public profile): Cone's own MPRIS name, apart from a running VLC's;
+ * must be the same as MPRIS_BUS_NAME in src/posix/specific.c */
+#ifdef VLC_BRAND_PUBLIC
+# define DBUS_MPRIS_BUS_NAME "org.mpris.MediaPlayer2.cone"
+#else
+# define DBUS_MPRIS_BUS_NAME "org.mpris.MediaPlayer2.vlc"
+#endif
 #define DBUS_INSTANCE_ID_PREFIX "instance"
 
 #define SEEK_THRESHOLD 1000 /* µsec */
