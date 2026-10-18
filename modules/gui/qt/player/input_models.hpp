@@ -102,6 +102,8 @@ private:
         // track is first shown (the file is listed on the media once it has loaded)
         bool m_external = false;
         mutable QString m_fileName;
+        // the track's language code or name as the file gives it, empty when none
+        QString m_language;
     };
     QString externalFileName(vlc_es_id_t* id) const;
 
