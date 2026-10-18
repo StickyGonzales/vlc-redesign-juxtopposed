@@ -93,11 +93,6 @@ SettingsPage {
             text: qsTr("Fetch titles and cover art from the internet")
         }
 
-        SettingsOption {
-            option: "qt-privacy-ask"
-            text: qsTr("Ask about internet access when %1 starts").arg(Brand.shortName)
-        }
-
         SettingsInterfaceToggle {
             id: scrobblerRow
 
@@ -124,6 +119,13 @@ SettingsPage {
             option: "scrobbler-url"
             text: qsTr("Last.fm submission URL")
             available: root._scrobbler
+        }
+
+        // not in Figma: last, so Figma's rows keep their places (Decisions (Claude),
+        // WEB_FIXES_1_NOTES.md)
+        SettingsOption {
+            option: "qt-privacy-ask"
+            text: qsTr("Ask about internet access when %1 starts").arg(Brand.shortName)
         }
     }
 }
