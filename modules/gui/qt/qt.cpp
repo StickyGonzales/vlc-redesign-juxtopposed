@@ -321,6 +321,11 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
     "Only for files on this computer: their audio is scanned once in the background and kept in " \
     "the user data folder." )
 
+#define SEEK_SUBTITLE_TIMELINE_TEXT N_( "Show subtitle timeline on seek bar" )
+#define SEEK_SUBTITLE_TIMELINE_LONGTEXT N_( "The seek bar shows when each subtitle line appears, " \
+    "around the playing time. Drag the lines to shift the subtitles' timing. Only for subtitles " \
+    "loaded from a text file (SubRip, WebVTT, SSA / ASS)." )
+
 #define ACCENT_COLOR_TEXT N_( "Accent color" )
 #define ACCENT_COLOR_LONGTEXT N_( "Adjusts the accent color, special values are 'default' and 'system' (requires Qt 6.6) ." )
 
@@ -577,6 +582,11 @@ vlc_module_begin ()
 
     /* redesign: waveform seek bar (P6-06; the Playback tab's "Show Waveform on Seekbar": off) */
     add_bool( "qt-seek-waveform", false, SEEK_WAVEFORM_TEXT, SEEK_WAVEFORM_LONGTEXT )
+
+    /* redesign: subtitle timeline seek bar (P3-16; the Playback tab's "Show Subtitle Timeline on
+     * Seekbar", P4-35: off) */
+    add_bool( "qt-seek-subtitle-timeline", false, SEEK_SUBTITLE_TIMELINE_TEXT,
+              SEEK_SUBTITLE_TIMELINE_LONGTEXT )
 
     cannot_unload_broken_library()
 

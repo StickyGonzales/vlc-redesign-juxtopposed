@@ -161,6 +161,15 @@ SettingsPage {
                 text: qsTr("Show minor warnings")
             }
 
+            // VLC options applied at every start, as if typed after the program name (a core
+            // option of the Cone build, src/libvlc.c; Figma "Settings - global-1": an empty field)
+            SettingsOption {
+                option: "extra-options"
+                text: qsTr("Additional command line options")
+                kind: "text"
+                restartRequired: true
+            }
+
             SettingsOption {
                 option: "logmode"
                 text: qsTr("Log format")

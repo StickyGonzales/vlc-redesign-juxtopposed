@@ -66,7 +66,7 @@ const QSet<QString>& curatedOptions()
         // General
         "interact", "qt-updates-notif", "file-logging", "logfile", "log-verbose",
         "qt-error-dialogs", "logmode", "stats", "syslog", "syslog-debug", "syslog-ident",
-        "syslog-facility", "qt-verbose", "qt-accent-color",
+        "syslog-facility", "qt-verbose", "qt-accent-color", "extra-options",
         // Interface
         "intf", "skins2-last", "embedded-video", "qt-video-autoresize", "qt-remember-window", "video-on-top", "qt-titlebar",
         "qt-name-in-title", "qt-fullscreen-screennumber", "qt-minimal-view", "qt-pin-controls",
@@ -103,7 +103,7 @@ const QSet<QString>& curatedOptions()
         "freetype-color", "freetype-opacity", "freetype-outline-thickness",
         "freetype-outline-color", "freetype-shadow-opacity", "freetype-shadow-color",
         "freetype-shadow-distance", "freetype-background-opacity", "freetype-background-color",
-        "sub-margin", "sub-delay", "osd", "video-title-show", "video-title-timeout",
+        "sub-margin", "sub-delay", "osd", "osd-duration", "video-title-show", "video-title-timeout",
         "sub-autodetect-path", "freetype-shadow-angle", "freetype-text-direction",
         "freetype-monofont", "sub-text-scale",
         // Library

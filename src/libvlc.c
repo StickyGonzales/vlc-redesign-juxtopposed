@@ -119,6 +119,88 @@ static void libvlc_AddInterfaces(libvlc_int_t *libvlc, const char *varname)
     free(str);
 }
 
+#ifdef VLC_BRAND_PUBLIC
+/**
+ * redesign: applies the "extra-options" setting (Settings > General > Advanced Options,
+ * "Additional command line options") as if its options were typed after the program name.
+ * Blanks separate the options, double or single quotes keep blanks inside one (the quotes are
+ * dropped); there are no escapes, so Windows paths keep their backslashes. Arguments that are
+ * not options (file names) are ignored. The real command line is read again afterwards, so it
+ * wins where both set the same option, and the options that print help or the version and quit
+ * are cleared first, so they never stop the program from starting.
+ */
+static void libvlc_LoadExtraOptions(libvlc_int_t *libvlc, int argc,
+                                    const char *argv[])
+{
+    char *str = var_InheritString(libvlc, "extra-options");
+    if (str == NULL)
+        return;
+
+    /* at most one argument per two characters, plus argv[0] */
+    const char **args = vlc_alloc(strlen(str) / 2 + 2, sizeof (*args));
+    if (unlikely(args == NULL))
+    {
+        free(str);
+        return;
+    }
+
+    int count = 0;
+    args[count++] = "vlc"; /* argv[0], skipped by the parser */
+
+    char *in = str, *out = str;
+    for (;;)
+    {
+        while (*in == ' ' || *in == '\t' || *in == '\r' || *in == '\n')
+            in++;
+        if (*in == '\0')
+            break;
+
+        args[count++] = out;
+        char quote = '\0';
+        for (; *in != '\0'; in++)
+        {
+            if (quote != '\0')
+            {
+                if (*in == quote)
+                    quote = '\0';
+                else
+                    *out++ = *in;
+            }
+            else if (*in == '"' || *in == '\'')
+                quote = *in;
+            else if (*in == ' ' || *in == '\t' || *in == '\r' || *in == '\n')
+                break;
+            else
+                *out++ = *in;
+        }
+        if (*in != '\0')
+            in++;
+        *out++ = '\0';
+    }
+
+    if (count > 1)
+    {
+        if (config_LoadCmdLine(libvlc, count, args, NULL))
+            msg_Err(libvlc, "additional command line options: an option is not "
+                    "valid, the options after it are ignored");
+
+        static const char *const quit_options[] = {
+            "version", "full-help", "longhelp", "help", "list-verbose", "list",
+        };
+        for (size_t i = 0; i < ARRAY_SIZE(quit_options); i++)
+            if (var_Type(libvlc, quit_options[i]) != 0)
+                var_SetBool(libvlc, quit_options[i], false);
+        if (var_Type(libvlc, "module") != 0)
+            var_SetString(libvlc, "module", "");
+
+        config_LoadCmdLine(libvlc, argc, argv, NULL);
+    }
+
+    free(args);
+    free(str);
+}
+#endif
+
 /**
  * Initialize a libvlc instance
  * This function initializes a previously allocated libvlc instance:
@@ -177,7 +259,12 @@ int libvlc_InternalInit( libvlc_int_t *p_libvlc, int i_argc,
         if( var_InheritBool( p_libvlc, "reset-config" ) )
             config_SaveConfigFile( p_libvlc ); /* Save default config */
         else
+        {
             config_LoadConfigFile( p_libvlc );
+#ifdef VLC_BRAND_PUBLIC
+            libvlc_LoadExtraOptions( p_libvlc, i_argc, ppsz_argv );
+#endif
+        }
     }
 
     vlc_LogInit(p_libvlc);
