@@ -10,7 +10,7 @@ name: build-linux
 
 on:
   push:
-    branches: [wip/linux-build, wip/verify-linux]
+    branches: [wip/linux-build, wip/verify-linux, wip/web-fixes-2]
     # documentation-only pushes do not need a build
     paths-ignore:
       - 'redesign/**'
