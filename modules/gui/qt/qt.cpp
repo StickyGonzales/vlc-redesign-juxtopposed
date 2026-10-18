@@ -1379,7 +1379,7 @@ static void *Thread( void *obj )
 
     app.setWindowIcon( brand::windowIcon( p_intf ) );
 
-    app.setDesktopFileName( PACKAGE );
+    app.setDesktopFileName( BRAND_DESKTOP_FILE );
 
     loadRedesignFonts( app );
 
