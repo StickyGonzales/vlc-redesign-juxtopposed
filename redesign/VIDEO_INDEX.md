@@ -295,8 +295,8 @@ Extra decisions made during the build, one line each (date, row IDs, decision, r
 - 2026-10-16 P5-23 / P6-04: the compact library floats over the music view without resizing it; the cover stays centred on the window under the panel (Figma "Player - Music-1", video 12:14). Over video the area still shrinks once the slide ends (performance rule).
 - 2026-10-16 P5-28 / F-17: the mini player card is dragged from its whole player part (picture, title and chips rows); the seek bar keeps its own drag; the card takes every press and wheel turn no control takes, so nothing reaches the library under it.
 - 2026-10-16 P5-27: the mini player's folder and artist chips share the room left of the queue button; the longer one is elided first, never below half of the room.
-- 2026-10-18 Linux (wip/linux-build): Cone for Linux is a portable tarball (folder with a `cone` launcher, desktop file and icon; `portable` folder next to it keeps everything inside); no AppImage, installer or distribution package yet.
-- 2026-10-18 Linux: Cone keeps VLC's Linux default of the system title bar above its top bar (`qt-titlebar` on); its own window buttons (CSD, as on Windows) are one setting away. Open question for StickyGonzales (LINUX_NOTES.md section 6).
+- 2026-10-18 Linux (wip/linux-build): Cone for Linux is a portable folder (tarball) and an AppImage of it (Decision (Sticky) 2 in LINUX_NOTES.md); a `portable` folder next to the launcher or the AppImage keeps everything inside.
+- 2026-10-18 Linux: superseded by LINUX_NOTES.md Decisions (Sticky) 1-3 (own window buttons on Linux with the system title bar as a setting, AppImage, Linux as its own beta).
 - 2026-10-18 Linux: off Windows the library menu entry reads "Show in File Manager" (Windows keeps "Show in File Explorer").
 
 ## Core changes (status)

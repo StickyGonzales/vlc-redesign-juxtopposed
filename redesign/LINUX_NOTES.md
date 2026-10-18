@@ -21,7 +21,10 @@ So the sandbox can test Cone for Linux end to end: download the artifact, unpack
 
 ## 2. The Linux build (step 2)
 
-**Workflow:** `.github/workflows/build-linux.yml`, **manual runs only** (workflow_dispatch), brand **public** (Cone). `build-windows.yml` is unchanged.
+**Workflow:** `.github/workflows/build-linux.yml`, brand **public** (Cone). `build-windows.yml` is unchanged. Starts:
+- by hand (workflow_dispatch): GitHub offers this only once the file is on the default branch (`redesign`); from this branch a manual start answers 404;
+- on pushes to `wip/linux-build` (added for that reason): a push whose commits carry `[skip ci]` or touch only documentation does not start it;
+- from `release-linux.yml` (workflow_call, see below).
 
 **Approach (VideoLAN's own):** the image of VideoLAN's `debian` CI job (`VLC_DEBIAN_IMAGE` in `extras/ci/gitlab-ci.yml`, Debian unstable, Qt 6.10.2), VLC built with autotools against the image's system libraries, as that job does. Two additions:
 - The image has no media library package, and without it Cone has no library. `linux-build.sh` builds it with VLC's own contrib recipe (`contrib/src/medialibrary`, 0.13.2, static, sqlite from the image) into `contrib/linux-ml`, cached by the workflow.
@@ -50,12 +53,16 @@ Cone-0.1.0-linux-x86_64/
 - Qt's SVG plugins (`imageformats/libqsvg.so`, `iconengines/libqsvgicon.so`): the image lacks them, and without them every interface icon is a placeholder square. The workflow downloads Debian's `qt6-svg-plugins` of the image's exact Qt SVG version (6.10.2-8) from snapshot.debian.org, pinned by SHA-256; the package step stops with an error without them. A new `VLC_IMAGE` needs the matching version there.
 - `usr/bin/qt.conf` and `usr/libexec/vlc/qt.conf` point Qt at the bundled plugins and QML modules, so a system Qt never mixes in. The second one matters: VLC runs `vlc-qt-check` before it loads the Qt interface, and without it that check failed and VLC fell back to its text interface.
 - **Requirement: glibc 2.39 or newer** (Ubuntu 24.04, Debian 13, Fedora 40, Linux Mint 22, current Arch), printed by the package step and written into `README-LINUX.txt`; older systems (Ubuntu 22.04: glibc 2.35) cannot start it.
-- AppImage: not made. The folder is already AppImage-shaped (launcher, desktop file, icon); `appimagetool` could wrap it later.
+- **AppImage** (Decision 2): `linux-appimage.sh` wraps the same folder: AppImage's static type-2 runtime (build `8f39b89` of github.com/AppImage/type2-runtime, published only as "continuous", so the workflow pins its SHA-256 and a newer upload there fails the check until the hash is updated) followed by a zstd SquashFS image of the folder, with `AppRun` pointing at the `cone` launcher and `.DirIcon` at the logo. No appimagetool needed (its tagged releases are not reachable here; the format is just runtime + image). About 137 MB. Uploaded as the artifact `cone-linux-appimage-x86_64` (`Cone-0.1.0-x86_64.AppImage`; the artifact zip drops the execute bit: `chmod +x` after unzipping). The type-2 runtime needs no libfuse2 on the system; without FUSE at all, `APPIMAGE_EXTRACT_AND_RUN=1` or `--appimage-extract-and-run` runs it by unpacking to a temporary folder (slower start). Portable mode: a `portable` folder next to the `.AppImage` file.
+- Version: a `linux-vX.Y.Z` tag sets Cone's version, `linux-vX.Y.Z-<label>` also adds `-<label>` to the file names (like `vX.Y.Z` tags for Windows); otherwise 0.1.0.
+
+**Release (Decision 3):** `.github/workflows/release-linux.yml`, apart from the Windows `release.yml` (which only reacts to `vX.Y.Z` tags, so Linux tags never start it). On a pushed `linux-vX.Y.Z[-label]` tag, or by hand from such a tag: checks that the tag's commit is on `redesign` (verified code only), builds through `build-linux.yml`, writes `SHA256SUMS.txt` and notes (requirements, folders, credits, oldest glibc from the package), and creates a **draft pre-release** with the AppImage, the tarball and the checksums. A draft is not public: it appears only after someone presses Publish on the Releases page. Never run so far.
 
 **Start a Linux build:**
-- Web: Actions > build-linux > Run workflow > branch `wip/linux-build` (later `redesign`) > optional package suffix (e.g. `-beta`) > Run workflow.
-- PowerShell: `gh workflow run build-linux.yml --ref wip/linux-build`
-- The artifact `cone-linux-x86_64` holds `Cone-0.1.0-linux-x86_64.tar.xz`.
+- Now (from `wip/linux-build`): push a commit without `[skip ci]` that changes more than documentation.
+- Once `build-linux.yml` is on `redesign`: Actions > build-linux > Run workflow > pick the branch > optional package suffix (e.g. `-beta`) > Run workflow; or PowerShell `gh workflow run build-linux.yml --ref <branch>`.
+- Artifacts: `cone-linux-appimage-x86_64` (the AppImage) and `cone-linux-x86_64` (the tarball).
+- Linux release later: tag a `redesign` commit `linux-v0.1.0-beta` and push the tag; then review and publish the draft on the Releases page.
 
 ## 3. Windows-only parts and their Linux side (step 3)
 
@@ -68,7 +75,7 @@ Windows behavior is unchanged in every row: every new branch is either `#ifdef V
 | 3 | Single instance (`src/win32/specific.c`, `win_msg.c`) | mutex / IPC window "Cone ipc" | D-Bus name `org.mpris.MediaPlayer2.cone`: "allow only one instance" hands files to a running Cone, never to VLC; Cone and VLC both get their own MPRIS name (media keys, desktop media controls). | `src/posix/specific.c` (core), `modules/control/dbus/dbus.c` (public only) |
 | 4 | Audio session name (`mmdevice.c`, `winvlc.c`) | volume mixer entry "Cone" | PulseAudio / PipeWire application name "Cone", id and icon "cone" (sound settings show Cone, not "VLC media player"). | `bin/vlc.c` (public only) |
 | 5 | Startup file (`bin/winvlc.c`) | language from the registry, crash dumps, start error box | `bin/vlc.c` is VLC's Linux starter: brand texts as row 4 plus the start banner on a terminal. The `cone` launcher script adds portable mode (row 11). Language: Linux uses the system's `LANG` / `LANGUAGE`, as VLC on Linux; the Settings language row is already hidden off Windows (`SettingsCatalog.languageSupported`). | `bin/vlc.c`, launcher in `linux-package.sh` |
-| 6 | Window frame (`mainctx_win32`, `compositor_dcomp/win7`, `csdmenu_win32`) | Cone draws its own title bar (CSD, `qt-titlebar` off by default on Windows) | Not compiled on Linux (meson / Makefile.am `HAVE_WIN32`). VLC's own X11 / Wayland code is used; the redesign's top bar uses VLC's cross-platform CSD buttons. **Default kept as VLC's on Linux: the system title bar** (`qt-titlebar` on), with Cone's top bar under it; CSD is one click (Settings > Interface, "Use system title bar" off, or `--no-qt-titlebar`). Open question in section 6. | none (default kept) |
+| 6 | Window frame (`mainctx_win32`, `compositor_dcomp/win7`, `csdmenu_win32`) | Cone draws its own title bar (CSD, `qt-titlebar` off by default on Windows) | Not compiled on Linux (meson / Makefile.am `HAVE_WIN32`). VLC's own X11 / Wayland code is used; the redesign's top bar uses VLC's cross-platform CSD buttons. **Decision 1: Cone draws its own window buttons on Linux too** (`qt-titlebar` off by default in the public profile; the onboarding already set it off on every platform, now the default matches before onboarding and after a reset). The system title bar is the fallback: Settings > Interface "Show window decorations", or `--qt-titlebar`. The vlc profile on Linux keeps VLC's default. | `qt.cpp` |
 | 7 | Window identity on the desktop | taskbar icon from the exe | `setDesktopFileName("cone")` (Wayland app id), program name `cone` (X11 window class) and `cone.desktop` / `cone.png` in the package, so docks group Cone under its own name and icon, not VLC's. MPRIS identity "Cone", desktop entry "cone". Qt's own caches (QML, graphics pipelines) were in `~/.cache/vlc` (Qt names them after the program): the application name `Cone` puts them in `~/.cache/Cone`. Public profile, not on Windows. | `qt.cpp`, `brand.hpp`, `modules/control/dbus/dbus_root.c` |
 | 8 | Installer (NSIS, MSI, `extras/package/win32`) | install, file associations, Start menu | Skipped: the portable folder is the Linux package. `cone.desktop` + `cone.png` give a menu entry by hand (README-LINUX.txt); file associations come from its `MimeType=` line once installed. No system-wide install. | package only |
 | 9 | File associations dialog (`simple_preferences.cpp`, registry) | Windows file types | Already Windows-only upstream (`#ifdef _WIN32`), not shown on Linux. | none |
@@ -94,6 +101,8 @@ Not changed, VLC upstream behavior on Linux: video output (OpenGL / Vulkan / VA-
 | `.github/workflows/build-linux.yml` | New: manual Linux build, public brand, ccache, cached media library, pinned ccache and patchelf, tarball artifact. |
 | `.github/scripts/linux-build.sh` | New: media library from contrib, configure / make / install in the image. |
 | `.github/scripts/linux-package.sh` | New: portable folder, bundled libraries, RUNPATHs, plugin cache, launcher, desktop file, readme, tarball. |
+| `.github/scripts/linux-appimage.sh` | New: AppImage from the portable folder (runtime + SquashFS). |
+| `.github/workflows/release-linux.yml` | New: Linux release on `linux-v` tags, draft pre-release only. |
 | `src/posix/dirs.c` | Core, public only: `Cone` instead of `vlc` in the XDG folders. |
 | `src/posix/specific.c`, `modules/control/dbus/dbus.c` | Core / module, public only: D-Bus name `org.mpris.MediaPlayer2.cone`. |
 | `modules/control/dbus/dbus_root.c` | Module, public only: MPRIS identity "Cone", desktop entry "cone". |
@@ -141,9 +150,10 @@ Found and fixed on the way (all in the package script, plus the Qt cache folder)
 ## 6. What's left, risks, questions
 
 **Left to do**
-- A first real CI run of `build-linux.yml` (it has never run on GitHub): check the time, the ccache and media library caches, and that the artifact is the tarball.
 - Test on a real Linux PC (section 7), especially keyboard, sound, GPU video output, Wayland and fullscreen, which the sandbox cannot cover.
-- `README.md` and release notes do not mention Linux yet; `release.yml` (wip/ci-release) does not build Linux.
+- `README.md` does not mention Linux yet (on purpose until the Linux beta).
+- Once merged into `redesign`: the push trigger on `wip/linux-build` can go (manual runs work from then on).
+- Ctrl+P did not open Settings in the sandbox (section 5): VLC's core also binds Ctrl+P (previous title, `KEY_TITLE_PREV`) on every platform; check Ctrl+P on Windows, it is the same shared code.
 - Small window: on the default 600x420 window, the right-click menu is cut off at the window's bottom edge (the redesign draws menus inside the window). Probably the same on Windows; not Linux-specific.
 
 **Risks**
@@ -154,10 +164,7 @@ Found and fixed on the way (all in the package script, plus the Qt cache folder)
 - **Core changes** (`src/posix/dirs.c`, `src/posix/specific.c`, `modules/control/dbus/*`, `bin/vlc.c`): public profile only, no effect on the Windows build (not compiled there), but per Decision 27 / 55 they are their own build.
 - An old `~/.config/vlc` is never read by Cone: Linux users start fresh.
 
-**Questions for StickyGonzales**
-1. Window frame on Linux: keep VLC's system title bar (now), or Cone's own window buttons like on Windows (`qt-titlebar` off by default in the public profile on Linux)?
-2. Linux package format for the public release: this tarball, an AppImage made from it, or a Flatpak?
-3. Should the release workflow publish the Linux tarball next to the Windows zip?
+**Questions for StickyGonzales:** none open (the three earlier ones are Decisions (Sticky) 1-3).
 
 
 ## 7. How to test it (the sandbox, or a Linux PC)
@@ -166,9 +173,10 @@ Found and fixed on the way (all in the package script, plus the Qt cache folder)
 1. Run the workflow (section 2), then in the session: list the run's artifacts with the GitHub MCP tools (`actions_list` with `list_workflow_run_artifacts`), get the link (`actions_get` with `download_workflow_run_artifact`), download it with `curl`, unzip it (the artifact zip holds the `.tar.xz`).
 2. Start `dockerd` only if a local build is needed; for testing the artifact it is not.
 3. As a non-root user (`useradd -m conetest`), in a home whose path does not repeat a folder name: `Xvfb :93 -screen 0 1920x1200x24 &`, then `DISPLAY=:93 dbus-run-session -- ./cone --no-qt-privacy-ask --no-qt-video-autoresize --aout=dummy -vv <video>` (needs `libxcb-cursor0` on the sandbox: `apt-get install libxcb-cursor0`).
-4. Screenshots with `import -window root shot.png`; mouse with `xdotool mousemove` / `click` (keyboard did not work without a window manager; a small window manager such as `openbox` might fix that).
-5. Check the log for `cannot load plug-in`, `error`, `qml` warnings; check `~/.config/Cone`, `~/.local/share/Cone`, `~/.cache/Cone` and that no `vlc` folder appears.
-6. Close everything: SIGINT to `usr/bin/vlc`, stop Xvfb and dbus.
+4. Start `openbox` in the same session (`apt-get install openbox`): with it, focus and keyboard reach Cone (`xdotool key space`, `ctrl+q`). Screenshots with `import -window root shot.png`; mouse with `xdotool mousemove` / `click`.
+5. An AppImage: no FUSE in the sandbox, so `APPIMAGE_EXTRACT_AND_RUN=1 ./Cone-0.1.0-x86_64.AppImage ...` (it unpacks on every start, which takes a while here).
+6. Check the log for `cannot load plug-in`, `error`, `qml` warnings; check `~/.config/Cone`, `~/.local/share/Cone`, `~/.cache/Cone` and that no `vlc` folder appears.
+7. Close everything: Ctrl+Q or SIGINT to `usr/bin/vlc`, stop openbox, Xvfb and dbus.
 
 **On a Linux PC (Ubuntu 24.04 or newer, Fedora 40+, Debian 13, Arch):**
 1. Download `cone-linux-x86_64` from the run, unzip, `tar -xJf Cone-0.1.0-linux-x86_64.tar.xz`, `cd Cone-0.1.0-linux-x86_64`, `./cone`.
