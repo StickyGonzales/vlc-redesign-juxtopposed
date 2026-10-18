@@ -76,6 +76,11 @@ Item {
             page.searchText = ""
     }
 
+    // the address line on screen, kept for the crossfade into the next one
+    property var _shownCrumbs: []
+
+    Component.onCompleted: _shownCrumbs = RdLibraryNav.location.crumbs
+
     Connections {
         target: RdLibraryNav
 
@@ -83,6 +88,15 @@ Item {
             root.searchOpen = false
             searchField.text = ""
             fullSearch.text = ""
+
+            // a crossfade still running ends at once, as the page's does
+            if (crumbsFade.running)
+                crumbsFade.complete()
+            previousBreadcrumb.crumbs = root._shownCrumbs
+            root._shownCrumbs = RdLibraryNav.location.crumbs
+            previousBreadcrumb.opacity = 1
+            breadcrumb.opacity = 0
+            crumbsFade.start()
         }
     }
 
@@ -127,8 +141,42 @@ Item {
 
             crumbs: RdLibraryNav.location.crumbs
             // Figma Player-5: a category's root alone is not bold
-            boldLast: !root.compact && RdLibraryNav.location.crumbs.length > 1
+            boldLast: !root.compact && crumbs.length > 1
             onCrumbClicked: (index) => RdLibraryNav.openCrumb(index)
+        }
+
+        // the address line of the page before, fading out while the new one fades in, with the
+        // page rows (RdLibraryContent; video 12:12, IB-21: old and new overlap at the same place)
+        RdBreadcrumb {
+            id: previousBreadcrumb
+
+            anchors.fill: breadcrumb
+
+            enabled: false
+            visible: opacity > 0
+            opacity: 0
+
+            boldLast: !root.compact && crumbs.length > 1
+        }
+
+        ParallelAnimation {
+            id: crumbsFade
+
+            NumberAnimation {
+                target: previousBreadcrumb
+                property: "opacity"
+                to: 0
+                duration: VLCStyle.rd_libraryPageFadeDuration
+                easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+                target: breadcrumb
+                property: "opacity"
+                to: 1
+                duration: VLCStyle.rd_libraryPageFadeDuration
+                easing.type: Easing.OutQuad
+            }
         }
 
         Row {
