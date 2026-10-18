@@ -6,16 +6,36 @@ Screen-by-screen check of Cone on Linux: the GitHub-built AppImage of `wip/verif
 - Build: build-linux #2, run 39125070286 (head e84bfc9b0e), artifact `cone-linux-appimage-x86_64` (AppImage unpacked once with `--appimage-extract`, then `AppRun`, as the sandbox has no FUSE).
 - Order (as asked): the screens that `wip/beta` and `wip/web-fixes-1` did not change were to start on build #1 (run 39119874209) while #2 built; #2 went green after the first screen, so everything below was checked on #2 and nothing was rechecked. Changed since #1 (from `git diff origin/wip/linux-build`): Settings pages General, Interface, Privacy, Playback, Subtitles, Extensions and the info popovers; sidebar Subtitles tab; tracks popup; Queue / Chapters rows; subtitles above the bar; every application shortcut on Linux (Ctrl+P matcher fix).
 - Display: Xvfb 1920x1080, 24 bit, 96 dpi (100 % scaling), openbox, software rendering (llvmpipe), test user in a D-Bus session, PulseAudio with its null sink (no sound card; real sound is a Windows-only row).
-- Media (generated, no personal files): "Test Show/Season 1" with 3 episodes (1280x720, two audio tracks eng/jpn, two subtitle tracks eng/fre, chapters Winter / Spring / Summer), an external `.srt` per episode in another folder, 6 tagged songs with cover art (2 artists, 2 albums, 2 genres), a portrait clip, a letterboxed film with a very long name, an IPTV `.m3u`.
+- Media (generated, no personal files): "Test Show/Season 1" with 3 episodes (25:40, 640x360, two audio tracks eng/jpn, two subtitle tracks eng/fre, chapters Winter / Spring / Summer / Fall / Winter 10 Years Later), an external `.srt` per episode in another folder, 6 tagged songs with cover art (2 artists, 2 albums, 2 genres), a portrait clip, a letterboxed film with a very long name, an IPTV `.m3u`.
 - Figma: the 2x PNG exports scaled to 1x, compared at the same scale with a screenshot of the same element.
 - Each row: **Function** = used the controls and checked what the VIDEO_INDEX row says; **Looks** = compared with its Figma frame for layout, colours, fonts, icons, wording and spacing. Font smoothing differences between Linux and Windows are not counted.
 
-Results: **pass**, **fail** (what is wrong, what Figma shows, likely file), **skip** (Windows only, needs her video, or a context row with nothing to build).
+Results: **pass**, **fail** (what is wrong, what Figma shows, likely file), **not built** (VIDEO_INDEX status todo), **not checked** (could not be driven in the sandbox, said why), **skip** (Windows only, needs her video, or a context row with nothing to build). Rows already verified on Windows were rechecked here only for their screen, not motion.
 
 ## Summary (one line per screen)
 
-| Screen | Rows passed | Rows failed | Rows skipped |
-|---|---|---|---|
+| Screen | Passed | Failed | Not built / not checked | Skipped |
+|---|---|---|---|---|
+| 1. Player, windowed, video playing | 40 | 3 | 0 | 9 |
+| 2. Bars over the video, fullscreen, Hide UI | 4 | 0 | 0 | 1 |
+| 3. Tracks popup | 9 | 1 | 0 | 1 |
+| 4. Add Subtitles dialog | 9 | 0 | 0 | 2 |
+| 5. Settings sidebar: Playback, Video, Audio, Subtitles tabs | 47 | 2 | 3 | 7 |
+| 6. Settings dialog | 42 | 5 | 1 | 4 |
+| 7. Queue panel: Queue, Bookmarks, Chapters | 10 | 2 | 0 | 0 |
+| 8. Main "..." menu | 14 | 0 | 0 | 6 |
+| 9. Keyboard Shortcuts dialog | 1 | 1 | 0 | 0 |
+| 10. Right-click menu | 4 | 0 | 0 | 0 |
+| 11. Open Network Stream | 2 | 0 | 0 | 1 |
+| 12. Library: compact panel, full library, Home, Recent, pins, Network, Playlists | 50 | 0 | 9 | 12 |
+| 13. Music player view | 5 | 0 | 0 | 0 |
+| 14. Customize Player | 2 | 0 | 5 | 2 |
+| 15. Light theme and accent colour | 6 | 0 | 0 | 0 |
+| 16. Onboarding | 3 | 0 | 0 | 5 |
+| 17. Resume toast, on-screen messages | 1 | 0 | 4 | 7 |
+| **Total** | **249** | **14** | **22** | **57** |
+
+Counted per VIDEO_INDEX row ID (plus one per web-fix line); a table line that groups several IDs counts each of them. Fails that are Linux only: General (Interface language), Audio page (Output device), Network page (Proxy), Performance page (Video post-processing), Keyboard Shortcuts search. The others are in shared QML and should show on Windows too (IA-13 chapter frame, P2-06 elided title, F-02, P3-10, P4-15 stereo names, P4-24 "-0.0 dB", P8-10 "Auto", IB-37 / P7-06 row padding and bookmark times); the elided title and the stereo names may depend on Qt 6.10 / PulseAudio, so check them on the PC first.
 
 ## Results by screen
 
@@ -114,11 +134,13 @@ Positions measured from the panel top: every row sits where Figma has it. Colour
 | P4-29 (#138), P4-16 (#119), IA-37 (#120) | Build-up and tab animations | skip | video only |
 | P4-30 (#139) | Video filters with presets | pass | Essential / Crop / Colors / Geometry / Overlay / Advanced expanders; Essential as Video - Essential.png |
 | F-18 (#344) | Crop link toggle | pass | link Top-Bottom, Top 40 px: Bottom follows, link icon orange, picture cropped (log `vsz 640x280`) |
-| P4-15 (#122), P4-17 (#123), P4-18 (#124), IA-38 (#121) | Audio tab Defaults, Test button, Synchronization | **fail** | Stereo Mode lists raw numbers "7, 1, 3, 4, 2" and shows "1" instead of Mono / Stereo / Left / Right (Figma "Mono"; P8-01 words not numbers). The core adds the names (`src/audio_output/output.c` ADDCHOICE with `_("Mono")` ...), so the names are lost in the interface: `modules/gui/qt/player/qml/AudioSettingsPage.qml:146` choices `Player.audioStereoMode` (its choice model). Seen with PulseAudio on a mono track; check on Windows. The "-10 s ... +10 s" labels fix Figma's typo (Decision 17); the "Track and language apply from the next file" note is Decision (Claude) W4.6 |
+| P4-17 (#123), P4-18 (#124), IA-38 (#121) | Test button, Synchronization | pass | |
+| P4-15 (#122) | Audio tab Defaults | **fail** | Stereo Mode lists raw numbers "7, 1, 3, 4, 2" and shows "1" instead of Mono / Stereo / Left / Right (Figma "Mono"; P8-01 words not numbers). The core adds the names (`src/audio_output/output.c` ADDCHOICE with `_("Mono")` ...), so the names are lost in the interface: `modules/gui/qt/player/qml/AudioSettingsPage.qml:146` choices `Player.audioStereoMode` (its choice model). Seen with PulseAudio on a mono track; check on Windows. The "-10 s ... +10 s" labels fix Figma's typo (Decision 17); the "Track and language apply from the next file" note is Decision (Claude) W4.6 |
 | P4-19 (#125), P4-20 (#126), IA-39 (#128) | Filters list, toggle and expander styles | pass | |
 | P4-21 (#127) | Sticky footer over the scrolling content | pass | |
 | P4-25 (#133), P4-26 (#134), IA-40 (#132) | EQ preset dropdown with curve icons | pass | curves drawn per preset; "Full bass" fixes Figma's "Full base" (Decision 17) |
-| P4-24 (#131), P4-23 (#130) | Equalizer expanded, band sliders | **fail** (small) | Picking Classical applies the equalizer (log) and moves the sliders, but its near-zero bands read "-0.0 dB" (Figma "0.0 dB"): VLC's preset holds -1.1e-15 dB. Round before formatting: the band value text in `modules/gui/qt/player/qml/AudioSettingsPage.qml` |
+| P4-23 (#130) | Filter parameter sliders | pass | |
+| P4-24 (#131) | Equalizer expanded, band sliders | **fail** (small) | Picking Classical applies the equalizer (log) and moves the sliders, but its near-zero bands read "-0.0 dB" (Figma "0.0 dB"): VLC's preset holds -1.1e-15 dB. Round before formatting: the band value text in `modules/gui/qt/player/qml/AudioSettingsPage.qml` |
 | P3-19 (#92), P3-20 (#94), P4-14 (#118), IA-30 (#95) | Subtitles tab Synchronization, bipolar delay slider | pass | -4.000 s typed (Figma demo state): fill from 0 to the handle, same as Figma |
 | P3-21 (#96), IA-31 (#97), P3-23 (#100), IA-32 (#101) | Appearance, toggle, segmented control | pass | the "apply from the next file" note under Appearance is Decision (Claude) W4.6 |
 | P4-12 (#116), IA-29 (#93), IA-36 (#115) | Subtitles tab Defaults, typography, dividers | pass | (web fix 3) no line under Defaults any more: Subtitle Track sits 123 px below the panel top, Figma 124 |
@@ -145,12 +167,14 @@ All 13 pages captured at 100 % beside their Figma frame. Values that are the run
 | P8-08 (#283), S2-05 (#354) | Controls page | pass | |
 | P8-09 (#284) | Playback page | pass | default tracks as "Automatic" dropdowns (words, P8-01) |
 | P8-10 (#285) | Video page | **fail** (small) | Deinterlacing > Method reads "Auto"; Figma "Automatic" (the Deinterlacing row above says "Automatic"). VLC's `deinterlace-mode` choice text: relabel it in `SettingsVideoPage.qml` (option at line 149) |
-| P8-11 (#286), S2-06 (#355) | Audio page | **fail** (Linux only) | "Output device" is missing and "Always starts at:" has no value: both rows use the Windows outputs' options (`mmdevice-audio-device` / `waveout-*`, `mmdevice-volume`; `SettingsAudioPage.qml:45-46`). Figma: "Output device: System default" under Output, "Always starts at: 200%". Linux needs the PulseAudio / ALSA equivalents (or the player's device list and `volume`) |
+| S2-06 (#355) | Night mode | pass | |
+| P8-11 (#286) | Audio page | **fail** (Linux only) | "Output device" is missing and "Always starts at:" has no value: both rows use the Windows outputs' options (`mmdevice-audio-device` / `waveout-*`, `mmdevice-volume`; `SettingsAudioPage.qml:45-46`). Figma: "Output device: System default" under Output, "Always starts at: 200%". Linux needs the PulseAudio / ALSA equivalents (or the player's device list and `volume`) |
 | P8-44 (#287), IB-45 (#288) | Inline equalizer, slider variants | pass | |
 | P8-12 (#289), P8-45 (#290), S2-11 (#360) | Subtitles page | pass | (web fix 6) Text encoding "Automatic"; Preferred language "Automatic" (Decision (Claude) 2026-10-18 P8-12). Font "Serif Bold" is FreeType's Linux default, a value |
 | P8-14 (#292) | Library page | pass | "Apply to files opened from the file manager" (Linux wording) |
 | P8-15 (#293) | Network page | **fail** (Linux only) | The "Proxy" header shows with no rows under it: `http-proxy` / `http-proxy-pwd` exist only on Windows (`src/libvlc-module.c:1961`, obsolete elsewhere). Figma: HTTP proxy, HTTP proxy password. Hide the section when its rows don't exist (the beta's new `SettingsSection.shown`), `SettingsNetworkPage.qml:101`, or offer the Linux proxy setting |
-| P8-16 (#294), S2-07 (#356), S2-08 (#357), S2-09 (#358) | Performance page | **fail** (Linux only) | "Video post-processing" is missing between Hardware-accelerated decoding and Skip the H.264 loop filter: the Linux build has no postproc module (the row needs `postproc-q`). Add libpostproc to the Linux build (`.github/scripts/linux-build.sh`) or accept the gap |
+| S2-07 (#356), S2-08 (#357), S2-09 (#358) | Process priority, Rescan plugins, Encoder | pass | |
+| P8-16 (#294) | Performance page | **fail** (Linux only) | "Video post-processing" is missing between Hardware-accelerated decoding and Skip the H.264 loop filter: the Linux build has no postproc module (the row needs `postproc-q`). Add libpostproc to the Linux build (`.github/scripts/linux-build.sh`) or accept the gap |
 | P8-17 (#295), S2-10 (#359) | Recording page | pass | |
 | P8-18 (#296), P8-20 (#298) | Extensions page | pass | |
 | P7-12 (#258) | Keyboard Shortcuts from Controls | see screen 9 | |
@@ -169,7 +193,8 @@ Text positions measured in pixels from the panel's left edge (Cone screenshot vs
 | P1-18 (#28), P5-02 (#151), IA-43 (#152), P6-09 (#217) | Queue panel over the video | pass | 3 items - 1h 17m, sort / repeat / shuffle / remove / add, playing row orange; double-click plays (S01E03) |
 | IA-11 (#29) | Queue typography and icons | pass | (web fix 4) handle at 30 and title at 62 px from the panel edge; Figma 30 and 63 |
 | P7-04 (#247) | Ctrl+B adds a bookmark | pass | two presses give "The Wand S01E02 1" and "... 2" (needs build #2: application shortcuts) |
-| P7-05 (#248), IB-37 (#250) | Bookmarks tab, list typography | **fail** (small) | (1) Times read "16:52"; Figma "00:00:42:023" (h:m:s:ms). (2) Titles start 24 px from the panel edge; Figma 21. Same 3 px as the chapter titles below, so it comes from the shared row: `modules/gui/qt/widgets/qml/RdListRow.qml` (left padding), and the bookmark time text in `modules/gui/qt/player/qml/QueueSidebar.qml` |
+| P7-05 (#248) | Bookmarks tab | pass | |
+| IB-37 (#250) | Bookmark and chapter list typography | **fail** (small) | (1) Times read "16:52"; Figma "00:00:42:023" (h:m:s:ms). (2) Titles start 24 px from the panel edge; Figma 21. Same 3 px as the chapter titles below, so it comes from the shared row: `modules/gui/qt/widgets/qml/RdListRow.qml` (left padding), and the bookmark time text in `modules/gui/qt/player/qml/QueueSidebar.qml` |
 | P7-06 (#251) | Chapters tab | **fail** (small) | (web fix 5) the 10 px gap is there (number at 25, as Figma), but the title starts at 72 px from the panel edge; Figma 69 (see the bookmark row above: the shared row adds 3 px). Times and the orange numbers match |
 | IB-36 (#249) | Tab glyphs and states | pass | |
 | P5-24 (#193), IB-15 (#194), P5-28 (#199), IB-19 (#200) | Drag to queue, mini player queue | see screen 11 | |
@@ -189,7 +214,8 @@ Text positions measured in pixels from the panel's left edge (Cone screenshot vs
 
 | Row | Item | Result | Notes |
 |---|---|---|---|
-| P7-12 (#258), IB-40 (#259) | Dialog, columns, fields | **fail** (Linux, small) | Layout, columns (Action / Hotkey / Global Hotkey at the same x as Figma), sections, pencil icons and Cancel / Save match; clicking a Hotkey field shows "Press a key" with the orange frame and Ctrl+Shift+Y is captured (then cancelled, nothing saved). But the "Search Keyboard Shortcuts..." field does not take the focus when clicked, so typing does nothing (Open Network Stream and the Settings search take typing in the same session). `modules/gui/qt/dialogs/redesign/KeyboardShortcutsDialog.qml:375` (`T.TextField` with `padding: 0` and no height: its click area is only the text line; check on Windows). Key captions use the first installed monospace font (DejaVu Sans Mono here) while DM Mono waits for StickyGonzales's decision; "Esc" is VLC's key name (Figma "esc") |
+| IB-40 (#259) | Fine styling | pass | |
+| P7-12 (#258) | Dialog, columns, fields, search | **fail** (Linux, small) | Layout, columns (Action / Hotkey / Global Hotkey at the same x as Figma), sections, pencil icons and Cancel / Save match; clicking a Hotkey field shows "Press a key" with the orange frame and Ctrl+Shift+Y is captured (then cancelled, nothing saved). But the "Search Keyboard Shortcuts..." field does not take the focus when clicked, so typing does nothing (Open Network Stream and the Settings search take typing in the same session). `modules/gui/qt/dialogs/redesign/KeyboardShortcutsDialog.qml:375` (`T.TextField` with `padding: 0` and no height: its click area is only the text line; check on Windows). Key captions use the first installed monospace font (DejaVu Sans Mono here) while DM Mono waits for StickyGonzales's decision; "Esc" is VLC's key name (Figma "esc") |
 
 ### 10. Right-click menu (Figma right-click menu.png)
 
@@ -288,5 +314,5 @@ Started with `--qt-privacy-ask`.
 ## Sandbox notes (not row results)
 
 - PulseAudio: the volume cone reads empty until the first volume change, and the speaker tooltip read "-100 %" with `--aout=dummy` (no volume). Recheck the start volume on a real Linux desktop.
-- Openbox died once between restarts (a race in the test script, fixed); while it was missing, keyboard focus was unreliable. All keyboard rows above were rerun with openbox running.
+- Openbox was not running for part of the session (a race in the test script, fixed). The keyboard rows checked in that time passed anyway; the Keyboard Shortcuts search (screen 9) was retried with openbox running and still failed.
 - Folder pickers are Qt's own widget dialogs here (no xdg-desktop-portal in the sandbox).
