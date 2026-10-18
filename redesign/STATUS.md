@@ -7,11 +7,27 @@
 - Builds: core-change builds on their own branches: wip/beta-brand 39119928788 (skins start checks pass, smoke pass), wip/beta-subs 39119930398 (smoke pass, one rare silent crash, see known issues); full beta 39120703950 (smoke pass, Ctrl+P opens Settings); fixed beta 39125167074 running: gate runs on it.
 - Gate (Sticky, shortened): playback matrix, 30 quits, portable footprint, branding in full; main screens dark + one light pass, 20 min playback last, one speed check; plus the bar wake retest, mini player over video, subtitles above the bar windowed and fullscreen, skins checks, window size stable over restarts.
 
+## Beta gate on 39125167074 (#53, wip/beta 6f8db273af6), run verifyruns gate-20261018-142041-b53
+- Smoke: pass (play, pause, seek, volume, every sidebar tab, Ctrl+P Settings + Escape, Ctrl+Q 0.4 s, no crash event).
+- Window size over six restarts: 750x525 every time (fix 074a7eb06d5 works; before: about 17x9 px smaller per restart).
+- Subtitles above the bar (continuous test line): windowed 1600x900 and 1920x1080, bars shown: line above the control bar; bars hidden after 4.5 s: line back down; fullscreen, pointer at the bottom edge: only the control bar, line above it; still: back down. Pass (screenshots gate-*-subs, gate-*-bigwin).
+- Bars wake on a move over the middle of a 1920x1080 window (the old large-window bug): pass.
+- Mini player over a playing video: hover shows the dimmed picture with Close, Open the player, previous, pause, next and the seek handle; away: hidden. Pass (gate-*-mini).
+- Screens dark (purple accent) and light: everything opens, works and closes except Escape on the library sidebar (known issue); contact sheets looked at: About shows Cone 0.1.0, based on VLC 4.0.0-dev, Built by StickyGonzales; no update dialog or banner.
+- Playback matrix: 9 files pass (MP4, MKV with audio / subtitle switching, AVI, AVI without index with the index question, MP3, FLAC, M4A, 4K60, MP4 + external .srt listed under External Tracks); contact sheet looked at.
+- Quit: 30 of 30 clean (15 Ctrl+Q, 15 WM_CLOSE, slowest 0.69 s), 0 players left, 0 crash events.
+- Branding: 3430 on-screen texts and window titles with no "VLC" except the allowed attribution; file-level hits accepted: exe LegalCopyright "VideoLAN and VLC Authors" (GPL notice, required), the CI artifact folder name (not in the release zip), vlc-cache-gen.exe and vlc-preparser.exe (engine helpers, not user-facing). README.txt in the zip is Cone's.
+- Speed: the gate's perf part stopped on a tool bug (fixed in 277560ec9f7, wip/beta-gate) with the PC 31 % busy; per Sticky the last measured round is reused (PERF.md round 3: startup and CPU equal to stock, open file faster).
+- 20 min continuous playback (rerun with the fixed tool): no crash, no freeze, window responding and time moving at every minute check over all seven files; private memory flat at 271-279 MB for 18 minutes over six files, then 401 MB when the 4K60 file started (4K decoder buffers) and 321 MB on the next file, threads +10 with the 4K file: no leak (the tool's growth number is the 4K file arriving at the end). Screenshots at 1 / 6 / 11 / 16 min looked at. Pass.
+- Footprint: Cone's settings stay in portable (no %APPDATA%\Cone); %APPDATA%\vlc and the installed VLC untouched by Cone. Cone writes Qt's QML and graphics pipeline cache to %LOCALAPPDATA%\Cone\cache even in portable mode (as stock VLC does in %LOCALAPPDATA%\vlc\cache): known issue. The gate tool's perf part started stock VLC without a portable folder, which rewrote %APPDATA%\vlc\vlcrc with identical content (same SHA-1 before and after) and refreshed %LOCALAPPDATA%\vlc's pipeline cache: gate tool bug (the stock lane needs its own portable folder), nothing of the owner's changed.
+- GATE PASSED (2026-10-19): publish v0.1.0-beta from 39125167074 (release zip = that build folder + an empty portable folder).
 ## Known issues for the beta release notes
 - Rarely, Windows may log a background error after closing Settings; no visible effect (once in three smoke runs: access violation in libqt_plugin.dll +0x6ea1cd about 2 s after Settings closed; not investigated further, Sticky).
 - Escape does not close the library sidebar in the player; use the library button.
 - New Cone texts are English in every language; the app shows version 0.1.0 (-beta only in the file names).
 - The installer is not part of the beta (portable zip only, Decision 61); its screens still need the VM test.
+- Cone keeps Qt's QML and graphics cache in %LOCALAPPDATA%\Cone\cache, also in portable mode (like VLC).
+- The About dialog still has the old light style in dark mode; light theme: a thin grey line at the top of the control bar; an external subtitle file is listed with its full file name.
 
 ## Bugs for the web session (found on the PC, 2026-10-19)
 - Light theme: a 2 px darker grey line (#ACACAC on #D5D5D5) at the top edge of the control bar, across the full width including the frame margin (Sticky saw it; measured on 39079182201 light pass bars__open). Not in Figma Player - Light, not in dark. The earlier fix 2593350797 removed the dark line only.
