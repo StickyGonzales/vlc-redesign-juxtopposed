@@ -1,0 +1,4 @@
+# redesign tools: Windows batch files keep CRLF line endings in every checkout (cmd.exe needs
+# them); they are ASCII without a byte order mark
+*.bat text eol=crlf
+*.cmd text eol=crlf

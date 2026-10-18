@@ -51,6 +51,17 @@
 # endif
 #endif
 
+/* redesign: brand layer, --version and the help console's title name the public profile's app
+ * ("Cone 0.1.0, based on VLC <version>"); the vlc profile keeps VLC's texts */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_VERSION \
+    _("Cone %s, based on VLC %s (%s)\n"), BRAND_VERSION, VERSION_MESSAGE
+# define BRAND_CONSOLE_TITLE TEXT("Cone ") TEXT(BRAND_VERSION)
+#else
+# define BRAND_TEXT_VERSION _("VLC version %s (%s)\n"), VERSION_MESSAGE
+# define BRAND_CONSOLE_TITLE TEXT("VLC media player version ") TEXT(PACKAGE_VERSION)
+#endif
+
 #ifdef HAVE_VLC_SHOWCONSOLE
 static void ShowConsole (void);
 static void PauseConsole (void);
@@ -696,7 +707,7 @@ static void ListModules (libvlc_int_t *p_this, bool b_verbose)
 static void Version( void )
 {
     ShowConsole();
-    printf(_("VLC version %s (%s)\n"), VERSION_MESSAGE, psz_vlc_changeset);
+    printf(BRAND_TEXT_VERSION, psz_vlc_changeset);
     printf(_("Compiled by %s on %s (%s)\n"), VLC_CompileBy(),
            VLC_CompileHost(), __DATE__" "__TIME__ );
     printf(_("Compiler: %s\n"), VLC_Compiler());
@@ -720,7 +731,7 @@ static void ShowConsole( void )
      * Unicode/locale subsystem. By default, we have the obsolecent OEM code
      * page (e.g. CP437 or CP850). */
     SetConsoleOutputCP (GetACP ());
-    SetConsoleTitle (TEXT("VLC media player version ") TEXT(PACKAGE_VERSION));
+    SetConsoleTitle (BRAND_CONSOLE_TITLE);
 
     freopen( "CONOUT$", "w", stderr );
     freopen( "CONIN$", "r", stdin );

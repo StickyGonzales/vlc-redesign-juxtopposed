@@ -52,6 +52,28 @@
 #include "../../packetizer/h264_nal.h"
 #include "../../packetizer/hevc_nal.h"
 
+/* redesign (brand layer, public profile): the broken index question names Cone, not VLC; the
+ * vlc profile compiles VLC's text as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_BROKEN_INDEX \
+    _( \
+    "Because this file index is broken or missing, " \
+    "seeking will not work correctly.\n" \
+    "Cone won't repair your file but can temporary fix this " \
+    "problem by building an index in memory.\n" \
+    "This step might take a long time on a large file.\n" \
+    "What do you want to do?")
+#else
+# define BRAND_TEXT_BROKEN_INDEX \
+    _( \
+    "Because this file index is broken or missing, " \
+    "seeking will not work correctly.\n" \
+    "VLC won't repair your file but can temporary fix this " \
+    "problem by building an index in memory.\n" \
+    "This step might take a long time on a large file.\n" \
+    "What do you want to do?")
+#endif
+
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
@@ -834,13 +856,7 @@ aviindex:
             }
             if( i_do_index == 0 )
             {
-                const char *psz_msg = _(
-                    "Because this file index is broken or missing, "
-                    "seeking will not work correctly.\n"
-                    "VLC won't repair your file but can temporary fix this "
-                    "problem by building an index in memory.\n"
-                    "This step might take a long time on a large file.\n"
-                    "What do you want to do?");
+                const char *psz_msg = BRAND_TEXT_BROKEN_INDEX;
                 switch( vlc_dialog_wait_question( p_demux,
                                                   VLC_DIALOG_QUESTION_NORMAL,
                                                   _("Do not play"),

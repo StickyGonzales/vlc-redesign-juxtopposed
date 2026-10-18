@@ -58,6 +58,19 @@
 #include <vlc_renderer_discovery.h>
 #include <vlc_hash.h>
 
+/* redesign (brand layer, public profile): the "media can't be opened" error names Cone, not
+ * VLC; the vlc profile compiles VLC's text as before (redesign/CONE_RELEASE_NOTES.md "Dialog
+ * texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_OPEN_FAILED \
+    _("Cone is unable to open the MRL '%s'." \
+    " Check the log for details.")
+#else
+# define BRAND_TEXT_OPEN_FAILED \
+    _("VLC is unable to open the MRL '%s'." \
+    " Check the log for details.")
+#endif
+
 /*****************************************************************************
  * Local prototypes
  *****************************************************************************/
@@ -2943,8 +2956,7 @@ static int InputSourceInit( input_source_t *in, input_thread_t *p_input,
     {
         if( !b_in_can_fail && !input_Stopped( p_input ) )
             vlc_dialog_display_error( p_input, _("Your media can't be opened"),
-                                      _("VLC is unable to open the MRL '%s'."
-                                      " Check the log for details."), psz_mrl );
+                                      BRAND_TEXT_OPEN_FAILED, psz_mrl );
         if( in->p_slave_es_out )
         {
             vlc_input_es_out_Delete(in->p_slave_es_out);

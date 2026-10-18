@@ -24,6 +24,11 @@ nsi_conf.set('BRAND_REGKEY', brand['regkey'])
 nsi_conf.set('BRAND_INSTALL_DIR', brand['install_dir'])
 nsi_conf.set('BRAND_PRODUCT_ID', brand['product_id'])
 nsi_conf.set('BRAND_NSIS_BITMAP_TRUE', brand['nsis_bitmap_true'])
+nsi_conf.set('BRAND_PROGID', brand['progid'])
+nsi_conf.set('BRAND_INTERNAL_NAME', brand['internal_name'])
+nsi_conf.set('BRAND_VERSION', brand_version)
+nsi_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
+nsi_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
 
 nsProcess_cargs = ['-D_UNICODE=1', '-DUNICODE=1']
 if not have_win64
@@ -85,6 +90,13 @@ spad_nsi = configure_file(
 
 install_data('nsProcess.nsh',    install_dir : 'NSIS')
 install_data('vlc_branding.bmp', install_dir : 'NSIS')
+# redesign: brand layer, Cone's installer images and texts
+if get_option('brand') == 'public'
+    install_data(vlc_src_root / 'extras/package/win32/brand/public/nsis-welcome.bmp',
+                 vlc_src_root / 'extras/package/win32/brand/public/nsis-header.bmp',
+                 install_dir : 'NSIS')
+    meson.add_install_script('brand-languages.sh', 'languages', brand['product_name'])
+endif
 install_subdir('languages',      install_dir : '.')
 install_subdir('helpers',        install_dir : '.')
 
@@ -107,7 +119,7 @@ if makensis.found()
     vlc_nsis = custom_target(
         command: [makensis, nsi_script_dir / 'vlc.win32.nsi'],
         input: vlc_nsi,
-        output: 'vlc-' + vlc_version + '-' + winstaller_suffix + '.exe', # real name but root build folder
+        output: brand['internal_name'] + '-' + vlc_version + '-' + winstaller_suffix + '.exe', # real name but root build folder
         build_by_default: false,
         console: true,
         depends: nsProcess)

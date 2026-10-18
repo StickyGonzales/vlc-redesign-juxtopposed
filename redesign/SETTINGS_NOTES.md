@@ -1,6 +1,6 @@
 # SETTINGS_NOTES: Settings dialog category pages (W6.2), web session
 
-Branch `redesign-settings`, branched from `redesign` (10b542199c). Built by the web session; the PC session reviews, merges, builds and tests it (CLAUDE.md "Parallel work"). Draft PR: https://github.com/Pyr0zen/vlc-redesign-juxtopposed/pull/2. Nothing is marked verified in VIDEO_INDEX.md.
+Branch `redesign-settings`, branched from `redesign` (10b542199c). Built by the web session; the PC session reviews, merges, builds and tests it (CLAUDE.md "Parallel work"). Draft PR: https://github.com/StickyGonzales/vlc-redesign-juxtopposed/pull/2. Nothing is marked verified in VIDEO_INDEX.md.
 
 ## 1. Status
 

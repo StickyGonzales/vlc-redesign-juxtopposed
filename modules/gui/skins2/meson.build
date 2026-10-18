@@ -4,7 +4,8 @@ skins2_option = get_option('skins2') \
     .disable_auto_if(host_system != 'windows' and host_system != 'darwin' and not x11_dep.found()) \
     .require(freetype_dep.found(), error_message: 'Freetype is not available')
 
-skins2_allowed = skins2_option.allowed()
+# redesign: brand layer (Decision 63), the public profile (Cone) has no skins interface
+skins2_allowed = skins2_option.allowed() and get_option('brand') != 'public'
 skins2_enabled = skins2_option.enabled()
 skins2_feasible = skins2_allowed
 

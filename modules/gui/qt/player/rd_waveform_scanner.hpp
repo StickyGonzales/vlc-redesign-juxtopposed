@@ -48,9 +48,11 @@
  *   in gets no waveform rather than a full read.
  *
  * run() blocks and is meant for a low priority worker thread. cancel() may be called from any
- * thread: run() then returns an empty array within one demuxed packet (the VLC interrupt
- * context of the run also aborts blocking reads). A run never lasts much longer than
- * `kTimeBudgetSeconds`: past it, the file gets no waveform.
+ * thread: run() then returns an empty array at its next packet or seek (the VLC interrupt
+ * context of the run also ends waits that take one, such as a demuxer's dialog; file reads
+ * are not interruptible on Windows, so a demuxer call in progress, its opening or a seek in
+ * a file without an index, finishes first). The time budget `kTimeBudgetSeconds` is checked
+ * at the same points: past it, the file gets no waveform.
  *
  * Result: `kBins` bytes, the RMS loudness of each slice scaled so the loudest slice is 255;
  * empty when the file has no decodable audio, no known duration, or the run was cancelled.

@@ -9,6 +9,8 @@
 ; redesign: brand layer (configure --with-brand: vlc / public)
 !define PRODUCT_NAME "@BRAND_PRODUCT_NAME@"
 !define PRODUCT_EXE "@BRAND_EXE@"
+; prefix of the default programs entry (vlc.win32.nsi PRODUCT_PROGID)
+!define PRODUCT_PROGID "@BRAND_PROGID@"
 
 Function GetOptions
 	!define GetOptions `!insertmacro GetOptionsCall`
@@ -119,7 +121,7 @@ FunctionEnd
 
 ; Remove shortcuts
 !macro HideIcons
-  WriteRegDWORD HKLM "Software\Clients\Media\VLC\InstallInfo" "IconsVisible" 0
+  WriteRegDWORD HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "IconsVisible" 0
   SetShellVarContext all  ; Set $DESKTOP to All Users
   ${Unless} ${FileExists} "$DESKTOP\${PRODUCT_NAME}.lnk"
     SetShellVarContext current  ; Set $DESKTOP to the current user's desktop
@@ -135,7 +137,7 @@ FunctionEnd
 
 ; Adds shortcuts 
 !macro ShowIcons
-  WriteRegDWORD HKLM "Software\Clients\Media\VLC\InstallInfo" "IconsVisible" 1
+  WriteRegDWORD HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "IconsVisible" 1
   SetShellVarContext all  ; Set $DESKTOP to All Users
   ${Unless} ${FileExists} "$DESKTOP\${PRODUCT_NAME}.lnk"
     CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$EXEDIR\${PRODUCT_EXE}" "" "$EXEDIR\${PRODUCT_EXE}" 0

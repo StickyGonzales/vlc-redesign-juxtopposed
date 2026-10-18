@@ -188,6 +188,23 @@ FocusScope {
         }
     }
 
+    // the window's own mouse moves (InterfaceWindowHandler) feed the same tracking: in a large
+    // window (2400 x 1350 px at 125 %) the moves over the video did not reach the video surface,
+    // so the bars woke up only near the window edges. Several reports of one move count once
+    // (same position in the window). A modal redesign dialog over the player keeps its moves.
+    // Leaving the window ends the fullscreen bar zones also when no hover handler saw the cursor.
+    Connections {
+        target: MainCtx
+        enabled: MainCtx.hasEmbededVideo && RdPanels.modalCount === 0
+
+        function onIntfMouseMoved(scenePos) {
+            cursorTracker.track(scenePos.x, scenePos.y)
+        }
+        function onIntfMouseLeft() {
+            rootPlayer._cursorY = -1
+        }
+    }
+
     QtObject {
         id: cursorTracker
 
@@ -1778,6 +1795,36 @@ FocusScope {
             right: parent.right
             margins: VLCStyle.margin_large
         }
+    }
+
+    // redesign: the subtitles stay above the control bar while it covers the bottom of the
+    // picture (redesign/BETA_SUBS_NOTES.md). The covered height goes to VLC as a subtitle margin
+    // in display pixels (RdSubtitleLift); it follows the bar's fade, so the subtitles rise and
+    // settle with the bar. Nothing is covered in the music view, with the controls under the
+    // video (pinned), or while the player is not shown (minimal view, library).
+    readonly property real _subtitleLift: {
+        if (!rootPlayer.visible || !MainCtx.hasEmbededVideo || !controlBar.visible || controlBar.opacity <= 0)
+            return 0
+        const area = playerSpecializationLoader
+        if (area.width <= 0 || area.height <= 0)
+            return 0
+        // the picture fits inside the video area, centered (VLC's default fit)
+        const aspect = RdSubtitleLift.pictureAspect
+        const pictureHeight = aspect > 0 ? Math.min(area.height, area.width / aspect) : area.height
+        const covered = area.y + (area.height + pictureHeight) / 2 - controlBar.y
+        if (covered <= 0)
+            return 0
+        const dpr = MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0
+        return covered * controlBar.opacity * dpr
+    }
+
+    Binding {
+        target: RdSubtitleLift
+        property: "lift"
+        value: Math.round(rootPlayer._subtitleLift)
+
+        // the subtitles go back down when the player goes (minimal view, library)
+        Component.onDestruction: RdSubtitleLift.lift = 0
     }
 
     ControlBar {

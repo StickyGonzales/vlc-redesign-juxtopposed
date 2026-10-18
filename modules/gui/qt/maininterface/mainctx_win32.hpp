@@ -92,6 +92,8 @@ public:
     Q_INVOKABLE bool platformHandlesShadowsWithCSD() const override { return (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8); };
     Q_INVOKABLE bool platformHandlesResizeWithCSD() const override { return (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8); };
 
+    QMargins nativeFrameMargins(QWindow *window) const override;
+
     static bool createWindowWithoutRedirectionSurfaceImpl(QWindow* window);
 
     Q_INVOKABLE bool createWindowWithoutRedirectionSurface(QWindow* window)

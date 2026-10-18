@@ -43,6 +43,14 @@ struct intf_sys_t
 };
 
 /* Must be same as in src/win32/specific.c */
+/* redesign (brand layer, public profile): Cone's own single-instance identity */
+#ifdef VLC_BRAND_PUBLIC
+# define IPC_NAME L"Cone ipc " TEXT(VERSION)
+#else
+# define IPC_NAME L"VLC ipc " TEXT(VERSION)
+#endif
+
+/* Must be same as in src/win32/specific.c */
 typedef struct
 {
     int argc;
@@ -142,7 +150,7 @@ static void *HelperThread(void *data)
 
     HWND ipcwindow =
         CreateWindow(L"STATIC",                      /* name of window class */
-                  L"VLC ipc " TEXT(VERSION),        /* window title bar text */
+                  IPC_NAME,                         /* window title bar text */
                   0,                                         /* window style */
                   0,                                 /* default X coordinate */
                   0,                                 /* default Y coordinate */

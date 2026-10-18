@@ -9,7 +9,7 @@ rem   "public" builds (Cone.exe, the default since Decision 50) -> builds\curren
 rem   "vlc" builds (vlc.exe, started by hand with the vlc profile) -> builds\current
 title Test VLC Redesign
 
-set "REPO=Pyr0zen/vlc-redesign-juxtopposed"
+set "REPO=StickyGonzales/vlc-redesign-juxtopposed"
 set "BRANCH=redesign"
 rem the builds folder of this PC: set BUILDS in test-latest.local.cmd next to this script
 rem (gitignored, never committed); default: a folder in the user profile
@@ -92,6 +92,15 @@ exit /b 0
 rem finds the downloaded player: sets VLCDIR, EXE and CURRENT (the fixed folder for that exe)
 :find
 set "VLCDIR="
+rem public builds since the beta branding: the zip's top folder is Cone-<version>[-suffix]
+for /d %%D in ("%DEST%\vlc-redesign-win64-public\Cone-*") do (
+    if exist "%%D\Cone.exe" (
+        set "VLCDIR=%%D"
+        set "EXE=Cone.exe"
+        set "CURRENT=%BUILDS%\current-public"
+        exit /b 0
+    )
+)
 if exist "%DEST%\vlc-redesign-win64-public\vlc-4.0.0-dev\Cone.exe" (
     set "VLCDIR=%DEST%\vlc-redesign-win64-public\vlc-4.0.0-dev"
     set "EXE=Cone.exe"

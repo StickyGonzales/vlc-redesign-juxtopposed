@@ -29,9 +29,9 @@
         Language='1033'
         Version='$(var.VersionLong)'
         Manufacturer='$(var.Manufacturer)'
-        UpgradeCode='d2e0205b-0d3a-46e2-adf7-0504ff48cf04'>
+        UpgradeCode='$(var.UpgradeCode)'>
         <Package
-            Description='$(var.ShortProductName) - The video swiss knife'
+            Description='$(var.PackageDescription)'
             Manufacturer='$(var.Manufacturer)'
             InstallPrivileges='elevated'
             InstallScope='perMachine'
@@ -45,10 +45,10 @@
 
         <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit."/>
         <Property Id="NSISLOCATION">
-            <RegistrySearch Id="NSISLOCATION" Type="raw" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\VLC media player" Name="UninstallString" />
+            <RegistrySearch Id="NSISLOCATION" Type="raw" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\$(var.ProductName)" Name="UninstallString" />
         </Property>
 
-        <Icon Id="vlc.ico" SourceFile="$(var.VlcInstallPrefix)vlc.ico"/>
+        <Icon Id="vlc.ico" SourceFile="$(var.VlcInstallPrefix)$(var.IconFile)"/>
 
         <!-- The about link that appears in Add & Remove Programs. -->
         <Property Id="ARPURLINFOABOUT" Value="$(var.AboutURL)" />
@@ -63,12 +63,26 @@
         <Property Id="ApplicationFolderName" Value="$(var.Manufacturer)\$(var.AppFolder)" />
         <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
         <Property Id="APPLICATIONFOLDER">
-            <RegistrySearch Id="FindInstallRegDir" Type="raw" Root="HKLM" Win64="$(var.Win64)" Key="Software\VideoLAN\VLC" Name="InstallDir" />
+            <RegistrySearch Id="FindInstallRegDir" Type="raw" Root="HKLM" Win64="$(var.Win64)" Key="$(var.RegKey)" Name="InstallDir" />
         </Property>
+        <?if "$(var.ProgIdPrefix)" != "VLC" ?>
+        <!-- redesign: brand layer (Decision 56): next to an installed VLC (only read, never written)
+             the MSI leaves the file associations out (feature level 0); without VLC they are
+             ticked. Unlike the NSIS installer, the MSI keeps no backup of the previous handler,
+             so uninstalling it would not give an extension back to VLC: next to VLC it never
+             takes one (the NSIS installer offers them unticked instead) -->
+        <Property Id="VLCINSTALLED">
+            <RegistrySearch Id="FindVlcInstallDir" Type="raw" Root="HKLM" Win64="$(var.Win64)" Key="Software\VideoLAN\VLC" Name="InstallDir" />
+            <RegistrySearch Id="FindVlcInstallDir32" Type="raw" Root="HKLM" Win64="no" Key="Software\VideoLAN\VLC" Name="InstallDir" />
+        </Property>
+        <?endif ?>
 
         <WixVariable Id="WixUISupportPerUser" Value="1" />
         <WixVariable Id="WixUILicenseRtf" Value="$(sys.SOURCEFILEDIR)/LICENSE.rtf" />
-        <WixVariable Id="WixUIBannerBmp" Value="$(sys.SOURCEFILEDIR)/bannrbmp.bmp" />
+        <WixVariable Id="WixUIBannerBmp" Value="$(sys.SOURCEFILEDIR)/$(var.BannerBmp)" />
+        <?ifdef DialogBmp ?>
+        <WixVariable Id="WixUIDialogBmp" Value="$(sys.SOURCEFILEDIR)/$(var.DialogBmp)" />
+        <?endif ?>
 
         <Media Id='1' Cabinet='product.cab' EmbedCab='yes' CompressionLevel="high" />
 
@@ -89,13 +103,13 @@
                     <Directory Id='APPLICATIONFOLDER' Name='$(var.AppFolder)' FileSource="$(var.SourceDir)">
 
                         <Component Id="InstallRegDir" Guid="$(var.CompInstallRegDir)" DiskId="1" Win64="$(var.Win64)">
-                            <RegistryKey Id='RegInstallDir' Root='HKLM' Key='Software\VideoLAN\VLC' Action='createAndRemoveOnUninstall' >
+                            <RegistryKey Id='RegInstallDir' Root='HKLM' Key='$(var.RegKey)' Action='createAndRemoveOnUninstall' >
                                 <RegistryValue Name='InstallDir' Type='string' Value='[APPLICATIONFOLDER]' />
                             </RegistryKey>
                         </Component>
 
                         <Component Id='CompVLC' Guid='$(var.CompVLCexe)' Win64="$(var.Win64)">
-                            <File Id='vlc.exe' Name='vlc.exe' KeyPath='yes' Vital='yes' DiskId='1' Source="$(var.VlcInstallPrefix)vlc.exe"/>
+                            <File Id='vlc.exe' Name='$(var.ExeName)' KeyPath='yes' Vital='yes' DiskId='1' Source="$(var.VlcInstallPrefix)$(var.ExeName)"/>
 
                             <Shortcut Id="DesktopShortcut"
                                 Directory="DesktopFolder"
@@ -106,22 +120,22 @@
                                 Advertise='yes' />
 
                             <!-- Capabilities keys for Vista/7 "Set Program Access and Defaults" -->
-                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\VLC\Capabilities" Name="ApplicationDescription" Value="$(var.ProductName)" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\VLC\Capabilities" Name="ApplicationIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\VLC\Capabilities" Name="ApplicationName" Value="$(var.ProductName)" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\VLC\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\VLC\shell\Open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file &quot;%1&quot;" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="$(var.ShortProductName)" Value="Software\Clients\Media\VLC\Capabilities" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\$(var.ProgIdPrefix)\Capabilities" Name="ApplicationDescription" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\$(var.ProgIdPrefix)\Capabilities" Name="ApplicationIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\$(var.ProgIdPrefix)\Capabilities" Name="ApplicationName" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\$(var.ProgIdPrefix)\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Clients\Media\$(var.ProgIdPrefix)\shell\Open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file &quot;%1&quot;" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="$(var.ShortProductName)" Value="Software\Clients\Media\$(var.ProgIdPrefix)\Capabilities" Type="string" />
 
                             <!-- Open With... contextual menu -->
-                            <RegistryValue Root="HKCR" Key="Applications\vlc.exe\shell\open" Name="$(var.ShortProductName)" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKCR" Key="Applications\$(var.ExeName)\shell\open" Name="$(var.ShortProductName)" Value="$(var.ProductName)" Type="string" />
 
                             <!-- App Paths to support Start, Run -->
-                            <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\vlc.exe" Value="[#vlc.exe]" Type="string" />
-                            <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\vlc.exe" Name="Path" Value="[APPLICATIONFOLDER]" Type="string" />
+                            <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$(var.ExeName)" Value="[#vlc.exe]" Type="string" />
+                            <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$(var.ExeName)" Name="Path" Value="[APPLICATIONFOLDER]" Type="string" />
                         </Component>
 
-                        <Component Id='CompTXT' Guid='7fbd228c-87d8-4e91-85b3-aa65e03c9f1e' Win64="$(var.Win64)">
+                        <Component Id='CompTXT' Guid='$(var.GuidCompTXT)' Win64="$(var.Win64)">
                             <File Id='AUTHORS.txt' Name='AUTHORS.txt'  DiskId='1'  Source="$(var.VlcInstallPrefix)AUTHORS.txt"/>
                             <File Id='COPYING.txt' Name='COPYING.txt' DiskId='1'  Source="$(var.VlcInstallPrefix)COPYING.txt"/>
                             <File Id='NEWS.txt' Name='NEWS.txt' DiskId='1'  Source="$(var.VlcInstallPrefix)NEWS.txt"/>
@@ -129,121 +143,121 @@
                             <File Id='THANKS.txt' Name='THANKS.txt' DiskId='1'  Source="$(var.VlcInstallPrefix)THANKS.txt"/>
                         </Component>
 
-                        <Component Id='CompLibvlccore' Guid='efa826fd-0037-4ccd-9573-604fde3b9efa' Win64="$(var.Win64)">
+                        <Component Id='CompLibvlccore' Guid='$(var.GuidCompLibvlccore)' Win64="$(var.Win64)">
                             <File Id='libvlccore.dll' Name='libvlccore.dll' KeyPath='yes' Vital='yes' DiskId='1' Source="$(var.VlcInstallPrefix)libvlccore.dll"/>
                         </Component>
 
-                        <Component Id='CompLibvlc' Guid='50d7e1e1-4512-4020-9f7b-5dc8484574f3' Win64="$(var.Win64)">
+                        <Component Id='CompLibvlc' Guid='$(var.GuidCompLibvlc)' Win64="$(var.Win64)">
                             <File Id='libvlc.dll' Name='libvlc.dll' KeyPath='yes' Vital='yes' DiskId='1' Source="$(var.VlcInstallPrefix)libvlc.dll"/>
                         </Component>
 
-                        <Component Id='CompCacheGen' Guid='e1b4a499-e223-4c18-9de0-258f12b8dcfa' Win64="$(var.Win64)">
+                        <Component Id='CompCacheGen' Guid='$(var.GuidCompCacheGen)' Win64="$(var.Win64)">
                             <File Id='vlc_cache_gen.exe' Name='vlc-cache-gen.exe' KeyPath='yes' DiskId='1' Source="$(var.VlcInstallPrefix)vlc-cache-gen.exe"/>
                         </Component>
 
-                        <Component Id='CompPreparserExe' Guid='83ff6660-bf97-4c6e-a6eb-123df8ec9cb1' Win64="$(var.Win64)">
+                        <Component Id='CompPreparserExe' Guid='$(var.GuidCompPreparserExe)' Win64="$(var.Win64)">
                             <File Id='vlc_preparser.exe' Name='vlc-preparser.exe' KeyPath='yes' DiskId='1' Source="$(var.VlcInstallPrefix)vlc-preparser.exe"/>
                         </Component>
 
-                        <Component Id='CompIcon' Guid='8707410c-55fe-4c38-924e-438762b8b82e' Win64="$(var.Win64)">
-                            <File Id='vlc.ico' Name='vlc.ico' KeyPath='yes' DiskId='1'  Source="$(var.VlcInstallPrefix)vlc.ico"/>
+                        <Component Id='CompIcon' Guid='$(var.GuidCompIcon)' Win64="$(var.Win64)">
+                            <File Id='vlc.ico' Name='$(var.IconFile)' KeyPath='yes' DiskId='1'  Source="$(var.VlcInstallPrefix)$(var.IconFile)"/>
                         </Component>
 
                         <Directory Id='PLUGINSDIR' Name='plugins'>
-                            <Component Id='CompPluginsCache' Guid='0b72e987-8e3c-4201-aa3e-5b57ca9c040e' Win64="$(var.Win64)">
+                            <Component Id='CompPluginsCache' Guid='$(var.GuidCompPluginsCache)' Win64="$(var.Win64)">
                                 <RemoveFile Id="RemovePluginsCache" Name="plugins.dat" On="uninstall" />
                             </Component>
                         </Directory>
 
-                        <Component Id='CompPlayDiscs' Guid='b0d90296-b20c-4c74-a3b3-a7694e011f25' Win64="$(var.Win64)">
+                        <Component Id='CompPlayDiscs' Guid='$(var.GuidCompPlayDiscs)' Win64="$(var.Win64)">
                             <!-- Audio CD -->
-                            <RegistryValue Root="HKCR" Key="AudioCD\shell\PlayWithVLC" Value="Play with VLC media player" Type="string" />
-                            <RegistryValue Root="HKCR" Key="AudioCD\shell\PlayWithVLC\command" Value="&quot;[#vlc.exe]&quot; --started-from-file cdda:///%1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="AudioCD\shell\PlayWith$(var.ProgIdPrefix)" Value="Play with $(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKCR" Key="AudioCD\shell\PlayWith$(var.ProgIdPrefix)\command" Value="&quot;[#vlc.exe]&quot; --started-from-file cdda:///%1" Type="string" />
                             <!-- DVD -->
-                            <RegistryValue Root="HKCR" Key="DVD\shell\PlayWithVLC" Value="Play with VLC media player" Type="string" />
-                            <RegistryValue Root="HKCR" Key="DVD\shell\PlayWithVLC\command" Value="&quot;[#vlc.exe]&quot; --started-from-file dvd:///%1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="DVD\shell\PlayWith$(var.ProgIdPrefix)" Value="Play with $(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKCR" Key="DVD\shell\PlayWith$(var.ProgIdPrefix)\command" Value="&quot;[#vlc.exe]&quot; --started-from-file dvd:///%1" Type="string" />
 
                             <!-- DVD video Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayDVDMovieOnArrival" Name="VLCPlayDVDMovieOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDMovieOnArrival" Name="Action" Value="Play DVD movie" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDMovieOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDMovieOnArrival" Name="InvokeProgID" Value="VLC.DVDMovie" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDMovieOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDMovieOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayDVDMovieOnArrival" Name="$(var.ProgIdPrefix)PlayDVDMovieOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDMovieOnArrival" Name="Action" Value="Play DVD movie" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDMovieOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDMovieOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).DVDMovie" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDMovieOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDMovieOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
                             <!-- Audio CD Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayCDAudioOnArrival" Name="VLCPlayCDAudioOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayCDAudioOnArrival" Name="Action" Value="Play audio CD" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayCDAudioOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayCDAudioOnArrival" Name="InvokeProgID" Value="VLC.CDAudio" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayCDAudioOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayCDAudioOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayCDAudioOnArrival" Name="$(var.ProgIdPrefix)PlayCDAudioOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayCDAudioOnArrival" Name="Action" Value="Play audio CD" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayCDAudioOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayCDAudioOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).CDAudio" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayCDAudioOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayCDAudioOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
                             <!-- VCD Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayVideoCDMovieOnArrival" Name="VLCPlayVCDMovieOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVCDMovieOnArrival" Name="Action" Value="Play VCD movie" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVCDMovieOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVCDMovieOnArrival" Name="InvokeProgID" Value="VLC.VCDMovie" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVCDMovieOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVCDMovieOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayVideoCDMovieOnArrival" Name="$(var.ProgIdPrefix)PlayVCDMovieOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVCDMovieOnArrival" Name="Action" Value="Play VCD movie" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVCDMovieOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVCDMovieOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).VCDMovie" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVCDMovieOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVCDMovieOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
                             <!-- SVCD Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlaySuperVideoCDMovieOnArrival" Name="VLCPlaySVCDMovieOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlaySVCDMovieOnArrival" Name="Action" Value="Play SVCD movie" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlaySVCDMovieOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlaySVCDMovieOnArrival" Name="InvokeProgID" Value="VLC.SVCDMovie" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlaySVCDMovieOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlaySVCDMovieOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlaySuperVideoCDMovieOnArrival" Name="$(var.ProgIdPrefix)PlaySVCDMovieOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlaySVCDMovieOnArrival" Name="Action" Value="Play SVCD movie" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlaySVCDMovieOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlaySVCDMovieOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).SVCDMovie" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlaySVCDMovieOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlaySVCDMovieOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
                             <!-- DVD Audio Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayDVDAudioOnArrival" Name="VLCPlayDVDAudioOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDAudioOnArrival" Name="Action" Value="Play audio DVD" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDAudioOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDAudioOnArrival" Name="InvokeProgID" Value="VLC.OPENFolder" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDAudioOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayDVDAudioOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayDVDAudioOnArrival" Name="$(var.ProgIdPrefix)PlayDVDAudioOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDAudioOnArrival" Name="Action" Value="Play audio DVD" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDAudioOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDAudioOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).OPENFolder" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDAudioOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayDVDAudioOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
                             <!-- Generic video files Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayVideoFilesOnArrival" Name="VLCPlayVideoFilesOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVideoFilesOnArrival" Name="Action" Value="Play video files" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVideoFilesOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVideoFilesOnArrival" Name="InvokeProgID" Value="VLC.OPENFolder" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVideoFilesOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayVideoFilesOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayVideoFilesOnArrival" Name="$(var.ProgIdPrefix)PlayVideoFilesOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVideoFilesOnArrival" Name="Action" Value="Play video files" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVideoFilesOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVideoFilesOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).OPENFolder" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVideoFilesOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayVideoFilesOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
                             <!-- Generic audio files Handler -->
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayMusicFilesOnArrival" Name="VLCPlayMusicFilesOnArrival" Value="" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayMusicFilesOnArrival" Name="Action" Value="Play audio files" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayMusicFilesOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayMusicFilesOnArrival" Name="InvokeProgID" Value="VLC.OPENFolder" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayMusicFilesOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
-                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\VLCPlayMusicFilesOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayMusicFilesOnArrival" Name="$(var.ProgIdPrefix)PlayMusicFilesOnArrival" Value="" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayMusicFilesOnArrival" Name="Action" Value="Play audio files" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayMusicFilesOnArrival" Name="DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayMusicFilesOnArrival" Name="InvokeProgID" Value="$(var.ProgIdPrefix).OPENFolder" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayMusicFilesOnArrival" Name="InvokeVerb" Value="Open" Type="string" />
+                            <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\$(var.ProgIdPrefix)PlayMusicFilesOnArrival" Name="Provider" Value="$(var.ProductName)" Type="string" />
 
 
-                            <RegistryValue Root="HKCR" Key="VLC.DVDMovie" Value="VLC DVD Movie" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.DVDMovie\shell" Value="Open" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.DVDMovie\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file dvd:///%1" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.DVDMovie\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).DVDMovie" Value="$(var.ProgIdPrefix) DVD Movie" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).DVDMovie\shell" Value="Open" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).DVDMovie\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file dvd:///%1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).DVDMovie\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
 
-                            <RegistryValue Root="HKCR" Key="VLC.CDAudio" Value="VLC CD Audio" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.CDAudio\shell" Value="Open" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.CDAudio\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file cdda:///%1" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.CDAudio\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).CDAudio" Value="$(var.ProgIdPrefix) CD Audio" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).CDAudio\shell" Value="Open" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).CDAudio\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file cdda:///%1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).CDAudio\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
 
-                            <RegistryValue Root="HKCR" Key="VLC.VCDMovie" Value="VLC VCD Movie" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.VCDMovie\shell" Value="Open" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.VCDMovie\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file vcd:///%1" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.VCDMovie\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).VCDMovie" Value="$(var.ProgIdPrefix) VCD Movie" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).VCDMovie\shell" Value="Open" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).VCDMovie\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file vcd:///%1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).VCDMovie\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
 
-                            <RegistryValue Root="HKCR" Key="VLC.SVCDMovie" Value="VLC SVCD Movie" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.SVCDMovie\shell" Value="Open" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.SVCDMovie\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file vcd:///%1" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.SVCDMovie\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).SVCDMovie" Value="$(var.ProgIdPrefix) SVCD Movie" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).SVCDMovie\shell" Value="Open" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).SVCDMovie\shell\open\command" Value="&quot;[#vlc.exe]&quot; --started-from-file vcd:///%1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).SVCDMovie\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
 
-                            <RegistryValue Root="HKCR" Key="VLC.OPENFolder" Value="VLC Play Content" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.OPENFolder\shell" Value="Open" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.OPENFolder\shell\open\command" Value="&quot;[#vlc.exe]&quot; %1" Type="string" />
-                            <RegistryValue Root="HKCR" Key="VLC.OPENFolder\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).OPENFolder" Value="$(var.ProgIdPrefix) Play Content" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).OPENFolder\shell" Value="Open" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).OPENFolder\shell\open\command" Value="&quot;[#vlc.exe]&quot; %1" Type="string" />
+                            <RegistryValue Root="HKCR" Key="$(var.ProgIdPrefix).OPENFolder\DefaultIcon" Value="[#vlc.exe],0" Type="string" />
                         </Component>
                     </Directory>
                 </Directory>
@@ -271,15 +285,15 @@
                               Directory="ProgramMenuProductFolder"
                               On="uninstall" />
                 <!-- Application shortcuts -->
-                <Shortcut Id="VLCShortcut" Name="$(var.ProductName)" Target="[APPLICATIONFOLDER]vlc.exe" />
-                <!--<Shortcut Id="SkinShortcut" Name="$(var.ProductName) skinned" Target="[APPLICATIONFOLDER]vlc.exe" Arguments="-Iskins" />-->
-                <Shortcut Id="VLCCleanShortcut" Name="Reset $(var.ProductName) preferences and cache files" Target="[APPLICATIONFOLDER]vlc.exe" Arguments="--reset-config --reset-plugins-cache vlc://quit" />
+                <Shortcut Id="VLCShortcut" Name="$(var.ProductName)" Target="[APPLICATIONFOLDER]$(var.ExeName)" />
+                <!--<Shortcut Id="SkinShortcut" Name="$(var.ProductName) skinned" Target="[APPLICATIONFOLDER]$(var.ExeName)" Arguments="-Iskins" />-->
+                <Shortcut Id="VLCCleanShortcut" Name="Reset $(var.ProductName) preferences and cache files" Target="[APPLICATIONFOLDER]$(var.ExeName)" Arguments="--reset-config --reset-plugins-cache vlc://quit" />
                 <Shortcut Id="NEWSShortcut" Name="Release Notes" Target="[APPLICATIONFOLDER]NEWS.txt" />
-                <util:InternetShortcut Id="WebsiteShortcut" Name="VideoLAN website" Target="https://www.videolan.org/"/>
-                <util:InternetShortcut Id="DocumentationShortcut" Name="Documentation" Target="https://www.videolan.org/doc/"/>
+                <util:InternetShortcut Id="WebsiteShortcut" Name="$(var.WebsiteName)" Target="$(var.WebsiteURL)"/>
+                <util:InternetShortcut Id="DocumentationShortcut" Name="Documentation" Target="$(var.DocumentationURL)"/>
                 <!-- RegistryValue which serves as KeyPath -->
                 <RegistryValue Root="HKCU"
-                               Key="Software\VideoLAN\VLC"
+                               Key="$(var.RegKey)"
                                Name="StartMenuShortcuts"
                                Type="integer"
                                Value="1"
@@ -309,13 +323,25 @@
             <?endif ?>
 
             <Feature Id='FILEASSOCIATION' Title='File associations' Level='1' AllowAdvertise="no">
+                <?if "$(var.ProgIdPrefix)" != "VLC" ?>
+                <Condition Level="0"><![CDATA[VLCINSTALLED AND NOT Installed]]></Condition>
+                <?endif ?>
                 <Feature Id='VIDEOFILEASSOCIATION' Title='Video' Level='1' AllowAdvertise="no">
+                    <?if "$(var.ProgIdPrefix)" != "VLC" ?>
+                    <Condition Level="0"><![CDATA[VLCINSTALLED AND NOT Installed]]></Condition>
+                    <?endif ?>
                     <ComponentRef Id='CompVideoFileAssociation' />
                 </Feature>
                 <Feature Id='AUDIOFILEASSOCIATION' Title='Audio' Level='1' AllowAdvertise="no">
+                    <?if "$(var.ProgIdPrefix)" != "VLC" ?>
+                    <Condition Level="0"><![CDATA[VLCINSTALLED AND NOT Installed]]></Condition>
+                    <?endif ?>
                     <ComponentRef Id='CompAudioFileAssociation' />
                 </Feature>
                 <Feature Id='OTHERFILEASSOCIATION' Title='Others' Level='1' AllowAdvertise="no">
+                    <?if "$(var.ProgIdPrefix)" != "VLC" ?>
+                    <Condition Level="0"><![CDATA[VLCINSTALLED AND NOT Installed]]></Condition>
+                    <?endif ?>
                     <ComponentRef Id='CompOtherFileAssociation' />
                 </Feature>
             </Feature>

@@ -60,25 +60,48 @@ brand_profiles = {
         'install_dir': 'VideoLAN\\VLC',
         'product_id': '{ea92ef52-afe4-4212-bacb-dfe9fca94cd6}',
         'nsis_bitmap_true': '',
+        'progid': 'VLC',
     },
     'public': {
         'product_name': 'Cone',
-        'company': 'Sticky',
+        'company': 'StickyGonzales',
         'internal_name': 'cone',
         'exe_name': 'Cone',
         'icon_src': 'extras/package/win32/brand/public/cone.ico',
         'icon_rc': 'brand/public/cone.ico',
         'icon_file': 'cone.ico',
-        'website': 'https://github.com/Pyr0zen/vlc-redesign-juxtopposed',
-        'finish_link': 'https://github.com/Pyr0zen/vlc-redesign-juxtopposed',
+        'website': 'https://github.com/StickyGonzales/vlc-redesign-juxtopposed',
+        'finish_link': 'https://github.com/StickyGonzales/vlc-redesign-juxtopposed',
         'regkey': 'Software\\Cone',
         'install_dir': 'Cone',
         'product_id': '{f00e45bf-087b-49ef-90e7-4cd5e2e4bd72}',
         # the installer's welcome / finish bitmap shows VLC's cone: NSIS's default one instead
         'nsis_bitmap_true': ';',
+        # prefix of the installer's ProgIDs, verbs, autoplay handlers and default programs entry
+        'progid': 'Cone',
     },
 }
 brand = brand_profiles[get_option('brand')]
+# the public profile's own version (Decision 58): About, installer and the Windows Apps list show
+# it, the release workflow's version tag sets it; the vlc profile keeps VLC's version
+if get_option('brand') == 'public'
+    brand_version = get_option('brand-version')
+    brand_version_parts = brand_version.split('.')
+    if brand_version_parts.length() != 3
+        error('-Dbrand-version must be X.Y.Z (got ' + brand_version + ')')
+    endif
+    brand_version_major = brand_version_parts[0].to_int()
+    brand_version_minor = brand_version_parts[1].to_int()
+    brand_version_revision = brand_version_parts[2].to_int()
+    brand_version_extra = 0
+    cdata.set_quoted('BRAND_VERSION', brand_version)
+else
+    brand_version = vlc_version
+    brand_version_major = vlc_version_major
+    brand_version_minor = vlc_version_minor
+    brand_version_revision = vlc_version_revision
+    brand_version_extra = vlc_version_extra
+endif
 if get_option('brand') == 'public'
     brand_fs = import('fs')
     # the approved logo files the public profile builds with
@@ -101,6 +124,15 @@ if get_option('brand') == 'public'
                   + ' must fill the logo with #FF8800, the accent slot of the SVG colorizer')
         endif
     endforeach
+    # VLC's update checker downloads VLC releases from videolan.org: never in Cone
+    if get_option('update-check').allowed()
+        error('-Dbrand=public has no update checker: drop -Dupdate-check')
+    endif
+    # Decision 63: Cone has no skins interface, the design is its only one
+    # (modules/gui/skins2/meson.build leaves the module out)
+    if get_option('skins2').enabled()
+        error('-Dbrand=public has no skins interface: drop -Dskins2=enabled')
+    endif
     cdata.set('VLC_BRAND_PUBLIC', 1)
 endif
 
@@ -1257,6 +1289,10 @@ if host_system == 'windows'
     rc_conf.set('BRAND_INTERNAL_NAME', brand['internal_name'])
     rc_conf.set('BRAND_EXE', brand['exe_name'] + '.exe')
     rc_conf.set('BRAND_ICON_RC', brand['icon_rc'])
+    rc_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
+    rc_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
+    rc_conf.set('BRAND_VERSION_REVISION', brand_version_revision)
+    rc_conf.set('BRAND_VERSION_EXTRA', brand_version_extra)
 endif
 
 # libvlccore

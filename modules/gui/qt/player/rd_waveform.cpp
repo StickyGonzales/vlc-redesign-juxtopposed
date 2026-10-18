@@ -181,14 +181,17 @@ RdWaveform::RdWaveform(qt_intf_t* intf, PlayerController* player, QObject* paren
 RdWaveform::~RdWaveform()
 {
     cancelScan();
-    // a cancelled scan stops within one demuxed packet. Should a module ever hold it longer,
-    // quitting does not hang on it: the pool is left to the process's end (its job no longer
-    // reports to this object, and the scan's VLC objects hang from the libvlc instance)
+    // a cancelled scan stops at its next packet or seek; a demuxer call in progress finishes
+    // first (file reads are not interruptible on Windows), which is one pass over the file at
+    // most, as for the player's own input thread that libvlc joins at quit too. The worker is
+    // always joined: one left running would still use VLC's modules and objects while libvlc
+    // is torn down, and the process's end would cut it off in the middle
+    m_pool->clear();
     if (!m_pool->waitForDone(kQuitWaitMs))
     {
-        msg_Warn(m_intf, "waveform: the scan did not stop within %d ms, not waited for",
+        msg_Warn(m_intf, "waveform: the scan did not stop within %d ms, still waiting",
                  kQuitWaitMs);
-        (void)m_pool.release();
+        m_pool->waitForDone();
     }
 }
 

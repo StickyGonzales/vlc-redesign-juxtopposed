@@ -53,6 +53,26 @@
 #include <vlc_player.h>
 #include <vlc_playlist.h>
 
+/* redesign (brand layer, public profile): the last.fm errors name Cone, not VLC; the vlc
+ * profile compiles VLC's texts as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_LASTFM_BADAUTH \
+    _("last.fm username or password is incorrect. " \
+    "Please verify your settings and relaunch Cone.")
+# define BRAND_TEXT_LASTFM_NO_USER \
+    _("Please set a username or disable the " \
+    "audioscrobbler plugin, and restart Cone.\n" \
+    "Visit https://www.last.fm/join/ to get an account.")
+#else
+# define BRAND_TEXT_LASTFM_BADAUTH \
+    _("last.fm username or password is incorrect. " \
+    "Please verify your settings and relaunch VLC.")
+# define BRAND_TEXT_LASTFM_NO_USER \
+    _("Please set a username or disable the " \
+    "audioscrobbler plugin, and restart VLC.\n" \
+    "Visit https://www.last.fm/join/ to get an account.")
+#endif
+
 /*****************************************************************************
  * Local prototypes
  *****************************************************************************/
@@ -564,8 +584,7 @@ static int Handshake(intf_thread_t *p_this)
         /* authentication failed, bad username/password combination */
         vlc_dialog_display_error(p_this,
             _("last.fm: Authentication failed"),
-            "%s", _("last.fm username or password is incorrect. "
-              "Please verify your settings and relaunch VLC."));
+            "%s", BRAND_TEXT_LASTFM_BADAUTH);
         return VLC_AUDIOSCROBBLER_EFATAL;
     }
 
@@ -724,9 +743,7 @@ static void *Run(void *data)
                     /* username not set */
                     vlc_dialog_display_error(p_intf,
                         _("Last.fm username not set"),
-                        "%s", _("Please set a username or disable the "
-                        "audioscrobbler plugin, and restart VLC.\n"
-                        "Visit https://www.last.fm/join/ to get an account."));
+                        "%s", BRAND_TEXT_LASTFM_NO_USER);
                     goto out;
 
                 case VLC_SUCCESS:

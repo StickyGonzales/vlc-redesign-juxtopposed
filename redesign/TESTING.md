@@ -14,7 +14,7 @@ If something is wrong it says so and waits for a key: "gh" not installed, not lo
 Windows may show a **Windows Security Alert** (firewall) for this vlc.exe the first time: VLC opens network features at startup. **Cancel** is fine for testing.
 
 ## Manual fallback
-1. Go to https://github.com/Pyr0zen/vlc-redesign-juxtopposed/actions, open the newest green "build-windows" run of the `redesign` branch.
+1. Go to https://github.com/StickyGonzales/vlc-redesign-juxtopposed/actions, open the newest green "build-windows" run of the `redesign` branch.
 2. Under **Artifacts**, download `vlc-redesign-win64` (a zip).
 3. Unzip it into its own folder, e.g. `<TEST_MEDIA_DIR>\builds\<run number>`.
 4. Inside `vlc-4.0.0-dev`, create an empty folder named `portable` (keeps the test settings inside that folder).
@@ -40,4 +40,4 @@ Windows may show a **Windows Security Alert** (firewall) for this vlc.exe the fi
 - Customize Player still opens VLC's existing toolbar editor (its redesign is W8.1).
 
 ## Reporting a bug
-Open https://github.com/Pyr0zen/vlc-redesign-juxtopposed/issues/new/choose, pick **Bug report**, and fill in what you did, what happened, what you expected, a screenshot, windowed or fullscreen, and which file you played. The run number of the build is the folder name under `<TEST_MEDIA_DIR>\builds`.
+Open https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues/new/choose, pick **Bug report**, and fill in what you did, what happened, what you expected, a screenshot, windowed or fullscreen, and which file you played. The run number of the build is the folder name under `<TEST_MEDIA_DIR>\builds`.

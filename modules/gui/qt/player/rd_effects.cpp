@@ -39,6 +39,7 @@
 #include <vlc_vout.h>
 
 #include "player/player_controller.hpp"
+#include "util/brand.hpp"
 #include "../../../audio_filter/equalizer_presets.h"
 
 namespace {
@@ -655,7 +656,7 @@ QVariantList RdEffects::optionChoices(const QString& name) const
         for (ssize_t i = 0; i < count; ++i)
         {
             choices << QVariantMap{ { QStringLiteral("value"), qfu(values[i]) },
-                                    { QStringLiteral("text"), qfu(texts[i]) } };
+                                    { QStringLiteral("text"), brand::engineText(qfu(texts[i])) } };
             free(values[i]);
             free(texts[i]);
         }
@@ -670,7 +671,7 @@ QVariantList RdEffects::optionChoices(const QString& name) const
         for (ssize_t i = 0; i < count; ++i)
         {
             choices << QVariantMap{ { QStringLiteral("value"), static_cast<qlonglong>(values[i]) },
-                                    { QStringLiteral("text"), qfu(texts[i]) } };
+                                    { QStringLiteral("text"), brand::engineText(qfu(texts[i])) } };
             free(texts[i]);
         }
         free(values);
@@ -711,9 +712,9 @@ QString RdEffects::optionDescription(const QString& name) const
     if (!config)
         return {};
     if (config->psz_longtext && *config->psz_longtext)
-        return qfut(config->psz_longtext);
+        return brand::engineText(qfut(config->psz_longtext));
     if (config->psz_text && *config->psz_text)
-        return qfut(config->psz_text);
+        return brand::engineText(qfut(config->psz_text));
     return {};
 }
 

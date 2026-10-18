@@ -99,7 +99,7 @@ Facts checked on 2026-10-12:
 - Image `registry.videolan.org/vlc-debian-win64-posix:20260611225331` (mingw-w64 gcc posix toolchain, Qt build tools, wine, meson, nasm, zip, 7z) is public. The registry and the manifest answer HTTP 200 without login.
 - Prebuilt contribs (Qt included) for the current contrib SHA exist: `https://artifacts.videolan.org/vlc/win64/vlc-contrib-x86_64-w64-mingw32-a5538c557d276378d5ba0f8f8010a8b87eaa6f78.tar.zst` -> HTTP 200. They match only this gcc image, not the llvm images. The `win64-llvm` path and the `make prebuilt` default "latest" URL return 404.
 - The contrib SHA comes from `extras/ci/get-contrib-sha.sh win64` = last commit touching `extras/tools contrib extras/ci extras/package/win32`, so the checkout needs full history (`fetch-depth: 0`). Our redesign commits don't touch those paths, so the SHA (and the prebuilt) stay valid until we sync with upstream.
-- Repo `Pyr0zen/vlc-redesign-juxtopposed` is public, Actions enabled (`allowed_actions: all`). Public repo = free minutes; a job may run up to 6 hours.
+- Repo `StickyGonzales/vlc-redesign-juxtopposed` is public, Actions enabled (`allowed_actions: all`). Public repo = free minutes; a job may run up to 6 hours.
 
 File: `.github/workflows/build-windows.yml`
 ```yaml
@@ -172,7 +172,7 @@ Notes and fallbacks (log every problem and fix in `redesign/BUILD_NOTES.md`):
 - If the prebuilt URL ever 404s (after an upstream sync), `build.sh -p` falls back to building contribs from source (1-2 h per `doc/BUILD-win32.md`); the source-contrib cache then saves that time on later runs. If even that exceeds the 6 h limit, split contribs into a separate job that uploads `make package` output (`build.sh -c`) as a cache.
 - If disk still runs out: also remove `/usr/local/share/boost` and `/usr/local/.ghcup`, and delete `contrib/tarballs` after unpacking.
 - Done when: the run is green, the artifact `vlc-redesign-win64` contains `vlc-<version>/vlc.exe`, `libvlc.dll`, `libvlccore.dll`, `plugins/`, and Sticky (or the test loop on this PC) can unzip it, start `vlc.exe` and play a local video.
-- Download from this PC: `gh run download <run-id> -R Pyr0zen/vlc-redesign-juxtopposed -n vlc-redesign-win64 -D "$env:USERPROFILE\Desktop\vlc-redesign\builds\<run-id>"`.
+- Download from this PC: `gh run download <run-id> -R StickyGonzales/vlc-redesign-juxtopposed -n vlc-redesign-win64 -D "$env:USERPROFILE\Desktop\vlc-redesign\builds\<run-id>"`.
 
 ## 4. Build order (phases; superseded in order by section 0, lanes still apply)
 

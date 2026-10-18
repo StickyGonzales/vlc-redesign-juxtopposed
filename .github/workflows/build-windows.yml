@@ -24,6 +24,12 @@ on:
         type: choice
         options: [vlc, public]
         default: public
+      package-suffix:
+        # brand layer: appended to the public profile's package names only (e.g. "-beta":
+        # Cone-0.1.0-beta-win64.zip), never to the app's version
+        description: 'Package name suffix (public profile, e.g. -beta)'
+        type: string
+        default: ''
   workflow_call:
     inputs:
       brand:
@@ -168,12 +174,35 @@ jobs:
         run: docker pull "$VLC_IMAGE"
 
       - name: Build in VideoLAN's image
+        env:
+          PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
         run: |
           # run as the runner's user so the checkout, caches and build output have one owner
           mkdir -p .ccache
+          # the public profile's own version (Decision 58): a vX.Y.Z tag sets it, otherwise 0.1.0;
+          # a vX.Y.Z-<label> tag (v0.1.0-beta) sets X.Y.Z and puts "-<label>" into the package
+          # names only (BRAND_PACKAGE_SUFFIX, extras/package/win32/package.mak), like the
+          # workflow_dispatch input package-suffix
+          BRAND_VERSION=""
+          BRAND_PACKAGE_SUFFIX="$PACKAGE_SUFFIX_INPUT"
+          case "$GITHUB_REF" in refs/tags/v*) BRAND_VERSION="${GITHUB_REF_NAME#v}" ;; esac
+          if echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-[A-Za-z0-9.]+$'; then
+            BRAND_PACKAGE_SUFFIX="-${BRAND_VERSION#*-}"
+            BRAND_VERSION="${BRAND_VERSION%%-*}"
+          fi
+          if [ -n "$BRAND_VERSION" ] && ! echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::warning::tag $GITHUB_REF_NAME is not vX.Y.Z: the build uses the default version"
+            BRAND_VERSION=""
+          fi
+          if [ -n "$BRAND_PACKAGE_SUFFIX" ] && ! echo "$BRAND_PACKAGE_SUFFIX" | grep -Eq '^-[A-Za-z0-9.]+$'; then
+            echo "::warning::the package suffix is not -<letters, digits, dots>: not used"
+            BRAND_PACKAGE_SUFFIX=""
+          fi
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             -e VLC_PREBUILT_CONTRIBS_URL="${{ steps.sha.outputs.url }}" \
             -e VLC_BRAND="$VLC_BRAND" \
+            -e BRAND_VERSION="$BRAND_VERSION" \
+            -e BRAND_PACKAGE_SUFFIX="$BRAND_PACKAGE_SUFFIX" \
             "$VLC_IMAGE" .github/scripts/win64-build.sh build
           df -h /
 
@@ -197,11 +226,30 @@ jobs:
         run: |
           ls -la win64/*.zip
           mkdir dist
-          unzip -q win64/vlc-*-win64.zip -d dist
+          # vlc-<version>-win64.zip, or Cone-<version><suffix>-win64.zip in the public profile
+          unzip -q "$(ls win64/*-win64.zip | head -n 1)" -d dist
           ls dist dist/*
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.VLC_BRAND == 'public' && 'vlc-redesign-win64-public' || 'vlc-redesign-win64' }}
           path: dist/
+          retention-days: 14
+
+      # brand layer: Cone's NSIS installer, built so its screens and texts can be checked
+      # (redesign/CONE_RELEASE_NOTES.md); not published with the beta (Decision 61: portable zip
+      # first); a failure here keeps the build green
+      - name: Cone installer
+        if: env.VLC_BRAND == 'public'
+        continue-on-error: true
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
+            "$VLC_IMAGE" .github/scripts/win64-build.sh installer
+          ls -la win64/*.exe
+
+      - uses: actions/upload-artifact@v4
+        if: env.VLC_BRAND == 'public' && hashFiles('win64/cone-*-win64.exe') != ''
+        with:
+          name: cone-installer-win64
+          path: win64/cone-*-win64.exe
           retention-days: 14

@@ -48,6 +48,14 @@
 #include "avcodec.h"
 #include "avcommon.h"
 
+/* redesign (brand layer, public profile): the encoder error names Cone, not VLC; the vlc
+ * profile compiles VLC's text as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_ENCODER_FAILED _("Cone could not open the %4.4s %s encoder.")
+#else
+# define BRAND_TEXT_ENCODER_FAILED _("VLC could not open the %4.4s %s encoder.")
+#endif
+
 #define API_CHANNEL_LAYOUT_STRUCT (LIBAVCODEC_VERSION_CHECK(59, 24, 100)) // AVCodecContext.ch_layout
 
 #define HURRY_UP_GUARD1 VLC_TICK_FROM_MS(450)
@@ -953,7 +961,7 @@ errmsg:
                 type = types[p_enc->fmt_in.i_cat];
             msg_Err( p_enc, "cannot open %4.4s %s encoder", fcc.txt, type );
             vlc_dialog_display_error( p_enc, _("Streaming / Transcoding failed"),
-                _("VLC could not open the %4.4s %s encoder."),
+                BRAND_TEXT_ENCODER_FAILED,
                 fcc.txt, vlc_gettext(type) );
             av_dict_free(&options);
             goto error;

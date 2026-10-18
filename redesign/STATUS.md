@@ -1,13 +1,65 @@
 # STATUS
 
-- Updated: 2026-10-16 afternoon (session at 94 %: start nothing new until the reset)
+- Updated: 2026-10-19. Cone 0.1.0 beta PUBLISHED: https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.1.0-beta (pre-release, tag v0.1.0-beta on redesign d5a6d505f1d; asset Cone-0.1.0-beta-win64.zip = build 39125167074 + an empty portable folder, sha256 6169e5328b565b40cc978fde220308371c574dc3f78faf7ff77656fd0dc13f4b). Downloaded back: checksum matches, starts, settings stay in portable. wip/beta merged into redesign (Decision 55). Next: the clean-up list for Sticky, then Phase 2 (testing all the untested code; the web session fixes the bugs listed below).
 
-## Now (in flight when the session limit hits)
-- Verification spec (web session, PR #9): reviewed (privacy 0, generator deterministic, bounds equal figma_file.json on 249 spot-checked elements), re-authored to the project identity and merged into wip/next-batch (f667e0dddd6); PR #9 closed.
-- Verification harness (redesign/tools/verify, wip/verify-harness, not merged yet): first run on 38829058873: 116 rows: 27 auto-passed, 34 near-match, 53 differ, 2 inconclusive; 31/31 behaviour checks pass. Now being wired to the spec (element bounds vs UI Automation rects, token colours, masks, brand masked on Cone, design demo state such as delay -4.000 s and speed 1x set in a run-specific profile) and run on the next-batch build 38890442361 (from builds\38890442361: builds\current-public is locked by the stuck processes until a reboot). Auto-passed rows are confirmed by hand against Figma + video before any row is marked verified; row suggestions in the spec are hints only.
-- HIGH stuck exit: cause found (toolchain runtime: on the Qt thread's exit, libgcc emutls frees thread_local storage before libstdc++ runs the thread_local destructors; the fault leaves the winpthreads key lock read-locked and ExitProcess waits on it forever). Reproduced by the harness tracks session 2 of 4 runs (several audio tracks + --sub-file). Fix on wip/sweep-fix-exit (rd_thread_exit_win32.cpp registers libstdc++'s key first; ~RdWaveform no longer abandons its worker): review in progress, then a manual build and the PC retest (6 runs per session, 0 stuck processes).
-- Next after those: review + merge wip/verify-harness into wip/next-batch, confirm the auto-passed rows, build next-batch with the exit fix, then the waiting retests (wheel window, waveform times, Customize footer and seek row, resume toast) and the Cone portable test (38890154778).
+## Beta v0.1.0-beta: where it stands
+- wip/beta = 6f8db273af6: next-batch + cone-release + branding + bar wake fix + mini player fix + skins removal (Decision 63, wip/beta-brand, review in redesign/BETA_BRAND_REVIEW.md) + subtitles above the bar and External Tracks (wip/beta-subs, redesign/BETA_SUBS_NOTES.md; checked against the video: 6:33 subtitle line above the bar, 6:22-6:24 External Tracks list) + window size fix (074a7eb06d5, PC session, Sticky's go). Checkers: qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
+- Builds: core-change builds on their own branches: wip/beta-brand 39119928788 (skins start checks pass, smoke pass), wip/beta-subs 39119930398 (smoke pass, one rare silent crash, see known issues); full beta 39120703950 (smoke pass, Ctrl+P opens Settings); fixed beta 39125167074 running: gate runs on it.
+- Gate (Sticky, shortened): playback matrix, 30 quits, portable footprint, branding in full; main screens dark + one light pass, 20 min playback last, one speed check; plus the bar wake retest, mini player over video, subtitles above the bar windowed and fullscreen, skins checks, window size stable over restarts.
 
+## Beta gate on 39125167074 (#53, wip/beta 6f8db273af6), run verifyruns gate-20261018-142041-b53
+- Smoke: pass (play, pause, seek, volume, every sidebar tab, Ctrl+P Settings + Escape, Ctrl+Q 0.4 s, no crash event).
+- Window size over six restarts: 750x525 every time (fix 074a7eb06d5 works; before: about 17x9 px smaller per restart).
+- Subtitles above the bar (continuous test line): windowed 1600x900 and 1920x1080, bars shown: line above the control bar; bars hidden after 4.5 s: line back down; fullscreen, pointer at the bottom edge: only the control bar, line above it; still: back down. Pass (screenshots gate-*-subs, gate-*-bigwin).
+- Bars wake on a move over the middle of a 1920x1080 window (the old large-window bug): pass.
+- Mini player over a playing video: hover shows the dimmed picture with Close, Open the player, previous, pause, next and the seek handle; away: hidden. Pass (gate-*-mini).
+- Screens dark (purple accent) and light: everything opens, works and closes except Escape on the library sidebar (known issue); contact sheets looked at: About shows Cone 0.1.0, based on VLC 4.0.0-dev, Built by StickyGonzales; no update dialog or banner.
+- Playback matrix: 9 files pass (MP4, MKV with audio / subtitle switching, AVI, AVI without index with the index question, MP3, FLAC, M4A, 4K60, MP4 + external .srt listed under External Tracks); contact sheet looked at.
+- Quit: 30 of 30 clean (15 Ctrl+Q, 15 WM_CLOSE, slowest 0.69 s), 0 players left, 0 crash events.
+- Branding: 3430 on-screen texts and window titles with no "VLC" except the allowed attribution; file-level hits accepted: exe LegalCopyright "VideoLAN and VLC Authors" (GPL notice, required), the CI artifact folder name (not in the release zip), vlc-cache-gen.exe and vlc-preparser.exe (engine helpers, not user-facing). README.txt in the zip is Cone's.
+- Speed: the gate's perf part stopped on a tool bug (fixed in 277560ec9f7, wip/beta-gate) with the PC 31 % busy; per Sticky the last measured round is reused (PERF.md round 3: startup and CPU equal to stock, open file faster).
+- 20 min continuous playback (rerun with the fixed tool): no crash, no freeze, window responding and time moving at every minute check over all seven files; private memory flat at 271-279 MB for 18 minutes over six files, then 401 MB when the 4K60 file started (4K decoder buffers) and 321 MB on the next file, threads +10 with the 4K file: no leak (the tool's growth number is the 4K file arriving at the end). Screenshots at 1 / 6 / 11 / 16 min looked at. Pass.
+- Footprint: Cone's settings stay in portable (no %APPDATA%\Cone); %APPDATA%\vlc and the installed VLC untouched by Cone. Cone writes Qt's QML and graphics pipeline cache to %LOCALAPPDATA%\Cone\cache even in portable mode (as stock VLC does in %LOCALAPPDATA%\vlc\cache): known issue. The gate tool's perf part started stock VLC without a portable folder, which rewrote %APPDATA%\vlc\vlcrc with identical content (same SHA-1 before and after) and refreshed %LOCALAPPDATA%\vlc's pipeline cache: gate tool bug (the stock lane needs its own portable folder), nothing of the owner's changed.
+- GATE PASSED (2026-10-19): publish v0.1.0-beta from 39125167074 (release zip = that build folder + an empty portable folder).
+## Known issues for the beta release notes
+- Rarely, Windows may log a background error after closing Settings; no visible effect (once in three smoke runs: access violation in libqt_plugin.dll +0x6ea1cd about 2 s after Settings closed; not investigated further, Sticky).
+- Escape does not close the library sidebar in the player; use the library button.
+- New Cone texts are English in every language; the app shows version 0.1.0 (-beta only in the file names).
+- The installer is not part of the beta (portable zip only, Decision 61); its screens still need the VM test.
+- Cone keeps Qt's QML and graphics cache in %LOCALAPPDATA%\Cone\cache, also in portable mode (like VLC).
+- The About dialog still has the old light style in dark mode; light theme: a thin grey line at the top of the control bar; an external subtitle file is listed with its full file name.
+
+## Bugs for the web session (found on the PC, 2026-10-19)
+- Light theme: a 2 px darker grey line (#ACACAC on #D5D5D5) at the top edge of the control bar, across the full width including the frame margin (Sticky saw it; measured on 39079182201 light pass bars__open). Not in Figma Player - Light, not in dark. The earlier fix 2593350797 removed the dark line only.
+- External Tracks names (wip/beta-subs): the video (6:22-6:24, row 81) shows "The_Wand_S01E04 [English]" (file name without extension + language in brackets); the branch shows the full file name with extension.
+- About dialog: still VLC's white stock dialog in dark mode (fix list: stock dialog look); text check on the beta build pending ("Built by Sticky" on 39079182201 must read StickyGonzales).
+- Ctrl+P: opens Settings on Windows (all smoke runs, screenshot smoke__settings.png); the Linux issue (core "previous title" binding) does not show here. Fix on wip/web-fixes-1 is the web session's; recheck it on Windows after it lands.
+
+## Verification round on 39079182201 (2026-10-19, screens not touched by skins or subtitles)
+One line per screen: controls used by the gate screens part (open, one action, every close variant) + screenshot next to the Figma frame by eye.
+- Player bars (bars__open): bar and top bar layout match Player.png; bar right side fixed (volume no longer covers the track buttons). Pass (look); rows wait for the full bar retest on the beta build.
+- Settings sidebar Playback / Video / Audio: items, order, icons and styling match Controls.png variants; the 900 px tall window cuts the lower rows (Video: Aspect Ratio, Crop, Render, Filters; Audio: delay slider, Filters) so those are not verified; Audio shows the extra "Track and language apply from the next file" note. Partial.
+- Tracks popup Audio / Video / Subtitles: structure and look match; track names differ ("English - English"). Logged.
+- Queue / Bookmarks / Chapters: structure and look match Controls.png (one queued file, one bookmark added, five chapters). Pass (look).
+- Main menu and Profile submenu: items, order, icons, shortcuts, separators match menu.png and Profiles.png ("About Cone" by design). Verified: P2-21, IA-22, P6-11, F-21.
+- Right-click menu and Playback submenu: matches right-click menu.png ("Quit Cone" by design). Verified: P2-23, IA-23, P2-24.
+- Library sidebar Home / Videos / Music: matches sidebar.png variants (empty test library). Escape does not close it (known issue).
+- Full library with the mini player: layout matches Player-3.png; mini player buttons over a playing video fixed on the beta (2ac34d227cb), retest there.
+- Settings dialog, every page: opens, every page renders, closes with Escape; General compared closely with Settings - global.png: match (values from the test profile). The other pages are not compared closely yet.
+- Keyboard Shortcuts (open, search): matches Keyboard Shortcuts.png (more of VLC's rows than the sample). Verified: P7-12.
+- About: opens; still the stock white dialog (logged).
+- Rows verified this round: 8 (P2-21, IA-22, P6-11, P2-23, IA-23, P2-24, F-21, P7-12) in about 45 minutes of PC time (screens run 6 min + side-by-side review). Last round: 10 rows over four testing windows on 38829058873 (about 1 row per hour). (see round 2 below for the totals)
+- Round 2 on 39120703950 (#51, beta, 2026-10-19, screens part dark + light: 49 of 50 checks pass, only Escape on the library sidebar fails; no update dialog or banner any more):
+  - Tracks popup Subtitles: switching to German works (OSD "Subtitle track: German"), External Tracks header with pencil and +; names read "<title> - <language>" like the video's "Track 1 - English" (4:36; Decision 11: the video's wording), so not a bug. Verified: P3-04, P2-17.
+  - Top bar (every shot, "..." opened the main menu): single row, cone, "...", sidebar icon, folder chip, centred title, window buttons as Player.png. Verified: P2-06, P2-20, IA-21.
+  - Settings > Interface: no Skin section (Decision 63, intended difference from Figma); the rest matches (values from the test profile).
+  - Settings > Subtitles: the build adds an "OpenSubtitles" section (API key, username, password) between Loading Subtitles and Appearance that Figma's page doesn't have. Logged for the web session (move it or record a Decision).
+  - Sidebar Subtitles: structure matches; extra "Applies from the next file" note; lower rows cut by the 900 px window.
+  - Rows verified in round 2: 5, in about 20 minutes of PC time. Totals now: verified 82, coded but not verified 199.
+## Rules added 2026-10-18 (Sticky)
+- Never delete anything under the Desktop (project folders included) and never create files there outside the work folders; temporary files only in the session scratchpad; no robocopy /MIR into Desktop folders.
+- GitHub handle is now StickyGonzales (repo StickyGonzales/vlc-redesign-juxtopposed; noreply 103277167+StickyGonzales@users.noreply.github.com); all links updated on every branch.
+- Agents: set effort to the task; UI checks need viewed screenshots.
 ## Branch state (Decision 55: redesign only receives verified code)
 - redesign = last verified state + docs: the unverified batch was reverted (725377056e5, [skip ci]); CLAUDE.md has Decision 55 / 58 and the StickyGonzales public-name rule.
 - wip/next-batch = the batch under test: waveform full/sampled rule + Ctrl+B notification + bookmark titles, library fixes (Add Folder crash, folder contents after a scan, New Playlist dialog, narrow header, grid 5/4), Customize Player + profiles (Decisions 51-53), mouse wheel fine-tuning (Decision 54) + wheel never acts over the bars (Decision 54 updated), music player view + mini player. Test build of the first part: 38829058873 (= b525e444d84, before music / wheel-bars).

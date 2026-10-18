@@ -202,6 +202,11 @@ Item {
 
                 // only where VLC can show the video outside the player (as VLC's own PIP player)
                 Loader {
+                    id: videoLoader
+
+                    // a new video starts without the pointer known over it
+                    onActiveChanged: picture._forgetPointer()
+
                     anchors.fill: parent
                     anchors.margins: parent.border.width
                     active: MainCtx.canShowVideoPIP && Player.hasVideoOutput && MainCtx.hasEmbededVideo
@@ -244,10 +249,55 @@ Item {
                     id: pictureHover
                 }
 
+                // the video surface takes the hover events over the video, so pictureHover never
+                // sees the pointer there: the window's own mouse moves (InterfaceWindowHandler)
+                // tell when it is over the picture. Not under a modal redesign dialog. The last
+                // position is tested again when the card moves under a still pointer (snap after a
+                // drag, which sends no moves while the button is held; window resize).
+                property bool _pointerOverVideo: false
+                property point _lastScenePos
+                property bool _lastScenePosValid: false
+                readonly property bool pointerInside: pictureHover.hovered
+                                                      || (_pointerOverVideo && RdPanels.modalCount === 0)
+
+                function _hitTest() {
+                    if (!_lastScenePosValid)
+                        return
+                    const p = mapFromItem(null, _lastScenePos.x, _lastScenePos.y)
+                    _pointerOverVideo = p.x >= 0 && p.y >= 0 && p.x < width && p.y < height
+                }
+
+                function _forgetPointer() {
+                    _lastScenePosValid = false
+                    _pointerOverVideo = false
+                }
+
+                Connections {
+                    target: MainCtx
+                    enabled: videoLoader.active
+
+                    function onIntfMouseMoved(scenePos) {
+                        picture._lastScenePos = scenePos
+                        picture._lastScenePosValid = true
+                        picture._hitTest()
+                    }
+                    function onIntfMouseLeft() {
+                        picture._forgetPointer()
+                    }
+                }
+
+                Connections {
+                    target: root
+                    enabled: videoLoader.active
+
+                    function onXChanged() { picture._hitTest() }
+                    function onYChanged() { picture._hitTest() }
+                }
+
                 // hover overlay (IB-18): dimmed picture, white controls
                 Rectangle {
                     anchors.fill: parent
-                    visible: pictureHover.hovered || closeButton.hovered || openButton.hovered
+                    visible: picture.pointerInside || closeButton.hovered || openButton.hovered
                     color: VLCStyle.palette.rdMiniPlayerDim
                     radius: parent.radius
 
@@ -334,7 +384,7 @@ Item {
 
                 // Figma: 8 x 12, its right edge 1 px past the end of the fill
                 Rectangle {
-                    visible: seekArea.containsMouse || pictureHover.hovered
+                    visible: seekArea.containsMouse || picture.pointerInside
                     x: Math.max(seekFill.x, seekFill.x + seekFill.width - VLCStyle.dp(7))
                     anchors.verticalCenter: parent.verticalCenter
                     width: VLCStyle.dp(8)

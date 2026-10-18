@@ -40,10 +40,14 @@ T.Pane {
     readonly property real _fullvolpos: 100 / _maxvol
     readonly property real _maxvolpos: _maxvol / 100
 
+    // redesign: sized from contentWidth / contentHeight (the row below), not from Pane's
+    // implicitContentWidth / implicitContentHeight: the Pane derives those from its only content
+    // child and reads 0 as soon as it has two (the wheel area below), which made the control 0 px
+    // wide in the control bar, its row drawn over the buttons on its right
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
-                            implicitContentWidth + leftPadding + rightPadding)
+                            contentWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
-                             implicitContentHeight + topPadding + bottomPadding)
+                             contentHeight + topPadding + bottomPadding)
 
     contentWidth: volumeWidget.implicitWidth
     contentHeight: volumeWidget.implicitHeight
