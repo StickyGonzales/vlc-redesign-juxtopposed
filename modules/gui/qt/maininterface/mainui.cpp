@@ -36,6 +36,7 @@
 #include "player/rd_effects.hpp"
 #include "player/rd_presets.hpp"
 #include "player/rd_seek_thumbnailer.hpp"
+#include "player/rd_filter_preview.hpp"
 #include "player/rd_waveform.hpp"
 #include "player/rd_waveform_item.hpp"
 #include "player/rd_subtitle_lift.hpp"
@@ -96,6 +97,7 @@
 #include "widgets/native/csdthemeimage.hpp"
 #include "widgets/native/navigation_attached.hpp"
 #include "widgets/native/viewblockingrectangle.hpp"
+#include "widgets/native/rd_eq_curve_item.hpp"
 #if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
 #include "widgets/native/doubleclickignoringitem.hpp"
 #else
@@ -223,6 +225,8 @@ bool MainUI::setup(QQmlEngine* engine)
     engine->addImageProvider(QStringLiteral("vlcaccess"), new VLCAccessImageProvider());
     if (m_seekThumbnailer)
         engine->addImageProvider(QLatin1String(RdSeekThumbnailer::providerId), m_seekThumbnailer->createImageProvider());
+    if (m_filterPreview)
+        engine->addImageProvider(QLatin1String(RdFilterPreview::providerId), m_filterPreview->createImageProvider());
 
     m_component  = new QQmlComponent(engine, QStringLiteral("qrc:/qt/qml/VLC/MainInterface/MainInterface.qml"), QQmlComponent::PreferSynchronous, engine);
     if (m_component->isLoading())
@@ -409,6 +413,10 @@ void MainUI::registerQMLTypes()
         m_seekThumbnailer = new RdSeekThumbnailer(m_intf, m_intf->p_mainPlayerController, this);
         qmlRegisterSingletonInstance<RdSeekThumbnailer>(uri, versionMajor, versionMinor, "RdSeekThumbnailer",
                                                         m_seekThumbnailer);
+        // redesign: video filter preset previews (VIDEO_INDEX row 139)
+        m_filterPreview = new RdFilterPreview(m_intf, m_intf->p_mainPlayerController, this);
+        qmlRegisterSingletonInstance<RdFilterPreview>(uri, versionMajor, versionMinor, "RdFilterPreview",
+                                                      m_filterPreview);
         // redesign: waveform seek bar (P6-06): the playing file's waveform, and its bars
         qmlRegisterSingletonInstance<RdWaveform>(uri, versionMajor, versionMinor, "RdWaveform",
                                                  new RdWaveform(m_intf, m_intf->p_mainPlayerController, this));
@@ -561,6 +569,8 @@ void MainUI::registerQMLTypes()
         // @uri VLC.Widgets
         qmlRegisterType<CSDThemeImage>(uri, versionMajor, versionMinor, "CSDThemeImage");
         qmlRegisterType<ViewBlockingRectangle>( uri, versionMajor, versionMinor, "ViewBlockingRectangle" );
+        // redesign: EQ preset curve icons (VIDEO_INDEX rows 132-134)
+        qmlRegisterType<RdEqCurveItem>( uri, versionMajor, versionMinor, "RdEqCurveItem" );
         qmlRegisterTypesAndRevisions<PointingToolTipAttached>( uri, versionMajor );
 
         qmlRegisterModule(uri, versionMajor, versionMinor);
