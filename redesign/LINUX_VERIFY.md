@@ -158,3 +158,18 @@ All 13 pages captured at 100 % beside their Figma frame. Values that are the run
 | P8-40 (#274), P8-43 (#275) | Open transition, control styles | pass | opens instantly (Decision 32) |
 | S2-03 (#352), S2-12 (#361) | Popup duration, fullscreen controls sensitivity | pass | rows present |
 | P3-22 (#98), IA-33 (#99), P7-10 (#256), P8-19 (#297) | Problem rows | skip | context |
+
+### 7. Queue panel: Queue, Bookmarks, Chapters (Figma Controls.png panel variants, playlist.png)
+
+Text positions measured in pixels from the panel's left edge (Cone screenshot vs Figma crop at 1x).
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P1-16 (#24), IA-09 (#25) | Queue button and glyph | pass | |
+| P1-18 (#28), P5-02 (#151), IA-43 (#152), P6-09 (#217) | Queue panel over the video | pass | 3 items - 1h 17m, sort / repeat / shuffle / remove / add, playing row orange; double-click plays (S01E03) |
+| IA-11 (#29) | Queue typography and icons | pass | (web fix 4) handle at 30 and title at 62 px from the panel edge; Figma 30 and 63 |
+| P7-04 (#247) | Ctrl+B adds a bookmark | pass | two presses give "The Wand S01E02 1" and "... 2" (needs build #2: application shortcuts) |
+| P7-05 (#248), IB-37 (#250) | Bookmarks tab, list typography | **fail** (small) | (1) Times read "16:52"; Figma "00:00:42:023" (h:m:s:ms). (2) Titles start 24 px from the panel edge; Figma 21. Same 3 px as the chapter titles below, so it comes from the shared row: `modules/gui/qt/widgets/qml/RdListRow.qml` (left padding), and the bookmark time text in `modules/gui/qt/player/qml/QueueSidebar.qml` |
+| P7-06 (#251) | Chapters tab | **fail** (small) | (web fix 5) the 10 px gap is there (number at 25, as Figma), but the title starts at 72 px from the panel edge; Figma 69 (see the bookmark row above: the shared row adds 3 px). Times and the orange numbers match |
+| IB-36 (#249) | Tab glyphs and states | pass | |
+| P5-24 (#193), IB-15 (#194), P5-28 (#199), IB-19 (#200) | Drag to queue, mini player queue | see screen 11 | |
