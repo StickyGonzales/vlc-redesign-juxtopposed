@@ -31,6 +31,7 @@
 #include "maininterface/mainctx.hpp"
 #include "util/brand.hpp"
 #include "style/rdwidgetstyle.hpp"
+#include "style/systempalette.hpp"
 
 #include <vlc_about.h>
 #include <vlc_intf_strings.h>
@@ -97,9 +98,9 @@ AboutDialog::AboutDialog( qt_intf_t *_p_intf)
     ui.version->setText(qfu( " " BRAND_VERSION_TEXT ) );
     ui.title->setText("<html><head/><body><p><span style=\" font-size:26pt;\"> " + qtr( BRAND_ABOUT_TITLE ) + " </span></p></body></html>");
 
-    ui.MainBlabla->setText("<html><head/><body>" +
-    qtr( BRAND_ABOUT_TEXT ) +
-    "</p></body> </html>");
+    updateAboutText();
+    if( SystemPalette* palette = RdWidgetStyle::palette( this ) )
+        connect( palette, &SystemPalette::paletteChanged, this, &AboutDialog::updateAboutText );
 
     const QPixmap logo = brand::aboutLogo( p_intf );
     if( !logo.isNull() )
@@ -126,6 +127,18 @@ AboutDialog::AboutDialog( qt_intf_t *_p_intf)
     ui.creditsButton->installEventFilter( this );
 
     ui.version->installEventFilter( this );
+}
+
+/* with the redesign style the links take the accent color, which a style sheet cannot give them */
+void AboutDialog::updateAboutText()
+{
+    QString head = QStringLiteral( "<head/>" );
+    if( SystemPalette* palette = RdWidgetStyle::palette( this ) )
+        head = QStringLiteral( "<head><style>a { color: %1; }</style></head>" )
+                .arg( palette->get_rdAccentMain().name() );
+    ui.MainBlabla->setText( "<html>" + head + "<body>" +
+    qtr( BRAND_ABOUT_TEXT ) +
+    "</p></body> </html>" );
 }
 
 void AboutDialog::showLicense()
