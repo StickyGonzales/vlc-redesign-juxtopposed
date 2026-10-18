@@ -362,14 +362,21 @@ T.ProgressBar {
 
         // redesign: dragging the subtitle timeline's blocks: once the pointer has moved a few
         // pixels the subtitle delay follows it (the blocks move with it), within the -600 to
-        // 600 s of VLC's own Synchronization panel; a click without a drag seeks, as beside the
-        // blocks (they cover much of the bar)
+        // 600 s of VLC's own Synchronization panel, written at most once per turn of the event
+        // loop (each write is a VLC message and a decoder change); a click without a drag
+        // seeks, as beside the blocks (they cover much of the bar)
         FSMState {
             id: fsmShifting
 
             property real fromPosition: 0
             property int fromDelay: 0
             property bool moved: false
+            property int pendingDelay: 0
+
+            function applyDelay() {
+                if (Player.subtitleDelayMS !== fsmShifting.pendingDelay)
+                    Player.subtitleDelayMS = fsmShifting.pendingDelay
+            }
 
             transitions: ({
                 "playerUpdatePosition": {
@@ -384,13 +391,21 @@ T.ProgressBar {
                             return
                         fsmShifting.moved = true
                         const delay = fsmShifting.fromDelay + (position - fsmShifting.fromPosition) * control._lengthMs
-                        Player.subtitleDelayMS = Math.round(Helpers.clamp(delay, -600000, 600000))
+                        fsmShifting.pendingDelay = Math.round(Helpers.clamp(delay, -600000, 600000))
+                        Qt.callLater(fsmShifting.applyDelay)
                     }
                 },
                 "releaseControl": {
                     action: (position, forcePrecise) => {
-                        if (!fsmShifting.moved)
-                            fsm._seekToPosition(position, VLCStyle.dp(4, VLCStyle.scale) / control.width * control._viewSize, forcePrecise)
+                        // the bar's TapHandler also reports a release when the DragHandler
+                        // takes the press over on the first move: only a press that no drag
+                        // took over is a click
+                        if (!fsmShifting.moved) {
+                            Qt.callLater(() => {
+                                if (!dragHandler.active && fsm._state === fsmReleased)
+                                    fsm._seekToPosition(position, VLCStyle.dp(4, VLCStyle.scale) / control.width * control._viewSize, forcePrecise)
+                            })
+                        }
                         Qt.callLater(control._timelineFollow)
                     },
                     target: fsmReleased
@@ -736,7 +751,9 @@ T.ProgressBar {
             windowLength: control.timelineSpan
             delay: Player.subtitleDelayMS
             horizontalInset: control._inset
-            playheadX: sliderHandle.x + sliderHandle.width / 2
+            // a window panned away from the playhead is all played or all to come
+            playheadX: control._playheadInView ? sliderHandle.x + sliderHandle.width / 2
+                     : (control.visualPosition < control._viewFrom ? 0 : width)
             playedColor: VLCStyle.palette.rdAccentDim
             unplayedColor: VLCStyle.palette.rdBgA1
         }

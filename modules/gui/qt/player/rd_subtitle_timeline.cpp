@@ -56,7 +56,7 @@ qint64 fractionMs(const QStringView digits)
 qint64 assTimeMs(QStringView text)
 {
     static const QRegularExpression time(QStringLiteral("^\\s*(\\d+):(\\d{1,2}):(\\d{1,2})(?:[.,](\\d{1,3}))?\\s*$"));
-    const QRegularExpressionMatch match = time.matchView(text);
+    const QRegularExpressionMatch match = time.match(text.toString());
     if (!match.hasMatch())
         return -1;
     return ((match.capturedView(1).toLongLong() * 60 + match.capturedView(2).toLongLong()) * 60
@@ -190,6 +190,13 @@ void RdSubtitleTimeline::scheduleUpdate()
 
 void RdSubtitleTimeline::updateTrack()
 {
+    // nothing shows the timeline: acquire() looks again
+    if (m_users == 0)
+    {
+        m_retry.stop();
+        return;
+    }
+
     // the first selected subtitle track, if it comes from an external file
     QByteArray uri;
     bool listedLater = false;
@@ -282,7 +289,7 @@ std::vector<RdSubtitleTimeline::Cue> RdSubtitleTimeline::parse(const QByteArray&
 
         if (line.contains(QLatin1String("-->")))
         {
-            const QRegularExpressionMatch match = arrow.matchView(line);
+            const QRegularExpressionMatch match = arrow.match(line.toString());
             if (!match.hasMatch())
                 continue;
             const auto timeMs = [&match](int first) {
