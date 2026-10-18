@@ -59,9 +59,6 @@ T.Popup {
     focus: false
     closePolicy: T.Popup.CloseOnEscape
 
-    Accessible.role: Accessible.AlertMessage
-    Accessible.name: label.text
-
     Connections {
         target: RdProfiles
 
@@ -101,6 +98,10 @@ T.Popup {
         id: content
 
         spacing: VLCStyle.dp(10, VLCStyle.scale)
+
+        // on the content: a Popup is not an Item, it cannot carry the Accessible properties
+        Accessible.role: Accessible.AlertMessage
+        Accessible.name: label.text
 
         T.Label {
             id: label
