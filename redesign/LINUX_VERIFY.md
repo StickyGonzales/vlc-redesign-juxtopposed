@@ -205,3 +205,40 @@ Text positions measured in pixels from the panel's left edge (Cone screenshot vs
 |---|---|---|---|
 | P6-13 (#224), IB-29 (#225) | Dialog and styling | pass | Ctrl+N opens it; header, Network URL with its hint, URL box (focused, typing works), divider, Playlist Name (optional), Cancel / Save; every element where the spec has it. Escape closes it |
 | P6-08 (#216) | Old dialog critique | skip | context |
+
+### 12. Library: compact panel, full library, Home, Recent, pins, Network, Playlists (Figma sidebar.png, Player.png, Player-1.png, media.png, Sorting Options.png, View Options.png, folder context menu.png, new playlist.png)
+
+Folders added with the library's own "Add" rows (Videos: Test Show, Music: Music); the media library scanned the tags and covers.
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P5-06 (#156), P5-07 (#157), IA-44 (#158) | Library categories, icons | pass | rail Home, Videos, Music, Network, Playlists, Recent, pins, +; active icon orange |
+| P5-08 (#159), IA-45 (#160) | Back / forward, breadcrumb | pass | "Videos > Test Show > Season 1"; in the compact panel "... > Season 1" |
+| P5-11 (#165), P5-12 (#166), P5-14 (#167), IB-02 (#168) | Toolbar, view mode, search | pass | count, sort, Grid / List View (check on the current one), search field |
+| P5-13 (#169), IB-03 (#170) | Sort menu with Unwatched / Watched First | pass | Unwatched First, Watched First, Newest / Oldest First, Title A-Z / Z-A, URI; (video folder: no artist / album entries) |
+| P5-15 (#171), IB-04 (#172) | Library "..." menu | pass | Add File, Add Folder, Edit Subtitle Tracks, Edit Audio Tracks, Resync, Info, two-tone icons as folder context menu.png |
+| P5-16 (#173), P5-29 (#202), F-14 (#340) | Add Folder result, navigation | pass | the folder picker (Qt's own on Linux, see screen 4) adds "Test Show" and opens it; drill down and back |
+| P5-17 (#175), IB-06 (#176), IB-07 (#177), F-13 (#339) | Grid thumbnails, watched state, row states | pass | real frames, orange progress line on started episodes, the playing one dimmed with a play icon and orange title |
+| P5-23 (#187), IB-12 (#188), IB-13 (#189), IB-14 (#190) | Compact library over the video | pass | header glyphs, rows with thumbnails, playing row orange with a play icon over its thumbnail |
+| P5-25 (#195), P5-26 (#196) | Open in full, full library | pass | the open-in-full icon opens the full library on the same folder |
+| P5-27 (#197), IB-18 (#198), F-17 (#343) | Mini player | pass | card with the picture, progress, file name, folder chip (+ artist chip for music), queue button; hover shows close, open-player, prev / play / next as Miniplayer.png; open-player returns to the player |
+| P6-01 (#203), IB-22 (#204), P6-02 (#205), IB-20 (#206), P6-03 (#207) | Music root and views | pass | Add, Songs, Albums, Artists, Genres with their icons; Artists and Albums show the covers. Note: an album lists its songs by title (Afterglow, City Pulse, Neon Road), not by track number (01 Neon Road first) |
+| P6-07 (#214), IB-25 (#215) | Network list | pass | Add Network Stream, Podcasts, Radio (VLC's discovery) |
+| P6-15 (#227), P6-16 (#228), IB-30 (#229) | Playlists, New Playlist dialog | pass | empty state, Create playlist opens New Playlist 713x589 as Figma: details + thumbnail drop square, Select Files drop zone with "+", Cancel / Save; Escape closes it |
+| P6-18 (#232), IB-32 (#233) | Pins | pass | "+" offers Pin This Page / Pin a Folder...; pinning Season 1 adds a folder icon between Recent and "+". Small: the "Add item" tooltip of "+" is clipped by the panel |
+| P6-19 (#234) | Recent | pass | clock icon, recent files with thumbnails, playing one orange. Note: the order is not newest first (E01, E02, Neon Road, E03 after playing E01, E02, E03, Neon Road) |
+| P6-20 (#235), IB-33 (#236), F-15 (#341) | Home sections | pass | Continue Watching (with progress stubs), Listen Again, Frequently Visited Folders, Frequently Listened Artists; Latest Streams appears only with streams (none played) |
+| P6-21 (#237), IB-34 (#238), P8-38 (#324), P8-53 (#325), IB-47 (#326) | Full-library Home, empty state | pass | full Home with cards (first run, before any folder) |
+| F-16 (#342), IB-05 (#174), IB-21 (#208) | Open / close and navigation animations | skip | motion: needs the video and a real GPU |
+| P6-14 (#226), P6-17 (#230), IB-31 (#231), F-11 (#337), F-12 (#338) | IPTV link to playlist, file and playlist "..." menus | not checked | no network streams in the sandbox; file "..." menu not opened in this pass |
+| P5-24 (#193), IB-15 (#194), P5-28 (#199), IB-19 (#200) | Drag to the queue, mini player queue | not checked | drag and drop with xdotool was not tried in this pass |
+| P5-03..P5-05, P5-09, P5-10, IB-01, P5-19, P5-21, P5-31, P8-33 (#153-155, 161, 162, 164, 180, 184, 201, 316) | Context and montage rows | skip | |
+
+### 13. Music player view (Figma Player - Music.png, Player - Music-1.png)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P6-04 (#209), IB-23 (#211) | Big cover, background | pass | 360 px cover card with rounded corners, "Neon Road - Nova Lights" under it, the cover zoomed and blurred (radius 20) as the background, as the spec |
+| P6-05 (#210), IB-24 (#212) | Music control bar | pass | 15 s back / forward around the play button |
+| P6-06 (#213) | Waveform seek bar | pass | (toggle tested on screen 5) |
+| (P2-06 again) | | | the top bar title reads "Neon Ro..." with the whole bar free: same elide failure as screen 1 |
