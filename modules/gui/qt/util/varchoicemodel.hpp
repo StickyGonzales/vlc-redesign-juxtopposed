@@ -88,6 +88,7 @@ private:
     int updateList(const vlc_object_t* object, int action, const vlc_value_t* p_newvalue);
 
     QString vlcValToString(const vlc_value_t& value);
+    QString choiceTitle(const QVariant& value);
     QVariant vlcValToVariant(const vlc_value_t& a);
 
     //reference to the observed object. Can only be modified from the UI thread

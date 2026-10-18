@@ -163,8 +163,7 @@ void VLCVarChoiceModel::onListUpdated(const vlc_object_t* object, int action, QV
     case VLC_VAR_ADDCHOICE:
         beginInsertRows( QModelIndex{}, m_values.count(), m_values.count() );
         m_values.append( newvalue );
-        //we should probably rather get the whole choices list to get the associated text
-        m_titles.append( newvalue.toString() );
+        m_titles.append( choiceTitle( newvalue ) );
         endInsertRows();
         break;
     case VLC_VAR_DELCHOICE:
@@ -192,6 +191,31 @@ void VLCVarChoiceModel::onListUpdated(const vlc_object_t* object, int action, QV
         //N/A
         break;
     }
+}
+
+//the text the variable gives a choice added after the model was filled (VLC adds them with their
+//text: the stereo modes of an audio output that starts later, for example), else the value
+QString VLCVarChoiceModel::choiceTitle(const QVariant& value)
+{
+    size_t count = 0;
+    vlc_value_t* val_list = nullptr;
+    char** val_title = nullptr;
+    QString title;
+    if (var_Change(m_object->get(), qtu(m_varname), VLC_VAR_GETCHOICES,
+                   &count, &val_list, &val_title) == VLC_SUCCESS)
+    {
+        for (size_t i = 0; i < count; i++)
+        {
+            if (title.isEmpty() && val_title[i] && vlcValToVariant(val_list[i]) == value)
+                title = qfu(val_title[i]);
+            free(val_title[i]);
+            if ( (m_type & VLC_VAR_CLASS) == VLC_VAR_STRING )
+                free( val_list[i].psz_string );
+        }
+        free(val_list);
+        free(val_title);
+    }
+    return title.isEmpty() ? value.toString() : title;
 }
 
 QString VLCVarChoiceModel::vlcValToString(const vlc_value_t &value)
