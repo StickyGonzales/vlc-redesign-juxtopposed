@@ -64,6 +64,7 @@ private:
     Ui::aboutWidget ui;
 
 private slots:
+    void updateAboutText();
     void showLicense();
     void showAuthors();
     void showCredit();

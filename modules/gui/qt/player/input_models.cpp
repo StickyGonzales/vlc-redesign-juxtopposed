@@ -20,12 +20,17 @@
 #include "player/player_controller.hpp"
 
 #include <cstring>
+#include <tuple>
+#include <utility>
 
 #include <QCryptographicHash>
 #include <QTimer>
 #include <QUrl>
 
 #include <vlc_input_item.h>
+#include <vlc_iso_lang.h>
+
+#include "dialogs/redesign/addsubtitles/subtitle_matcher.hpp"
 
 namespace {
 
@@ -44,6 +49,52 @@ bool isExternalTrack(vlc_es_id_t* id)
     const char* strId = vlc_es_id_GetStrId(id);
     const char* slash = strId ? std::strchr(strId, '/') : nullptr;
     return slash && slash - strId == kSlaveIdLength;
+}
+
+// the English name and two letter code of a language code or name, the given text when unknown
+std::pair<QString, QString> languageOf(const QString& language)
+{
+    const iso639_lang_t* lang = vlc_find_iso639(qtu(language), true);
+    if (!lang)
+        return { language, QString() };
+    return { qfu(lang->psz_eng_name), QString::fromLatin1(lang->psz_iso639_1) };
+}
+
+// redesign: an external file's track reads as the video shows it (6:22-6:24, Decision 11, over
+// Figma's "The_Wand_S01_EN.srt"): "The_Wand_S01E04 [English]", the file name without its
+// extension, and the language in brackets: the track's own, else the one at the end of the file
+// name ("_EN"), which then leaves the name
+QString externalTrackName(const QString& fileName, const QString& trackLanguage)
+{
+    QString base = fileName;
+    const qsizetype dot = base.lastIndexOf(QChar('.'));
+    if (dot > 0 && base.size() - dot <= 5)
+        base.truncate(dot);
+
+    qsizetype wordStart = base.size();
+    while (wordStart > 0 && base.at(wordStart - 1).isLetterOrNumber())
+        --wordStart;
+    const QString nameCode = wordStart > 0
+            ? SubtitleMatcher::languageCode(base.mid(wordStart), true) : QString();
+
+    QString language;
+    QString code;
+    if (!trackLanguage.isEmpty())
+        std::tie(language, code) = languageOf(trackLanguage);
+    else if (!nameCode.isEmpty())
+        std::tie(language, code) = languageOf(nameCode);
+
+    if (language.isEmpty())
+        return base;
+    if (!nameCode.isEmpty() && nameCode == code)
+    {
+        base.truncate(wordStart);
+        while (!base.isEmpty() && !base.back().isLetterOrNumber())
+            base.chop(1);
+        if (base.isEmpty())
+            base = fileName;
+    }
+    return QStringLiteral("%1 [%2]").arg(base, language);
 }
 
 } // namespace
@@ -86,7 +137,7 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
                     lookUpFileNameLater(track.m_id.get());
             }
             if (!track.m_fileName.isEmpty())
-                return track.m_fileName;
+                return externalTrackName(track.m_fileName, track.m_language);
         }
         return track.m_title;
     }
@@ -269,6 +320,7 @@ TrackListModel::Data::Data(const vlc_player_track *track_info)
     , m_id( track_info->es_id, true )
     , m_selected( track_info->selected )
     , m_external( isExternalTrack(track_info->es_id) )
+    , m_language( qfu(track_info->fmt.psz_language) )
 {
 }
 
@@ -278,6 +330,7 @@ void TrackListModel::Data::update(const vlc_player_track *track_info)
     m_title = qfu(track_info->name);
     m_selected = track_info->selected;
     m_external = isExternalTrack(track_info->es_id);
+    m_language = qfu(track_info->fmt.psz_language);
 }
 
 
