@@ -95,7 +95,7 @@ T.AbstractButton {
 
     background: Rectangle {
         radius: VLCStyle.rd_radius_normal
-        color: (root.hovered || list.opened) ? root.rdPalette.rdBgA4 : root.rdPalette.rdBgA5
+        color: (root.hovered || list.opened) ? root.rdPalette.rdBgA4 : root.rdPalette.rdBgField
         border.width: root.visualFocus ? VLCStyle.dp(1) : 0
         border.color: root.rdPalette.rdFgA3
     }

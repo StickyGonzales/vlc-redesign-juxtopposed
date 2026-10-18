@@ -360,7 +360,7 @@ T.Popup {
                 height: VLCStyle.dp(34)
 
                 radius: VLCStyle.rd_radius_normal
-                color: root.rdPalette.rdBgA5
+                color: root.rdPalette.rdBgField
 
                 Widgets.RdIcon {
                     id: searchIcon
@@ -440,7 +440,7 @@ T.Popup {
 
                 background: Rectangle {
                     radius: VLCStyle.rd_radius_normal
-                    color: scopeDropdown.hovered ? root.rdPalette.rdBgA4 : root.rdPalette.rdBgA5
+                    color: scopeDropdown.hovered ? root.rdPalette.rdBgA4 : root.rdPalette.rdBgField
                     border.width: scopeDropdown.visualFocus ? VLCStyle.dp(1) : 0
                     border.color: root.rdPalette.rdFgA3
                 }
