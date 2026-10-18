@@ -1,6 +1,6 @@
 # Cone on Linux (branch wip/linux-build)
 
-Branch `wip/linux-build`, made from `origin/wip/beta` (90f90b5a7a). Status: written; built, packaged and started in this sandbox (section 5). **Not verified**: nothing here is marked done in VIDEO_INDEX, and no CI run of the new workflow has happened yet.
+Branch `wip/linux-build`, made from `origin/wip/beta` (90f90b5a7a). Status: built by GitHub (build-linux #1, run 39119874209, green); its AppImage passed a smoke test in this sandbox (section 5b). **Not verified**: nothing here is marked done in VIDEO_INDEX.
 
 ## Decisions (Sticky)
 
@@ -113,7 +113,7 @@ Not changed, VLC upstream behavior on Linux: video output (OpenGL / Vulkan / VA-
 | `modules/gui/qt/medialibrary/qml/RdLibraryItemMenu.qml` | "Show in File Manager" off Windows. |
 | `modules/gui/qt/dialogs/redesign/settings/pages/SettingsPerformancePage.qml` | Rescan plugins description without Windows off Windows. |
 | `redesign/VIDEO_INDEX.md` | Core changes line, Decisions (Claude) lines. |
-| `redesign/linux-shots/` | Five screenshots of the sandbox run (section 5), generated test media only. |
+| `redesign/linux-shots/` | Screenshots of the sandbox runs (sections 5 and 5b), generated test media only. |
 
 ## 5. Tested here (sandbox, not verification)
 
@@ -146,6 +146,26 @@ Found and fixed on the way (all in the package script, plus the Qt cache folder)
 8. Qt's caches went to `~/.cache/vlc`: now `~/.cache/Cone` (`qt.cpp`, public profile, not on Windows).
 9. Seen only because of the test folder's name: the media library could not create its folder when the same folder name appears twice in the path (`/home/x/t/home/...`). An upstream medialibrary quirk; real home folders (`/home/<user>`) are not affected.
 
+
+### 5b. First GitHub run and smoke test of its AppImage (2026-10-18)
+
+**Run:** build-linux #1, run 39119874209 (push of 7a4520c5b7 to `wip/linux-build`), **green in 24m 19s** (a cold run: no compiler or media library cache yet). Artifacts: `cone-linux-appimage-x86_64` (`Cone-0.1.0-x86_64.AppImage`, 136.8 MB, SHA-256 `59c6bc1d70379d520af78907b95d319c69b6c5ee8700d4b529890563a4ebc79e`) and `cone-linux-x86_64` (the tarball, 106.8 MB). It needed no fixes: the scripts had been run end to end in the sandbox before. The first push did not start it: GitHub skips a push whose commits carry `[skip ci]`; a push of a single code commit did.
+
+**Smoke test** of that downloaded AppImage (scope narrowed by StickyGonzales: the screens are the same QML as Windows and are verified there). Sandbox: Ubuntu 24.04, Xvfb 1920x1200, **openbox** as window manager, Mesa software OpenGL, no sound device (`--aout=dummy`), no FUSE (`APPIMAGE_EXTRACT_AND_RUN=1`), ordinary user in a fresh home, one D-Bus session.
+
+| Check | Result |
+|---|---|
+| Starts | the window is up 7 s after launch (including the unpacking a FUSE-less start needs) |
+| Window frame (Decision 1) | Cone's own window buttons (minimize, maximize, fullscreen, close) in its top bar, no system title bar, also under openbox (`06-appimage-video-own-window-buttons.png`) |
+| Video | the H.264 test video plays (FFmpeg decoder, time 00:22 of 00:30 in the shot) |
+| Audio | the MP3 plays (mpg123 decoder, music view, 00:03 of 00:20: `07-appimage-audio-handed-over.png`); no sound device here, so only decoding and the clock are tested, not real sound output |
+| Second Cone | `--one-instance` with the MP3: "running VLC instance - exiting", exit code 0, and the first Cone switched to the MP3 |
+| Keyboard (openbox) | focus reaches Cone: Space paused and resumed (player states PAUSED, PLAYING; the picture stood still), Ctrl+Q quit |
+| Quit | Ctrl+Q, exit code 0 |
+| Folders | only `~/.config/Cone` (`vlc-qt-interface.conf`), `~/.local/share/Cone`, `~/.cache/Cone` (Qt's QML and pipeline caches); no `vlc` folder anywhere. System-wide caches as usual (fontconfig, Mesa) |
+| Ctrl+P | did not open Settings (also with the unpacked folder). VLC's core binds Ctrl+P too (previous title, `KEY_TITLE_PREV`) on every platform; shared code, to check on Windows (section 6). Settings itself was not part of this test |
+
+Not tested (outside the narrowed scope or the sandbox): real sound output, GPU video output, Wayland, fullscreen, seeking, the screens.
 
 ## 6. What's left, risks, questions
 
