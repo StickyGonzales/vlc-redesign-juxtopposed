@@ -31,6 +31,12 @@ env:
   # patchelf for the package's RUNPATHs (linux-package.sh): pinned release and its SHA-256
   PATCHELF_VERSION: 0.18.0
   PATCHELF_SHA256: ce84f2447fb7a8679e58bc54a20dc2b01b37b5802e12c57eece772a6f14bf3f0
+  # Qt's SVG image and icon plugins, which the image lacks (linux-package.sh): Debian's
+  # qt6-svg-plugins of the image's exact qt6-svg version, from snapshot.debian.org; change both
+  # with VLC_IMAGE (its qt6-svg-dev version: dpkg -l qt6-svg-dev in the image)
+  QT_SVG_PLUGINS_DEB: https://snapshot.debian.org/file/730481d39dc33b54bd8001af08ff9a36364370bf
+  QT_SVG_PLUGINS_VERSION: 6.10.2-8
+  QT_SVG_PLUGINS_SHA256: ae80a1d333bf1676d1b17fdcbf155a936e5b46994a1c3c5c8385ef54e5f0075c
 
 jobs:
   linux64:
@@ -91,6 +97,13 @@ jobs:
           echo "$PATCHELF_SHA256  /tmp/patchelf.tar.gz" | sha256sum -c -
           tar -xzf /tmp/patchelf.tar.gz -C .patchelf-tool ./bin/patchelf
           .patchelf-tool/bin/patchelf --version
+
+      - name: Qt SVG plugins for the package
+        run: |
+          curl -sSLf --retry 3 -o /tmp/qt6-svg-plugins.deb "$QT_SVG_PLUGINS_DEB"
+          echo "$QT_SVG_PLUGINS_SHA256  /tmp/qt6-svg-plugins.deb" | sha256sum -c -
+          dpkg-deb -x /tmp/qt6-svg-plugins.deb .qt-svg-plugins
+          find .qt-svg-plugins -name '*.so'
 
       - name: Pull build image
         run: docker pull "$VLC_IMAGE"
