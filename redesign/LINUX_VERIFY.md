@@ -94,3 +94,67 @@ Colours sampled from the PNGs (they are translucent: `BG/B1 Transparent` panel, 
 | (UX) | Escape closes the open dropdown, a second Escape the dialog | pass | |
 
 Linux note: the folder picker is Qt's own widget dialog in the sandbox (no desktop portal); a desktop with xdg-desktop-portal shows its own picker.
+
+### 5. Settings sidebar: Playback, Video, Audio, Subtitles tabs (Figma Controls.png sidebar variants, Values.png, Toggle.png, Dropdown.png, Video - Essential.png, Video - Crop.png, EQ presets.png, Audio - Equalizer.png, Setting Preset.png)
+
+Positions measured from the panel top: every row sits where Figma has it. Colours sampled (2 px `BG/B2` frame + `BG/A4` fill on dropdowns, `BG/A4` frame + `BG/B2` fill on value boxes: same in both).
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| F-06 (#332), P4-03 (#104) | Gear opens the sidebar on Playback; active state | pass | Decision 5; gear solid orange while open |
+| P3-17 (#89), P3-18 (#91), IA-28 (#90) | Right sidebar with four tabs | pass | Playback / Video / Audio / Subtitles, 400 wide, rounded, opaque |
+| IA-41 (#137), IB-36 (#249) | Tab glyphs and states | pass | |
+| P4-31 (#140), P4-32 (#141), IA-42 (#142) | Speed, stepped slider with tick labels | pass | clicking the 1.5 tick sets the rate (log: `changing rate: 1.500000`) |
+| P4-33 (#143) | Reverse toggle | skip | reverse playback postponed (Decision 29) |
+| P4-34 (#144) | Sleep Timer | pass | Off / 15 / 30 / 45 / 60 min / End of current file (Decision 23) |
+| P4-35 (#145), P3-16 (#87), IA-27 (#88) | Subtitle timeline on the seek bar | not built | status todo in VIDEO_INDEX; the Playback tab has no such toggle |
+| P4-36 (#146), P6-06 (#213) | Show Waveform on Seekbar | pass | the seek bar turns into waveform bars (with the IA-13 chapter frame drawn behind them on this file) |
+| P4-37 (#147), F-23 (#349) | Show Metadata, Statistics, Audio Visualizer, order | pass | Metadata and Statistics open their panels on the left (Decision 24); order as the video plus Figma's Statistics (Decision 13) |
+| P4-27 (#135), P4-28 (#136) | Video tab Defaults, segmented control | pass | Flip None / Horizontal / Vertical, Rotate, Zoom, Resolution, Aspect Ratio, Crop, Render (Decision 24: Local). The HDR row is hidden: it is d3d11's HDR mode (Windows only) |
+| P4-29 (#138), P4-16 (#119), IA-37 (#120) | Build-up and tab animations | skip | video only |
+| P4-30 (#139) | Video filters with presets | pass | Essential / Crop / Colors / Geometry / Overlay / Advanced expanders; Essential as Video - Essential.png |
+| F-18 (#344) | Crop link toggle | pass | link Top-Bottom, Top 40 px: Bottom follows, link icon orange, picture cropped (log `vsz 640x280`) |
+| P4-15 (#122), P4-17 (#123), P4-18 (#124), IA-38 (#121) | Audio tab Defaults, Test button, Synchronization | **fail** | Stereo Mode lists raw numbers "7, 1, 3, 4, 2" and shows "1" instead of Mono / Stereo / Left / Right (Figma "Mono"; P8-01 words not numbers). The core adds the names (`src/audio_output/output.c` ADDCHOICE with `_("Mono")` ...), so the names are lost in the interface: `modules/gui/qt/player/qml/AudioSettingsPage.qml:146` choices `Player.audioStereoMode` (its choice model). Seen with PulseAudio on a mono track; check on Windows. The "-10 s ... +10 s" labels fix Figma's typo (Decision 17); the "Track and language apply from the next file" note is Decision (Claude) W4.6 |
+| P4-19 (#125), P4-20 (#126), IA-39 (#128) | Filters list, toggle and expander styles | pass | |
+| P4-21 (#127) | Sticky footer over the scrolling content | pass | |
+| P4-25 (#133), P4-26 (#134), IA-40 (#132) | EQ preset dropdown with curve icons | pass | curves drawn per preset; "Full bass" fixes Figma's "Full base" (Decision 17) |
+| P4-24 (#131), P4-23 (#130) | Equalizer expanded, band sliders | **fail** (small) | Picking Classical applies the equalizer (log) and moves the sliders, but its near-zero bands read "-0.0 dB" (Figma "0.0 dB"): VLC's preset holds -1.1e-15 dB. Round before formatting: the band value text in `modules/gui/qt/player/qml/AudioSettingsPage.qml` |
+| P3-19 (#92), P3-20 (#94), P4-14 (#118), IA-30 (#95) | Subtitles tab Synchronization, bipolar delay slider | pass | -4.000 s typed (Figma demo state): fill from 0 to the handle, same as Figma |
+| P3-21 (#96), IA-31 (#97), P3-23 (#100), IA-32 (#101) | Appearance, toggle, segmented control | pass | the "apply from the next file" note under Appearance is Decision (Claude) W4.6 |
+| P4-12 (#116), IA-29 (#93), IA-36 (#115) | Subtitles tab Defaults, typography, dividers | pass | (web fix 3) no line under Defaults any more: Subtitle Track sits 123 px below the panel top, Figma 124 |
+| P4-02 (#103), P4-13 (#117), P4-08 (#111) | Context / build-up rows | skip | context or video only |
+| P4-04 to P4-07, IA-34, IA-35 (#105-110) | Preset footer | pass | "Default Preset" footer and "Open Advanced Settings" as Setting Preset.png (preset list not reopened: verified on the PC, unchanged code) |
+| F-07 (#333) | Show Preferences opens the matching tab | pass | from the tracks popup |
+| F-08 (#334) | Open Advanced Settings opens the matching category | pass | from the Subtitles tab: Settings on "Subtitle Defaults" |
+
+### 6. Settings dialog (Figma Settings - *.png, setting category.png, Dropdown.png)
+
+All 13 pages captured at 100 % beside their Figma frame. Values that are the run's (Off / On, folder names, Ask vs Always) are not counted; Decisions listed in SHEET_CONFIRMATIONS.md still apply (All Cone Settings, info icons on every row, OpenSubtitles section, "Precise", "Extensions & Scripts", process priority, dimmed dependent rows, Cone for VLC).
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| (web fix 1) Ctrl+P | | pass | opens Settings on General, from the player |
+| P7-18 (#268), IB-42 (#269), P8-02 (#270), P8-39 (#271), F-19 (#345) | Window, category list, switching | pass | |
+| P7-16 (#264), P8-21 (#299) | Info icon on every row, popovers | pass | (web fixes 3 and 6) Subtitles > Preferred language ends "Automatic picks the subtitle track the file marks as its default. Applies from the next file."; Playback > Default subtitle track ends "Applies from the next file." |
+| P8-03 (#273) | General page | **fail** (Linux only) | "Interface language" is missing: the row shows only where VLC has its `language` option, which exists on Windows (registry) and OS/2 only. Figma: first row of Appearance. Linux needs its own way (e.g. Cone stores the language and sets `LANGUAGE` before Qt and gettext start): `SettingsGeneralPage.qml` row `shown: SettingsCatalog.languageSupported`, plus the start-up code. (web fix 2) Log details lists "Errors only" first: pass. "Check for updates automatically" is absent as on Windows (Cone has no update checker, CONE_RELEASE_NOTES 2) |
+| P8-22 (#300) | Advanced Options expander | pass | Note (Linux only): the General advanced options add VLC's syslog rows; "System log identity" defaults to "vlc" in the public build (`syslog-ident`), which names VLC |
+| S2-01 (#350) | Additional command line options | not built | status todo |
+| P8-04 (#276), P8-05 (#279), IB-43 (#272) | Theme and accent rows | pass | (light theme itself: screen 14) |
+| P8-06 (#281), S2-02 (#351) | Interface page | pass | no Skin section (Decision 63: Cone has no skins); window, playback controls, tray rows as Figma |
+| P8-07 (#282), S2-04 (#353) | Privacy page | pass | (web fix 7) "Ask about internet access when Cone starts" after "Last.fm submission URL"; Figma's second "Last.fm username" reads "Last.fm password" (Decision 17) |
+| P8-08 (#283), S2-05 (#354) | Controls page | pass | |
+| P8-09 (#284) | Playback page | pass | default tracks as "Automatic" dropdowns (words, P8-01) |
+| P8-10 (#285) | Video page | **fail** (small) | Deinterlacing > Method reads "Auto"; Figma "Automatic" (the Deinterlacing row above says "Automatic"). VLC's `deinterlace-mode` choice text: relabel it in `SettingsVideoPage.qml` (option at line 149) |
+| P8-11 (#286), S2-06 (#355) | Audio page | **fail** (Linux only) | "Output device" is missing and "Always starts at:" has no value: both rows use the Windows outputs' options (`mmdevice-audio-device` / `waveout-*`, `mmdevice-volume`; `SettingsAudioPage.qml:45-46`). Figma: "Output device: System default" under Output, "Always starts at: 200%". Linux needs the PulseAudio / ALSA equivalents (or the player's device list and `volume`) |
+| P8-44 (#287), IB-45 (#288) | Inline equalizer, slider variants | pass | |
+| P8-12 (#289), P8-45 (#290), S2-11 (#360) | Subtitles page | pass | (web fix 6) Text encoding "Automatic"; Preferred language "Automatic" (Decision (Claude) 2026-10-18 P8-12). Font "Serif Bold" is FreeType's Linux default, a value |
+| P8-14 (#292) | Library page | pass | "Apply to files opened from the file manager" (Linux wording) |
+| P8-15 (#293) | Network page | **fail** (Linux only) | The "Proxy" header shows with no rows under it: `http-proxy` / `http-proxy-pwd` exist only on Windows (`src/libvlc-module.c:1961`, obsolete elsewhere). Figma: HTTP proxy, HTTP proxy password. Hide the section when its rows don't exist (the beta's new `SettingsSection.shown`), `SettingsNetworkPage.qml:101`, or offer the Linux proxy setting |
+| P8-16 (#294), S2-07 (#356), S2-08 (#357), S2-09 (#358) | Performance page | **fail** (Linux only) | "Video post-processing" is missing between Hardware-accelerated decoding and Skip the H.264 loop filter: the Linux build has no postproc module (the row needs `postproc-q`). Add libpostproc to the Linux build (`.github/scripts/linux-build.sh`) or accept the gap |
+| P8-17 (#295), S2-10 (#359) | Recording page | pass | |
+| P8-18 (#296), P8-20 (#298) | Extensions page | pass | |
+| P7-12 (#258) | Keyboard Shortcuts from Controls | see screen 9 | |
+| P7-14 (#262), P7-15 (#263), P7-17 (#265), IB-41 (#266), P8-01 (#267) | Basic then advanced, worded dropdowns | pass | search filters the categories and pages (e.g. "subtitle") |
+| P8-40 (#274), P8-43 (#275) | Open transition, control styles | pass | opens instantly (Decision 32) |
+| S2-03 (#352), S2-12 (#361) | Popup duration, fullscreen controls sensitivity | pass | rows present |
+| P3-22 (#98), IA-33 (#99), P7-10 (#256), P8-19 (#297) | Problem rows | skip | context |
