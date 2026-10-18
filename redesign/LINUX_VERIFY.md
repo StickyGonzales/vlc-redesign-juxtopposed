@@ -242,3 +242,51 @@ Folders added with the library's own "Add" rows (Videos: Test Show, Music: Music
 | P6-05 (#210), IB-24 (#212) | Music control bar | pass | 15 s back / forward around the play button |
 | P6-06 (#213) | Waveform seek bar | pass | (toggle tested on screen 5) |
 | (P2-06 again) | | | the top bar title reads "Neon Ro..." with the whole bar free: same elide failure as screen 1 |
+
+### 14. Customize Player (Figma Player - customize.png .. -8.png)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P8-24 (#302), P8-46 (#303) | Customize dialog and palette icons | pass | from the main menu; the bars get dashed outlines, the palette shows Figma's items in Figma's order with their icons, then VLC's other controls (CUSTOMIZE_NOTES: kept until StickyGonzales decides); "Quit Cone", "Cone Settings" for VLC (brand); the Video / Audio / Mini player tabs are Decision W8.1a; Picture in Picture left out (Decision 1). The 15 s items sit in the music bar, so the Audio player palette doesn't list them |
+| P8-25 (#304), P8-47 (#305), P8-26 (#306), P8-48 (#307), F-22 (#348) | Drag items in and out, alternate layout | not checked | a synthetic xdotool drag (Stop to the bar) did not drop; needs a real mouse (PC) |
+| P8-23 (#301), P8-36 (#322) | Old editor, montage | skip | context |
+
+### 15. Light theme and accent colour (Figma Player - Light.png, Settings - global.png, styles.txt)
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P8-04 (#276), IB-44 (#278) | Light theme, light control bar | pass | Settings > General > Light recolours the player at once: light bars, light seek track, light played fill, as Player - Light.png |
+| P8-41 (#277), P8-42 (#280) | Theme and accent switch instantly | pass | |
+| P8-05 (#279), F-20 (#346) | Accent colour setting and values | pass | green swatch: toggles, segmented control, active category, icons turn green in both themes; back to dark and orange |
+
+### 16. Onboarding (Figma Onboarding.png, Onboarding-1.png .. -10.png)
+
+Started with `--qt-privacy-ask`.
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P8-29 (#311) | Screen 1: Welcome | pass | Cone's icon and name (brand), text, media folder field with Browse, Next. Linux note: the folder field shows the home folder when there is no `~/Videos` (the sandbox has none) |
+| P8-30 (#313) | Screen 2: theme and colour | pass | Light / Dark / System tiles, preview, 9 round swatches, Back / Next, as Onboarding-1.png |
+| P8-31 (#314) | Screen 3: shortcuts | pass | layout as Onboarding-2.png; the keys are Cone's real ones (Decision 22: VLC's defaults), so several differ from Figma's (Shift+arrows, Ctrl+arrows, Ctrl+L, M) |
+| P8-50 (#312) | Transitions | skip | motion |
+| P8-28 (#310), P8-32 (#315), P8-37 (#323), P8-51 (#317) | Context / outro rows | skip | |
+
+### 17. Resume toast, on-screen messages
+
+| Row | Item | Result | Notes |
+|---|---|---|---|
+| P6-23 (#240) | "Continue where you left off" toast | pass | reopening S01E02 shows "You already watched till 00:17:48 [Continue Watching] X" above the control bar |
+| IB-35 (#241) | Toast styling | skip | video only |
+| P7-08 (#254), IB-38 (#253), P8-13 (#291), P3-15 (#86) | On-screen message shows the pressed shortcut | not built | status todo (core change, Decision 27); M shows VLC's own mute icon |
+| P7-07 (#252), P6-22 (#239), P6-24 (#242), P7-01 (#244), P7-03 (#246), P7-11 (#257) | Problem / sponsor rows | skip | context |
+
+### 18. Rows skipped as a whole
+
+- Windows only: quit freeze, installer, file associations, Windows fonts and scaling (125 / 150 %), real sound output, GPU video and HDR output (d3d11), dropped-frame and performance rows (PERF.md).
+- Need her video (no Figma frame, look or motion only): every row marked "none (video only)" that is not listed above with a function check, and the 59 context rows (old VLC, B-roll, sponsor, memes, survey charts: P1-01..P1-03, IA-07, P1-10, P1-11, P2-11, P2-26, P3-01, P4-01, P4-09..P4-11, ...).
+
+## Sandbox notes (not row results)
+
+- PulseAudio: the volume cone reads empty until the first volume change, and the speaker tooltip read "-100 %" with `--aout=dummy` (no volume). Recheck the start volume on a real Linux desktop.
+- Openbox died once between restarts (a race in the test script, fixed); while it was missing, keyboard focus was unreliable. All keyboard rows above were rerun with openbox running.
+- Folder pickers are Qt's own widget dialogs here (no xdg-desktop-portal in the sandbox).
