@@ -45,6 +45,10 @@ ColumnLayout {
     readonly property var _rows: []
 
     property bool _anyRowMatches: true
+    // false when every row of the section is hidden because its setting does not exist in this
+    // build (e.g. Proxy on Linux: VLC's http-proxy options are Windows only), so no empty
+    // header is left. A section holding anything else than rows stays
+    property bool _anyRowShown: true
 
     function registerRow(row) {
         _rows.push(row)
@@ -64,6 +68,8 @@ ColumnLayout {
 
     function _recount() {
         _anyRowMatches = _rows.some((row) => row.shown && row.matches)
+        _anyRowShown = _rows.length === 0 || _rows.some((row) => row.shown)
+                       || Array.from(group.children).some((child) => _rows.indexOf(child) < 0)
     }
 
     Connections {
@@ -74,7 +80,7 @@ ColumnLayout {
         }
     }
 
-    visible: shown && (!_page || !_page.filtering || titleMatches || _anyRowMatches)
+    visible: shown && _anyRowShown && (!_page || !_page.filtering || titleMatches || _anyRowMatches)
     Layout.fillWidth: true
     spacing: 0
 
