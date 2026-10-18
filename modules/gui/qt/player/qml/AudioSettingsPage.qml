@@ -253,7 +253,7 @@ RdSidePanelPage {
                     valueFontSize: VLCStyle.rd_fontSize_toggle
                     textInset: 0
                     spacing: 0
-                    valueText: root._eqPreamp.toFixed(1) + " " + qsTr("dB")
+                    valueText: (Math.round(root._eqPreamp * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                     from: -20
                     to: 20
                     stepSize: 0.1
@@ -286,7 +286,8 @@ RdSidePanelPage {
                         valueFontSize: VLCStyle.rd_fontSize_toggle
                         textInset: 0
                         spacing: 0
-                        valueText: gain.toFixed(1) + " " + qsTr("dB")
+                        // rounded first: VLC's presets hold values such as -1e-15 dB, never "-0.0 dB"
+                        valueText: (Math.round(gain * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                         from: -20
                         to: 20
                         stepSize: 0.1
