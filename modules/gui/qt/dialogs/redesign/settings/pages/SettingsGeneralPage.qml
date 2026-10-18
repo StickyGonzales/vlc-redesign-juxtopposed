@@ -162,12 +162,27 @@ SettingsPage {
             }
 
             // VLC options applied at every start, as if typed after the program name (a core
-            // option of the Cone build, src/libvlc.c; Figma "Settings - global-1": an empty field)
+            // option of the Cone build, src/libvlc.c; Figma "Settings - global-1": an empty
+            // field). Options that change or remove the interface are ignored (Decision 66), as
+            // the note under the field says
             SettingsOption {
+                id: extraOptionsRow
+
                 option: "extra-options"
                 text: qsTr("Additional command line options")
                 kind: "text"
                 restartRequired: true
+
+                below: Text {
+                    x: extraOptionsRow.width - width
+                    width: extraOptionsRow.controlWidth
+                    wrapMode: Text.WordWrap
+                    // the option names on their own line: a wrap would break them at a hyphen
+                    text: qsTr("Options that change the interface are ignored:\n--intf, -I, --extraintf, skins")
+                    font.family: VLCStyle.rd_fontFamily
+                    font.pixelSize: VLCStyle.rd_fontSize_label
+                    color: VLCStyle.palette.rdFgA3
+                }
             }
 
             SettingsOption {
