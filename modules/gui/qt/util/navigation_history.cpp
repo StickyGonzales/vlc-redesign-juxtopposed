@@ -136,7 +136,9 @@ void NavigationHistory::update(QStringList path, const QVariantMap& properties)
 
 void NavigationHistory::previous(Qt::FocusReason reason)
 {
-    if (m_history.size() == 1)
+    // redesign: also nothing to go back to before the first view was set (started straight into
+    // the player with a file: Escape there popped an empty history and crashed)
+    if (m_history.size() <= 1)
         return;
 
     m_history.pop_back();
