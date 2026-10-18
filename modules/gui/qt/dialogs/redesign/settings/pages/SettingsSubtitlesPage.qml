@@ -100,9 +100,6 @@ SettingsPage {
         }
     }
 
-    // the OpenSubtitles account of the Add Subtitles dialog (W6.5)
-    SettingsOpenSubtitlesSection { }
-
     SettingsSection {
         title: qsTr("Appearance")
 
@@ -349,6 +346,10 @@ SettingsPage {
             available: root._title
         }
     }
+
+    // the OpenSubtitles account of the Add Subtitles dialog (W6.5): not in Figma's page, so after
+    // her sections
+    SettingsOpenSubtitlesSection { }
 
     advanced: [
         SettingsSection {
