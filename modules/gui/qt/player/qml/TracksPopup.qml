@@ -254,6 +254,8 @@ Item {
                     model: root.tab === "audio" ? Player.audioTracks
                          : root.tab === "video" ? Player.videoTracks
                          : Player.subtitleTracks
+                    // subtitles: the files added next to the video are listed under External Tracks
+                    filter: root.tab === "subtitles" ? "embedded" : "all"
                 }
 
                 // subtitles: external tracks; the pencil and + both open the Add Subtitles dialog
@@ -267,6 +269,15 @@ Item {
                         { icon: "add", description: qsTr("Add subtitle file") }
                     ]
                     onActionTriggered: (index) => AddSubtitles.open()
+                }
+
+                // Figma "Frame 67": the subtitle files, one row each with the file name (no "None":
+                // the one above Embedded Tracks turns every subtitle off)
+                TrackListFrame {
+                    visible: root.tab === "subtitles"
+                    model: Player.subtitleTracks
+                    filter: "external"
+                    showNone: false
                 }
 
                 // audio: output device (refresh re-reads the device list)
@@ -437,6 +448,8 @@ Item {
 
         property alias model: frameList.model
         property alias tracks: frameList.tracks
+        property alias filter: frameList.filter
+        property alias showNone: frameList.showNone
 
         Layout.fillWidth: true
         Layout.preferredHeight: VLCStyle.dp(138.5, VLCStyle.scale)
@@ -471,6 +484,10 @@ Item {
 
         property var model
         property bool tracks: true
+        // which tracks show: "all", "embedded" or "external" (TrackListModel's "external" role);
+        // the hidden rows still count for "None", so it turns off a track of either list
+        property string filter: "all"
+        property bool showNone: true
 
         // bumped when a row is created, removed or (un)selected: the rows can be created after
         // the count changed (asynchronous creation of a prewarmed panel), so a binding over
@@ -495,7 +512,7 @@ Item {
         spacing: VLCStyle.dp(12, VLCStyle.scale)
 
         TrackRow {
-            visible: list.tracks
+            visible: list.tracks && list.showNone
             label: qsTr("None")
             selected: !list._anySelected
 
@@ -520,6 +537,7 @@ Item {
                 required property var model
                 required property int index
 
+                visible: list.filter === "all" || (!!model.external === (list.filter === "external"))
                 selected: !!model.checked
                 onSelectedChanged: list._selectionRevision += 1
                 label: list.tracks ? String(model.display).replace(/ - \[(.*)\]$/, " - $1") : model.display
