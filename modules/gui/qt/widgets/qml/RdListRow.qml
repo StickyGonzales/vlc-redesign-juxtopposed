@@ -39,6 +39,9 @@ T.AbstractButton {
     property string detail: ""
     property bool current: false
     property bool selected: false
+    // space before the title of a row without a number (queue: 4 after the handle; Figma
+    // "bookmarks" rows have none)
+    property real titleInset: VLCStyle.dp(4)
 
     readonly property SystemPalette rdPalette: VLCStyle.palette
 
@@ -77,7 +80,7 @@ T.AbstractButton {
         Text {
             anchors.left: numberText.visible ? numberText.right : parent.left
             // Figma "Frame 39" of "chapters": 10 px between the number box and the title (x 48)
-            anchors.leftMargin: numberText.visible ? VLCStyle.dp(10) : VLCStyle.dp(4)
+            anchors.leftMargin: numberText.visible ? VLCStyle.dp(10) : row.titleInset
             anchors.right: detailText.left
             anchors.rightMargin: VLCStyle.dp(10)
             anchors.verticalCenter: parent.verticalCenter
