@@ -23,6 +23,7 @@ Branch `wip/musthaves-2`, made from `redesign` 8acefcb918. Pull request into `re
 - **Settings > General > Advanced Options**, second row after "Show minor warnings": an empty text field. The (i) text says it applies the next time Cone starts.
 - Options typed there apply **at every start**, as if typed after the program name, for example `--no-video-title-show --avcodec-threads=4`. Quotes keep blanks together (`--sub-language "en,fr"`); no escapes, so Windows paths keep their backslashes. File names are ignored.
 - The **real command line wins** where both set the same option. Options that would print help or the version and quit (`--help`, `-H`, `--version`, `--list`, `-p`) are dropped. An invalid option is logged ("additional command line options: an option is not valid") and the options after it are ignored; Cone still starts.
+- **Interface options are ignored (Decision 66):** `--intf` / `-I` in any spelling (`-I dummy`, `-Idummy`, `-vIdummy`, `--intf=skins2`), `--extraintf` (dummy or any other interface) and the skins interface's options (`--skins2-*`, `--skinned-*`, with the value of `--skins2-last` / `--skins2-config`), the same way skins are blocked on the real command line (Decision 63). A note under the field says so (FG/A3, the option names on their own line); the log says "additional command line options: the options that change the interface are ignored". The real command line can still set them. How: the skins options are dropped before the parse (they are unknown in Cone and would stop it); `intf` / `extraintf` set by the field are taken back after the parse, whatever spelling set them, unless the real command line set them.
 - Limit (also in the option's description): the options read before the settings file (plugins cache, high priority, clock source) cannot be set here.
 
 ## 2. Files
@@ -33,7 +34,7 @@ Branch `wip/musthaves-2`, made from `redesign` 8acefcb918. Pull request into `re
 | `src/video_output/video_text.c` | **Core (Cone build).** Messages: duration from `osd-duration`, the "Pressed" line (second, smaller, left-aligned text segment). |
 | `src/video_output/video_widgets.c` | **Core (Cone build).** Volume / position bars: `osd-duration` + 200 ms. |
 | `src/libvlc-module.c` | **Core (Cone build).** New options `osd-duration` (integer, 500-5000 ms) and `extra-options` (string). |
-| `src/libvlc.c` | **Core (Cone build).** `libvlc_LoadExtraOptions()`, called right after the settings file loads. |
+| `src/libvlc.c` | **Core (Cone build).** `libvlc_LoadExtraOptions()`, called right after the settings file loads; it ignores the interface options (Decision 66). |
 | `modules/gui/qt/player/rd_subtitle_timeline.{hpp,cpp}` | New. `RdSubtitleTimeline` singleton: the selected external subtitle file, its cue times (worker thread), the media length in ms. |
 | `modules/gui/qt/player/rd_subtitle_timeline_item.{hpp,cpp}` | New. `RdSubtitleTimelineItem`: the blocks (scene graph). |
 | `modules/gui/qt/player/input_models.{hpp,cpp}` | `TrackListModel`: new `externalUri` role (the file name lookup now shares it). |
@@ -43,7 +44,7 @@ Branch `wip/musthaves-2`, made from `redesign` 8acefcb918. Pull request into `re
 | `modules/gui/qt/player/qml/PlaybackSettingsPage.qml` | "Show Subtitle Timeline on Seekbar" row. |
 | `modules/gui/qt/qt.cpp` | Option `qt-seek-subtitle-timeline`. |
 | `modules/gui/qt/maininterface/mainui.cpp` | Registers the singleton and the item. |
-| `modules/gui/qt/dialogs/redesign/settings/pages/SettingsSubtitlesPage.qml`, `SettingsGeneralPage.qml` | The two Settings rows. |
+| `modules/gui/qt/dialogs/redesign/settings/pages/SettingsSubtitlesPage.qml`, `SettingsGeneralPage.qml` | The two Settings rows; the note under "Additional command line options" (Decision 66). |
 | `modules/gui/qt/dialogs/redesign/settings/settings_catalog.cpp` | The new options are curated (not repeated under "More ... options"). |
 | `modules/gui/qt/dialogs/toolbar/rd_profile_settings.cpp` | `osd-duration` and `qt-seek-subtitle-timeline` apply at once on a profile switch. |
 | `modules/gui/qt/Makefile.am`, `meson.build` | Build lists. |
@@ -73,6 +74,7 @@ Built with autotools in VideoLAN's Debian image (`registry.videolan.org/vlc-debi
 - **"Pressed" line:** C gave "Crop: 16:10" / "Pressed C", A gave "Aspect ratio: 16:9" / "Pressed A": second line smaller, both left aligned at the top right. With `osd-duration=3000` the messages stayed about 3 s. (Volume could not be tried: no sound output in the sandbox.)
 - **Settings rows:** Settings > General > Advanced Options shows "Additional command line options" (empty field) after "Show minor warnings"; Settings > Subtitles > On-Screen Messages shows "Show feedback for" at 3 s with "0.5 s" / "5 s" and ten ticks under "Show feedback for shortcuts".
 - **Additional command line options:** `extra-options=--no-spu "--marq-marquee=a b" --help -p qt bogus.mkv` in vlcrc: Cone started normally (help and module help dropped, file name ignored, the quoted option kept as one), and the subtitles were hidden; started with `--spu` on the real command line, the subtitles showed (the command line wins). Not a test: `--sub-text-scale` (Cone applies its own subtitle size after start, on the real command line too).
+- **Interface options (Decision 66):** `extra-options=-I dummy --extraintf=dummy --skins2-last foo.vlt --skinned-video --intf=skins2 -vIdummy --extraintf dummy --no-spu`: the Qt window opened (no dummy interface loaded), the subtitles were hidden (so the parse went on past the dropped options to `--no-spu`, and `-v` applied), and the log had the "interface are ignored" warning. An ambiguous abbreviation such as `--inter=dummy` (intf or interact) is not valid and stops the parse there, as on the real command line. The note under the field reads "Options that change the interface are ignored:" / "--intf, -I, --extraintf, skins".
 - **Not tried here:** Ctrl+P (opens "previous" on Linux, a known Linux-only issue; Settings opened from the main menu), drag and drop, light theme, scaling, fullscreen, Windows.
 
 ## 6. How to test on Windows
@@ -101,6 +103,7 @@ Build this branch on its own (it has core changes): `gh workflow run build-windo
 2. `--sub-language "en,fr"` with quotes. A wrong option `--no-such-option`: Cone still starts, the log says it was not valid.
 3. `--help` or `--version` in the field: Cone still starts normally.
 4. Start Cone from PowerShell with an option that conflicts with the field (field `--no-video-title-show`, command line `--video-title-show`): the command line wins.
+5. `-I dummy`, `-Idummy`, `--intf=skins2`, `--extraintf=dummy`, `--skins2-last x.vlt` in the field, with `--no-video-title-show` after them: Cone opens its normal window, the file name does not show at the start (the option after them still applies), and the note under the field is readable at 100 / 125 / 150 % scaling.
 
 Regression: open file, play, pause, seek, volume, mute, next / previous, fullscreen, subtitles on / off and track switching, audio track switching, queue, drag and drop, shortcuts, settings survive a restart, clean quit; the normal seek bar (timeline off) behaves exactly as before (drag, click, chapters, preview card).
 
@@ -115,8 +118,9 @@ Fixed:
 7. The track lookup (player lock, MD5 of every external file's address) ran on every track list signal even with the timeline off: it now runs only while a seek bar shows it.
 8. The message was left aligned even when building its second line failed: only when the line is there.
 9. The option's description now says the options win over the same settings made elsewhere.
+Decided after the review (Decision 66, 2026-10-19): the field ignores every option that changes or removes the interface (section 1C).
+
 Not changed (for the PC session or StickyGonzales):
-- An option such as `--intf dummy` in "Additional command line options" starts Cone without a window every time, until the line is removed from vlcrc (the real command line `--extra-options=` also clears it). Should Cone refuse `--intf` / `-I` there?
 - The sideways cursor over a block is worked out on pointer moves only: when the blocks move under a still pointer (page turn, G / H), it updates on the next move.
 - The four timeline buttons take Tab focus but are not in the control bar's arrow-key navigation.
 
