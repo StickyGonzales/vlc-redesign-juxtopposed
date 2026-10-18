@@ -120,6 +120,20 @@ static void libvlc_AddInterfaces(libvlc_int_t *libvlc, const char *varname)
 }
 
 #ifdef VLC_BRAND_PUBLIC
+/* Decision 63 / 66: the options of the skins interface, which Cone does not have (the parser
+ * would stop on them), as bin/winvlc.c drops them from the real command line */
+static bool libvlc_IsSkinsOption(const char *arg)
+{
+    static const char *const prefixes[] = {
+        "--skins2-", "--no-skins2-", "--noskins2-",
+        "--skinned-", "--no-skinned-", "--noskinned-",
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(prefixes); i++)
+        if (strncmp(arg, prefixes[i], strlen(prefixes[i])) == 0)
+            return true;
+    return false;
+}
+
 /**
  * redesign: applies the "extra-options" setting (Settings > General > Advanced Options,
  * "Additional command line options") as if its options were typed after the program name.
@@ -127,7 +141,9 @@ static void libvlc_AddInterfaces(libvlc_int_t *libvlc, const char *varname)
  * dropped); there are no escapes, so Windows paths keep their backslashes. Arguments that are
  * not options (file names) are ignored. The real command line is read again afterwards, so it
  * wins where both set the same option, and the options that print help or the version and quit
- * are cleared first, so they never stop the program from starting.
+ * are cleared first, so they never stop the program from starting. Options that change or
+ * remove Cone's interface (Decision 66: --intf / -I, --extraintf, the skins interface's options)
+ * are ignored here; the real command line can still set them.
  */
 static void libvlc_LoadExtraOptions(libvlc_int_t *libvlc, int argc,
                                     const char *argv[])
@@ -178,11 +194,44 @@ static void libvlc_LoadExtraOptions(libvlc_int_t *libvlc, int argc,
         *out++ = '\0';
     }
 
+    /* the skins interface's options go, with the value of the two that take one */
+    bool ignored = false;
+    int kept = 1;
+    for (int i = 1; i < count; i++)
+    {
+        if (libvlc_IsSkinsOption(args[i]))
+        {
+            if ((!strcmp(args[i], "--skins2-last") || !strcmp(args[i], "--skins2-config"))
+             && i + 1 < count)
+                i++;
+            ignored = true;
+            continue;
+        }
+        args[kept++] = args[i];
+    }
+    count = kept;
+
     if (count > 1)
     {
+        /* the interfaces: whatever spelling set them (--intf, -I, -Idummy, an abbreviation),
+         * the parser stores them in these variables; those the real command line did not set
+         * are taken back after the parse */
+        static const char *const interface_options[] = { "intf", "extraintf" };
+        bool from_command_line[ARRAY_SIZE(interface_options)];
+        for (size_t i = 0; i < ARRAY_SIZE(interface_options); i++)
+            from_command_line[i] = var_Type(libvlc, interface_options[i]) != 0;
+
         if (config_LoadCmdLine(libvlc, count, args, NULL))
             msg_Err(libvlc, "additional command line options: an option is not "
                     "valid, the options after it are ignored");
+
+        for (size_t i = 0; i < ARRAY_SIZE(interface_options); i++)
+            if (!from_command_line[i])
+                while (var_Type(libvlc, interface_options[i]) != 0)
+                {
+                    var_Destroy(libvlc, interface_options[i]);
+                    ignored = true;
+                }
 
         static const char *const quit_options[] = {
             "version", "full-help", "longhelp", "help", "list-verbose", "list",
@@ -195,6 +244,10 @@ static void libvlc_LoadExtraOptions(libvlc_int_t *libvlc, int argc,
 
         config_LoadCmdLine(libvlc, argc, argv, NULL);
     }
+
+    if (ignored)
+        msg_Warn(libvlc, "additional command line options: the options that change "
+                 "the interface are ignored");
 
     free(args);
     free(str);

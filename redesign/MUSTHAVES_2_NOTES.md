@@ -23,6 +23,7 @@ Branch `wip/musthaves-2`, made from `redesign` 8acefcb918. Pull request into `re
 - **Settings > General > Advanced Options**, second row after "Show minor warnings": an empty text field. The (i) text says it applies the next time Cone starts.
 - Options typed there apply **at every start**, as if typed after the program name, for example `--no-video-title-show --avcodec-threads=4`. Quotes keep blanks together (`--sub-language "en,fr"`); no escapes, so Windows paths keep their backslashes. File names are ignored.
 - The **real command line wins** where both set the same option. Options that would print help or the version and quit (`--help`, `-H`, `--version`, `--list`, `-p`) are dropped. An invalid option is logged ("additional command line options: an option is not valid") and the options after it are ignored; Cone still starts.
+- **Interface options are ignored (Decision 66):** `--intf` / `-I` in any spelling (`-I dummy`, `-Idummy`, `-vIdummy`, `--intf=skins2`), `--extraintf` (dummy or any other interface) and the skins interface's options (`--skins2-*`, `--skinned-*`, with the value of `--skins2-last` / `--skins2-config`), the same way skins are blocked on the real command line (Decision 63). A note under the field says so (FG/A3, the option names on their own line); the log says "additional command line options: the options that change the interface are ignored". The real command line can still set them. How: the skins options are dropped before the parse (they are unknown in Cone and would stop it); `intf` / `extraintf` set by the field are taken back after the parse, whatever spelling set them, unless the real command line set them.
 - Limit (also in the option's description): the options read before the settings file (plugins cache, high priority, clock source) cannot be set here.
 
 ## 2. Files
@@ -33,7 +34,7 @@ Branch `wip/musthaves-2`, made from `redesign` 8acefcb918. Pull request into `re
 | `src/video_output/video_text.c` | **Core (Cone build).** Messages: duration from `osd-duration`, the "Pressed" line (second, smaller, left-aligned text segment). |
 | `src/video_output/video_widgets.c` | **Core (Cone build).** Volume / position bars: `osd-duration` + 200 ms. |
 | `src/libvlc-module.c` | **Core (Cone build).** New options `osd-duration` (integer, 500-5000 ms) and `extra-options` (string). |
-| `src/libvlc.c` | **Core (Cone build).** `libvlc_LoadExtraOptions()`, called right after the settings file loads. |
+| `src/libvlc.c` | **Core (Cone build).** `libvlc_LoadExtraOptions()`, called right after the settings file loads; it ignores the interface options (Decision 66). |
 | `modules/gui/qt/player/rd_subtitle_timeline.{hpp,cpp}` | New. `RdSubtitleTimeline` singleton: the selected external subtitle file, its cue times (worker thread), the media length in ms. |
 | `modules/gui/qt/player/rd_subtitle_timeline_item.{hpp,cpp}` | New. `RdSubtitleTimelineItem`: the blocks (scene graph). |
 | `modules/gui/qt/player/input_models.{hpp,cpp}` | `TrackListModel`: new `externalUri` role (the file name lookup now shares it). |
@@ -43,7 +44,7 @@ Branch `wip/musthaves-2`, made from `redesign` 8acefcb918. Pull request into `re
 | `modules/gui/qt/player/qml/PlaybackSettingsPage.qml` | "Show Subtitle Timeline on Seekbar" row. |
 | `modules/gui/qt/qt.cpp` | Option `qt-seek-subtitle-timeline`. |
 | `modules/gui/qt/maininterface/mainui.cpp` | Registers the singleton and the item. |
-| `modules/gui/qt/dialogs/redesign/settings/pages/SettingsSubtitlesPage.qml`, `SettingsGeneralPage.qml` | The two Settings rows. |
+| `modules/gui/qt/dialogs/redesign/settings/pages/SettingsSubtitlesPage.qml`, `SettingsGeneralPage.qml` | The two Settings rows; the note under "Additional command line options" (Decision 66). |
 | `modules/gui/qt/dialogs/redesign/settings/settings_catalog.cpp` | The new options are curated (not repeated under "More ... options"). |
 | `modules/gui/qt/dialogs/toolbar/rd_profile_settings.cpp` | `osd-duration` and `qt-seek-subtitle-timeline` apply at once on a profile switch. |
 | `modules/gui/qt/Makefile.am`, `meson.build` | Build lists. |
@@ -66,6 +67,33 @@ All inside `#ifdef VLC_BRAND_PUBLIC`: the vlc profile compiles VLC's code unchan
 7. **P8-13, 18:12-18:14:** the "Show feedback for" slider's value in the video (built: VLC's 1 s by default; Figma's thumb sits near the middle).
 8. Should the interface's own notifications (Ctrl+B "Bookmark added", above the control bar) also say "Pressed Ctrl + B"? Built: no.
 
+### Answers from the video (PC session, 2026-10-19)
+Frames at 4 fps over 6:50-7:17, 15:22-15:30 and 18:11-18:16, plus 7:17, 7:20, 7:24 and 7:30; transcript lines at the same times. Pixel values are from the 1920x1080 video, where her window fills the frame.
+1. **Buttons:** not answerable from the video. The buttons are never clicked or hovered, and the narration around them only says that the timeline shows when lines appear and that you pause and move the subtitles back. The asterisk labels mark the window's ends, which fits the built reading (`<` / `>` move the window, `-` / `+` change its length). Keep it; it stays a Claude decision.
+2. **Layout:** between the labels and the bar, as built: `00:06:00*  < -  [bar]  + >  00:07:00*` (7:04, and again at 7:24 / 7:30 with the sidebar open). Differences from the build:
+   - **Attached to the bar.** The buttons touch the bar's ends (no gap): the bar starts right after `-` and ends right before `+`. Built: 8 px from the bar.
+   - **As tall as the thick bar.** Buttons 22 px tall, bar 22 px (y 1044-1065).
+   - **Two widths.** `-` / `+` are 20 px wide (about square). `<` / `>` are narrower, 15-16 px (about 0.73 of the bar height).
+   - **4 px apart, small radius** (about 3-4 px at this scale). Glyphs are dark on the orange fill.
+   - **Fill is darker than Accent/Main.** It measures about #AB5611-#B05300, near Accent/DIm #AB6314, while the play button in the same frame is brighter orange. Compare on the build next to the play button.
+3. **Colours (7:00 close-up and the full window at 7:04):**
+   - Played fill: #331902 (about BG/Accent Bright #371F06).
+   - Played-side blocks: **#4A331D / #4C3521**, a lighter brown. That is the played fill with about 9 % white over it, not Accent/DIm #AB6314, which is far brighter.
+   - Unplayed blocks: **#1F1F1F**, BG/A2 (built BG/A1 #222222, close).
+   - Unplayed track: #000000. Playhead: #DD6700 pill, taller than the bar.
+   - Blocks are square-cornered, full bar height, and separated by short gaps of the fill or track.
+   - Change: the played blocks should be about #4A331D (fill + 9 % white), not Accent/DIm.
+4. **Window:** not answerable. From 7:04 to 7:12 the video is paused (identical frames), and the playhead never reaches a window end on screen. The window reads 00:06:00* to 00:07:00* (1 min) throughout. Keep the built paging and the 1 min start.
+5. **Sidebar:** yes. At 7:12-7:16 the camera is on the sidebar; at 7:24 and 7:30 the sidebar is open and the bar still shows the timeline (`00:07:00*`, `+ >`). Nothing in the video ties the timeline to the sidebar, so "shows whenever the toggle is on" matches.
+6. **"Pressed C" (15:23-15:28, close-up):**
+   - **Size:** the capital C of "Pressed C" is 80 px tall against 97 px for the C of "Crop: 2.35:1", **about 82 %** (built 80 %, fine).
+   - **Weight and colour:** same regular weight and white as the first line.
+   - **Gap:** baseline to baseline is about 1.65x the first line's cap height (about 1.15x its font size). Built is to be compared on Windows.
+   - **Alignment:** left aligned (the P's stem sits a little left of the C's curve).
+   - **Position:** the message's text sits about a third of the way down (y 326-372 of 1080 in the full window at 15:22, right edge 140 px from the window's right edge), clear of the top bar. VLC's top-right position under the top bar is a difference to check on the build while the bars show.
+7. **"Show feedback for" (18:12):** the thumb sits at the middle of the 0.5-5 s track, between the 2.5 s and 3 s ticks (about 2.75 s), the same as Figma. "Show filename for" also sits in the middle (1-10 s). Built default VLC's 1 s: Sticky's call whether the default follows her (about 3 s) or VLC.
+8. **Bookmark notification:** the video shows no notification for adding a bookmark (Ctrl+B is Sticky's Decision 22, not hers), so there is nothing to copy. Keep "no".
+
 ## 5. Tested here (Linux sandbox, not verification)
 Built with autotools in VideoLAN's Debian image (`registry.videolan.org/vlc-debian-unstable:20260611225331`, Qt 6.10, `--with-brand=public --disable-skins2 --disable-medialibrary`), run from the build tree under Xvfb (1600x1000, Mesa software OpenGL, no window manager, no sound: `-A dummy`), driven with xdotool, generated test media only (a 150 s testsrc2 video and an .srt with a line every 4 s). The image has no Qt SVG plugin, so every icon is a placeholder square. **Not verification**: no GPU, no Windows, no real mouse.
 - **Build:** clean; no compiler warning in any changed file (one found and fixed: a doubled `KEY_UNSET` test). qmlcheck errors 1 (the known HighResolutionTimeWidget stub) / crashed 0, buildlists 0, privacycheck 0. No QML warning from the changed files at runtime.
@@ -73,6 +101,7 @@ Built with autotools in VideoLAN's Debian image (`registry.videolan.org/vlc-debi
 - **"Pressed" line:** C gave "Crop: 16:10" / "Pressed C", A gave "Aspect ratio: 16:9" / "Pressed A": second line smaller, both left aligned at the top right. With `osd-duration=3000` the messages stayed about 3 s. (Volume could not be tried: no sound output in the sandbox.)
 - **Settings rows:** Settings > General > Advanced Options shows "Additional command line options" (empty field) after "Show minor warnings"; Settings > Subtitles > On-Screen Messages shows "Show feedback for" at 3 s with "0.5 s" / "5 s" and ten ticks under "Show feedback for shortcuts".
 - **Additional command line options:** `extra-options=--no-spu "--marq-marquee=a b" --help -p qt bogus.mkv` in vlcrc: Cone started normally (help and module help dropped, file name ignored, the quoted option kept as one), and the subtitles were hidden; started with `--spu` on the real command line, the subtitles showed (the command line wins). Not a test: `--sub-text-scale` (Cone applies its own subtitle size after start, on the real command line too).
+- **Interface options (Decision 66):** `extra-options=-I dummy --extraintf=dummy --skins2-last foo.vlt --skinned-video --intf=skins2 -vIdummy --extraintf dummy --no-spu`: the Qt window opened (no dummy interface loaded), the subtitles were hidden (so the parse went on past the dropped options to `--no-spu`, and `-v` applied), and the log had the "interface are ignored" warning. An ambiguous abbreviation such as `--inter=dummy` (intf or interact) is not valid and stops the parse there, as on the real command line. The note under the field reads "Options that change the interface are ignored:" / "--intf, -I, --extraintf, skins".
 - **Not tried here:** Ctrl+P (opens "previous" on Linux, a known Linux-only issue; Settings opened from the main menu), drag and drop, light theme, scaling, fullscreen, Windows.
 
 ## 6. How to test on Windows
@@ -101,6 +130,7 @@ Build this branch on its own (it has core changes): `gh workflow run build-windo
 2. `--sub-language "en,fr"` with quotes. A wrong option `--no-such-option`: Cone still starts, the log says it was not valid.
 3. `--help` or `--version` in the field: Cone still starts normally.
 4. Start Cone from PowerShell with an option that conflicts with the field (field `--no-video-title-show`, command line `--video-title-show`): the command line wins.
+5. `-I dummy`, `-Idummy`, `--intf=skins2`, `--extraintf=dummy`, `--skins2-last x.vlt` in the field, with `--no-video-title-show` after them: Cone opens its normal window, the file name does not show at the start (the option after them still applies), and the note under the field is readable at 100 / 125 / 150 % scaling.
 
 Regression: open file, play, pause, seek, volume, mute, next / previous, fullscreen, subtitles on / off and track switching, audio track switching, queue, drag and drop, shortcuts, settings survive a restart, clean quit; the normal seek bar (timeline off) behaves exactly as before (drag, click, chapters, preview card).
 
@@ -115,8 +145,9 @@ Fixed:
 7. The track lookup (player lock, MD5 of every external file's address) ran on every track list signal even with the timeline off: it now runs only while a seek bar shows it.
 8. The message was left aligned even when building its second line failed: only when the line is there.
 9. The option's description now says the options win over the same settings made elsewhere.
+Decided after the review (Decision 66, 2026-10-19): the field ignores every option that changes or removes the interface (section 1C).
+
 Not changed (for the PC session or StickyGonzales):
-- An option such as `--intf dummy` in "Additional command line options" starts Cone without a window every time, until the line is removed from vlcrc (the real command line `--extra-options=` also clears it). Should Cone refuse `--intf` / `-I` there?
 - The sideways cursor over a block is worked out on pointer moves only: when the blocks move under a still pointer (page turn, G / H), it updates on the next move.
 - The four timeline buttons take Tab focus but are not in the control bar's arrow-key navigation.
 
