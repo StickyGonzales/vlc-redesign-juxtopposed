@@ -17,8 +17,9 @@
  *****************************************************************************/
 
 // redesign (W8.3, video 19:47-19:54, Figma "Onboarding" 1899:3055, 1902:3670, 1902:6770): the
-// first-run onboarding that replaces VLC's first-run wizard, a 1090 x 759 card (no dim, Decision 41) over the
-// window with three screens:
+// first-run onboarding that replaces VLC's first-run wizard. Figma's frames are the whole
+// 1090 x 759 window (its corners and shadow are the window's), so it fills the window, which
+// grows to that size when it is smaller, with three screens:
 //   1. welcome and the media folder for the media library (only with the media library)
 //   2. theme (Light / Dark / System) and accent color, applied live (Decision 9) over a picture
 //      of the player that follows the choices
@@ -52,13 +53,11 @@ T.Popup {
     // item to give the keyboard focus back to when the onboarding closes
     property Item _restoreFocusItem: null
 
-    readonly property real _windowMargin: VLCStyle.dp(20, VLCStyle.scale)
-    readonly property real _outerMargin: _windowMargin + MainCtx.windowExtendedMargin
-    // the card keeps the Figma size; only a window that cannot grow enough scales it down
-    readonly property real _fit: parent ? Math.max(0.1, Math.min(1,
-                                              (parent.width - 2 * _outerMargin) / VLCStyle.rd_onboardingWidth,
-                                              (parent.height - 2 * _outerMargin) / VLCStyle.rd_onboardingHeight))
-                                        : 1
+    // the client-side frame's shadow around the window
+    readonly property real _outerMargin: MainCtx.windowExtendedMargin
+    // the screens keep the Figma size; only a window that cannot grow enough scales them down
+    readonly property real _fit: Math.max(0.1, Math.min(1, card.width / VLCStyle.rd_onboardingWidth,
+                                                        card.height / VLCStyle.rd_onboardingHeight))
 
     function dp(px) {
         return VLCStyle.dp(px, VLCStyle.scale)
@@ -123,6 +122,23 @@ T.Popup {
 
     onOpened: nextButton.forceActiveFocus(Qt.OtherFocusReason)
 
+    // the player takes the keyboard focus when its media starts, which can be after the onboarding
+    // opened (first start with a file): the keys (Enter, Escape) stay here while it is open
+    function _keepFocus() {
+        const window = contentItem.Window.window
+        if (opened && window && window.activeFocusItem && !contentItem.activeFocus)
+            nextButton.forceActiveFocus(Qt.OtherFocusReason)
+    }
+
+    Connections {
+        target: root.contentItem.Window.window
+        enabled: root.opened
+
+        function onActiveFocusItemChanged() {
+            Qt.callLater(root._keepFocus)
+        }
+    }
+
     onAboutToHide: {
         if (_holdsModal) {
             RdPanels.releaseModal()
@@ -180,53 +196,63 @@ T.Popup {
                 root.next()
         }
 
-        // Figma "Onboarding": 1090 x 759, BG/B1, radius 14, drop shadow #000000 38% (y 4, blur 11.8)
+        // Figma "Onboarding": the 1090 x 759 window in BG/B1 (its radius 14 and drop shadow are
+        // the window's own frame)
         Rectangle {
             id: card
 
-            anchors.centerIn: parent
-            width: VLCStyle.rd_onboardingWidth
-            height: VLCStyle.rd_onboardingHeight
-            scale: root._fit
+            anchors.fill: parent
+            anchors.margins: root._outerMargin
 
-            radius: VLCStyle.rd_radius_large
             color: root.rdPalette.rdBgB1
 
-            Widgets.RoundedRectangleShadow {
-                color: root.rdPalette.rdCardShadow
-                yOffset: root.dp(4)
-                blurRadius: root.dp(11.8)
-            }
-
+            // it covers the title bar: with client-side decorations, dragging its background
+            // moves the window and a double click maximizes it, like the title bar
             Loader {
                 anchors.fill: parent
-                visible: root.page === 0
-                sourceComponent: welcomePage
+                active: MainCtx.clientSideDecoration
+                source: "qrc:///qt/qml/VLC/Widgets/CSDTitlebarTapNDrapHandler.qml"
             }
 
-            Loader {
-                anchors.fill: parent
-                visible: root.page === 1
-                // built in the background while the welcome screen shows; finished at once when shown
-                active: root.visible
-                asynchronous: root.page !== 1
-                sourceComponent: themePage
+            // the screens at the Figma size, in the middle of a larger window
+            Item {
+                anchors.centerIn: parent
+                width: VLCStyle.rd_onboardingWidth
+                height: VLCStyle.rd_onboardingHeight
+                scale: root._fit
+
+                Loader {
+                    anchors.fill: parent
+                    visible: root.page === 0
+                    sourceComponent: welcomePage
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    visible: root.page === 1
+                    // built in the background while the welcome screen shows; finished at once when shown
+                    active: root.visible
+                    asynchronous: root.page !== 1
+                    sourceComponent: themePage
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    visible: root.page === 2
+                    active: root.visible
+                    asynchronous: root.page !== 2
+                    sourceComponent: shortcutsPage
+                }
             }
 
-            Loader {
-                anchors.fill: parent
-                visible: root.page === 2
-                active: root.visible
-                asynchronous: root.page !== 2
-                sourceComponent: shortcutsPage
-            }
-
-            // Figma "Frame 140" / "Frame 141": 100 x 32 at the bottom right, Inter 600 16
+            // Figma "Frame 140" / "Frame 141": 100 x 32, 8 apart, 62 from the window's right
+            // edge and 56 from its bottom (x 820 / 928, y 671 of 1090 x 759), Inter 600 16
             Widgets.RdButton {
                 id: backButton
 
-                x: root.dp(820)
-                y: root.dp(671)
+                anchors.right: nextButton.left
+                anchors.rightMargin: root.dp(8)
+                anchors.bottom: nextButton.bottom
                 visible: root.page > 0
 
                 text: qsTr("Back")
@@ -241,8 +267,10 @@ T.Popup {
             Widgets.RdButton {
                 id: nextButton
 
-                x: root.dp(928)
-                y: root.dp(671)
+                anchors.right: parent.right
+                anchors.rightMargin: root.dp(62) * root._fit
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: root.dp(56) * root._fit
 
                 style: Widgets.RdButton.Style.Primary
                 text: root.page === 2 ? qsTr("Finish") : qsTr("Next")

@@ -103,6 +103,8 @@ private:
         bool m_external = false;
         mutable QString m_fileName;
         mutable int m_fileNameLookups = 0;
+        // the track's language code or name as the file gives it, empty when none
+        QString m_language;
     };
     QString externalFileName(vlc_es_id_t* id) const;
     void lookUpFileNameLater(vlc_es_id_t* id) const;

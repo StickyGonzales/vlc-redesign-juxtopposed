@@ -1914,18 +1914,13 @@ FocusScope {
             // redesign: opaque, like the panels and menus, so the fullscreen bar over the native
             // video looks like the windowed one: BG/A3 in Dark (the dark Player frames override
             // the bar fill to BG/A3, visual audit A2, like the top bar), BG/A3 Transparent made
-            // opaque in Light (its 95 % assumes a background blur); a 1 px Divider/Dim top line
-            // only in the light theme (Figma "Player - Light" has it, the dark frames have none)
+            // opaque in Light (its 95 % assumes a background blur); no top line in either theme:
+            // Figma "Player - Light" strokes the bar with Divider/Dim (#ACACAC), but over the
+            // video its 75 % bar renders the same #ABABAB, so the frame shows no line, while on the
+            // opaque bar it showed as a grey 1-2 px line (PC session, 2026-10-19)
             color: (controlBar.textPosition !== ControlBar.TimeTextPosition.Inline) ? windowTheme.bg.primary
                    : VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3
                                              : Qt.alpha(VLCStyle.palette.rdBgA3Transparent, 1.0)
-
-            Rectangle {
-                visible: controlBar.textPosition === ControlBar.TimeTextPosition.Inline && !VLCStyle.palette.isDark
-                width: parent.width
-                height: VLCStyle.dp(1, VLCStyle.scale)
-                color: VLCStyle.palette.rdDividerDim
-            }
         }
 
         FadeControllerStateGroup {
