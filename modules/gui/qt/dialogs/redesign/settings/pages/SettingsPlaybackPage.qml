@@ -116,6 +116,8 @@ SettingsPage {
         SettingsOption {
             option: "sub-track"
             text: qsTr("Default subtitle track")
+            // the note the sidebar's Subtitles Defaults had (SHEET_CONFIRMATIONS, IA-29)
+            note: qsTr("Applies from the next file.")
             choices: root._trackChoices()
         }
     }

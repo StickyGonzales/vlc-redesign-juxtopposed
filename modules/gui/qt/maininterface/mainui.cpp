@@ -111,6 +111,45 @@
 #endif
 #include "mainctx_submodels.hpp"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
+#include <QQuickRenderControl>
+#include <QQuickWindow>
+
+// Qt Quick's context matcher of QML shortcuts, exported for QtQuick.Templates (qquickshortcut.cpp)
+typedef bool (*ShortcutContextMatcher)(QObject *, Qt::ShortcutContext);
+ShortcutContextMatcher qt_quick_shortcut_context_matcher();
+void qt_quick_set_shortcut_context_matcher(ShortcutContextMatcher matcher);
+
+namespace {
+
+ShortcutContextMatcher g_qtShortcutContextMatcher = nullptr;
+
+/* redesign: from Qt 6.9, an application-wide QML shortcut only matches inside a visible window.
+ * The X11 compositor draws the interface in an offscreen QQuickWindow (QQuickRenderControl) that
+ * is never visible, so VLC's global shortcuts (ShortcutExt: Ctrl+P Settings, Ctrl+E, Ctrl+I,
+ * Ctrl+L, F11 ...) never fired there. Such a shortcut matches when the window showing its
+ * offscreen window is visible, as in Qt 6.8 (redesign/WEB_FIXES_1_NOTES.md) */
+bool shortcutContextMatcher(QObject* object, Qt::ShortcutContext context)
+{
+    if (g_qtShortcutContextMatcher(object, context))
+        return true;
+    if (context != Qt::ApplicationShortcut)
+        return false;
+    for (QObject* parent = object; parent; parent = parent->parent())
+    {
+        if (const auto item = qobject_cast<QQuickItem*>(parent))
+        {
+            QWindow* shown = item->window() ? QQuickRenderControl::renderWindowFor(item->window())
+                                            : nullptr;
+            return shown && shown->isVisible();
+        }
+    }
+    return false;
+}
+
+} // namespace
+#endif
+
 static bool g_qmlTypesAreRegistered = false;
 
 using  namespace vlc::playlist;
@@ -202,6 +241,16 @@ bool MainUI::setup(QQmlEngine* engine)
 #endif
         return false;
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
+    // after the QML modules are loaded (QtQuick.Templates installs its own matcher), before the
+    // interface creates its shortcuts
+    if (qt_quick_shortcut_context_matcher() != &shortcutContextMatcher)
+    {
+        g_qtShortcutContextMatcher = qt_quick_shortcut_context_matcher();
+        qt_quick_set_shortcut_context_matcher(&shortcutContextMatcher);
+    }
+#endif
     return true;
 }
 

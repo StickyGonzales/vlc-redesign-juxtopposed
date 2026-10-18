@@ -40,6 +40,9 @@ SettingsRow {
 
     // VLC's option name ("sub-autodetect-file")
     property string option: ""
+    // a sentence added to the option's own explanation in the info popover ("Applies from the
+    // next file.")
+    property string note: ""
     // empty: from the option's type
     property string kind: ""
     // [{ value, text }], replaces the choices VLC declares
@@ -163,11 +166,10 @@ SettingsRow {
 
     text: info.text ?? option
     description: {
-        const text = RdEffects.optionDescription(option)
-        if (!restartRequired)
-            return text
-        const note = qsTr("%1 uses this setting the next time it starts.").arg(Brand.shortName)
-        return text !== "" ? text + "\n\n" + note : note
+        const parts = [RdEffects.optionDescription(option), root.note]
+        if (restartRequired)
+            parts.push(qsTr("%1 uses this setting the next time it starts.").arg(Brand.shortName))
+        return parts.filter((part) => part !== "").join("\n\n")
     }
     keywords: option
     shown: SettingsCatalog.exists(option)
