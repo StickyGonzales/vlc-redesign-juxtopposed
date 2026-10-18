@@ -1,6 +1,6 @@
 # STATUS
 
-- Updated: 2026-10-19. Beta gate in progress on the PC (Decision 64: the web session codes; the PC session tests, checks the video and merges).
+- Updated: 2026-10-19. Cone 0.1.0 beta PUBLISHED: https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.1.0-beta (pre-release, tag v0.1.0-beta on redesign d5a6d505f1d; asset Cone-0.1.0-beta-win64.zip = build 39125167074 + an empty portable folder, sha256 6169e5328b565b40cc978fde220308371c574dc3f78faf7ff77656fd0dc13f4b). Downloaded back: checksum matches, starts, settings stay in portable. wip/beta merged into redesign (Decision 55). Next: the clean-up list for Sticky, then Phase 2 (testing all the untested code; the web session fixes the bugs listed below).
 
 ## Beta v0.1.0-beta: where it stands
 - wip/beta = 6f8db273af6: next-batch + cone-release + branding + bar wake fix + mini player fix + skins removal (Decision 63, wip/beta-brand, review in redesign/BETA_BRAND_REVIEW.md) + subtitles above the bar and External Tracks (wip/beta-subs, redesign/BETA_SUBS_NOTES.md; checked against the video: 6:33 subtitle line above the bar, 6:22-6:24 External Tracks list) + window size fix (074a7eb06d5, PC session, Sticky's go). Checkers: qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
