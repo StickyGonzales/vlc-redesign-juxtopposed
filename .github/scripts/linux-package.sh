@@ -155,13 +155,16 @@ echo "needs glibc $GLIBC_MIN or newer"
 # --- launcher, desktop file, icon, readme ---------------------------------------------------------
 cat > "$DIR/$NAME" <<EOF
 #!/bin/sh
-# Starts $TITLE from this folder. With a folder named "portable" next to this file, $TITLE keeps
-# its settings, media library and caches there instead of in your home folder.
+# Starts $TITLE from this folder (also the AppImage's AppRun). With a folder named "portable" next
+# to this file, or next to the AppImage file, $TITLE keeps its settings, media library and caches
+# there instead of in your home folder.
 HERE=\$(dirname "\$(readlink -f "\$0")")
-if [ -d "\$HERE/portable" ]; then
-    export XDG_CONFIG_HOME="\$HERE/portable/config"
-    export XDG_DATA_HOME="\$HERE/portable/data"
-    export XDG_CACHE_HOME="\$HERE/portable/cache"
+BASE=\$HERE
+[ -n "\$APPIMAGE" ] && BASE=\$(dirname "\$APPIMAGE")
+if [ -d "\$BASE/portable" ]; then
+    export XDG_CONFIG_HOME="\$BASE/portable/config"
+    export XDG_DATA_HOME="\$BASE/portable/data"
+    export XDG_CACHE_HOME="\$BASE/portable/cache"
 fi
 exec "\$HERE/usr/bin/vlc" "\$@"
 EOF

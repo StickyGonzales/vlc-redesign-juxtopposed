@@ -24,8 +24,17 @@ on:
         description: 'Package name suffix (e.g. -beta)'
         type: string
         default: ''
+  # release-linux.yml: the Linux release (Decision (Sticky) 3: its own beta); a linux-vX.Y.Z tag
+  # sets the version, as a vX.Y.Z tag does for Windows
+  workflow_call:
+    inputs:
+      package-suffix:
+        type: string
+        default: ''
 
 concurrency:
+  # github.workflow is the caller's name when release-linux.yml calls this: a release never
+  # cancels a normal build
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
@@ -46,6 +55,11 @@ env:
   QT_SVG_PLUGINS_DEB: https://snapshot.debian.org/file/730481d39dc33b54bd8001af08ff9a36364370bf
   QT_SVG_PLUGINS_VERSION: 6.10.2-8
   QT_SVG_PLUGINS_SHA256: ae80a1d333bf1676d1b17fdcbf155a936e5b46994a1c3c5c8385ef54e5f0075c
+  # AppImage runtime (linux-appimage.sh, Decision (Sticky) 2): AppImage's static type-2 runtime,
+  # build 8f39b89 of github.com/AppImage/type2-runtime (published only as "continuous"), pinned by
+  # its SHA-256; a newer runtime there fails this check until the hash is updated here
+  APPIMAGE_RUNTIME_URL: https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+  APPIMAGE_RUNTIME_SHA256: 156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074
 
 jobs:
   linux64:
@@ -117,12 +131,40 @@ jobs:
       - name: Pull build image
         run: docker pull "$VLC_IMAGE"
 
+      # Cone's version and the package name suffix: a linux-vX.Y.Z tag sets X.Y.Z (default 0.1.0);
+      # linux-vX.Y.Z-<label> (linux-v0.1.0-beta) also puts "-<label>" into the package names, like
+      # the package-suffix input (as build-windows.yml does with vX.Y.Z tags)
+      - name: Version
+        id: version
+        env:
+          PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
+        run: |
+          BRAND_VERSION=""
+          BRAND_PACKAGE_SUFFIX="$PACKAGE_SUFFIX_INPUT"
+          case "$GITHUB_REF" in refs/tags/linux-v*) BRAND_VERSION="${GITHUB_REF_NAME#linux-v}" ;; esac
+          if echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-[A-Za-z0-9.]+$'; then
+            BRAND_PACKAGE_SUFFIX="-${BRAND_VERSION#*-}"
+            BRAND_VERSION="${BRAND_VERSION%%-*}"
+          fi
+          if [ -n "$BRAND_VERSION" ] && ! echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::warning::tag $GITHUB_REF_NAME is not linux-vX.Y.Z: the build uses the default version"
+            BRAND_VERSION=""
+          fi
+          if [ -n "$BRAND_PACKAGE_SUFFIX" ] && ! echo "$BRAND_PACKAGE_SUFFIX" | grep -Eq '^-[A-Za-z0-9.]+$'; then
+            echo "::warning::the package suffix is not -<letters, digits, dots>: not used"
+            BRAND_PACKAGE_SUFFIX=""
+          fi
+          echo "brand-version=$BRAND_VERSION" >> "$GITHUB_OUTPUT"
+          echo "package-suffix=$BRAND_PACKAGE_SUFFIX" >> "$GITHUB_OUTPUT"
+          echo "Version: ${BRAND_VERSION:-0.1.0 (default)}, package suffix: '$BRAND_PACKAGE_SUFFIX'"
+
       - name: Build in VideoLAN's image
         run: |
           mkdir -p .ccache
           # run as the runner's user so the checkout, caches and build output have one owner
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             -e VLC_BRAND="$VLC_BRAND" \
+            -e BRAND_VERSION="${{ steps.version.outputs.brand-version }}" \
             "$VLC_IMAGE" .github/scripts/linux-build.sh build
           df -h /
 
@@ -142,25 +184,40 @@ jobs:
           key: ${{ steps.cachekey.outputs.key }}
 
       - name: Portable package
-        env:
-          PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
         run: |
-          BRAND_PACKAGE_SUFFIX="$PACKAGE_SUFFIX_INPUT"
-          if [ -n "$BRAND_PACKAGE_SUFFIX" ] && ! echo "$BRAND_PACKAGE_SUFFIX" | grep -Eq '^-[A-Za-z0-9.]+$'; then
-            echo "::warning::the package suffix is not -<letters, digits, dots>: not used"
-            BRAND_PACKAGE_SUFFIX=""
-          fi
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             -e VLC_BRAND="$VLC_BRAND" \
-            -e BRAND_PACKAGE_SUFFIX="$BRAND_PACKAGE_SUFFIX" \
+            -e BRAND_VERSION="${{ steps.version.outputs.brand-version }}" \
+            -e BRAND_PACKAGE_SUFFIX="${{ steps.version.outputs.package-suffix }}" \
             -e PATCHELF=/build/.patchelf-tool/bin/patchelf \
             "$VLC_IMAGE" .github/scripts/linux-build.sh package
           grep -h "glibc" linux/*/README-LINUX.txt | head -n 1 >> "$GITHUB_STEP_SUMMARY" || true
 
-      # the tarball itself (an artifact zip would drop the files' execute permissions)
+      # the AppImage of the same folder (Decision (Sticky) 2): runtime + SquashFS image
+      - name: AppImage
+        run: |
+          sudo apt-get install -y -qq squashfs-tools >/dev/null
+          curl -sSLf --retry 3 -o /tmp/appimage-runtime "$APPIMAGE_RUNTIME_URL"
+          echo "$APPIMAGE_RUNTIME_SHA256  /tmp/appimage-runtime" | sha256sum -c -
+          TARBALL=$(ls linux/*-linux-x86_64.tar.xz | head -n 1)
+          FOLDER=${TARBALL%.tar.xz}
+          # Cone-0.1.0-beta-linux-x86_64.tar.xz -> Cone-0.1.0-beta-x86_64.AppImage
+          APPIMAGE=$(basename "$FOLDER" | sed 's/-linux-x86_64$/-x86_64/').AppImage
+          .github/scripts/linux-appimage.sh "$FOLDER" /tmp/appimage-runtime "linux/$APPIMAGE"
+          echo "AppImage: $APPIMAGE ($(du -h "linux/$APPIMAGE" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      # the tarball and the AppImage themselves (an artifact zip drops the files' execute permission:
+      # after unzipping, chmod +x the AppImage)
       - uses: actions/upload-artifact@v4
         with:
           name: cone-linux-x86_64
           path: linux/*.tar.xz
+          compression-level: 0
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-linux-appimage-x86_64
+          path: linux/*.AppImage
           compression-level: 0
           retention-days: 14
