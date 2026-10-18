@@ -289,7 +289,9 @@ RdSidePanel {
                     detail: model.duration && model.duration.valid() ? model.duration.formatHMS() : ""
                     current: !!model.isCurrent
                     selected: queuePage.selectedIndex === index || dragHandler.active
-                    leftPadding: VLCStyle.dp(32)
+                    // Figma "Frame 39" (463:848): the 32 px handle icon, 10 px, then the title at
+                    // x 42 (the row adds its 4 px title inset to this padding)
+                    leftPadding: VLCStyle.dp(38)
 
                     ListView.delayRemove: dragHandler.active
 
