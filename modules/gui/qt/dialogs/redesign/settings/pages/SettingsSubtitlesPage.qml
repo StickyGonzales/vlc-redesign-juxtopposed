@@ -66,11 +66,20 @@ SettingsPage {
         SettingsLanguageOption {
             option: "sub-language"
             text: qsTr("Preferred language")
+            // Figma reads "System language"; VLC's empty value does not follow the system
+            // language, so it stays "Automatic" (Decisions (Claude), WEB_FIXES_1_NOTES.md)
+            note: qsTr("Automatic picks the subtitle track the file marks as its default. Applies from the next file.")
         }
 
+        // VLC's empty value ("Default (Windows-1252)") reads the encoding a file declares, then
+        // detects UTF-8, and only then falls back to the language's usual code page: Figma's
+        // "Automatic" (SHEET_CONFIRMATIONS, P8-12)
         SettingsOption {
             option: "subsdec-encoding"
             text: qsTr("Text encoding")
+            choices: RdEffects.optionChoices(option).map((c) =>
+                c.value === "" ? { value: c.value, text: qsTr("Automatic") } : c)
+            note: qsTr("Automatic uses the encoding a subtitle file declares, recognizes UTF-8, and otherwise reads the file in the usual encoding of the interface language.")
         }
     }
 

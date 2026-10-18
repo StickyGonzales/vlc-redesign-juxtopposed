@@ -102,8 +102,10 @@ private:
         // track is first shown (the file is listed on the media once it has loaded)
         bool m_external = false;
         mutable QString m_fileName;
+        mutable int m_fileNameLookups = 0;
     };
     QString externalFileName(vlc_es_id_t* id) const;
+    void lookUpFileNameLater(vlc_es_id_t* id) const;
 
     QList<Data> m_data;
     bool m_multiSelect = false; // this only work for subtitles
