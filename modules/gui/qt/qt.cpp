@@ -488,8 +488,10 @@ vlc_module_begin ()
 #endif
 
     add_bool( "qt-titlebar",
-#ifdef _WIN32
-              false                              /* use CSD by default on windows */,
+#if defined(_WIN32) || defined(VLC_BRAND_PUBLIC)
+              /* use CSD by default on windows; redesign: and in Cone on Linux too, whose top
+               * bar holds the window buttons (redesign/LINUX_NOTES.md, Decisions (Sticky)) */
+              false,
 #else
               true                               /* but not on linux */,
 #endif
