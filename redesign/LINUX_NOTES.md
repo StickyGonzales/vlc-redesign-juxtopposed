@@ -2,6 +2,12 @@
 
 Branch `wip/linux-build`, made from `origin/wip/beta` (90f90b5a7a). Status: written; built, packaged and started in this sandbox (section 5). **Not verified**: nothing here is marked done in VIDEO_INDEX, and no CI run of the new workflow has happened yet.
 
+## Decisions (Sticky)
+
+1. (2026-10-18) **Window frame:** Cone draws its own window buttons on Linux like on Windows, matching the design. The normal system title bar stays as a fallback setting (Settings > Interface, "Show window decorations"), off by default.
+2. (2026-10-18) **Package:** AppImage, built from the portable tarball. Flatpak later.
+3. (2026-10-18) **Releases:** Linux is not in the Windows v0.1.0-beta. It ships as its own beta once it passes testing. The release workflow is prepared for it, nothing is published.
+
 ## 1. Can the sandbox test builds? (step 1)
 
 | Check | Result | How |
