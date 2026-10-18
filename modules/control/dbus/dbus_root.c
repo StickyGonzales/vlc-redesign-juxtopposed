@@ -40,6 +40,16 @@
 #include "dbus_root.h"
 #include "dbus_common.h"
 
+/* redesign (brand layer, public profile): media player name and desktop file (cone.desktop of
+ * the Linux package, modules/gui/qt/qt.cpp setDesktopFileName) that desktops show for Cone */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_MPRIS_IDENTITY "Cone"
+# define BRAND_DESKTOP_ENTRY "cone"
+#else
+# define BRAND_MPRIS_IDENTITY _("VLC media player")
+# define BRAND_DESKTOP_ENTRY PACKAGE
+#endif
+
 static const char ppsz_supported_uri_schemes[][9] = {
     "file", "http", "https", "rtsp", "ftp", "mtp", "smb",
     "mms", "mmsu", "mmst", "mmsh", "unsv", "itpc", "icyx", "rtmp", "rtp",
@@ -75,7 +85,7 @@ static int
 MarshalIdentity( intf_thread_t *p_intf, DBusMessageIter *container )
 {
     VLC_UNUSED( p_intf );
-    const char *psz_id = _("VLC media player");
+    const char *psz_id = BRAND_MPRIS_IDENTITY;
 
     if (!dbus_message_iter_append_basic( container, DBUS_TYPE_STRING, &psz_id ))
         return VLC_ENOMEM;
@@ -158,7 +168,7 @@ static int
 MarshalDesktopEntry( intf_thread_t *p_intf, DBusMessageIter *container )
 {
     VLC_UNUSED( p_intf );
-    const char* psz_ret = PACKAGE;
+    const char* psz_ret = BRAND_DESKTOP_ENTRY;
 
     if (!dbus_message_iter_append_basic( container, DBUS_TYPE_STRING, &psz_ret ))
         return VLC_ENOMEM;
