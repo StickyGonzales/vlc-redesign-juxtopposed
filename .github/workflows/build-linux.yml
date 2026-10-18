@@ -1,7 +1,7 @@
 # Linux 64-bit portable build of Cone (redesign/LINUX_NOTES.md). Manual runs:
 #   Actions > build-linux > Run workflow (or: gh workflow run build-linux.yml --ref <branch>)
 # GitHub offers the manual run only once this file is on the default branch (redesign); until
-# then pushes to the Linux branch start it (commits with [skip ci] do not).
+# then pushes to the Linux branches start it (commits with [skip ci] do not).
 # Mirrors VideoLAN's own "debian" job (extras/ci/gitlab-ci.yml): same Docker image, VLC built
 # with autotools against the image's system libraries; the media library, which the image has no
 # package of, comes from VLC's contrib recipe. The result is a folder that runs from wherever it
@@ -10,7 +10,7 @@ name: build-linux
 
 on:
   push:
-    branches: [wip/linux-build]
+    branches: [wip/linux-build, wip/verify-linux]
     # documentation-only pushes do not need a build
     paths-ignore:
       - 'redesign/**'
