@@ -41,10 +41,7 @@
 #include <vlc_spu.h>
 #include <vlc_executor.h>
 #include <vlc_vout_osd.h>
-#include <vlc_memstream.h>
 #include "math.h"
-
-#include <ctype.h>
 
 struct intf_sys_t
 {
@@ -1218,117 +1215,12 @@ player_on_vout_changed(vlc_player_t *player,
     }
 }
 
-#ifdef VLC_BRAND_PUBLIC
-/* redesign: true when `code` is one of the keys bound to `action_id` (VLC's key map or global
- * key map, as configured) */
-static bool
-KeyBoundTo(intf_thread_t *intf, uint_fast32_t code, vlc_action_id_t action_id,
-           bool global)
-{
-    for (const char *const *names = vlc_actions_get_key_names(intf);
-         *names != NULL; names++)
-    {
-        char confname[64];
-        snprintf(confname, sizeof (confname), "key-%s", *names);
-        if (vlc_actions_get_id(confname) != action_id)
-            continue;
-
-        uint_fast32_t *codes;
-        size_t count = vlc_actions_get_keycodes(intf, *names, global, &codes);
-        bool bound = false;
-        for (size_t i = 0; i < count && !bound; i++)
-            bound = codes[i] == code;
-        free(codes);
-        if (bound)
-            return true;
-    }
-    return false;
-}
-
-/* redesign: a key worded as the interface shows keys ("Ctrl + F", the Qt interface's
- * HotkeysModel::displayKeys): localized modifiers without VLC's "+", letters in capitals */
-static char *
-KeyDisplayName(uint_fast32_t code)
-{
-    static const struct
-    {
-        uint_fast32_t flag;
-        const char *name;
-    } modifiers[] = {
-        { KEY_MODIFIER_CTRL, N_("Ctrl+") },
-        { KEY_MODIFIER_ALT, N_("Alt+") },
-        { KEY_MODIFIER_SHIFT, N_("Shift+") },
-        { KEY_MODIFIER_META, N_("Meta+") },
-        { KEY_MODIFIER_COMMAND, N_("Command+") },
-    };
-
-    char *key = vlc_keycode2str(code & ~KEY_MODIFIER, true);
-    if (key == NULL)
-        return NULL;
-    if (key[0] != '\0' && key[1] == '\0')
-        key[0] = toupper((unsigned char)key[0]);
-
-    struct vlc_memstream stream;
-    vlc_memstream_open(&stream);
-    for (size_t i = 0; i < ARRAY_SIZE(modifiers); i++)
-        if (code & modifiers[i].flag)
-        {
-            const char *name = vlc_gettext(modifiers[i].name);
-            size_t length = strlen(name);
-            if (length > 0 && name[length - 1] == '+')
-                length--;
-            vlc_memstream_write(&stream, name, length);
-            vlc_memstream_puts(&stream, " + ");
-        }
-    vlc_memstream_puts(&stream, key);
-    free(key);
-    return vlc_memstream_close(&stream) == 0 ? stream.ptr : NULL;
-}
-
-/* redesign (P7-08, P8-13; video 15:16-15:28): the name of the key that triggered `action_id`,
- * or NULL when the action did not come from a key (an interface or a script set "key-action"
- * itself, the mouse wheel). The last key pressed is still the value of "key-pressed" (or
- * "global-key-pressed") while the action it is mapped to runs */
-static char *
-PressedKeyName(intf_thread_t *intf, vlc_action_id_t action_id)
-{
-    vlc_object_t *libvlc = VLC_OBJECT(vlc_object_instance(intf));
-    for (int global = 0; global < 2; global++)
-    {
-        const uint_fast32_t code =
-            var_GetInteger(libvlc, global ? "global-key-pressed" : "key-pressed");
-        const uint_fast32_t key = code & ~KEY_MODIFIER;
-        if (key == KEY_UNSET || key == 0
-         || (key >= KEY_MOUSEWHEELUP && key <= KEY_MOUSEWHEELRIGHT))
-            continue;
-        if (KeyBoundTo(intf, code, action_id, global))
-            return KeyDisplayName(code);
-    }
-    return NULL;
-}
-#endif
-
 static int
 ActionCallback(vlc_object_t *obj, char const *var,
                vlc_value_t ov, vlc_value_t newval, void *data)
 {
     VLC_UNUSED(obj); VLC_UNUSED(var); VLC_UNUSED(ov);
-#ifdef VLC_BRAND_PUBLIC
-    /* the on-screen messages of the action name the key on a second line
-     * (src/video_output/video_text.c reads "osd-key-hint") */
-    intf_thread_t *intf = data;
-    char *key = PressedKeyName(intf, newval.i_int);
-    if (key != NULL)
-        var_SetString(vlc_object_instance(intf), "osd-key-hint", key);
-#endif
     handle_action(data, newval.i_int);
-#ifdef VLC_BRAND_PUBLIC
-    if (key != NULL)
-    {
-        var_SetString(vlc_object_instance(intf), "osd-key-hint", "");
-        free(key);
-    }
-#endif
     return VLC_SUCCESS;
 }
 
@@ -1361,9 +1253,6 @@ Open(vlc_object_t *this)
         free(sys);
         return VLC_EGENERIC;
     }
-#ifdef VLC_BRAND_PUBLIC
-    var_Create(vlc_object_instance(intf), "osd-key-hint", VLC_VAR_STRING);
-#endif
     var_AddCallback(vlc_object_instance(intf), "key-action", ActionCallback, intf);
 
     sys->executor = NULL;
@@ -1387,9 +1276,6 @@ Close(vlc_object_t *this)
     vlc_player_Unlock(player);
 
     var_DelCallback(vlc_object_instance(intf), "key-action", ActionCallback, intf);
-#ifdef VLC_BRAND_PUBLIC
-    var_Destroy(vlc_object_instance(intf), "osd-key-hint");
-#endif
 
     if (sys->executor)
     {

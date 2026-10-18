@@ -1134,9 +1134,10 @@ static const char* const ppsz_restore_playback_desc[] = {
 #define EXTRA_OPTIONS_LONGTEXT N_( \
     "Options applied at every start, as if they were typed after the program " \
     "name on the command line, for example --no-video-title-show. Options on " \
-    "the real command line win when both set the same one. File names are " \
-    "ignored, and the options read before the settings (plugins cache, high " \
-    "priority, clock source) cannot be set here.")
+    "the real command line win when both set the same one, and the options " \
+    "here win over the same settings made elsewhere. File names are ignored, " \
+    "and the options read before the settings (plugins cache, high priority, " \
+    "clock source) cannot be set here.")
 #endif
 
 #define VLM_CONF_TEXT N_("VLM configuration file")

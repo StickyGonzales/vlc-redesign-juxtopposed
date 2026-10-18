@@ -36,10 +36,12 @@
 # include <search.h>
 #endif
 #include <errno.h>
+#include <ctype.h>
 
 #include <vlc_common.h>
 #include <vlc_actions.h>
 #include <vlc_charset.h>
+#include <vlc_memstream.h>
 #include "../libvlc.h"
 
 static const struct key_descriptor
@@ -420,6 +422,70 @@ struct vlc_actions_t
     const char *ppsz_keys[];
 };
 
+#ifdef VLC_BRAND_PUBLIC
+/**
+ * redesign (P7-08, P8-13; video 15:16-15:28): a key worded as the Qt interface shows keys
+ * ("Ctrl + F", HotkeysModel::displayKeys): localized modifiers without the "+", letters in
+ * capitals.
+ */
+static char *vlc_key_display_name (uint_fast32_t code)
+{
+    static const struct
+    {
+        uint_fast32_t flag;
+        const char *name;
+    } modifiers[] = {
+        { KEY_MODIFIER_CTRL, N_("Ctrl+") },
+        { KEY_MODIFIER_ALT, N_("Alt+") },
+        { KEY_MODIFIER_SHIFT, N_("Shift+") },
+        { KEY_MODIFIER_META, N_("Meta+") },
+        { KEY_MODIFIER_COMMAND, N_("Command+") },
+    };
+
+    char *key = vlc_keycode2str (code & ~KEY_MODIFIER, true);
+    if (key == NULL)
+        return NULL;
+    if (key[0] != '\0' && key[1] == '\0')
+        key[0] = toupper ((unsigned char)key[0]);
+
+    struct vlc_memstream stream;
+    vlc_memstream_open (&stream);
+    for (size_t i = 0; i < ARRAY_SIZE(modifiers); i++)
+        if (code & modifiers[i].flag)
+        {
+            const char *name = vlc_gettext (modifiers[i].name);
+            size_t length = strlen (name);
+            if (length > 0 && name[length - 1] == '+')
+                length--;
+            vlc_memstream_write (&stream, name, length);
+            vlc_memstream_puts (&stream, " + ");
+        }
+    vlc_memstream_puts (&stream, key);
+    free (key);
+    return vlc_memstream_close (&stream) == 0 ? stream.ptr : NULL;
+}
+
+/**
+ * redesign: names the key that is about to trigger an action, for the on-screen messages
+ * that action prints ("Pressed C"). src/video_output/video_text.c uses the name for a short
+ * while after "osd-key-hint-date" (OSD_KEY_HINT_DELAY), long enough for the messages an
+ * audio output reports from its own thread (volume, mute). Not for the mouse wheel.
+ */
+static void vlc_key_set_hint (vlc_object_t *obj, uint_fast32_t code)
+{
+    const uint_fast32_t key = code & ~KEY_MODIFIER;
+    if (key >= KEY_MOUSEWHEELUP && key <= KEY_MOUSEWHEELRIGHT)
+        return;
+
+    char *name = vlc_key_display_name (code);
+    if (name == NULL)
+        return;
+    var_SetString (obj, "osd-key-hint", name);
+    var_SetInteger (obj, "osd-key-hint-date", vlc_tick_now ());
+    free (name);
+}
+#endif
+
 static int vlc_key_to_action (vlc_object_t *obj, const char *varname,
                               vlc_value_t prevkey, vlc_value_t curkey, void *d)
 {
@@ -435,6 +501,9 @@ static int vlc_key_to_action (vlc_object_t *obj, const char *varname,
 
     (void) varname;
     (void) prevkey;
+#ifdef VLC_BRAND_PUBLIC
+    vlc_key_set_hint (obj, keycode);
+#endif
     return var_SetInteger (obj, "key-action", ent->action);
 }
 
@@ -539,6 +608,10 @@ int libvlc_InternalActionsInit (libvlc_int_t *libvlc)
     var_Create (obj, "key-pressed", VLC_VAR_INTEGER);
     var_Create (obj, "global-key-pressed", VLC_VAR_INTEGER);
     var_Create (obj, "key-action", VLC_VAR_INTEGER);
+#ifdef VLC_BRAND_PUBLIC
+    var_Create (obj, "osd-key-hint", VLC_VAR_STRING);
+    var_Create (obj, "osd-key-hint-date", VLC_VAR_INTEGER);
+#endif
 
     /* Initialize from configuration */
     for (size_t i = 0; i < ARRAY_SIZE(s_names2actions); i++)
