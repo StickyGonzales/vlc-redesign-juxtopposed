@@ -83,6 +83,11 @@ FocusScope {
     // the music view stays on the whole window under the library (Figma "Player - Music-1": the
     // cover keeps its place centred on the window), so its blurred background is never resized
     readonly property real _contentInset: MainCtx.hasEmbededVideo ? _videoInset : 0
+    // the video between the bars instead of under them: with the controls pinned, and next to
+    // the compact library, which keeps both bars shown (VLC lays the subtitles out in the video's
+    // area: under a bar that stays they were cut off)
+    readonly property bool _videoBetweenBars: MainCtx.hasEmbededVideo
+                                              && (_controlsUnderVideo || _contentInset > 0)
     // the library is built on its first opening and then kept, so it reopens within a frame
     property bool _libraryActivated: false
     // built in the background when the player starts with it open (the player shows first)
@@ -427,8 +432,8 @@ FocusScope {
             // the video area starts right of the compact library
             leftMargin: rootPlayer._contentInset
             right: parent.right
-            top: (MainCtx.hasEmbededVideo && rootPlayer._controlsUnderVideo) ? topBar.bottom : parent.top
-            bottom: (MainCtx.hasEmbededVideo && rootPlayer._controlsUnderVideo) ? controlBar.top : parent.bottom
+            top: rootPlayer._videoBetweenBars ? topBar.bottom : parent.top
+            bottom: rootPlayer._videoBetweenBars ? controlBar.top : parent.bottom
         }
 
         sourceComponent: MainCtx.hasEmbededVideo ? videoComponent : audioComponent
@@ -1405,6 +1410,11 @@ FocusScope {
             property Item _panelItem: null
             property bool _dragged: false
             property point _lastPosition
+            // the queue sidebar works together with the compact library (video 11:44: rows are
+            // browsed and dragged from the library into the open queue): a press in the library,
+            // or one that opens or closes it, keeps the queue open
+            property bool _inLibrary: false
+            property bool _libraryAtPress: false
 
             onPointChanged: {
                 if (!active)
@@ -1434,6 +1444,8 @@ FocusScope {
                     _panelItem = panel
                     _dragged = false
                     _lastPosition = p
+                    _inLibrary = rootPlayer._libraryShown && _inside(libraryHost, p)
+                    _libraryAtPress = RdPanels.libraryOpen
                 } else if (_panel !== "") {
                     const panel = _panel
                     _panel = ""
@@ -1441,9 +1453,14 @@ FocusScope {
                     _panelItem = null
                     if (droppedInto)
                         return
+                    const inLibrary = _inLibrary
+                    const libraryAtPress = _libraryAtPress
                     Qt.callLater(() => {
-                        if (RdPanels.current === panel)
-                            RdPanels.close()
+                        if (RdPanels.current !== panel)
+                            return
+                        if (RdPanels.queueOpen && (inLibrary || RdPanels.libraryOpen !== libraryAtPress))
+                            return
+                        RdPanels.close()
                     })
                 }
             }
@@ -2203,16 +2220,26 @@ FocusScope {
         }
     }
 
-    // Escape closes the open player panel first, then shows the UI again after Hide UI (a second
-    // Escape then leaves fullscreen as usual). A shortcut runs before the focused control's own
-    // cancel action (the control bar would otherwise leave the player).
+    // Escape closes the open player panel first, then the compact library, then shows the UI
+    // again after Hide UI (a second Escape then leaves fullscreen as usual). In the library's
+    // search field Escape closes the search, and while the keyboard moves through the library
+    // it goes back a page first (VLC's Navigation). A shortcut runs before the focused control's
+    // own cancel action (the control bar would otherwise leave the player).
+    readonly property Item _focusItem: Window.activeFocusItem
+    readonly property bool _escapeClosesLibrary: _libraryShown
+            && !(librarySidebar.activeFocus
+                 && ((_focusItem instanceof TextInput)
+                     || ((librarySidebar.item?.canGoBack ?? false) && (_focusItem?.visualFocus ?? false))))
+
     Shortcut {
         sequences: [StandardKey.Cancel]
-        enabled: RdPanels.current !== "" || RdPanels.uiHidden
+        enabled: RdPanels.current !== "" || rootPlayer._escapeClosesLibrary || RdPanels.uiHidden
         onActivated: {
             if (RdPanels.current !== "") {
                 // the keyboard focus goes back to the panel's button (onCurrentChanged above)
                 RdPanels.close()
+            } else if (rootPlayer._escapeClosesLibrary) {
+                RdPanels.libraryOpen = false
             } else {
                 RdPanels.uiHidden = false
             }
