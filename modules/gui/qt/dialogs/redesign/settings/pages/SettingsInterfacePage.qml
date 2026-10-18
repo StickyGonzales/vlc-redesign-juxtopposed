@@ -37,11 +37,13 @@ SettingsPage {
 
     SettingsSection {
         title: qsTr("Skin")
+        // only in builds with VLC's skinnable interface; Cone has none (Decision 63)
+        shown: !Brand.isPublic
 
         // only in builds with VLC's skinnable interface
         SettingsOption {
             option: "intf"
-            shown: SettingsCatalog.exists("skins2-last")
+            shown: !Brand.isPublic && SettingsCatalog.exists("skins2-last")
             text: qsTr("Use a custom skin")
             description: qsTr("Replaces this interface with %1's skinnable one, drawn by a skin file. %1 uses it the next time it starts.").arg(Brand.shortName)
             kind: "toggle"

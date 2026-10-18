@@ -38,9 +38,8 @@
   !define PRODUCT_SHORT_NAME "${PRODUCT_NAME}"
   !define PRODUCT_DESCRIPTION "${PRODUCT_NAME}, a media player based on VLC media player"
   !define PRODUCT_APPDATA_DIR "${PRODUCT_NAME}"
-  ; the project page holds the documentation; VLC's skins work in the skinned interface too
+  ; the project page holds the documentation; no skins (Decision 63): no skins link
   !define PRODUCT_DOC_URL "${PRODUCT_WEB_SITE}#readme"
-  !define PRODUCT_SKINS_URL "https://www.videolan.org/vlc/skins.php"
   !define PRODUCT_WEBSITE_LINK "${PRODUCT_NAME} Website"
   ; Decision 58: "Cone 0.1.0" in the window title and on the welcome and finish pages, "based on
   ; VLC <version>" under every page; the Windows Apps list shows "Cone" with the version 0.1.0
@@ -379,8 +378,10 @@ skip_uninstall32_cleanup:
   FileWrite $UninstallLog "${PRODUCT_WEBSITE_LINK}.url$\r$\n"
   WriteIniStr "$INSTDIR\Documentation.url" "InternetShortcut" "URL" "${PRODUCT_DOC_URL}"
   FileWrite $UninstallLog "Documentation.url$\r$\n"
+!if "${PRODUCT_PROGID}" == "VLC"
   WriteIniStr "$INSTDIR\New_Skins.url" "InternetShortcut" "URL" "${PRODUCT_SKINS_URL}"
   FileWrite $UninstallLog "New_Skins.url$\r$\n"
+!endif
 
   !insertmacro CloseUninstallLog
 
@@ -415,8 +416,14 @@ ${MementoSection} "$(Name_Section02a)" SEC02a
   CreateDirectory "$SMPROGRAMS\${PRODUCT_PUBLISHER}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}.lnk" \
     "$INSTDIR\${PRODUCT_EXE}" ""
+!if "${PRODUCT_PROGID}" == "VLC"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_NAME} skinned.lnk" \
     "$INSTDIR\${PRODUCT_EXE}" "-Iskins"
+!else
+  ; redesign: brand layer (Decision 63), Cone has no skins interface; an earlier test install's
+  ; skinned shortcut goes away on upgrade
+  Delete "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_NAME} skinned.lnk"
+!endif
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\Documentation.lnk" \
     "$INSTDIR\Documentation.url"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\Release Notes.lnk" \
@@ -563,7 +570,9 @@ SectionGroup /e "!$(Name_Section06)" SEC06
   SectionGroupEnd
   SectionGroup "$(Name_SectionGroupOther)"
     !insertmacro MacroOtherExtensions AssociateExtensionSection
+!if "${PRODUCT_PROGID}" == "VLC"
     !insertmacro MacroSkinExtensions AssociateSkinExtensionSection
+!endif
     !insertmacro MacroUnassociatedExtensions AssociateExtensionUnselectedSection
   SectionGroupEnd
 SectionGroupEnd

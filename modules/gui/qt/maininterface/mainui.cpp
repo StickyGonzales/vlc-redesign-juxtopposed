@@ -38,6 +38,7 @@
 #include "player/rd_seek_thumbnailer.hpp"
 #include "player/rd_waveform.hpp"
 #include "player/rd_waveform_item.hpp"
+#include "player/rd_subtitle_lift.hpp"
 #include "player/rd_now_playing.hpp"
 #include "dialogs/toolbar/rd_profiles.hpp"
 #include "player/rd_media_info.hpp"
@@ -362,6 +363,9 @@ void MainUI::registerQMLTypes()
         // redesign: waveform seek bar (P6-06): the playing file's waveform, and its bars
         qmlRegisterSingletonInstance<RdWaveform>(uri, versionMajor, versionMinor, "RdWaveform",
                                                  new RdWaveform(m_intf, m_intf->p_mainPlayerController, this));
+        // redesign: subtitles above the control bar while it covers the picture (beta)
+        qmlRegisterSingletonInstance<RdSubtitleLift>(uri, versionMajor, versionMinor, "RdSubtitleLift",
+                                                     new RdSubtitleLift(m_intf->p_mainPlayerController, this));
         qmlRegisterType<RdWaveformItem>(uri, versionMajor, versionMinor, "RdWaveformItem");
         // redesign (W8.1b / W8.2): what the Customize Player items show about the playing
         // media, and the profiles (top bar layout, settings)

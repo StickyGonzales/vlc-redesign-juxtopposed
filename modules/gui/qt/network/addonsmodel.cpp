@@ -640,6 +640,16 @@ bool AddonsModelPrivate::initializeModel()
 
 void AddonsModelPrivate::addonFound( AddonPtr addon )
 {
+#ifdef VLC_BRAND_PUBLIC
+    // redesign: brand layer (Decision 63), Cone has no skins interface: skins are not offered in
+    // any add-ons list (Settings > Extensions, Plugins and extensions); one an earlier test build
+    // installed still shows, so it can be removed
+    {
+        vlc_mutex_locker locker{&addon->lock};
+        if (addon->e_type == ADDON_SKIN2 && addon->e_state != ADDON_INSTALLED)
+            return;
+    }
+#endif
     m_items.emplace_back(std::make_shared<AddonItem>(addon));
 }
 
