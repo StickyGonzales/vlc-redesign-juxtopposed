@@ -122,6 +122,23 @@ T.Popup {
 
     onOpened: nextButton.forceActiveFocus(Qt.OtherFocusReason)
 
+    // the player takes the keyboard focus when its media starts, which can be after the onboarding
+    // opened (first start with a file): the keys (Enter, Escape) stay here while it is open
+    function _keepFocus() {
+        const window = contentItem.Window.window
+        if (opened && window && window.activeFocusItem && !contentItem.activeFocus)
+            nextButton.forceActiveFocus(Qt.OtherFocusReason)
+    }
+
+    Connections {
+        target: root.contentItem.Window.window
+        enabled: root.opened
+
+        function onActiveFocusItemChanged() {
+            Qt.callLater(root._keepFocus)
+        }
+    }
+
     onAboutToHide: {
         if (_holdsModal) {
             RdPanels.releaseModal()
