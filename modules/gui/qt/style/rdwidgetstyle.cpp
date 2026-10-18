@@ -24,8 +24,6 @@
 #include "maininterface/mainctx.hpp"
 #include "util/color_scheme_model.hpp"
 
-#include <QLabel>
-#include <QPalette>
 #include <QStyle>
 #include <QWidget>
 
@@ -348,15 +346,6 @@ void RdWidgetStyle::apply( QWidget* widget, qt_intf_t* p_intf )
 
     const auto update = [widget, palette]() {
         widget->setStyleSheet( makeStyleSheet( *palette ) );
-        /* links in rich text labels take the label's palette link color, which style sheets
-         * cannot set and which does not propagate from the dialog under a style sheet */
-        for( QLabel* label : widget->findChildren<QLabel*>() )
-        {
-            QPalette labelPalette = label->palette();
-            labelPalette.setColor( QPalette::Link, palette->get_rdAccentMain() );
-            labelPalette.setColor( QPalette::LinkVisited, palette->get_rdAccentMain() );
-            label->setPalette( labelPalette );
-        }
     };
     QObject::connect( palette, &SystemPalette::paletteChanged, widget, update );
     update();
@@ -370,4 +359,10 @@ void RdWidgetStyle::setPrimary( QWidget* button )
     /* property selectors are only evaluated when the widget is polished */
     button->style()->unpolish( button );
     button->style()->polish( button );
+}
+
+SystemPalette* RdWidgetStyle::palette( QWidget* widget )
+{
+    assert( widget );
+    return widget->findChild<SystemPalette*>( QString(), Qt::FindDirectChildrenOnly );
 }
