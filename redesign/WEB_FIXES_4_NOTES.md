@@ -20,3 +20,16 @@ Branch `wip/web-fixes-4`, made from `origin/wip/next-test` (b8c6aae582), pull re
 **Checks:** qmlcheck errors 1, crashed 0 (400 files); build list checker 0 problems; privacy checker 0 problems.
 
 ## Sandbox recheck (Linux)
+Branch `wip/web-fixes-4` has no Linux build, so the recheck ran on the test branch `wip/web-fixes-4-linux` (this branch + `wip/web-fixes-2`'s Linux build job; not for merging): build-linux run 39148569107 (#9), green, so the C++ changes (`mainctx.cpp`, `systempalette`) compile. Xvfb 1920x1080, scale 100 %, screenshots looked at.
+
+| # | Result |
+|---|---|
+| 1 | Speed dragged back and forth, keys v b + - h g, then the window's close button: Cone exits in 0.37 s (exit 0). The hang itself never reproduced on Linux (before or after), so the fallback is not exercised here: Windows test needed. |
+| 2 | Not rechecked (needs the Customize Player drag of the title into the bottom bar). |
+| 3 | Pass: queue open, then the sidebar toggle: both panels open side by side; a click inside the library: the queue stays; a click on the video: the queue closes. |
+| 4 | Pass: sidebar > Audio shows Defaults (Audio Track, Audio Language, Stereo Mode) with no note. |
+| 5 | No change (Decision). |
+| 6 | Pass: opening "Continue Watching" from Home, shots every ~40 ms: the old "Home" crumb shows faded over the new "... > Continue Watching" in the first frames, then only the new one; no slide. |
+| 7a | Pass: light theme with the library open: top bar #D5D5D5 over the library and over the video (was #DADADA / #A0A0A0). |
+| 7b | Pass: light Settings search field is a light grey field with the "Search" placeholder and icon visible. |
+| 7c | Pass: light Settings > General with Save a log OFF: Log file (field, Browse) and Log details (dropdown) faint but readable, labels and controls alike. |
