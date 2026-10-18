@@ -900,7 +900,12 @@ static void *Thread( void *obj )
 
     auto vlcQtMessageHandler = VlcQtMessageHandlerRegisterer{VLC_OBJECT(p_intf)};
 
+#if defined(VLC_BRAND_PUBLIC) && !defined(_WIN32)
+    /* redesign (brand layer): Cone's own window class on X11, the name of its desktop file */
+    char vlc_name[] = BRAND_DESKTOP_FILE; /* for WM_CLASS */
+#else
     char vlc_name[] = "vlc"; /* for WM_CLASS */
+#endif
     char *argv[3] = { nullptr };
     int argc = 0;
 
@@ -1380,6 +1385,11 @@ static void *Thread( void *obj )
     app.setWindowIcon( brand::windowIcon( p_intf ) );
 
     app.setDesktopFileName( BRAND_DESKTOP_FILE );
+#if defined(VLC_BRAND_PUBLIC) && !defined(_WIN32)
+    /* redesign (brand layer): Qt's own caches (QML, graphics pipelines) in Cone's cache folder
+     * (~/.cache/Cone), not VLC's ~/.cache/vlc; the settings name their folder themselves */
+    app.setApplicationName( BRAND_CONFIG_DIR );
+#endif
 
     loadRedesignFonts( app );
 
