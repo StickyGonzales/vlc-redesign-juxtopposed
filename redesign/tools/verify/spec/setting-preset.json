@@ -1,0 +1,288 @@
+{
+ "format": 1,
+ "node": "2372:8834",
+ "name": "Setting Preset",
+ "png": "Setting Preset.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  406,
+  412
+ ],
+ "theme": "dark",
+ "rows": [
+  105,
+  106,
+  107,
+  108,
+  110
+ ],
+ "variants": [
+  {
+   "node": "2372:8835",
+   "name": "state=default",
+   "props": {
+    "state": "default"
+   },
+   "bounds": [
+    21,
+    21,
+    364,
+    42
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "2372:8836",
+     "name": "option",
+     "type": "instance",
+     "path": "option",
+     "bounds": [
+      2,
+      2,
+      360,
+      38
+     ],
+     "component": "option",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      105,
+      106,
+      107,
+      108,
+      110
+     ]
+    },
+    {
+     "id": "I2372:8836;2107:5930",
+     "name": "Option",
+     "type": "text",
+     "path": "option / Option",
+     "bounds": [
+      16,
+      12.5,
+      298,
+      17
+     ],
+     "text": {
+      "content": "Default Preset",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      105,
+      106,
+      107,
+      108,
+      110
+     ]
+    },
+    {
+     "id": "I2372:8836;2107:5931",
+     "name": "Icon",
+     "type": "instance",
+     "path": "option / Icon:chevron",
+     "bounds": [
+      324,
+      9,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "up",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      105,
+      106,
+      107,
+      108,
+      110
+     ]
+    }
+   ]
+  },
+  {
+   "node": "2372:8837",
+   "name": "state=open",
+   "props": {
+    "state": "open"
+   },
+   "bounds": [
+    21,
+    298,
+    364,
+    42
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "2372:8838",
+     "name": "Options",
+     "type": "frame",
+     "path": "Options",
+     "bounds": [
+      0,
+      -200,
+      364,
+      242
+     ],
+     "clipped": true,
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 14,
+       "color": "#000000",
+       "alpha": 0.35,
+       "offset": [
+        0,
+        0
+       ],
+       "spread": 8
+      }
+     ],
+     "rows": [
+      105,
+      106,
+      107,
+      108,
+      110
+     ]
+    },
+    {
+     "id": "2372:8839",
+     "name": "option",
+     "type": "instance",
+     "path": "Options / option",
+     "bounds": [
+      2,
+      2,
+      360,
+      38
+     ],
+     "component": "option",
+     "variant": {
+      "Property 1": "selected"
+     },
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/A2",
+       "dark": "#1F1F1F",
+       "light": "#DDDDDD"
+      }
+     ],
+     "rows": [
+      105,
+      106,
+      107,
+      108,
+      110
+     ]
+    },
+    {
+     "id": "I2372:8839;2107:5943",
+     "name": "Option",
+     "type": "text",
+     "path": "Options / option / Option",
+     "bounds": [
+      16,
+      12.5,
+      298,
+      17
+     ],
+     "text": {
+      "content": "Default Preset",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      105,
+      106,
+      107,
+      108,
+      110
+     ]
+    },
+    {
+     "id": "I2372:8839;2107:5944",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Options / option / Icon:check",
+     "bounds": [
+      324,
+      9,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "check",
+      "direction": "default",
+      "state": "active",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "check",
+     "rows": [
+      15,
+      105,
+      106,
+      107,
+      108
+     ]
+    }
+   ]
+  }
+ ]
+}

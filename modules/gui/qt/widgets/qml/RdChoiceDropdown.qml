@@ -29,9 +29,12 @@ RdDropdown {
 
     // a VLCVarChoiceModel (roles: display, checked)
     property var choices: null
+    // shown while the model has no entries (VLC offers nothing to choose)
+    property string placeholderText: ""
 
     model: choices
     textRole: "display"
+    displayText: count > 0 ? currentText : placeholderText
     currentIndex: _checkedIndex
     enabled: !!choices && count > 0
 

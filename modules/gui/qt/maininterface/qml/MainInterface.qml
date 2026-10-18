@@ -464,6 +464,10 @@ Item {
             }
         }
 
+        // redesign (W8.2, Decision 29): tells when a profile's settings apply only from the next
+        // file or after a restart, over every view
+        RdProfileNotice { }
+
         // redesign (W8.1a): Customize Player (VLC's toolbar editor, video 19:12-19:28), over every
         // view so a view switch does not lose unsaved edits; created on its first open
         Loader {

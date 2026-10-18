@@ -78,12 +78,21 @@ public:
     QString compactViewMode() const { return m_compactViewMode; }
     void setCompactViewMode(const QString& mode);
 
-    // file pickers (native dialogs); empty when cancelled. The folder picker opens in `start`
-    // (a local folder URL), else in the user's Videos or Music folder for `category`, else in
-    // the user's home folder
-    Q_INVOKABLE QUrl pickFolder(const QString& title, const QUrl& start = {},
-                                const QString& category = {}) const;
-    Q_INVOKABLE QList<QUrl> pickFiles(const QString& title, bool images) const;
+    // file pickers (native dialogs): callback(url) / callback([url]), empty when cancelled.
+    // The picker opens once the event that asked for it is handled, never inside a QML handler:
+    // its own event loop could otherwise destroy the item running that handler (a model reload
+    // of a scan rebuilds the library rows) and crash when the dialog returns (P5-16). One picker
+    // at a time; a request while one is open is dropped. The folder picker opens in `start` (a
+    // local folder URL), else in the user's Videos or Music folder for `category`, else in the
+    // user's home folder
+    Q_INVOKABLE void pickFolder(const QString& title, const QUrl& start, const QString& category,
+                                QJSValue callback);
+    Q_INVOKABLE void pickFiles(const QString& title, bool images, QJSValue callback);
+
+    // `value` held by value. In Qt 6 a value type read from a model row in a delegate (an
+    // MLItemId, a network tree) is a reference to that row: kept after the row changes or the
+    // delegate is destroyed, it reads another row's value or nothing (RdLibraryNav.detached)
+    Q_INVOKABLE QVariant detached(const QVariant& value) const { return value; }
 
     // library folders of a category ("video" or "music")
     Q_INVOKABLE void addFolder(const QString& category, const QUrl& url);
@@ -167,6 +176,13 @@ private:
     void save(const char* key, const QVariant& value);
     QString coverDirectory() const;
     static void appendItems(struct vlc_medialibrary_t* ml, int64_t playlistId, const QVariantList& items);
+    // runs `dialog` (a native dialog) from the event loop, after the current event; dropped
+    // while a dialog is open or waiting
+    void openDialogLater(std::function<void()> dialog);
+    // logs an error a picker callback threw
+    void warnOnError(const QJSValue& result) const;
+    // the M3U8 file of exportPlaylist()
+    void writePlaylist(const MLItemId& playlistId, const QString& file);
 
     qt_intf_t* p_intf;
     MediaLib* m_mediaLib;
@@ -184,6 +200,8 @@ private:
     QString m_viewMode;
     QString m_compactViewMode;
     QStringList m_hiddenRoots;
+    // a native dialog of the store is open or about to open
+    bool m_dialogPending = false;
 };
 
 #endif // RDLIBRARYSTORE_HPP

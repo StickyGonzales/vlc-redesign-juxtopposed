@@ -1063,8 +1063,9 @@ static void *Thread( void *obj )
     {
         QString configDir = cConfigDir;
         free( cConfigDir );
-        if( configDir.endsWith( "\\vlc" ) )
-            configDir.chop( 4 ); /* the "\vlc" dir is added again by QSettings */
+        /* redesign (brand layer): the app's own folder ("vlc" or "Cone") */
+        if( configDir.endsWith( "\\" BRAND_CONFIG_DIR ) )
+            configDir.chop( sizeof( BRAND_CONFIG_DIR ) ); /* the app dir is added again by QSettings */
         QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, configDir );
     }
 #endif
@@ -1075,7 +1076,7 @@ static void *Thread( void *obj )
 #else
             QSettings::NativeFormat,
 #endif
-            QSettings::UserScope, "vlc", "vlc-qt-interface" );
+            QSettings::UserScope, BRAND_CONFIG_DIR, "vlc-qt-interface" );
 
     // It is guaranteed that the returned format is supported, if a format is returned.
     static const auto createCompatibleOpenGLFormat = []() -> std::optional<QSurfaceFormat> {

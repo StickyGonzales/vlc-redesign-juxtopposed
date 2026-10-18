@@ -21,7 +21,11 @@
 
 #include <QAbstractListModel>
 
+#include <memory>
+
 #include "qt.hpp"
+
+class RdStereoTest;
 
 extern "C" {
     typedef struct vlc_player_aout_listener_id vlc_player_aout_listener_id;
@@ -32,6 +36,9 @@ extern "C" {
 class AudioDeviceModel : public QAbstractListModel
 {
     Q_OBJECT
+
+    // redesign: the id of the device the output plays on ("" = the system default)
+    Q_PROPERTY(QString current READ current NOTIFY currentChanged FINAL)
 
 public:
     AudioDeviceModel(vlc_player_t *player, QObject *parent = nullptr);
@@ -53,6 +60,23 @@ public:
     // redesign: re-read the output devices (refresh button of the tracks popup, video 4:41)
     Q_INVOKABLE void refresh();
 
+    // redesign: the devices as [{ value: id, text: name }] for the Settings dialog's "Output
+    // device" dropdown (Figma "Settings - audio"); the default device has an empty id
+    Q_INVOKABLE QVariantList devices() const;
+
+    // redesign: switches the output to the device `id` (one of devices()); false when the
+    // output did not take it
+    Q_INVOKABLE bool select(const QString &id);
+
+    // redesign: plays the test sound of the settings sidebar's Stereo Mode "Test" button
+    // (RdStereoTest) on the device in use, with the playing file's stereo mode
+    Q_INVOKABLE void playStereoTest();
+
+    QString current() const { return m_current; }
+
+signals:
+    void currentChanged();
+
 private:
     int m_inputs = 0;
     char **m_names = nullptr;
@@ -61,6 +85,7 @@ private:
     vlc_player_aout_listener_id* m_player_aout_listener = nullptr;
     audio_output_t* m_aout = nullptr;
     vlc_player_t *m_player;
+    std::unique_ptr<RdStereoTest> m_stereoTest;
 };
 
 #endif // AUDIO_DEVICE_MODEL_HPP

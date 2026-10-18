@@ -156,6 +156,8 @@ RdSidePanelPage {
             limitFrom: root._rateMin
             limitTo: root._rateMax
             stepSize: 0.25
+            // the wheel fine-tunes in 0.05x steps (Decision 54)
+            wheelStep: 0.05
             scrollSpeed: 1
             // the zero edge label points to normal speed
             zeroValue: 1

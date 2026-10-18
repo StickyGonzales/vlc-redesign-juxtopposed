@@ -1,0 +1,712 @@
+{
+ "format": 1,
+ "node": "1919:9278",
+ "name": "Add Subtitles to Playlist/Folder",
+ "png": "Add Subtitles to Playlist/Folder-3.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1048,
+  800
+ ],
+ "theme": "dark",
+ "rows": [
+  75,
+  76,
+  78,
+  79,
+  336
+ ],
+ "background": [
+  {
+   "token": "BG/B1 Transparent",
+   "dark": "#0E0E0E",
+   "light": "#E7E7E7",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "1919:9279",
+   "name": "Frame 120",
+   "type": "frame",
+   "path": "Frame 120",
+   "bounds": [
+    0,
+    0,
+    1048,
+    96
+   ],
+   "radius": [
+    14,
+    14,
+    0,
+    0
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "1919:9281",
+   "name": "Add Subtitles",
+   "type": "text",
+   "path": "Add Subtitles",
+   "bounds": [
+    19,
+    16.5,
+    89,
+    17
+   ],
+   "text": {
+    "content": "Add Subtitles",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    75,
+    76,
+    78,
+    79,
+    336
+   ]
+  },
+  {
+   "id": "1919:9282",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Icon Wrapper",
+   "bounds": [
+    1007,
+    9,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I1919:9282;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon Wrapper / Icon:close",
+   "bounds": [
+    1011,
+    13,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close"
+  },
+  {
+   "id": "1959:5412",
+   "name": "target",
+   "type": "instance",
+   "path": "target",
+   "bounds": [
+    9,
+    53,
+    200,
+    34
+   ],
+   "component": "target",
+   "variant": {
+    "state": "to this file"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ],
+   "rows": [
+    336
+   ]
+  },
+  {
+   "id": "I1959:5412;1959:5351",
+   "name": "To This File",
+   "type": "text",
+   "path": "target / To This File",
+   "bounds": [
+    21,
+    61.5,
+    76,
+    17
+   ],
+   "text": {
+    "content": "To This File",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "rows": [
+    336
+   ]
+  },
+  {
+   "id": "I1959:5412;1959:5352",
+   "name": "Icon",
+   "type": "instance",
+   "path": "target / Icon:chevron",
+   "bounds": [
+    177,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "1992:5568",
+   "name": "origin",
+   "type": "instance",
+   "path": "origin",
+   "bounds": [
+    219,
+    53,
+    200,
+    34
+   ],
+   "component": "origin",
+   "variant": {
+    "state": "from opensub"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "I1992:5568;1963:5470",
+   "name": "From OpenSubtitles",
+   "type": "text",
+   "path": "origin / From OpenSubtitles",
+   "bounds": [
+    231,
+    61.5,
+    132,
+    17
+   ],
+   "text": {
+    "content": "From OpenSubtitles",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "rows": [
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1992:5568;1963:5471",
+   "name": "Icon",
+   "type": "instance",
+   "path": "origin / Icon:chevron",
+   "bounds": [
+    387,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "1919:9287",
+   "name": "Frame 122",
+   "type": "frame",
+   "path": "Frame 122",
+   "bounds": [
+    429,
+    53,
+    400,
+    34
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "1919:9288",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:search",
+   "bounds": [
+    437,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "search",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "search",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1919:9289",
+   "name": "The Wand S01E01",
+   "type": "text",
+   "path": "The Wand S01E01",
+   "bounds": [
+    471,
+    61.5,
+    119,
+    17
+   ],
+   "text": {
+    "content": "The Wand S01E01",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1919:9380",
+   "name": "Frame 124",
+   "type": "frame",
+   "path": "Frame 124",
+   "bounds": [
+    839,
+    53,
+    200,
+    34
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "1919:9381",
+   "name": "English",
+   "type": "text",
+   "path": "English",
+   "bounds": [
+    851,
+    61.5,
+    48,
+    17
+   ],
+   "text": {
+    "content": "English",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   }
+  },
+  {
+   "id": "1919:9382",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:chevron",
+   "bounds": [
+    1007,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "3336:11895",
+   "name": "subtitle one",
+   "type": "instance",
+   "path": "subtitle one",
+   "bounds": [
+    20,
+    118,
+    1008,
+    36
+   ],
+   "component": "subtitle one",
+   "variant": {
+    "Property 1": "selected"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    80,
+    111
+   ]
+  },
+  {
+   "id": "I3336:11895;1919:9128",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle one / Icon:subtitle",
+   "bounds": [
+    28,
+    124,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    52,
+    75,
+    76,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I3336:11895;1919:9129",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle one / The_Wand_S01E01.srt",
+   "bounds": [
+    66,
+    127.5,
+    200,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E01_English.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "I3336:11895;1919:9130",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle one / Icon:check",
+   "bounds": [
+    996,
+    124,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "active",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    15,
+    80
+   ]
+  },
+  {
+   "id": "3336:11907",
+   "name": "subtitle one",
+   "type": "instance",
+   "path": "subtitle one",
+   "bounds": [
+    20,
+    158,
+    1008,
+    36
+   ],
+   "component": "subtitle one",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    52,
+    75,
+    76,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I3336:11907;1919:9124",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle one / Icon:subtitle",
+   "bounds": [
+    28,
+    164,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    52,
+    75,
+    76,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I3336:11907;1919:9125",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle one / The_Wand_S01E01.srt",
+   "bounds": [
+    66,
+    167.5,
+    171,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E01_EN.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1994:5586",
+   "name": "Frame 140",
+   "type": "frame",
+   "path": "Frame 140",
+   "bounds": [
+    20,
+    748,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ]
+  },
+  {
+   "id": "1994:5587",
+   "name": "Cancel",
+   "type": "text",
+   "path": "Cancel",
+   "bounds": [
+    46,
+    755.5,
+    48,
+    17
+   ],
+   "text": {
+    "content": "Cancel",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "1994:5588",
+   "name": "Frame 141",
+   "type": "frame",
+   "path": "Frame 141",
+   "bounds": [
+    928,
+    748,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "1994:5589",
+   "name": "Save",
+   "type": "text",
+   "path": "Save",
+   "bounds": [
+    961.5,
+    755.5,
+    33,
+    17
+   ],
+   "text": {
+    "content": "Save",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   }
+  }
+ ]
+}

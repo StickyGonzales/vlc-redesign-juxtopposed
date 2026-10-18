@@ -41,6 +41,8 @@ GridView {
 
     // PlayerControlbarModel of the selected profile and player
     property var playerModel: null
+    // and of the selected profile's top bar (W8.1b): its items are not in the box either
+    property var topBarModel: null
 
     readonly property bool removeHintVisible: removeDrop.containsDrag
 
@@ -87,9 +89,9 @@ GridView {
         case ControlListModel.PLAYLIST_BUTTON: return "lists"
         case ControlListModel.SNAPSHOT_BUTTON: return "snapshot"
         case ControlListModel.RECORD_BUTTON: return "record"
-        // VLC's short jump, 10 s by default
-        case ControlListModel.SKIP_BACK_BUTTON: return "backward-10-sec"
-        case ControlListModel.SKIP_FW_BUTTON: return "forward-10-sec"
+        // the 15 s jumps (SkipBackButton / SkipForwardButton)
+        case ControlListModel.SKIP_BACK_BUTTON: return "backward-15-sec"
+        case ControlListModel.SKIP_FW_BUTTON: return "forward-15-sec"
         case ControlListModel.QUIT_BUTTON: return "quit"
         case ControlListModel.RANDOM_BUTTON: return "shuffle_direction-right"
         case ControlListModel.LOOP_BUTTON: return "repeat_direction-right"
@@ -100,6 +102,30 @@ GridView {
         case ControlListModel.VOLUME: return "volume_value-high"
         case ControlListModel.ARTWORK_INFO: return "thumbnail"
         case ControlListModel.PLAYBACK_SPEED_BUTTON: return "speed"
+        // W8.1b: the Figma items VLC had no control for, and the top bar's items
+        case ControlListModel.RD_DIVIDER: return "divider"
+        case ControlListModel.RD_SKIP_BACK_10_BUTTON: return "backward-10-sec"
+        case ControlListModel.RD_SKIP_FW_10_BUTTON: return "forward-10-sec"
+        case ControlListModel.RD_HDR_BUTTON: return "hdr"
+        case ControlListModel.RD_ZOOM_BUTTON: return "zoom"
+        case ControlListModel.RD_RIGHT_SIDEBAR_BUTTON: return "sidebar_direction-right"
+        case ControlListModel.RD_SETTINGS_BUTTON: return "settings"
+        case ControlListModel.RD_HOME_BUTTON: return "home"
+        case ControlListModel.RD_THUMBNAIL: return "thumbnail"
+        case ControlListModel.RD_FILE_NAME:
+        case ControlListModel.RD_ARTIST_NAME:
+        case ControlListModel.RD_FOLDER_NAME:
+        case ControlListModel.RD_PLAYLIST_NAME:
+            return "info"
+        case ControlListModel.RD_REPLAY_BUTTON: return "replay"
+        case ControlListModel.RD_CHAPTERS_BUTTON: return "chapters"
+        case ControlListModel.RD_FAVORITE_BUTTON: return "favorite"
+        case ControlListModel.RD_ADD_BOOKMARK_BUTTON: return "bookmark"
+        case ControlListModel.RD_PLAYLISTS_BUTTON: return "playlist"
+        case ControlListModel.RD_MAIN_MENU_BUTTON: return "more"
+        case ControlListModel.RD_LIBRARY_BUTTON: return "sidebar_direction-left"
+        case ControlListModel.RD_FOLDER_CHIP: return "folder"
+        case ControlListModel.RD_MEDIA_TITLE: return "file"
         default: return ""
         }
     }
@@ -107,9 +133,12 @@ GridView {
     // Figma's name where the design has the same control, VLC's name otherwise
     function nameFor(entry) {
         switch (entry.id) {
-        // VLC's short jump, 10 s by default; two lines as in Figma
-        case ControlListModel.SKIP_FW_BUTTON: return qsTr("Forward\n10s")
-        case ControlListModel.SKIP_BACK_BUTTON: return qsTr("Backward\n10s")
+        // two lines as in Figma (its "Forward \n15s" / "Backward15s" typos fixed, Decision 17)
+        case ControlListModel.SKIP_FW_BUTTON: return qsTr("Forward\n15s")
+        case ControlListModel.SKIP_BACK_BUTTON: return qsTr("Backward\n15s")
+        case ControlListModel.RD_SKIP_FW_10_BUTTON: return qsTr("Forward\n10s")
+        case ControlListModel.RD_SKIP_BACK_10_BUTTON: return qsTr("Backward\n10s")
+        case ControlListModel.QUIT_BUTTON: return qsTr("Quit %1").arg(Brand.shortName)
         case ControlListModel.LOOP_BUTTON: return qsTr("Repeat")
         case ControlListModel.RANDOM_BUTTON: return qsTr("Shuffle")
         case ControlListModel.INFO_BUTTON: return qsTr("Properties")
@@ -118,19 +147,33 @@ GridView {
         }
     }
 
-    // Figma's order first (Spacer, Playback Speed, Forward / Backward, Stop, Repeat, Shuffle,
-    // Record, Snapshot ... Properties, Bookmarks), then VLC's other controls in VLC's order
+    // Figma's order first (Spacer, Divider, Playback Speed, Forward / Backward 10s and 15s,
+    // Stop, Repeat, Shuffle ... Favorite, Bookmark, Bookmarks, Playlists; its Picture in Picture
+    // is left out, Decision 1), then the top bar's items and VLC's other controls in VLC's order
     readonly property var _figmaOrder: [
-        ControlListModel.WIDGET_SPACER, ControlListModel.WIDGET_SPACER_EXTEND,
-        ControlListModel.PLAYBACK_SPEED_BUTTON, ControlListModel.SKIP_FW_BUTTON,
-        ControlListModel.SKIP_BACK_BUTTON, ControlListModel.STOP_BUTTON,
-        ControlListModel.LOOP_BUTTON, ControlListModel.RANDOM_BUTTON,
-        ControlListModel.RECORD_BUTTON, ControlListModel.SNAPSHOT_BUTTON,
+        ControlListModel.WIDGET_SPACER, ControlListModel.RD_DIVIDER,
+        ControlListModel.PLAYBACK_SPEED_BUTTON,
+        ControlListModel.RD_SKIP_FW_10_BUTTON, ControlListModel.RD_SKIP_BACK_10_BUTTON,
+        ControlListModel.SKIP_FW_BUTTON, ControlListModel.SKIP_BACK_BUTTON,
+        ControlListModel.STOP_BUTTON, ControlListModel.LOOP_BUTTON,
+        ControlListModel.RANDOM_BUTTON, ControlListModel.RECORD_BUTTON,
+        ControlListModel.SNAPSHOT_BUTTON, ControlListModel.RD_HDR_BUTTON,
+        ControlListModel.RD_ZOOM_BUTTON, ControlListModel.RD_RIGHT_SIDEBAR_BUTTON,
+        ControlListModel.QUIT_BUTTON, ControlListModel.RD_SETTINGS_BUTTON,
+        ControlListModel.RD_HOME_BUTTON, ControlListModel.RD_THUMBNAIL,
+        ControlListModel.RD_FILE_NAME, ControlListModel.RD_ARTIST_NAME,
+        ControlListModel.RD_FOLDER_NAME, ControlListModel.RD_PLAYLIST_NAME,
+        ControlListModel.INFO_BUTTON, ControlListModel.RD_REPLAY_BUTTON,
+        ControlListModel.RD_CHAPTERS_BUTTON, ControlListModel.RD_FAVORITE_BUTTON,
+        ControlListModel.RD_ADD_BOOKMARK_BUTTON, ControlListModel.BOOKMARK_BUTTON,
+        ControlListModel.RD_PLAYLISTS_BUTTON,
+        // the top bar's and the control bar's own items, back in the box once removed
+        ControlListModel.RD_MAIN_MENU_BUTTON, ControlListModel.RD_LIBRARY_BUTTON,
+        ControlListModel.RD_FOLDER_CHIP, ControlListModel.RD_MEDIA_TITLE,
         ControlListModel.FULLSCREEN_BUTTON, ControlListModel.EXTENDED_BUTTON,
-        ControlListModel.QUIT_BUTTON, ControlListModel.ARTWORK_INFO,
-        ControlListModel.INFO_BUTTON, ControlListModel.CHAPTER_PREVIOUS_BUTTON,
-        ControlListModel.CHAPTER_NEXT_BUTTON, ControlListModel.BOOKMARK_BUTTON,
-        ControlListModel.PLAYLIST_BUTTON
+        ControlListModel.PLAYLIST_BUTTON, ControlListModel.WIDGET_SPACER_EXTEND,
+        ControlListModel.ARTWORK_INFO, ControlListModel.CHAPTER_PREVIOUS_BUTTON,
+        ControlListModel.CHAPTER_NEXT_BUTTON
     ]
 
     readonly property var _orderedControls: {
@@ -144,17 +187,35 @@ GridView {
         return first.concat(list.filter((e) => _figmaOrder.indexOf(e.id) < 0))
     }
 
-    // the dashed outline of an item, as Figma draws it per icon: the spacers 24x32, the icons
-    // outlined on the Icon instance itself 28x28 (quit, info, bookmarks, thumbnail, ...), the
-    // others on their Icon Wrapper 30x32
+    // the dashed outline of an item, as Figma draws it per item ("Player - customize"): the
+    // spacers and the divider 24x32 ("Frame 6"), Right Sidebar 32x32, the items outlined on the
+    // Icon instance itself 28x28 (Forward / Backward 15s, Quit VLC, VLC Settings, Go Home,
+    // Thumbnail, the names, Properties, Replay, Chapters, Favorite, Bookmarks), the others on
+    // their Icon Wrapper 30x32
     function frameSizeFor(id) {
-        if (isRepeatable(id))
+        switch (id) {
+        case ControlListModel.WIDGET_SPACER:
+        case ControlListModel.WIDGET_SPACER_EXTEND:
+        case ControlListModel.RD_DIVIDER:
             return Qt.size(VLCStyle.rd_iconSize, VLCStyle.rd_iconButtonHeight)
-        switch (rdIconFor(id)) {
-        case "quit":
-        case "info":
-        case "bookmarks":
-        case "thumbnail":
+        case ControlListModel.RD_RIGHT_SIDEBAR_BUTTON:
+            return Qt.size(VLCStyle.dp(32), VLCStyle.dp(32))
+        case ControlListModel.SKIP_FW_BUTTON:
+        case ControlListModel.SKIP_BACK_BUTTON:
+        case ControlListModel.QUIT_BUTTON:
+        case ControlListModel.RD_SETTINGS_BUTTON:
+        case ControlListModel.RD_HOME_BUTTON:
+        case ControlListModel.RD_THUMBNAIL:
+        case ControlListModel.ARTWORK_INFO:
+        case ControlListModel.RD_FILE_NAME:
+        case ControlListModel.RD_ARTIST_NAME:
+        case ControlListModel.RD_FOLDER_NAME:
+        case ControlListModel.RD_PLAYLIST_NAME:
+        case ControlListModel.INFO_BUTTON:
+        case ControlListModel.RD_REPLAY_BUTTON:
+        case ControlListModel.RD_CHAPTERS_BUTTON:
+        case ControlListModel.RD_FAVORITE_BUTTON:
+        case ControlListModel.BOOKMARK_BUTTON:
             return Qt.size(VLCStyle.dp(28), VLCStyle.dp(28))
         default:
             return Qt.size(VLCStyle.rd_iconButtonWidth, VLCStyle.rd_iconButtonHeight)
@@ -176,16 +237,21 @@ GridView {
         return height > 0 ? height : _itemHeight
     }
 
+    // the spacers and the divider can be used many times
     function isRepeatable(id) {
         return id === ControlListModel.WIDGET_SPACER || id === ControlListModel.WIDGET_SPACER_EXTEND
+               || id === ControlListModel.RD_DIVIDER
     }
 
-    // ids used by the edited bar
+    // ids used by the edited bars
     function _usedIds() {
         const used = []
-        if (!playerModel)
-            return used
-        for (const m of [playerModel.left, playerModel.center, playerModel.right]) {
+        const zones = []
+        if (playerModel)
+            zones.push(playerModel.left, playerModel.center, playerModel.right)
+        if (topBarModel)
+            zones.push(topBarModel.left, topBarModel.center, topBarModel.right)
+        for (const m of zones) {
             const n = m.rowCount()
             for (let i = 0; i < n; ++i)
                 used.push(m.data(m.index(i, 0), Qt.UserRole))
@@ -224,6 +290,7 @@ GridView {
     }
 
     onPlayerModelChanged: refresh()
+    onTopBarModelChanged: refresh()
 
     Connections {
         target: root.editor
@@ -243,6 +310,18 @@ GridView {
     }
     Connections {
         target: root.playerModel ? root.playerModel.right : null
+        function onCountChanged() { root.scheduleRefresh() }
+    }
+    Connections {
+        target: root.topBarModel ? root.topBarModel.left : null
+        function onCountChanged() { root.scheduleRefresh() }
+    }
+    Connections {
+        target: root.topBarModel ? root.topBarModel.center : null
+        function onCountChanged() { root.scheduleRefresh() }
+    }
+    Connections {
+        target: root.topBarModel ? root.topBarModel.right : null
         function onCountChanged() { root.scheduleRefresh() }
     }
 

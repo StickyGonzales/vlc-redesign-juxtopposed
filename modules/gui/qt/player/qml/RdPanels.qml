@@ -83,6 +83,15 @@ QtObject {
     // the player finds it open again after a visit to the full library (11:58).
     property bool libraryOpen: false
 
+    // the height of the player's control bar (one 54 px row, two when the seek row has its own
+    // row, ControlBar), set by Player.qml; 0 while no player exists. Overlays outside the player
+    // (RdProfileNotice) keep clear of it.
+    property real controlBarHeight: 0
+
+    // the sidebar toggle (reveal false) and the folder chip (reveal true) controls, in either bar
+    // (W8.1b): Player.qml opens or closes the compact library (toggleLibrary)
+    signal libraryRequested(bool reveal)
+
     // the info overlays over the video, switched by the settings sidebar's Playback tab
     // toggles "Show Metadata" and "Show Statistics" (W4.3b; Decisions 13 and 24). They are not
     // panels: they stay open next to any panel until switched off (toggle or their X), are kept

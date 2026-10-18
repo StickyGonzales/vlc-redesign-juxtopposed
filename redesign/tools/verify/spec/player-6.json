@@ -1,0 +1,1066 @@
+{
+ "format": 1,
+ "node": "247:445",
+ "name": "Player",
+ "png": "Player-6.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1920,
+  1080
+ ],
+ "theme": "dark",
+ "rows": [
+  151,
+  217,
+  342
+ ],
+ "background": [
+  {
+   "color": "#1B1B1B",
+   "same_as_token": "BG/A3"
+  },
+  {
+   "type": "image"
+  }
+ ],
+ "background_mask": "image",
+ "elements": [
+  {
+   "id": "6586:17371",
+   "name": "Frame 312",
+   "type": "frame",
+   "path": "Frame 312",
+   "bounds": [
+    0,
+    31,
+    1920,
+    1005
+   ],
+   "radius": 19,
+   "strokes": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "stroke_weight": 20,
+   "stroke_align": "center",
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  },
+  {
+   "id": "247:447",
+   "name": "topbar",
+   "type": "frame",
+   "path": "topbar",
+   "bounds": [
+    0,
+    0,
+    1920,
+    40
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  },
+  {
+   "id": "247:450",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:vlc",
+   "bounds": [
+    13,
+    8,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "vlc",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "vlc",
+   "brand": true,
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:454",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:more",
+   "bounds": [
+    51,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "more",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "more",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:456",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:sidebar",
+   "bounds": [
+    89,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "sidebar",
+    "direction": "left",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "sidebar",
+   "rows": [
+    186
+   ]
+  },
+  {
+   "id": "247:458",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:divider",
+   "bounds": [
+    117,
+    8,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "divider",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "divider",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:461",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:folder",
+   "bounds": [
+    141,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "folder",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:462",
+   "name": "Videos",
+   "type": "text",
+   "path": "topbar / Videos",
+   "bounds": [
+    173,
+    11.5,
+    46,
+    17
+   ],
+   "text": {
+    "content": "Videos",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "247:463",
+   "name": "VLC Media Player",
+   "type": "text",
+   "path": "topbar / VLC Media Player",
+   "bounds": [
+    901.5,
+    11.5,
+    117,
+    17
+   ],
+   "text": {
+    "content": "VLC Media Player",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "brand": true
+  },
+  {
+   "id": "247:466",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:minimize",
+   "bounds": [
+    1770,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "minimize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "minimize",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:467",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:maximize",
+   "bounds": [
+    1806,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "maximize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "maximize",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:468",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:fullscreen",
+   "bounds": [
+    1842,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "fullscreen",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "fullscreen",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "247:469",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:close",
+   "bounds": [
+    1878,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close",
+   "rows": [
+    44,
+    186,
+    342
+   ]
+  },
+  {
+   "id": "491:1928",
+   "name": "Controls",
+   "type": "instance",
+   "path": "Controls",
+   "bounds": [
+    0,
+    1026,
+    1920,
+    54
+   ],
+   "component": "Controls",
+   "variant": {
+    "Property 1": "default"
+   },
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true,
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;3603:12303",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:previous",
+   "bounds": [
+    23,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "previous",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "previous",
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;3603:12304",
+   "name": "play",
+   "type": "instance",
+   "path": "Controls / play",
+   "bounds": [
+    58,
+    1039,
+    54,
+    28
+   ],
+   "component": "play",
+   "variant": {
+    "type": "play"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "rows": [
+    17,
+    20,
+    21,
+    26,
+    47
+   ]
+  },
+  {
+   "id": "I491:1928;3603:12304;848:1707",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / play / Icon:play",
+   "bounds": [
+    74,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "play",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "play",
+   "rows": [
+    17,
+    20,
+    21,
+    26,
+    27
+   ]
+  },
+  {
+   "id": "I491:1928;3603:12306",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:next",
+   "bounds": [
+    123,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "next",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "next",
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7386",
+   "name": "Current Time",
+   "type": "instance",
+   "path": "Controls / Current Time",
+   "bounds": [
+    170,
+    1039,
+    76,
+    28
+   ],
+   "component": "Current Time",
+   "variant": {
+    "state": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    328
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7386;1904:7236",
+   "name": "00:02:10",
+   "type": "text",
+   "path": "Controls / Current Time / 00:02:10",
+   "bounds": [
+    176.5,
+    1044.5,
+    63,
+    17
+   ],
+   "text": {
+    "content": "00:02:10",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time",
+   "rows": [
+    328
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7387",
+   "name": "Frame 21",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    254,
+    1039,
+    1238,
+    28
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7388",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "Controls",
+   "bounds": [
+    256,
+    1041,
+    98,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ],
+   "mask": "seek bar content",
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7389",
+   "name": "Rectangle 10",
+   "type": "rectangle",
+   "path": "Controls",
+   "bounds": [
+    346,
+    1041,
+    8,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "mask": "seek bar content",
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7390",
+   "name": "Duration",
+   "type": "instance",
+   "path": "Controls / Duration",
+   "bounds": [
+    1500,
+    1039,
+    76,
+    28
+   ],
+   "component": "Duration",
+   "variant": {
+    "state": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;1908:7390;1905:7314",
+   "name": "00:25:40",
+   "type": "text",
+   "path": "Controls / Duration / 00:25:40",
+   "bounds": [
+    1505.5,
+    1044,
+    65,
+    18
+   ],
+   "text": {
+    "content": "00:25:40",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time",
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;491:1732",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:volume",
+   "bounds": [
+    1596,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "volume",
+    "direction": "default",
+    "state": "default",
+    "value": "high",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "volume",
+   "rows": [
+    30,
+    31,
+    329
+   ]
+  },
+  {
+   "id": "I491:1928;491:1733",
+   "name": "volume",
+   "type": "instance",
+   "path": "Controls / volume",
+   "bounds": [
+    1628,
+    1039,
+    88,
+    28
+   ],
+   "component": "volume",
+   "variant": {
+    "Property 1": "50%"
+   },
+   "rows": [
+    30,
+    31,
+    329,
+    330
+   ]
+  },
+  {
+   "id": "I491:1928;491:1733;244:211",
+   "name": "Rectangle 6",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1628,
+    1039,
+    89,
+    28
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    30,
+    31,
+    329,
+    330
+   ]
+  },
+  {
+   "id": "I491:1928;491:1733;244:213",
+   "name": "Rectangle 7",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1628,
+    1038,
+    33,
+    30
+   ],
+   "fills": [
+    {
+     "color": "#262626"
+    }
+   ],
+   "rows": [
+    30,
+    31,
+    329,
+    330
+   ]
+  },
+  {
+   "id": "I491:1928;491:1733;244:214",
+   "name": "Rectangle 6",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1629.5,
+    1040.5,
+    86,
+    25
+   ],
+   "radius": 2,
+   "fills": [
+    {
+     "type": "gradient_linear",
+     "stops": [
+      {
+       "pos": 0,
+       "color": "#95D318",
+       "alpha": 1
+      },
+      {
+       "pos": 0.58,
+       "color": "#B2A918",
+       "alpha": 1
+      },
+      {
+       "pos": 0.79,
+       "color": "#D37918",
+       "alpha": 1
+      },
+      {
+       "pos": 1,
+       "color": "#FF3737",
+       "alpha": 1
+      }
+     ]
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "rows": [
+    30,
+    31,
+    329,
+    330
+   ]
+  },
+  {
+   "id": "I491:1928;496:2470",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1736,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4,
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;496:2470;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:audio",
+   "bounds": [
+    1739,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "audio",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "audio",
+   "rows": [
+    53,
+    54,
+    55,
+    57,
+    132
+   ]
+  },
+  {
+   "id": "I491:1928;491:1730",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1778,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4,
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;491:1730;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:subtitles",
+   "bounds": [
+    1781,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitles",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitles",
+   "rows": [
+    52
+   ]
+  },
+  {
+   "id": "I491:1928;491:1729",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1820,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4,
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;491:1729;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:playback settings",
+   "bounds": [
+    1823,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "playback settings",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "playback settings",
+   "rows": [
+    23,
+    26,
+    84,
+    137,
+    349
+   ]
+  },
+  {
+   "id": "I491:1928;491:1734",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1870,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4,
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  },
+  {
+   "id": "I491:1928;491:1734;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:lists",
+   "bounds": [
+    1873,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "lists",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "lists",
+   "rows": [
+    20,
+    21,
+    22,
+    23,
+    26
+   ]
+  }
+ ]
+}

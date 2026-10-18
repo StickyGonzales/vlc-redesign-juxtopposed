@@ -32,6 +32,8 @@ ColumnLayout {
     property string title: ""
     // extra words the search finds the whole section by
     property string keywords: ""
+    // false hides the whole section, its title included (a section none of whose rows exist)
+    property bool shown: true
     default property alias content: group.data
 
     readonly property bool isSettingsSection: true
@@ -72,7 +74,7 @@ ColumnLayout {
         }
     }
 
-    visible: !_page || !_page.filtering || titleMatches || _anyRowMatches
+    visible: shown && (!_page || !_page.filtering || titleMatches || _anyRowMatches)
     Layout.fillWidth: true
     spacing: 0
 

@@ -68,6 +68,17 @@ T.Slider {
     // VLC's lowest value)
     property real labelMin: -Infinity
     property real labelMax: Infinity
+    // the mouse wheel over the bar and the label row (Decision 54): one notch moves by stepSize,
+    // as an arrow key; with customWheel the notches go to wheelStepped instead (RdEndlessSlider)
+    property bool customWheel: false
+    // in a view that can scroll the slider takes the wheel only after a click (RdSliderWheel):
+    // the pointer over this zone keeps it; RdParamSlider binds its name row and the slider here
+    property bool wheelZoneHovered: wheelArea.pointerOver
+    // the slider holds the wheel in a scrolling view: the track shows a thin accent frame and
+    // the thumb the accent, as while hovered
+    readonly property bool wheelHolding: wheelArea.holding
+
+    signal wheelStepped(int steps)
 
     readonly property SystemPalette rdPalette: VLCStyle.palette
 
@@ -93,6 +104,20 @@ T.Slider {
     }
     readonly property color _tickOnTrack: _screen(rdPalette.rdBgAccentDark, rdPalette.rdBgB2)
     readonly property color _tickOnFill: _screen(rdPalette.rdBgAccentDark, rdPalette.rdBgAccentBright)
+
+    // a click on the slider's value row hands it the wheel (RdSliderWheel)
+    function armWheel() {
+        wheelArea.arm()
+    }
+
+    // a wheel event over the slider's value row: it moves the slider while the slider holds the
+    // wheel, else it goes on (the page scrolls)
+    function rowWheel(wheel) {
+        if (wheelHolding)
+            wheelArea.take(wheel)
+        else
+            wheel.accepted = false
+    }
 
     function _pos(v) {
         return (to === from) ? 0 : (v - from) / (to - from)
@@ -122,6 +147,9 @@ T.Slider {
             height: VLCStyle.dp(16)
             radius: VLCStyle.rd_radius_normal
             color: control.rdPalette.rdBgB2
+            // holding the wheel: a 1 px Accent/DIm frame inside the 2 px padding around the fill
+            border.width: control.wheelHolding ? VLCStyle.dp(1) : 0
+            border.color: control.dimmed ? control.rdPalette.rdFgA3 : control.rdPalette.rdAccentDim
 
             Rectangle {
                 id: fill
@@ -275,8 +303,32 @@ T.Slider {
         width: VLCStyle.dp(8)
         height: VLCStyle.dp(24)
         radius: VLCStyle.rd_radius_small
-        color: (control.pressed || control.hovered || control.visualFocus)
+        color: (control.pressed || control.hovered || control.visualFocus || control.wheelHolding)
                ? (control.dimmed ? control.rdPalette.rdFgA2 : control.rdPalette.rdAccentMain)
                : (control.dimmed ? control.rdPalette.rdFgA3 : control.rdPalette.rdAccentDim)
+    }
+
+    // a click on the slider hands it the wheel
+    onPressedChanged: {
+        if (pressed)
+            wheelArea.arm()
+    }
+
+    RdSliderWheel {
+        id: wheelArea
+
+        anchors.fill: parent
+        mirrored: control.mirrored && control.horizontal
+        zoneHovered: control.wheelZoneHovered
+
+        onStepped: (steps) => {
+            // held: the pointer sets the value
+            if (control.pressed)
+                return
+            if (control.customWheel)
+                control.wheelStepped(steps)
+            else
+                wheelArea.stepSlider(control, steps)
+        }
     }
 }

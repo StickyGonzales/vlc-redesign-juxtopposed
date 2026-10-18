@@ -1,0 +1,124 @@
+{
+ "format": 1,
+ "node": "848:1712",
+ "name": "play",
+ "png": "play.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  94,
+  116
+ ],
+ "theme": "dark",
+ "rows": [
+  17,
+  21,
+  47,
+  48,
+  148
+ ],
+ "variants": [
+  {
+   "node": "848:1711",
+   "name": "type=play",
+   "props": {
+    "type": "play"
+   },
+   "bounds": [
+    20,
+    20,
+    54,
+    28
+   ],
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "848:1707",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:play",
+     "bounds": [
+      16,
+      2,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "play",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "play",
+     "rows": [
+      17,
+      21,
+      26,
+      27,
+      47
+     ]
+    }
+   ]
+  },
+  {
+   "node": "848:1713",
+   "name": "type=pause",
+   "props": {
+    "type": "pause"
+   },
+   "bounds": [
+    20,
+    68,
+    54,
+    28
+   ],
+   "fills": [
+    {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "848:1714",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:pause",
+     "bounds": [
+      15,
+      2,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "pause",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "pause",
+     "rows": [
+      47,
+      48,
+      148
+     ]
+    }
+   ]
+  }
+ ]
+}

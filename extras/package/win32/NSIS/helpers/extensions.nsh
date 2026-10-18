@@ -13,10 +13,10 @@ Function AssociateExtension
   ; back up old value for extension $R0 (eg. ".opt")
   ReadRegStr $1 HKCR "$R0" ""
   StrCmp $1 "" NoBackup
-    StrCmp $1 "VLC$R0" "NoBackup"
-    WriteRegStr HKCR "$R0" "VLC.backup" $1
+    StrCmp $1 "${PRODUCT_PROGID}$R0" "NoBackup"
+    WriteRegStr HKCR "$R0" "${PRODUCT_PROGID}.backup" $1
 NoBackup:
-  WriteRegStr HKCR "$R0" "" "VLC$R0"
+  WriteRegStr HKCR "$R0" "" "${PRODUCT_PROGID}$R0"
 FunctionEnd
 
 ;; Function that registers one extension for VLC
@@ -27,29 +27,29 @@ Function RegisterExtension
   ; And capitalize the extension
   ${StrCase} $R2 $R2 "U"
   ; for instance: MKV Video File (VLC)
-  WriteRegStr HKCR "VLC$R0" "" "$R2 $R1 File (VLC)"
-  WriteRegStr HKCR "VLC$R0\shell" "" "Open"
-  WriteRegStr HKCR "VLC$R0\shell\Open" "" "$(ShellAssociation_Play)"
-  WriteRegStr HKCR "VLC$R0\shell\Open" "MultiSelectModel" "Player"
-  WriteRegStr HKCR "VLC$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
-  WriteRegStr HKCR "VLC$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0" "" "$R2 $R1 File (${PRODUCT_SHORT_NAME})"
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell" "" "Open"
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "" "$(ShellAssociation_Play)"
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "MultiSelectModel" "Player"
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
   WriteRegStr HKCR "Applications\${PRODUCT_EXE}\SupportedTypes" $0 ""
 
   ${If} ${AtLeastWinVista}
-    WriteRegStr HKLM "Software\Clients\Media\VLC\Capabilities\FileAssociations" "$R0" "VLC$R0"
+    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
   ${EndIf}
 FunctionEnd
 
 ;; Function that registers one skin extension for VLC
 Function RegisterSkinExtension
-  WriteRegStr HKCR "VLC$R0" "" "VLC skin file ($R0)"
-  WriteRegStr HKCR "VLC$R0\shell" "" "Open"
-  WriteRegStr HKCR "VLC$R0\shell\Open" "" ""
-  WriteRegStr HKCR "VLC$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" -Iskins --skins2-last "%1"'
-  WriteRegStr HKCR "VLC$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0" "" "${PRODUCT_SHORT_NAME} skin file ($R0)"
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell" "" "Open"
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "" ""
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" -Iskins --skins2-last "%1"'
+  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
 
   ${If} ${AtLeastWinVista}
-    WriteRegStr HKLM "Software\Clients\Media\VLC\Capabilities\FileAssociations" "$R0" "VLC$R0"
+    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
   ${EndIf}
 FunctionEnd
 
@@ -57,18 +57,38 @@ FunctionEnd
 Function un.RegisterExtension
   ;start of restore script
   ReadRegStr $1 HKCR "$R0" ""
-  StrCmp $1 "VLC$R0" 0 NoOwn ; only do this if we own it
+  StrCmp $1 "${PRODUCT_PROGID}$R0" 0 NoOwn ; only do this if we own it
     ; Read the old value from Backup
-    ReadRegStr $1 HKCR "$R0" "VLC.backup"
+    ReadRegStr $1 HKCR "$R0" "${PRODUCT_PROGID}.backup"
     StrCmp $1 "" 0 Restore ; if backup="" then delete the whole key
       DeleteRegKey HKCR "$R0"
     Goto NoOwn
 Restore:
+!if "${PRODUCT_PROGID}" != "VLC"
+      ; redesign: brand layer, give the extension back to the previous handler only while its
+      ; ProgID still exists (an uninstalled VLC leaves a dangling VLC.<ext>); never write a
+      ; handler that is gone
+      Push $2
+      ClearErrors
+      EnumRegKey $2 HKCR "$1" 0
+      ${If} ${Errors}
+        DeleteRegValue HKCR "$R0" ""
+      ${Else}
+        WriteRegStr HKCR "$R0" "" $1
+      ${EndIf}
+      Pop $2
+!else
       WriteRegStr HKCR "$R0" "" $1
-      DeleteRegValue HKCR "$R0" "VLC.backup"
+!endif
+      DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
 NoOwn:
-    DeleteRegKey HKCR "VLC$R0" ;Delete key with association settings
-    DeleteRegKey HKLM "Software\Clients\Media\VLC\Capabilities\FileAssociations\VLC$R0" ; for vista
+!if "${PRODUCT_PROGID}" != "VLC"
+    ; redesign: brand layer, another player took the extension after this app: drop only this
+    ; app's own backup value
+    DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
+!endif
+    DeleteRegKey HKCR "${PRODUCT_PROGID}$R0" ;Delete key with association settings
+    DeleteRegKey HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations\${PRODUCT_PROGID}$R0" ; for vista
 FunctionEnd
 
 !macro AssociateExtensionSection TYPE EXT
@@ -291,28 +311,28 @@ FunctionEnd
 
 ; Generic function for adding the context menu for one ext.
 !macro AddContextMenuExt EXT
-  WriteRegStr HKCR ${EXT}\shell\PlayWithVLC "" "$(ContextMenuEntry_PlayWith)"
-  WriteRegStr HKCR ${EXT}\shell\PlayWithVLC "Icon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKCR ${EXT}\shell\PlayWithVLC "MultiSelectModel" "Player"
-  WriteRegStr HKCR ${EXT}\shell\PlayWithVLC\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file --no-playlist-enqueue "%1"'
+  WriteRegStr HKCR ${EXT}\shell\PlayWith${PRODUCT_PROGID} "" "$(ContextMenuEntry_PlayWith)"
+  WriteRegStr HKCR ${EXT}\shell\PlayWith${PRODUCT_PROGID} "Icon" '"$INSTDIR\${PRODUCT_EXE}",0'
+  WriteRegStr HKCR ${EXT}\shell\PlayWith${PRODUCT_PROGID} "MultiSelectModel" "Player"
+  WriteRegStr HKCR ${EXT}\shell\PlayWith${PRODUCT_PROGID}\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file --no-playlist-enqueue "%1"'
 
-  WriteRegStr HKCR ${EXT}\shell\AddToPlaylistVLC "" "$(ContextMenuEntry_AddToPlaylist)"
-  WriteRegStr HKCR ${EXT}\shell\AddToPlaylistVLC "Icon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKCR ${EXT}\shell\AddToPlaylistVLC "MultiSelectModel" "Player"
-  WriteRegStr HKCR ${EXT}\shell\AddToPlaylistVLC\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file --playlist-enqueue "%1"'
+  WriteRegStr HKCR ${EXT}\shell\AddToPlaylist${PRODUCT_PROGID} "" "$(ContextMenuEntry_AddToPlaylist)"
+  WriteRegStr HKCR ${EXT}\shell\AddToPlaylist${PRODUCT_PROGID} "Icon" '"$INSTDIR\${PRODUCT_EXE}",0'
+  WriteRegStr HKCR ${EXT}\shell\AddToPlaylist${PRODUCT_PROGID} "MultiSelectModel" "Player"
+  WriteRegStr HKCR ${EXT}\shell\AddToPlaylist${PRODUCT_PROGID}\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file --playlist-enqueue "%1"'
 !macroend
 
 !macro AddContextMenu TYPE EXT
-  !insertmacro AddContextMenuExt VLC${EXT}
+  !insertmacro AddContextMenuExt ${PRODUCT_PROGID}${EXT}
 !macroend
 
 !macro DeleteContextMenuExt EXT
-  DeleteRegKey HKCR ${EXT}\shell\PlayWithVLC
-  DeleteRegKey HKCR ${EXT}\shell\AddToPlaylistVLC
+  DeleteRegKey HKCR ${EXT}\shell\PlayWith${PRODUCT_PROGID}
+  DeleteRegKey HKCR ${EXT}\shell\AddToPlaylist${PRODUCT_PROGID}
 !macroend
 
 !macro DeleteContextMenu TYPE EXT
-  !insertmacro DeleteContextMenuExt VLC${EXT}
+  !insertmacro DeleteContextMenuExt ${PRODUCT_PROGID}${EXT}
 !macroend
 
 

@@ -140,9 +140,69 @@ SettingsPage {
             text: qsTr("Enable audio")
         }
 
-        SettingsOption {
-            option: root._deviceOption
+        // VLC's outputs list their devices only while they run: the devices of the player's
+        // output, as in the tracks popup (Player.audioDevices), the system default first as
+        // "System default" (Figma). The dropdown shows the device in use; a choice switches the
+        // output at once and is kept for the next start
+        SettingsRow {
+            id: deviceRow
+
+            // bumped when the output's device list changes
+            property int _revision: 0
+
+            // the id of the output's default device: "" (mmdevice), "wavemapper" (waveout)
+            function _isDefault(id) {
+                return id === "" || (root._aout === "waveout" && id === "wavemapper")
+            }
+
+            readonly property string current: deviceRow._isDefault(Player.audioDevices.current) ? "" : Player.audioDevices.current
+
+            readonly property var devices: {
+                void _revision
+                const list = Player.audioDevices.devices().filter((d) => !deviceRow._isDefault(d.value))
+                list.unshift({ value: "", text: qsTr("System default") })
+                // a device in use that the output does not list (any more) keeps its id
+                if (!list.some((d) => d.value === deviceRow.current))
+                    list.push({ value: deviceRow.current, text: deviceRow.current })
+                return list
+            }
+
             text: qsTr("Output device")
+            description: RdEffects.optionDescription(root._deviceOption)
+            keywords: "audio-device speakers headphones " + root._deviceOption
+            shown: SettingsCatalog.exists(root._deviceOption)
+
+            Connections {
+                target: Player.audioDevices
+
+                function onModelReset() { ++deviceRow._revision }
+                function onRowsInserted() { ++deviceRow._revision }
+                function onRowsRemoved() { ++deviceRow._revision }
+            }
+
+            Widgets.RdDropdown {
+                id: deviceDropdown
+
+                implicitWidth: VLCStyle.dp(320)
+                implicitHeight: VLCStyle.dp(36)
+                model: deviceRow.devices.map((d) => d.text)
+                currentIndex: Math.max(0, deviceRow.devices.findIndex((d) => d.value === deviceRow.current))
+                Accessible.name: qsTr("Output device")
+                // kept for the next start only when the output took it (else the dropdown goes
+                // back to the device in use: AudioDeviceModel signals `current`)
+                onActivated: (index) => {
+                    const id = deviceRow.devices[index].value
+                    if (Player.audioDevices.select(id))
+                        RdEffects.setOption(root._deviceOption, id)
+                }
+
+                // devices plugged in since the list was read
+                Connections {
+                    target: deviceDropdown.popup
+
+                    function onAboutToShow() { Player.audioDevices.refresh() }
+                }
+            }
         }
 
         SettingsOption {

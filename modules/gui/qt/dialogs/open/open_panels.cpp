@@ -952,7 +952,11 @@ void CaptureOpenPanel::initialize()
     /* Jack Props panel */
 
     /* Pace */
+#ifdef VLC_BRAND_PUBLIC
+    jackPace = new QCheckBox(qtr( "Use Cone pace" ));
+#else
     jackPace = new QCheckBox(qtr( "Use VLC pace" ));
+#endif
     jackPropLayout->addWidget( jackPace, 1, 1 );
 
     /* Auto Connect */

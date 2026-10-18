@@ -233,7 +233,7 @@ SettingsCatalog::Catalog readCatalog()
         const QString capability = qfu(module_get_capability(module));
         const bool core = module_is_main(module);
 
-        catalog.plugins.append({ object, qfut(module_get_name(module, true)), capability,
+        catalog.plugins.append({ object, brand::engineText(qfut(module_get_name(module, true))), capability,
                                  module_get_score(module) });
 
         unsigned size = 0;
@@ -302,13 +302,13 @@ SettingsCatalog::Catalog readCatalog()
             else
             {
                 groupId = object;
-                groupTitle = qfut(module_get_name(module, true));
+                groupTitle = brand::engineText(qfut(module_get_name(module, true)));
             }
 
             SettingsCatalog::Option option;
             option.name = name;
-            option.text = qfut(item.psz_text);
-            option.longtext = item.psz_longtext ? qfut(item.psz_longtext) : QString();
+            option.text = brand::engineText(qfut(item.psz_text));
+            option.longtext = item.psz_longtext ? brand::engineText(qfut(item.psz_longtext)) : QString();
             option.group = groupId;
             option.category = category;
             option.type = item.i_type;
@@ -437,9 +437,10 @@ QVariantMap SettingsCatalog::describe(const QString& name) const
     QVariantMap result {
         { QStringLiteral("name"), name },
         { QStringLiteral("type"), typeName(config->i_type) },
-        { QStringLiteral("text"), config->psz_text ? qfut(config->psz_text) : name },
-        { QStringLiteral("description"), config->psz_longtext ? qfut(config->psz_longtext)
-                                                                : (config->psz_text ? qfut(config->psz_text) : QString()) },
+        { QStringLiteral("text"), config->psz_text ? brand::engineText(qfut(config->psz_text)) : name },
+        { QStringLiteral("description"), brand::engineText(
+              config->psz_longtext ? qfut(config->psz_longtext)
+                                   : (config->psz_text ? qfut(config->psz_text) : QString())) },
     };
     if (IsConfigIntegerType(config->i_type) && config->i_type != CONFIG_ITEM_RGB)
     {
@@ -686,7 +687,7 @@ QString SettingsCatalog::language() const
 {
 #ifdef _WIN32
     QVLCRegistry registry(HKEY_CURRENT_USER);
-    char* lang = registry.ReadRegistry("Software\\VideoLAN\\VLC\\", "Lang", "auto");
+    char* lang = registry.ReadRegistry(BRAND_REGISTRY_KEY, "Lang", "auto");
     const QString result = lang ? qfu(lang) : QString();
     free(lang);
     return result.isEmpty() ? QStringLiteral("auto") : result;
@@ -854,13 +855,15 @@ void SettingsCatalog::setLanguage(const QString& iso)
     QVLCRegistry registry(HKEY_CURRENT_USER);
     if (iso.isEmpty() || iso == QLatin1String("auto"))
     {
-        registry.DeleteValue("Software\\VideoLAN\\VLC\\", "Lang");
+        registry.DeleteValue(BRAND_REGISTRY_KEY, "Lang");
+#ifndef VLC_BRAND_PUBLIC
         registry.DeleteKey("Software\\VideoLAN\\", "VLC");
         registry.DeleteKey("Software\\", "VideoLAN");
+#endif
     }
     else
     {
-        registry.WriteRegistry("Software\\VideoLAN\\VLC\\", "Lang", qtu(iso));
+        registry.WriteRegistry(BRAND_REGISTRY_KEY, "Lang", qtu(iso));
     }
 #else
     Q_UNUSED(iso);

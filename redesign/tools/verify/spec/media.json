@@ -1,0 +1,344 @@
+{
+ "format": 1,
+ "node": "2404:9167",
+ "name": "media",
+ "png": "media.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  377,
+  228
+ ],
+ "theme": "dark",
+ "rows": [
+  175,
+  176,
+  187,
+  190,
+  196,
+  338,
+  339
+ ],
+ "variants": [
+  {
+   "node": "2404:9166",
+   "name": "Property 1=watched",
+   "props": {
+    "Property 1": "watched"
+   },
+   "bounds": [
+    20,
+    20,
+    337,
+    32
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "2404:9234",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:thumbnail",
+     "bounds": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "thumbnail",
+      "direction": "default",
+      "state": "default",
+      "value": "medium",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "thumbnail",
+     "rows": [
+      175,
+      176
+     ]
+    },
+    {
+     "id": "2404:9152",
+     "name": "The Wand_S01E01.mp4",
+     "type": "text",
+     "path": "The Wand_S01E01.mp4",
+     "bounds": [
+      42,
+      7.5,
+      295,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E01.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "file name"
+    }
+   ]
+  },
+  {
+   "node": "2404:9179",
+   "name": "Property 1=unwatched",
+   "props": {
+    "Property 1": "unwatched"
+   },
+   "bounds": [
+    20,
+    71,
+    337,
+    32
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "2404:9180",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:thumbnail",
+     "bounds": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "thumbnail",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "thumbnail",
+     "rows": [
+      175,
+      176
+     ]
+    },
+    {
+     "id": "2404:9181",
+     "name": "The Wand_S01E01.mp4",
+     "type": "text",
+     "path": "The Wand_S01E01.mp4",
+     "bounds": [
+      42,
+      7.5,
+      295,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E01.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name"
+    }
+   ]
+  },
+  {
+   "node": "2404:9256",
+   "name": "Property 1=hover-watched",
+   "props": {
+    "Property 1": "hover-watched"
+   },
+   "bounds": [
+    20,
+    173,
+    337,
+    32
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "2404:9257",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:thumbnail",
+     "bounds": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "thumbnail",
+      "direction": "default",
+      "state": "default",
+      "value": "medium",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "thumbnail",
+     "rows": [
+      175,
+      176
+     ]
+    },
+    {
+     "id": "2404:9258",
+     "name": "The Wand_S01E01.mp4",
+     "type": "text",
+     "path": "The Wand_S01E01.mp4",
+     "bounds": [
+      42,
+      7.5,
+      261,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E01.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/2",
+       "dark": "#C6C6C6",
+       "light": "#222222"
+      }
+     },
+     "mask": "file name"
+    },
+    {
+     "id": "2404:9259",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:more",
+     "bounds": [
+      313,
+      4,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "more",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "more"
+    }
+   ]
+  },
+  {
+   "node": "2404:9168",
+   "name": "Property 1=hover-unwatched",
+   "props": {
+    "Property 1": "hover-unwatched"
+   },
+   "bounds": [
+    20,
+    122,
+    337,
+    32
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "2404:9169",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:thumbnail",
+     "bounds": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "thumbnail",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "thumbnail",
+     "rows": [
+      175,
+      176
+     ]
+    },
+    {
+     "id": "2404:9170",
+     "name": "The Wand_S01E01.mp4",
+     "type": "text",
+     "path": "The Wand_S01E01.mp4",
+     "bounds": [
+      42,
+      7.5,
+      261,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E01.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/2",
+       "dark": "#C6C6C6",
+       "light": "#222222"
+      }
+     },
+     "mask": "file name"
+    },
+    {
+     "id": "2404:9171",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:more",
+     "bounds": [
+      313,
+      4,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "more",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "more"
+    }
+   ]
+  }
+ ]
+}

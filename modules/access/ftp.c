@@ -49,6 +49,16 @@
 #include <vlc_keystore.h>
 #include <vlc_strings.h>
 
+/* redesign (brand layer, public profile): the connection errors name Cone, not VLC; the vlc
+ * profile compiles VLC's texts as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_CONNECT_FAILED _("Cone could not connect with the given server.")
+# define BRAND_TEXT_CONNECT_REJECTED _("Cone's connection to the given server was rejected.")
+#else
+# define BRAND_TEXT_CONNECT_FAILED _("VLC could not connect with the given server.")
+# define BRAND_TEXT_CONNECT_REJECTED _("VLC's connection to the given server was rejected.")
+#endif
+
 #ifndef IPPORT_FTP
 # define IPPORT_FTP 21u
 #endif
@@ -387,7 +397,7 @@ static int Login( vlc_object_t *p_access, access_sys_t *p_sys, const char *path 
     {
         msg_Err( p_access, "connection failed" );
         vlc_dialog_display_error( p_access, _("Network interaction failed"), "%s",
-            _("VLC could not connect with the given server.") );
+            BRAND_TEXT_CONNECT_FAILED );
         goto error;
     }
 
@@ -403,7 +413,7 @@ static int Login( vlc_object_t *p_access, access_sys_t *p_sys, const char *path 
     {
         msg_Err( p_access, "connection rejected" );
         vlc_dialog_display_error( p_access, _("Network interaction failed"), "%s",
-            _("VLC's connection to the given server was rejected.") );
+            BRAND_TEXT_CONNECT_REJECTED );
         goto error;
     }
 

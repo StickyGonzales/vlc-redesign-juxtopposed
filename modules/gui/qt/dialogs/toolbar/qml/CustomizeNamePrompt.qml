@@ -16,14 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-// redesign (W8.1a): asks for a layout profile name (new, duplicate, rename) inside the Customize
-// Player dialog. No Figma frame (Decision 21): the redesign dialog style (BG/B1 box, radius 14,
-// BG/B2 header with the title FG/A2, RdTextField, Cancel / Save footer like Figma's dialogs).
-// Enter saves, Escape cancels.
+// redesign (W8.1a / W8.2): asks for a profile name (the main menu's "+ New" and Rename), or
+// confirms an action that cannot be undone (Delete Profile: confirm()). No Figma frame
+// (Decision 21): the redesign dialog style (BG/B1 box, radius 14, BG/B2 header with the title
+// FG/A2, RdTextField or the message in FG/A2, Cancel / Save footer like Figma's dialogs).
+// Enter saves, Escape or a click outside cancels; the keys stay in the prompt while it is open
+// (RdPanels.acquireModal) and the focus goes back where it was.
 import QtQuick
 import QtQuick.Templates as T
+import QtQuick.Window
 
 import VLC.MainInterface
+import VLC.Player
 import VLC.Style
 import VLC.Widgets as Widgets
 
@@ -31,13 +35,57 @@ T.Popup {
     id: root
 
     property string title: ""
+    // confirm(): the question instead of the name field, and the accept button's text
+    property string message: ""
+    property string acceptText: qsTr("Save")
 
     signal accepted(string name)
 
     function ask(title, name) {
         root.title = title
+        root.message = ""
+        root.acceptText = qsTr("Save")
         nameField.text = name
         open()
+    }
+
+    function confirm(title, message, acceptText) {
+        root.title = title
+        root.message = message
+        root.acceptText = acceptText
+        nameField.text = ""
+        open()
+    }
+
+    property Item _restoreFocusItem: null
+    property bool _holdsModal: false
+
+    onAboutToShow: {
+        const window = root.parent ? root.parent.Window.window : null
+        root._restoreFocusItem = window ? window.activeFocusItem : null
+        if (!root._holdsModal) {
+            RdPanels.acquireModal()
+            root._holdsModal = true
+        }
+    }
+
+    onAboutToHide: {
+        if (root._holdsModal) {
+            RdPanels.releaseModal()
+            root._holdsModal = false
+        }
+    }
+
+    onClosed: {
+        const item = root._restoreFocusItem
+        root._restoreFocusItem = null
+        if (item && item.visible)
+            item.forceActiveFocus(Qt.PopupFocusReason)
+    }
+
+    Component.onDestruction: {
+        if (root._holdsModal)
+            RdPanels.releaseModal()
     }
 
     anchors.centerIn: parent
@@ -52,13 +100,17 @@ T.Popup {
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
 
     onOpened: {
+        if (root.message !== "") {
+            saveButton.forceActiveFocus(Qt.PopupFocusReason)
+            return
+        }
         nameField.selectAll()
         nameField.forceActiveFocus(Qt.PopupFocusReason)
     }
 
     function _accept() {
         const name = nameField.text.trim()
-        if (name === "")
+        if (root.message === "" && name === "")
             return
         close()
         accepted(name)
@@ -115,10 +167,28 @@ T.Popup {
 
         Item {
             width: parent.width
-            height: nameField.height + 2 * VLCStyle.dp(20)
+            height: (root.message !== "" ? messageText.implicitHeight : nameField.height) + 2 * VLCStyle.dp(20)
+
+            Text {
+                id: messageText
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: VLCStyle.dp(20)
+                anchors.verticalCenter: parent.verticalCenter
+
+                visible: root.message !== ""
+                text: root.message
+                wrapMode: Text.Wrap
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.rd_fontSize_label
+                color: VLCStyle.palette.rdFgA2
+            }
 
             Widgets.RdTextField {
                 id: nameField
+
+                visible: root.message === ""
 
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -150,7 +220,7 @@ T.Popup {
                 text: qsTr("Cancel")
 
                 KeyNavigation.tab: saveButton.enabled ? saveButton : nameField
-                KeyNavigation.backtab: nameField
+                KeyNavigation.backtab: root.message !== "" ? saveButton : nameField
 
                 onClicked: root.close()
             }
@@ -163,11 +233,14 @@ T.Popup {
                 anchors.verticalCenter: parent.verticalCenter
 
                 style: Widgets.RdButton.Style.Save
-                text: qsTr("Save")
-                enabled: nameField.text.trim() !== ""
+                text: root.acceptText
+                enabled: root.message !== "" || nameField.text.trim() !== ""
 
-                KeyNavigation.tab: nameField
+                KeyNavigation.tab: root.message !== "" ? cancelButton : nameField
                 KeyNavigation.backtab: cancelButton
+
+                Keys.onReturnPressed: root._accept()
+                Keys.onEnterPressed: root._accept()
 
                 onClicked: root._accept()
             }

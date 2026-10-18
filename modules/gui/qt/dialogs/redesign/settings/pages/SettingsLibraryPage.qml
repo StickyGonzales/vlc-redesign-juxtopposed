@@ -24,6 +24,7 @@ import VLC.MainInterface
 import VLC.Style
 import VLC.Player
 import VLC.Dialogs
+import VLC.Widgets as Widgets
 
 SettingsPage {
     id: root
@@ -78,10 +79,24 @@ SettingsPage {
             ]
         }
 
-        SettingsOption {
-            option: "media-library"
+        // the state of the library, not the saved "media-library" value: VLC's launcher starts
+        // every session with --media-library, so the saved value can neither turn it off nor on.
+        // The toggle shows whether the library runs and cannot be switched (dimmed)
+        SettingsRow {
             text: qsTr("Use the media library")
-            restartRequired: true
+            description: {
+                const note = qsTr("%1 always starts with the media library: its launcher turns it on, whatever is saved here.").arg(Brand.shortName)
+                const text = RdEffects.optionDescription("media-library")
+                return text !== "" ? text + "\n\n" + note : note
+            }
+            keywords: "media-library"
+            shown: SettingsCatalog.exists("media-library")
+
+            Widgets.RdToggle {
+                checked: MainCtx.mediaLibraryAvailable
+                enabled: false
+                Accessible.name: qsTr("Use the media library")
+            }
         }
     }
 

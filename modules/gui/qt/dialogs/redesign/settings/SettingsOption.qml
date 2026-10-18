@@ -65,6 +65,8 @@ SettingsRow {
     property real limitFrom: from
     property real limitTo: to
     property real scrollSpeed: (to - from) * VLCStyle.rd_sliderScrollRate
+    // slider: one mouse wheel notch over the slider (Decision 54)
+    property real wheelStep: step
     // slider filled from 0 (delays)
     property bool bipolar: false
     // slider: the value the fill starts from (bipolar) and the edge label points to
@@ -106,7 +108,10 @@ SettingsRow {
     }
 
     readonly property bool _integer: info.type === "integer"
-    readonly property var _choices: choices ?? RdEffects.optionChoices(option)
+    // VLC words "no module" as "Disable" (Visualizer...): Figma and the settings sidebar say
+    // "Disabled"
+    readonly property var _choices: choices ?? RdEffects.optionChoices(option).map((c) =>
+        (info.type === "module" && c.value === "none") ? { value: c.value, text: qsTr("Disabled") } : c)
 
     // options the interface reads into MainCtx (MainCtx::loadPrefs): it reads them again once
     // RdEffects has written the change, so they apply at once (as after VLC's preferences).
@@ -257,6 +262,7 @@ SettingsRow {
             limitTo: root.limitTo
             step: root.step
             scrollSpeed: root.scrollSpeed
+            wheelStep: root.wheelStep
             labels: root.labels
             labelStep: root.labelStep
             labelAnchor: root.labelAnchor

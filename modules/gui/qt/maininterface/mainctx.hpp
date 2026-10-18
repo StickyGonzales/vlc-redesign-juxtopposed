@@ -376,6 +376,11 @@ public:
     Q_INVOKABLE virtual bool platformHandlesTitleBarButtonsWithCSD() const { return false; };
     Q_INVOKABLE virtual bool platformHandlesShadowsWithCSD() const { return false; };
 
+    // redesign: a frame the platform keeps around the interface window that Qt doesn't count
+    // (Windows: the resize border outside the client area with client-side decorations); saved
+    // with the window geometry so a restart restores the same size (InterfaceWindowHandler)
+    virtual QMargins nativeFrameMargins(QWindow *) const { return QMargins(); }
+
     void setUsingTouch(bool touch)
     {
         if (m_usingTouch == touch)
@@ -509,6 +514,9 @@ protected:
     QTimer* m_configSaveTimer = nullptr;
     void scheduleConfigSave();
     QColor m_accentColor;
+    // redesign: the option as written ("default", "system" or a color): "system" and "default"
+    // both give an invalid color but a different palette
+    QByteArray m_accentOption;
 
     float m_safeArea = 0.0;
 
@@ -595,6 +603,12 @@ signals:
     // redesign (S2-03): the track-change popup near the system tray (VLCSystray), drawn by
     // TrayPopup.qml in `area` (the primary screen's free area) for `duration` ms
     void trackPopupRequested(const QString& name, const QUrl& artwork, const QRect& area, int duration);
+    // redesign: a mouse move without a pressed button over the interface window, in scene
+    // (window) coordinates, seen by InterfaceWindowHandler before Qt Quick delivers it; the
+    // player's bars wake up from it (Player.qml, Decision 30)
+    void intfMouseMoved(QPointF scenePos);
+    // redesign: the mouse left the interface window
+    void intfMouseLeft();
 
     void playerPlaylistWidthChanged(double);
     void interfaceAlwaysOnTopChanged(bool);

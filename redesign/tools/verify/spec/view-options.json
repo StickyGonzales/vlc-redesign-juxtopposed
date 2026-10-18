@@ -1,0 +1,223 @@
+{
+ "format": 1,
+ "node": "858:3290",
+ "name": "View Options",
+ "png": "View Options.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  265,
+  104
+ ],
+ "theme": "dark",
+ "rows": [
+  165,
+  166
+ ],
+ "background": [
+  {
+   "token": "BG/A3 Transparent",
+   "dark": "#191919",
+   "light": "#D5D5D5",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "2107:5988",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    4,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2107:5988;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:grid",
+   "bounds": [
+    18,
+    16,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "grid",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "grid",
+   "rows": [
+    166
+   ]
+  },
+  {
+   "id": "I2107:5988;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    19.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Grid View",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    166
+   ]
+  },
+  {
+   "id": "I2107:5988;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    16,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  },
+  {
+   "id": "2107:5993",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    52,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "selected"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A2",
+     "dark": "#1F1F1F",
+     "light": "#DDDDDD"
+    }
+   ]
+  },
+  {
+   "id": "I2107:5993;2107:6183",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:list",
+   "bounds": [
+    18,
+    64,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "list",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "list",
+   "rows": [
+    166
+   ]
+  },
+  {
+   "id": "I2107:5993;2107:5943",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    67.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "List View",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    166
+   ]
+  },
+  {
+   "id": "I2107:5993;2107:5944",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    64,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "active",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    15
+   ]
+  }
+ ]
+}

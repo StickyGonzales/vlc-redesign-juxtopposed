@@ -42,10 +42,17 @@ RdSidePanel {
     currentKey: RdPanels.queueOpen ? RdPanels.current : "queue"
     onTabClicked: (key) => RdPanels.open(key)
 
+    // Figma "4 items - 2h 3m"; under a minute in seconds ("45s"); empty when no item has a
+    // known duration (an empty queue, streams), so the header shows the count only
     function durationText(duration) {
         if (!duration || !duration.valid())
             return ""
-        const minutes = Math.floor(duration.toSeconds() / 60)
+        const seconds = duration.toSeconds()
+        if (seconds <= 0)
+            return ""
+        if (seconds < 60)
+            return qsTr("%1s").arg(seconds)
+        const minutes = Math.floor(seconds / 60)
         return minutes >= 60 ? qsTr("%1h %2m").arg(Math.floor(minutes / 60)).arg(minutes % 60)
                              : qsTr("%1m").arg(minutes)
     }
@@ -160,10 +167,9 @@ RdSidePanel {
                 height: VLCStyle.dp(68)
 
                 readonly property string countText: qsTr("%1 item", "%1 items", queueModel.count).arg(queueModel.count)
+                readonly property string durationText: root.durationText(queueModel.duration)
 
-                text: queueModel.duration.valid()
-                      ? qsTr("%1 - %2").arg(countText).arg(root.durationText(queueModel.duration))
-                      : countText
+                text: durationText !== "" ? qsTr("%1 - %2").arg(countText).arg(durationText) : countText
 
                 HeaderButton {
                     rdIcon: "sort"
@@ -176,6 +182,7 @@ RdSidePanel {
                 }
 
                 HeaderButton {
+                    width: VLCStyle.rd_iconButtonWidth
                     rdIcon: "repeat_direction-right"
                     description: qsTr("Repeat")
                     checked: MainPlaylistController.repeatMode !== PlaylistController.PLAYBACK_REPEAT_NONE
@@ -183,6 +190,7 @@ RdSidePanel {
                 }
 
                 HeaderButton {
+                    width: VLCStyle.rd_iconButtonWidth
                     rdIcon: "shuffle_direction-right"
                     description: qsTr("Shuffle")
                     checked: MainPlaylistController.random
@@ -408,7 +416,9 @@ RdSidePanel {
                 id: chapterView
 
                 anchors.fill: parent
+                // Figma "chapters": 20 px above the first row and below the last one
                 topMargin: VLCStyle.dp(20)
+                bottomMargin: VLCStyle.dp(20)
 
                 model: Player.chapters
 
@@ -423,7 +433,8 @@ RdSidePanel {
 
                     number: index + 1
                     title: model.display ?? ""
-                    detail: model.time ? model.time.formatHMS() : ""
+                    // hh:mm:ss like the control bar's time (Figma "chapters" 00:02:15)
+                    detail: model.time ? model.time.formatHHMMSS() : ""
                     current: !!model.checked
 
                     // Up from the first row goes to the tabs
@@ -489,9 +500,10 @@ RdSidePanel {
         }
     }
 
-    // queue header icon: accent while its mode is on (repeat, shuffle)
+    // queue header icon: accent while its mode is on (repeat, shuffle). Figma "Frame 61"
+    // (463:842): the icons are 24 wide and 12 apart, the repeat and shuffle frames 30 wide
     component HeaderButton: Widgets.IconToolButton {
-        width: VLCStyle.rd_iconButtonWidth
+        width: VLCStyle.rd_iconSize
         height: VLCStyle.rd_iconButtonHeight
         font.pixelSize: VLCStyle.rd_iconSize
         text: VLCIcons.more

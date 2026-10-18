@@ -117,9 +117,25 @@ QtObject {
         }
     }
 
+    // a media library id held by value. In Qt 6 an id read from a model row (`model.id` in a
+    // delegate) is a reference to that row: when the model reloads (a scan) or the delegate is
+    // destroyed (the page fades out), it reads another row's id or nothing, and a folder page
+    // made from it listed its whole category (P5-16, F-14, P6-01: nested folder plus every
+    // file, "3007 items")
+    function detachedId(id) {
+        if (!id || typeof id.isValid !== "function" || !id.isValid())
+            return id
+        return RdLibraryStore.detached(id)
+    }
+
     function _go(loc) {
         if (sameLocation(loc, location))
             return
+        // every place of the address line is kept (back, forward, crumbs): hold its id by value
+        for (const crumb of loc.crumbs) {
+            if (crumb.id !== undefined)
+                crumb.id = detachedId(crumb.id)
+        }
         _back = _back.concat([location])
         _forward = []
         location = loc

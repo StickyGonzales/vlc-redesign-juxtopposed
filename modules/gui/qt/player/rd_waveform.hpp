@@ -60,7 +60,8 @@ class RdWaveform : public QObject
 
 public:
     static constexpr int kCacheMaxEntries = 2000;
-    // the longest quitting waits for a cancelled scan (one normally stops within a millisecond)
+    // quitting logs a warning when a cancelled scan takes longer than this to stop (one
+    // normally stops within a millisecond)
     static constexpr int kQuitWaitMs = 500;
 
     RdWaveform(qt_intf_t* intf, PlayerController* player, QObject* parent = nullptr);
@@ -89,8 +90,7 @@ private:
     qt_intf_t* m_intf = nullptr;
     PlayerController* m_player = nullptr;
 
-    // one low priority worker thread for every scan (left to the process's end if a scan does
-    // not stop when VLC quits, see ~RdWaveform)
+    // one low priority worker thread for every scan (joined when VLC quits, see ~RdWaveform)
     std::unique_ptr<QThreadPool> m_pool;
     QString m_cacheDir;
 

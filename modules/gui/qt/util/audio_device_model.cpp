@@ -18,6 +18,7 @@
 
 #include "audio_device_model.hpp"
 #include "player/player_controller.hpp"
+#include "util/rd_stereo_test.hpp"
 #include <vlc_player.h>
 #include <vlc_aout.h>
 
@@ -50,11 +51,21 @@ AudioDeviceModel::AudioDeviceModel(vlc_player_t *player, QObject *parent)
 
     m_aout = vlc_player_aout_Hold(m_player);
     if (m_aout)
+    {
         m_inputs = aout_DevicesList(m_aout, &m_ids, &m_names);
+
+        // redesign: the device in use before any change is reported
+        char *device = aout_DeviceGet(m_aout);
+        m_current = qfu(device);
+        free(device);
+    }
 }
 
 AudioDeviceModel::~AudioDeviceModel()
 {
+    // the test player is created under the main player: gone before the output is released
+    m_stereoTest.reset();
+
     for (int i=0; i<m_inputs; i++)
     {
         free(m_ids[i]);
@@ -144,6 +155,8 @@ void AudioDeviceModel::updateCurrent(QString current)
         emit dataChanged(index(oldIndex), index(oldIndex), { Qt::DisplayRole, Qt::CheckStateRole });
     if(currentIndex >= 0)
         emit dataChanged(index(currentIndex), index(currentIndex), { Qt::DisplayRole, Qt::CheckStateRole });
+
+    emit currentChanged();
 }
 
 void AudioDeviceModel::refresh()
@@ -163,6 +176,41 @@ void AudioDeviceModel::refresh()
     m_names = nullptr;
     m_inputs = aout_DevicesList(m_aout, &m_ids, &m_names);
     endResetModel();
+}
+
+QVariantList AudioDeviceModel::devices() const
+{
+    QVariantList list;
+    for (int i = 0; i < m_inputs; i++)
+        list << QVariantMap{ { QStringLiteral("value"), qfu(m_ids[i]) },
+                             { QStringLiteral("text"), qfu(m_names[i]) } };
+    return list;
+}
+
+bool AudioDeviceModel::select(const QString &id)
+{
+    if (m_aout && aout_DeviceSet(m_aout, qtu(id)) == 0)
+        return true;
+    // the device in use did not change: a view that showed the choice reads it again
+    emit currentChanged();
+    return false;
+}
+
+void AudioDeviceModel::playStereoTest()
+{
+    if (!m_aout)
+        return;
+    if (!m_stereoTest)
+        m_stereoTest = std::make_unique<RdStereoTest>(vlc_object_parent(m_aout));
+
+    // the stereo mode only means something for a track that offers stereo modes (the variable
+    // keeps the last stereo track's value otherwise)
+    const int stereoMode = var_CountChoices(m_aout, "stereo-mode") > 0
+                         ? static_cast<int>(var_GetInteger(m_aout, "stereo-mode"))
+                         : AOUT_VAR_CHAN_STEREO;
+    char *device = aout_DeviceGet(m_aout);
+    m_stereoTest->play(stereoMode, device, aout_VolumeGet(m_aout));
+    free(device);
 }
 
 QHash<int, QByteArray> AudioDeviceModel::roleNames() const

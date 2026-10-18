@@ -1,0 +1,1773 @@
+{
+ "format": 1,
+ "node": "614:1430",
+ "name": "Video - Colors",
+ "png": "Video - Colors.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  400,
+  888
+ ],
+ "theme": "dark",
+ "rows": [
+  139
+ ],
+ "variants": [
+  {
+   "node": "614:1431",
+   "name": "Property 1=collapsed",
+   "props": {
+    "Property 1": "collapsed"
+   },
+   "bounds": [
+    20,
+    20,
+    360,
+    48
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "614:1433",
+     "name": "Expand Settings",
+     "type": "text",
+     "path": "Expand Settings",
+     "bounds": [
+      16,
+      15.5,
+      108,
+      17
+     ],
+     "text": {
+      "content": "Expand Settings",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "614:1434",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:chevron",
+     "bounds": [
+      326,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "right",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      65
+     ]
+    }
+   ]
+  },
+  {
+   "node": "614:1435",
+   "name": "Property 1=expanded",
+   "props": {
+    "Property 1": "expanded"
+   },
+   "bounds": [
+    20,
+    88,
+    360,
+    755
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "614:1437",
+     "name": "Collapse Settings",
+     "type": "text",
+     "path": "Collapse Settings",
+     "bounds": [
+      16,
+      15.5,
+      116,
+      17
+     ],
+     "text": {
+      "content": "Collapse Settings",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "614:1438",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:chevron",
+     "bounds": [
+      326,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "down",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      13,
+      65
+     ]
+    },
+    {
+     "id": "614:1576",
+     "name": "Color Extraction",
+     "type": "text",
+     "path": "Color Extraction",
+     "bounds": [
+      16,
+      61.5,
+      107,
+      17
+     ],
+     "text": {
+      "content": "Color Extraction",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "800:1147",
+     "name": "Frame 87",
+     "type": "frame",
+     "path": "Frame 87",
+     "bounds": [
+      152,
+      54,
+      116,
+      32
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ]
+    },
+    {
+     "id": "800:1148",
+     "name": "#FF0000",
+     "type": "text",
+     "path": "#FF0000",
+     "bounds": [
+      164,
+      61.5,
+      67,
+      17
+     ],
+     "text": {
+      "content": "#FF0000",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "800:1149",
+     "name": "Rectangle 15",
+     "type": "rectangle",
+     "path": "Rectangle 15",
+     "bounds": [
+      241,
+      59,
+      22,
+      22
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "color": "#FF0000"
+      }
+     ],
+     "strokes": [
+      {
+       "color": "#FFFFFF",
+       "alpha": 0.21
+      }
+     ],
+     "stroke_weight": 1.5,
+     "stroke_align": "inside"
+    },
+    {
+     "id": "673:1591",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      54,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1591;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      57,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1591;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      57,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1591;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      63,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "673:1618",
+     "name": "Vector",
+     "type": "vector",
+     "path": "Vector",
+     "bounds": [
+      0,
+      106,
+      360,
+      0
+     ],
+     "strokes": [
+      {
+       "token": "Divider/Dim",
+       "dark": "#222222",
+       "light": "#ACACAC"
+      }
+     ],
+     "stroke_weight": 1,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1598",
+     "name": "Color Threshold",
+     "type": "text",
+     "path": "Color Threshold",
+     "bounds": [
+      16,
+      133.5,
+      106,
+      17
+     ],
+     "text": {
+      "content": "Color Threshold",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "800:1151",
+     "name": "Frame 87",
+     "type": "frame",
+     "path": "Frame 87",
+     "bounds": [
+      152,
+      126,
+      116,
+      32
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ]
+    },
+    {
+     "id": "800:1152",
+     "name": "#FF0000",
+     "type": "text",
+     "path": "#FF0000",
+     "bounds": [
+      164,
+      133.5,
+      67,
+      17
+     ],
+     "text": {
+      "content": "#FF0000",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "800:1153",
+     "name": "Rectangle 15",
+     "type": "rectangle",
+     "path": "Rectangle 15",
+     "bounds": [
+      241,
+      131,
+      22,
+      22
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "color": "#FF0000"
+      }
+     ],
+     "strokes": [
+      {
+       "color": "#FFFFFF",
+       "alpha": 0.21
+      }
+     ],
+     "stroke_weight": 1.5,
+     "stroke_align": "inside"
+    },
+    {
+     "id": "673:1602",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      126,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1602;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      129,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1602;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      129,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1602;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      135,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "614:1474",
+     "name": "Saturation",
+     "type": "text",
+     "path": "Saturation",
+     "bounds": [
+      16,
+      174,
+      69,
+      17
+     ],
+     "text": {
+      "content": "Saturation",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "614:1476",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      210,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ]
+    },
+    {
+     "id": "614:1477",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      212,
+      66,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ]
+    },
+    {
+     "id": "614:1483",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / range / thumb",
+     "bounds": [
+      80,
+      206,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ]
+    },
+    {
+     "id": "673:1608",
+     "name": "Similarity",
+     "type": "text",
+     "path": "Similarity",
+     "bounds": [
+      16,
+      250,
+      61,
+      17
+     ],
+     "text": {
+      "content": "Similarity",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1610",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      286,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ]
+    },
+    {
+     "id": "673:1611",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      288,
+      66,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ]
+    },
+    {
+     "id": "673:1617",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / range / thumb",
+     "bounds": [
+      80,
+      282,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ]
+    },
+    {
+     "id": "673:1620",
+     "name": "Vector",
+     "type": "vector",
+     "path": "Vector",
+     "bounds": [
+      0,
+      326,
+      360,
+      0
+     ],
+     "strokes": [
+      {
+       "token": "Divider/Dim",
+       "dark": "#222222",
+       "light": "#ACACAC"
+      }
+     ],
+     "stroke_weight": 1,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1622",
+     "name": "Negate Colors",
+     "type": "text",
+     "path": "Negate Colors",
+     "bounds": [
+      16,
+      353.5,
+      95,
+      17
+     ],
+     "text": {
+      "content": "Negate Colors",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1626",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      346,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1626;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      349,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1626;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      349,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1626;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      355,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "673:1659",
+     "name": "Vector",
+     "type": "vector",
+     "path": "Vector",
+     "bounds": [
+      0,
+      388,
+      360,
+      0
+     ],
+     "strokes": [
+      {
+       "token": "Divider/Dim",
+       "dark": "#222222",
+       "light": "#ACACAC"
+      }
+     ],
+     "stroke_weight": 1,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1632",
+     "name": "Posterize",
+     "type": "text",
+     "path": "Posterize",
+     "bounds": [
+      16,
+      405.5,
+      62,
+      17
+     ],
+     "text": {
+      "content": "Posterize",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1634",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      398,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1634;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      401,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1634;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      401,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1634;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      407,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "673:1660",
+     "name": "Vector",
+     "type": "vector",
+     "path": "Vector",
+     "bounds": [
+      0,
+      440,
+      360,
+      0
+     ],
+     "strokes": [
+      {
+       "token": "Divider/Dim",
+       "dark": "#222222",
+       "light": "#ACACAC"
+      }
+     ],
+     "stroke_weight": 1,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1639",
+     "name": "Gradient",
+     "type": "text",
+     "path": "Gradient",
+     "bounds": [
+      16,
+      462.5,
+      57,
+      17
+     ],
+     "text": {
+      "content": "Gradient",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1641",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      455,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1641;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      458,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1641;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      458,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1641;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      464,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "673:1670",
+     "name": "EQ",
+     "type": "frame",
+     "path": "EQ",
+     "bounds": [
+      16,
+      502,
+      328,
+      48
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B1",
+       "dark": "#0E0E0E",
+       "light": "#E7E7E7"
+      }
+     ]
+    },
+    {
+     "id": "673:1671",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "EQ",
+     "bounds": [
+      18,
+      504,
+      324,
+      44
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ]
+    },
+    {
+     "id": "673:1672",
+     "name": "Gradient",
+     "type": "text",
+     "path": "EQ / Gradient",
+     "bounds": [
+      34,
+      517.5,
+      57,
+      17
+     ],
+     "text": {
+      "content": "Gradient",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1673",
+     "name": "Icon",
+     "type": "instance",
+     "path": "EQ / Icon:chevron",
+     "bounds": [
+      306,
+      514,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "down",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      132
+     ]
+    },
+    {
+     "id": "673:1677",
+     "name": "Color",
+     "type": "text",
+     "path": "Color",
+     "bounds": [
+      16,
+      572.5,
+      36,
+      17
+     ],
+     "text": {
+      "content": "Color",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1679",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      565,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1679;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      568,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1679;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      568,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1679;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      574,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "673:1684",
+     "name": "Cartoon",
+     "type": "text",
+     "path": "Cartoon",
+     "bounds": [
+      16,
+      619.5,
+      54,
+      17
+     ],
+     "text": {
+      "content": "Cartoon",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1686",
+     "name": "Toggle",
+     "type": "instance",
+     "path": "Toggle",
+     "bounds": [
+      276,
+      612,
+      68,
+      32
+     ],
+     "component": "Toggle",
+     "variant": {
+      "Value": "off"
+     },
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1686;536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      308,
+      615,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1686;536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Toggle",
+     "bounds": [
+      279,
+      615,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "I673:1686;536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "Toggle / OFF",
+     "bounds": [
+      312,
+      621,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "673:1690",
+     "name": "Vector",
+     "type": "vector",
+     "path": "Vector",
+     "bounds": [
+      0,
+      659,
+      360,
+      0
+     ],
+     "strokes": [
+      {
+       "token": "Divider/Dim",
+       "dark": "#222222",
+       "light": "#ACACAC"
+      }
+     ],
+     "stroke_weight": 1,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1693",
+     "name": "Sepia Intensity",
+     "type": "text",
+     "path": "Sepia Intensity",
+     "bounds": [
+      16,
+      679,
+      98,
+      17
+     ],
+     "text": {
+      "content": "Sepia Intensity",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     }
+    },
+    {
+     "id": "673:1695",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      715,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ]
+    },
+    {
+     "id": "673:1696",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      717,
+      112,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ]
+    },
+    {
+     "id": "673:1699",
+     "name": "Vector 60",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      126,
+      720,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1700",
+     "name": "Vector 58",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      234,
+      720,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center"
+    },
+    {
+     "id": "673:1702",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / range / thumb",
+     "bounds": [
+      122,
+      711,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

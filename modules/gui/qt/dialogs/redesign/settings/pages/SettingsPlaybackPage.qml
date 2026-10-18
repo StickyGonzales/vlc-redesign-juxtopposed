@@ -80,6 +80,8 @@ SettingsPage {
             limitTo: 31.25
             scrollSpeed: 1
             step: 0.25
+            // the wheel fine-tunes in 0.05x steps (Decision 54)
+            wheelStep: 0.05
             decimals: 2
             zeroValue: 1
             labelStep: 0.25

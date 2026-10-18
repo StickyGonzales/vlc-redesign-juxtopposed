@@ -44,13 +44,22 @@ Item {
     // the expanding spacer cannot go into the center zone (VLC's toolbar editor rule)
     property bool acceptsExpandingSpacer: true
 
+    // W8.1b: a zone of the top bar (Figma "topbar"): icon buttons `iconWidth` wide with their
+    // 28 x 28 icon outlined, `topBarSpacing` between controls and none next to a divider
+    property bool topBar: false
+    property real iconWidth: VLCStyle.rd_iconButtonWidth
+    property real topBarSpacing: VLCStyle.dp(10)
+    // above and below a top bar icon's outline (Figma: the 28x28 Icon in the left zone, 36x24
+    // cells between the window buttons)
+    property real topBarIconPadding: VLCStyle.dp(2)
+
     readonly property int count: repeater.count
     readonly property real controlsWidth: row.width
 
     readonly property real _minimumSlotWidth: VLCStyle.rd_playButtonWidth
 
     implicitWidth: (count > 0) ? row.width : _minimumSlotWidth
-    implicitHeight: VLCStyle.rd_controlBarHeight
+    implicitHeight: topBar ? VLCStyle.rd_topBarHeight : VLCStyle.rd_controlBarHeight
 
     // ------------------------------------------------------------------------------ gaps
 
@@ -65,6 +74,13 @@ Item {
             return 0
         const cur = repeater.itemAt(index)
         const prev = repeater.itemAt(index - 1)
+        if (topBar) {
+            // as the live top bar (RdTopBarZone)
+            if (cur && prev && (cur.controlId === ControlListModel.RD_DIVIDER
+                                || prev.controlId === ControlListModel.RD_DIVIDER))
+                return 0
+            return topBarSpacing
+        }
         if (!cur || !prev)
             return VLCStyle.dp(8)
         if (cur.controlId === ControlListModel.PLAYLIST_BUTTON || prev.controlId === ControlListModel.VOLUME)
@@ -76,7 +92,7 @@ Item {
 
     function gapAfter(index) {
         if (index + 1 >= count)
-            return VLCStyle.dp(8)
+            return topBar ? topBarSpacing : VLCStyle.dp(8)
         return gapBefore(index + 1)
     }
 
@@ -130,7 +146,7 @@ Item {
             anchors.fill: parent
             anchors.leftMargin: (root.alignment === Qt.AlignRight || root.count === 0) ? 0 : VLCStyle.dp(8)
             anchors.rightMargin: (root.alignment === Qt.AlignRight && root.count > 0) ? VLCStyle.dp(8) : 0
-            anchors.topMargin: Math.round((parent.height - VLCStyle.dp(36)) / 2)
+            anchors.topMargin: Math.round((parent.height - (root.topBar ? VLCStyle.dp(28) : VLCStyle.dp(36))) / 2)
             anchors.bottomMargin: anchors.topMargin
 
             visible: width > VLCStyle.dp(8)

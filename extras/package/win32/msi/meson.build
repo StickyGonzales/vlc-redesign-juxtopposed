@@ -36,6 +36,18 @@ wix_conf.set('BUILD_SKINS_TRUE', skins2_feasible ? '' : '#')
 wix_conf.set('HAVE_NLS_TRUE', wix_conf.get('ENABLE_NLS', 0) == 1 ? '' : '#')
 wix_conf.set('WINDOWS_ARCH', WIX_WINDOWS_ARCH)
 wix_conf.set('PREFIX_PATH', W_PREFIX)
+# redesign: brand layer (root meson.build brand_profiles, config.wxi.in)
+wix_conf.set('BRAND_PRODUCT_NAME', brand['product_name'])
+wix_conf.set('BRAND_COMPANY', brand['company'])
+wix_conf.set('BRAND_EXE', brand['exe_name'] + '.exe')
+wix_conf.set('BRAND_ICON_FILE', brand['icon_file'])
+wix_conf.set('BRAND_WEBSITE', brand['website'])
+wix_conf.set('BRAND_REGKEY', brand['regkey'])
+wix_conf.set('BRAND_PROGID', brand['progid'])
+wix_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
+wix_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
+wix_conf.set('BRAND_VERSION_REVISION', brand_version_revision)
+wix_conf.set('BRAND_VERSION_EXTRA', brand_version_extra)
 
 vlc_wix = configure_file(
     input: 'config.wxi.in',
@@ -102,7 +114,7 @@ foreach wxsobj : wxs_files
     compiled_winpath += out_winpath
 endforeach
 
-msi_name = 'vlc-' + vlc_version + '-' + winstaller_suffix + '.msi'
+msi_name = brand['internal_name'] + '-' + vlc_version + '-' + winstaller_suffix + '.msi'
 msi_output = custom_target(
     command: [x86_runner, lightx86, '-nologo',
         '-sval', '-spdb', '-ext', 'WixUIExtension', '-ext', 'WixUtilExtension', '-cultures:en-us',

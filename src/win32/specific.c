@@ -62,6 +62,15 @@ void system_Init(void)
  *****************************************************************************/
 
 /* Must be same as in modules/control/win_msg.c */
+/* redesign (brand layer, public profile): Cone's own single-instance identity (mutex and IPC
+ * window name), so "allow only one instance" never hands files to a running VLC */
+#ifdef VLC_BRAND_PUBLIC
+# define IPC_NAME L"Cone ipc " TEXT(VERSION)
+#else
+# define IPC_NAME L"VLC ipc " TEXT(VERSION)
+#endif
+
+/* Must be same as in modules/control/win_msg.c */
 typedef struct
 {
     int argc;
@@ -81,7 +90,7 @@ void system_Configure( libvlc_int_t *p_this, int i_argc, const char *const ppsz_
         msg_Info( p_this, "one instance mode ENABLED");
 
         /* Use a named mutex to check if another instance is already running */
-        if( !( hmutex = CreateMutex( 0, TRUE, L"VLC ipc " TEXT(VERSION) ) ) )
+        if( !( hmutex = CreateMutex( 0, TRUE, IPC_NAME ) ) )
         {
             /* Failed for some reason. Just ignore the option and go on as
              * normal. */
@@ -108,7 +117,7 @@ void system_Configure( libvlc_int_t *p_this, int i_argc, const char *const ppsz_
 
             /* Locate the window created by the IPC helper thread of the
              * 1st instance */
-            if( !( ipcwindow = FindWindow( 0, L"VLC ipc " TEXT(VERSION) ) ) )
+            if( !( ipcwindow = FindWindow( 0, IPC_NAME ) ) )
             {
                 msg_Err( p_this, "one instance mode DISABLED "
                          "(couldn't find 1st instance of program)" );

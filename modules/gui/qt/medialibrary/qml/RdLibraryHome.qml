@@ -272,7 +272,8 @@ FocusScope {
         return {
             kind: model.kind,
             index: index,
-            id: model.id,
+            // held by value (the section reloads on media library events, see RdLibraryNav)
+            id: RdLibraryNav.detachedId(model.id),
             title: model.title,
             subtitle: model.subtitle,
             mrl: model.mrl,

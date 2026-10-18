@@ -143,6 +143,13 @@ FocusScope {
             source: "qrc:///qt/qml/VLC/Widgets/CSDTitlebarTapNDrapHandler.qml"
         }
 
+        // redesign: the wheel over the window buttons does not reach the video (volume / seek,
+        // Decision 54); the rest of the minimal view is the video
+        Widgets.RdWheelSink {
+            anchors.fill: csdDecorations
+            visible: root._showCSD
+        }
+
         Loader {
             id: csdDecorations
 

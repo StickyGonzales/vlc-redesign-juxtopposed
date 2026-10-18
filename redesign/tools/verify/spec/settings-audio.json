@@ -1,0 +1,3267 @@
+{
+ "format": 1,
+ "node": "3073:15879",
+ "name": "Settings - audio",
+ "png": "Settings - audio.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1048,
+  865
+ ],
+ "theme": "dark",
+ "rows": [
+  286,
+  334,
+  355
+ ],
+ "background": [
+  {
+   "token": "BG/B1 Transparent",
+   "dark": "#0E0E0E",
+   "light": "#E7E7E7",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "3073:15880",
+   "name": "Frame 120",
+   "type": "frame",
+   "path": "Frame 120",
+   "bounds": [
+    0,
+    0,
+    1048,
+    50
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "3073:15881",
+   "name": "Frame 121",
+   "type": "frame",
+   "path": "Frame 121",
+   "bounds": [
+    8,
+    8,
+    200,
+    34
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "3073:15882",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:search",
+   "bounds": [
+    16,
+    13,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "search",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "search"
+  },
+  {
+   "id": "3073:15883",
+   "name": "Search",
+   "type": "text",
+   "path": "Search",
+   "bounds": [
+    50,
+    16.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Search",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "3180:18561",
+   "name": "Audio Defaults",
+   "type": "text",
+   "path": "Audio Defaults",
+   "bounds": [
+    240,
+    15.5,
+    111,
+    19
+   ],
+   "text": {
+    "content": "Audio Defaults",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "rows": [
+    286,
+    355
+   ]
+  },
+  {
+   "id": "3073:15884",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Icon Wrapper",
+   "bounds": [
+    1002,
+    9,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I3073:15884;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon Wrapper / Icon:close",
+   "bounds": [
+    1006,
+    13,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close"
+  },
+  {
+   "id": "3073:15886",
+   "name": "Frame 3",
+   "type": "frame",
+   "path": "Frame 3",
+   "bounds": [
+    0,
+    50,
+    216,
+    815
+   ],
+   "fills": [
+    {
+     "token": "BG/B1 Transparent",
+     "dark": "#0E0E0E",
+     "light": "#E7E7E7",
+     "alpha": 0.95
+    }
+   ],
+   "translucent": true
+  },
+  {
+   "id": "3073:15887",
+   "name": "Frame 110",
+   "type": "frame",
+   "path": "Frame 110",
+   "bounds": [
+    8,
+    58,
+    200,
+    799
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "translucent": true
+  },
+  {
+   "id": "3073:15889",
+   "name": "App",
+   "type": "text",
+   "path": "App",
+   "bounds": [
+    24,
+    72,
+    27,
+    17
+   ],
+   "text": {
+    "content": "App",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "3073:15890",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    105,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15890;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:preferences",
+   "bounds": [
+    18,
+    109,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "preferences",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "preferences",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15890;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    116.5,
+    52,
+    17
+   ],
+   "text": {
+    "content": "General",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15891",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    153,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15891;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:interface",
+   "bounds": [
+    18,
+    157,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "interface",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "interface",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15891;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    164.5,
+    60,
+    17
+   ],
+   "text": {
+    "content": "Interface",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15892",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    201,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15892;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:privacy",
+   "bounds": [
+    18,
+    205,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "privacy",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "privacy",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15892;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    212.5,
+    49,
+    17
+   ],
+   "text": {
+    "content": "Privacy",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15901",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    249,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15901;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:hotkeys",
+   "bounds": [
+    18,
+    253,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "hotkeys",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "hotkeys",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15901;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    260.5,
+    56,
+    17
+   ],
+   "text": {
+    "content": "Controls",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15894",
+   "name": "Media",
+   "type": "text",
+   "path": "Media",
+   "bounds": [
+    24,
+    305,
+    41,
+    17
+   ],
+   "text": {
+    "content": "Media",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "3073:15895",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    338,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15895;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:playback",
+   "bounds": [
+    18,
+    342,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "playback",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "playback",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15895;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    349.5,
+    60,
+    17
+   ],
+   "text": {
+    "content": "Playback",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15896",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    386,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15896;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:video",
+   "bounds": [
+    18,
+    390,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15896;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    397.5,
+    38,
+    17
+   ],
+   "text": {
+    "content": "Video",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15897",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    434,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "yes"
+   },
+   "radius": 2,
+   "fills": [
+    {
+     "token": "BG/A1",
+     "dark": "#222222",
+     "light": "#EDEDED"
+    }
+   ],
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15897;3021:9837",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:audio",
+   "bounds": [
+    18,
+    438,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "audio",
+    "direction": "default",
+    "state": "active",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "audio",
+   "rows": [
+    15,
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15897;3021:9838",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    445.5,
+    38,
+    17
+   ],
+   "text": {
+    "content": "Audio",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/1",
+     "dark": "#EAEAEA",
+     "light": "#111111"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    286,
+    334,
+    355
+   ]
+  },
+  {
+   "id": "3073:15898",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    482,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15898;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:subtitles",
+   "bounds": [
+    18,
+    486,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitles",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitles",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15898;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    493.5,
+    59,
+    17
+   ],
+   "text": {
+    "content": "Subtitles",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15902",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    530,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15902;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:folder",
+   "bounds": [
+    18,
+    534,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "folder",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15902;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    541.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Library",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15904",
+   "name": "System",
+   "type": "text",
+   "path": "System",
+   "bounds": [
+    24,
+    586,
+    50,
+    17
+   ],
+   "text": {
+    "content": "System",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "3073:15905",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    619,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15905;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:streaming",
+   "bounds": [
+    18,
+    623,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "streaming",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "streaming",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15905;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    630.5,
+    57,
+    17
+   ],
+   "text": {
+    "content": "Network",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15906",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    667,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15906;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:preferences",
+   "bounds": [
+    18,
+    671,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "preferences",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "preferences",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15906;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    678.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Performance",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15907",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    715,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15907;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:record",
+   "bounds": [
+    18,
+    719,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "record",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "record",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15907;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    726.5,
+    67,
+    17
+   ],
+   "text": {
+    "content": "Recording",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15908",
+   "name": "setting category",
+   "type": "instance",
+   "path": "setting category",
+   "bounds": [
+    14,
+    763,
+    188,
+    40
+   ],
+   "component": "setting category",
+   "variant": {
+    "selected": "no"
+   },
+   "radius": 2,
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15908;3021:9830",
+   "name": "Icon",
+   "type": "instance",
+   "path": "setting category / Icon:plugins",
+   "bounds": [
+    18,
+    767,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "plugins",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "plugins",
+   "rows": [
+    206,
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "I3073:15908;3021:9831",
+   "name": "Interface",
+   "type": "text",
+   "path": "setting category / Interface",
+   "bounds": [
+    58,
+    774.5,
+    72,
+    17
+   ],
+   "text": {
+    "content": "Extensions",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    268,
+    269,
+    334
+   ]
+  },
+  {
+   "id": "3073:15913",
+   "name": "Output",
+   "type": "text",
+   "path": "Output",
+   "bounds": [
+    240,
+    80,
+    54,
+    19
+   ],
+   "text": {
+    "content": "Output",
+    "font": "Inter",
+    "weight": 500,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   }
+  },
+  {
+   "id": "3073:15917",
+   "name": "Enable audio",
+   "type": "text",
+   "path": "Enable audio",
+   "bounds": [
+    240,
+    121.5,
+    85,
+    17
+   ],
+   "text": {
+    "content": "Enable audio",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    286,
+    355
+   ]
+  },
+  {
+   "id": "3073:15918",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    335,
+    121,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3073:15919",
+   "name": "Toggle",
+   "type": "instance",
+   "path": "Toggle",
+   "bounds": [
+    956,
+    114,
+    68,
+    32
+   ],
+   "component": "Toggle",
+   "variant": {
+    "Value": "on"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3073:15919;536:1010",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "Toggle",
+   "bounds": [
+    959,
+    117,
+    33,
+    26
+   ],
+   "radius": 3,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3073:15919;536:1011",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "Toggle",
+   "bounds": [
+    995,
+    117,
+    26,
+    26
+   ],
+   "radius": 3,
+   "fills": [
+    {
+     "token": "Accent/DIm",
+     "dark": "#AB6314",
+     "light": "#965916"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3073:15919;536:1012",
+   "name": "ON",
+   "type": "text",
+   "path": "Toggle / ON",
+   "bounds": [
+    966,
+    123,
+    19,
+    15
+   ],
+   "text": {
+    "content": "ON",
+    "font": "Inter",
+    "weight": 400,
+    "size": 12,
+    "line_height": 14.52,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   },
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "3073:16405",
+   "name": "Output device",
+   "type": "text",
+   "path": "Output device",
+   "bounds": [
+    240,
+    165.5,
+    94,
+    17
+   ],
+   "text": {
+    "content": "Output device",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3073:16406",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    344,
+    165,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3073:16407",
+   "name": "Dropdown",
+   "type": "frame",
+   "path": "Dropdown",
+   "bounds": [
+    704,
+    156,
+    320,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "3073:16408",
+   "name": "option",
+   "type": "frame",
+   "path": "Dropdown / option",
+   "bounds": [
+    706,
+    158,
+    316,
+    32
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ]
+  },
+  {
+   "id": "3073:16410",
+   "name": "System default",
+   "type": "text",
+   "path": "Dropdown / option / System default",
+   "bounds": [
+    720,
+    165.5,
+    254,
+    17
+   ],
+   "text": {
+    "content": "System default",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3073:16411",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Dropdown / option / Icon:chevron",
+   "bounds": [
+    984,
+    162,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "3176:16452",
+   "name": "Speaker setup",
+   "type": "text",
+   "path": "Speaker setup",
+   "bounds": [
+    240,
+    211.5,
+    96,
+    17
+   ],
+   "text": {
+    "content": "Speaker setup",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3176:16453",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    346,
+    211,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3176:16454",
+   "name": "Dropdown",
+   "type": "frame",
+   "path": "Dropdown",
+   "bounds": [
+    704,
+    202,
+    320,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "3176:16455",
+   "name": "option",
+   "type": "frame",
+   "path": "Dropdown / option",
+   "bounds": [
+    706,
+    204,
+    316,
+    32
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ]
+  },
+  {
+   "id": "3176:16457",
+   "name": "Automatic",
+   "type": "text",
+   "path": "Dropdown / option / Automatic",
+   "bounds": [
+    720,
+    211.5,
+    254,
+    17
+   ],
+   "text": {
+    "content": "Automatic",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3176:16458",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Dropdown / option / Icon:chevron",
+   "bounds": [
+    984,
+    208,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "3073:15940",
+   "name": "Volume",
+   "type": "text",
+   "path": "Volume",
+   "bounds": [
+    240,
+    273,
+    57,
+    19
+   ],
+   "text": {
+    "content": "Volume",
+    "font": "Inter",
+    "weight": 500,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   }
+  },
+  {
+   "id": "3176:16468",
+   "name": "Maximum volume",
+   "type": "text",
+   "path": "Maximum volume",
+   "bounds": [
+    240,
+    327,
+    116,
+    17
+   ],
+   "text": {
+    "content": "Maximum volume",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3176:16471",
+   "name": "range",
+   "type": "frame",
+   "path": "wrapper / wrapper / range",
+   "bounds": [
+    704,
+    315,
+    320,
+    16
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "3176:16472",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "wrapper / wrapper / range",
+   "bounds": [
+    706,
+    317,
+    159,
+    12
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "3176:16475",
+   "name": "Vector 60",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    745.46,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16495",
+   "name": "Vector 62",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    784.97,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16476",
+   "name": "Vector 58",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    824.49,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16477",
+   "name": "Vector 57",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    864,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16478",
+   "name": "Vector 56",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    903.51,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16479",
+   "name": "Vector 55",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    943.02,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16480",
+   "name": "Vector 48",
+   "type": "vector",
+   "path": "wrapper / wrapper / range / degrees",
+   "bounds": [
+    982.54,
+    320,
+    0,
+    6
+   ],
+   "fills": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/Accent Dark",
+     "dark": "#1A1611",
+     "light": "#C6AB89"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "center"
+  },
+  {
+   "id": "3176:16482",
+   "name": "thumb",
+   "type": "rectangle",
+   "path": "wrapper / wrapper / range / thumb",
+   "bounds": [
+    860,
+    311,
+    8,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "Accent/DIm",
+     "dark": "#AB6314",
+     "light": "#965916"
+    }
+   ]
+  },
+  {
+   "id": "3176:16485",
+   "name": "100%",
+   "type": "text",
+   "path": "wrapper / 100%",
+   "bounds": [
+    704,
+    345,
+    33,
+    15
+   ],
+   "text": {
+    "content": "100%",
+    "font": "Inter",
+    "weight": 400,
+    "size": 12,
+    "line_height": 14.52,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "3176:16491",
+   "name": "200%",
+   "type": "text",
+   "path": "wrapper / 200%",
+   "bounds": [
+    847.5,
+    345,
+    33,
+    15
+   ],
+   "text": {
+    "content": "200%",
+    "font": "Inter",
+    "weight": 400,
+    "size": 12,
+    "line_height": 14.52,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "3176:16493",
+   "name": "300%",
+   "type": "text",
+   "path": "wrapper / 300%",
+   "bounds": [
+    991,
+    345,
+    33,
+    15
+   ],
+   "text": {
+    "content": "300%",
+    "font": "Inter",
+    "weight": 400,
+    "size": 12,
+    "line_height": 14.52,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "3176:16499",
+   "name": "Startup volume",
+   "type": "text",
+   "path": "Startup volume",
+   "bounds": [
+    240,
+    409.5,
+    101,
+    17
+   ],
+   "text": {
+    "content": "Startup volume",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3176:16500",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    351,
+    409,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3176:16574",
+   "name": "Values",
+   "type": "instance",
+   "path": "Values",
+   "bounds": [
+    704,
+    379,
+    320,
+    78
+   ],
+   "component": "Values",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "I3176:16574;3176:16549",
+   "name": "1",
+   "type": "frame",
+   "path": "Values / 1",
+   "bounds": [
+    706,
+    381,
+    316,
+    36
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "I3176:16574;3176:16550",
+   "name": "1",
+   "type": "text",
+   "path": "Values / 1 / 1",
+   "bounds": [
+    718,
+    390.5,
+    151,
+    17
+   ],
+   "text": {
+    "content": "Remember last volume",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   }
+  },
+  {
+   "id": "I3176:16574;3176:16551",
+   "name": "2",
+   "type": "frame",
+   "path": "Values / 2",
+   "bounds": [
+    706,
+    419,
+    316,
+    36
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ]
+  },
+  {
+   "id": "I3176:16574;3176:16552",
+   "name": "Always starts at:",
+   "type": "text",
+   "path": "Values / 2 / Always starts at:",
+   "bounds": [
+    718,
+    428.5,
+    110,
+    17
+   ],
+   "text": {
+    "content": "Always starts at:",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "I3176:16574;3176:16553",
+   "name": "Frame 265",
+   "type": "frame",
+   "path": "Values / 2",
+   "bounds": [
+    838,
+    421,
+    182,
+    32
+   ],
+   "radius": 2,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "I3176:16574;3176:16554",
+   "name": "200%",
+   "type": "text",
+   "path": "Values / 2 / 200%",
+   "bounds": [
+    850,
+    428.5,
+    38,
+    17
+   ],
+   "opacity": 0.4,
+   "text": {
+    "content": "200%",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3176:16521",
+   "name": "Volume step",
+   "type": "text",
+   "path": "Volume step",
+   "bounds": [
+    240,
+    482.5,
+    82,
+    17
+   ],
+   "text": {
+    "content": "Volume step",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3176:16522",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    332,
+    482,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3176:16523",
+   "name": "Frame 265",
+   "type": "frame",
+   "path": "Frame 265",
+   "bounds": [
+    704,
+    473,
+    320,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "3176:16524",
+   "name": "1",
+   "type": "text",
+   "path": "1",
+   "bounds": [
+    718,
+    482.5,
+    7,
+    17
+   ],
+   "text": {
+    "content": "1",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3073:16013",
+   "name": "Loudness",
+   "type": "text",
+   "path": "Loudness",
+   "bounds": [
+    240,
+    545,
+    75,
+    19
+   ],
+   "text": {
+    "content": "Loudness",
+    "font": "Inter",
+    "weight": 500,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   },
+   "rows": [
+    355
+   ]
+  },
+  {
+   "id": "3176:16585",
+   "name": "Normalize loudness",
+   "type": "text",
+   "path": "Normalize loudness",
+   "bounds": [
+    240,
+    586.5,
+    130,
+    17
+   ],
+   "text": {
+    "content": "Normalize loudness",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    355
+   ]
+  },
+  {
+   "id": "3176:16586",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    380,
+    586,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3176:16587",
+   "name": "Toggle",
+   "type": "instance",
+   "path": "Toggle",
+   "bounds": [
+    956,
+    579,
+    68,
+    32
+   ],
+   "component": "Toggle",
+   "variant": {
+    "Value": "off"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    97
+   ]
+  },
+  {
+   "id": "I3176:16587;536:1337",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "Toggle",
+   "bounds": [
+    988,
+    582,
+    33,
+    26
+   ],
+   "radius": 3,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3176:16587;536:1338",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "Toggle",
+   "bounds": [
+    959,
+    582,
+    26,
+    26
+   ],
+   "radius": 3,
+   "fills": [
+    {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3176:16587;536:1339",
+   "name": "OFF",
+   "type": "text",
+   "path": "Toggle / OFF",
+   "bounds": [
+    992,
+    588,
+    24,
+    15
+   ],
+   "text": {
+    "content": "OFF",
+    "font": "Inter",
+    "weight": 400,
+    "size": 12,
+    "line_height": 14.52,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    97
+   ]
+  },
+  {
+   "id": "3178:16602",
+   "name": "Target level",
+   "type": "text",
+   "path": "Target level",
+   "bounds": [
+    240,
+    631.5,
+    77,
+    17
+   ],
+   "text": {
+    "content": "Target level",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3178:16603",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    327,
+    631,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3178:16604",
+   "name": "Frame 265",
+   "type": "frame",
+   "path": "Frame 265",
+   "bounds": [
+    704,
+    622,
+    320,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "3178:16605",
+   "name": "1",
+   "type": "text",
+   "path": "1",
+   "bounds": [
+    718,
+    631.5,
+    7,
+    17
+   ],
+   "text": {
+    "content": "1",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3178:16614",
+   "name": "Night mode",
+   "type": "text",
+   "path": "Night mode",
+   "bounds": [
+    240,
+    676.5,
+    78,
+    17
+   ],
+   "text": {
+    "content": "Night mode",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    355
+   ]
+  },
+  {
+   "id": "3178:16615",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    328,
+    676,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3178:16616",
+   "name": "Toggle",
+   "type": "instance",
+   "path": "Toggle",
+   "bounds": [
+    956,
+    669,
+    68,
+    32
+   ],
+   "component": "Toggle",
+   "variant": {
+    "Value": "off"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    97
+   ]
+  },
+  {
+   "id": "I3178:16616;536:1337",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "Toggle",
+   "bounds": [
+    988,
+    672,
+    33,
+    26
+   ],
+   "radius": 3,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3178:16616;536:1338",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "Toggle",
+   "bounds": [
+    959,
+    672,
+    26,
+    26
+   ],
+   "radius": 3,
+   "fills": [
+    {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   ],
+   "rows": [
+    97,
+    126,
+    143
+   ]
+  },
+  {
+   "id": "I3178:16616;536:1339",
+   "name": "OFF",
+   "type": "text",
+   "path": "Toggle / OFF",
+   "bounds": [
+    992,
+    678,
+    24,
+    15
+   ],
+   "text": {
+    "content": "OFF",
+    "font": "Inter",
+    "weight": 400,
+    "size": 12,
+    "line_height": 14.52,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    97
+   ]
+  },
+  {
+   "id": "3178:16627",
+   "name": "Replay gain",
+   "type": "text",
+   "path": "Replay gain",
+   "bounds": [
+    240,
+    720.5,
+    77,
+    17
+   ],
+   "text": {
+    "content": "Replay gain",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3178:16628",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    327,
+    720,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3178:16629",
+   "name": "Dropdown",
+   "type": "frame",
+   "path": "Dropdown",
+   "bounds": [
+    704,
+    711,
+    320,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "3178:16630",
+   "name": "option",
+   "type": "frame",
+   "path": "Dropdown / option",
+   "bounds": [
+    706,
+    713,
+    316,
+    32
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ]
+  },
+  {
+   "id": "3178:16632",
+   "name": "Off",
+   "type": "text",
+   "path": "Dropdown / option / Off",
+   "bounds": [
+    720,
+    720.5,
+    254,
+    17
+   ],
+   "text": {
+    "content": "Off",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3178:16633",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Dropdown / option / Icon:chevron",
+   "bounds": [
+    984,
+    717,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "3178:16650",
+   "name": "Replay gain preamp",
+   "type": "text",
+   "path": "Replay gain preamp",
+   "bounds": [
+    240,
+    767.5,
+    131,
+    17
+   ],
+   "text": {
+    "content": "Replay gain preamp",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3178:16651",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:info",
+   "bounds": [
+    381,
+    767,
+    18,
+    18
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "3178:16652",
+   "name": "Frame 265",
+   "type": "frame",
+   "path": "Frame 265",
+   "bounds": [
+    704,
+    758,
+    320,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "3178:16653",
+   "name": "0.0",
+   "type": "text",
+   "path": "0.0",
+   "bounds": [
+    718,
+    767.5,
+    21,
+    17
+   ],
+   "text": {
+    "content": "0.0",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "3178:16661",
+   "name": "Effects",
+   "type": "text",
+   "path": "Effects",
+   "bounds": [
+    240,
+    830,
+    54,
+    19
+   ],
+   "text": {
+    "content": "Effects",
+    "font": "Inter",
+    "weight": 500,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   }
+  },
+  {
+   "id": "3178:16667",
+   "name": "Toggle",
+   "type": "instance",
+   "path": "Toggle",
+   "bounds": [
+    956,
+    864,
+    68,
+    32
+   ],
+   "clipped": true,
+   "component": "Toggle",
+   "variant": {
+    "Value": "off"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    97
+   ]
+  }
+ ]
+}

@@ -93,7 +93,7 @@ AboutDialog::AboutDialog( qt_intf_t *_p_intf)
     setWindowModality( Qt::WindowModal );
 
     ui.version->setText(qfu( " " BRAND_VERSION_TEXT ) );
-    ui.title->setText("<html><head/><body><p><span style=\" font-size:26pt; color:#353535;\"> " + qtr( BRAND_NAME ) + " </span></p></body></html>");
+    ui.title->setText("<html><head/><body><p><span style=\" font-size:26pt; color:#353535;\"> " + qtr( BRAND_ABOUT_TITLE ) + " </span></p></body></html>");
 
     ui.MainBlabla->setText("<html><head/><body>" +
     qtr( BRAND_ABOUT_TEXT ) +

@@ -1,0 +1,3471 @@
+{
+ "format": 1,
+ "node": "970:3091",
+ "name": "Miniplayer",
+ "png": "Miniplayer.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  431,
+  2816.38
+ ],
+ "theme": "dark",
+ "rows": [
+  197,
+  198,
+  199,
+  200,
+  343
+ ],
+ "variants": [
+  {
+   "node": "970:3090",
+   "name": "Property 1=Default",
+   "props": {
+    "Property 1": "Default"
+   },
+   "bounds": [
+    20,
+    20,
+    391,
+    339
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 14,
+   "elements": [
+    {
+     "id": "970:3056",
+     "name": "Frame 28",
+     "type": "frame",
+     "path": "Frame 28",
+     "bounds": [
+      8,
+      8,
+      375,
+      210.94
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "color": "#303030"
+      },
+      {
+       "type": "image"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "inside",
+     "mask": "image",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3059",
+     "name": "Frame 21",
+     "type": "frame",
+     "path": "Frame 21",
+     "bounds": [
+      8,
+      222.94,
+      375,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3060",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      10,
+      224.94,
+      96,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3064",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "The Wand_S01E11.mp4",
+     "bounds": [
+      16,
+      262,
+      174,
+      19
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3068",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:folder",
+     "bounds": [
+      16,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "folder",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "folder",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3069",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      48,
+      301.5,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3071",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:artist",
+     "bounds": [
+      96,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "artist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "artist",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3072",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      128,
+      301.5,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3073",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      345,
+      295,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "I970:3073;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:lists",
+     "bounds": [
+      348,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "lists",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "lists",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    }
+   ]
+  },
+  {
+   "node": "975:4333",
+   "name": "Property 1=Variant3",
+   "props": {
+    "Property 1": "Variant3"
+   },
+   "bounds": [
+    20,
+    1238.69,
+    391,
+    339
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 14,
+   "elements": [
+    {
+     "id": "975:4335",
+     "name": "Frame 28",
+     "type": "frame",
+     "path": "Frame 28",
+     "bounds": [
+      8,
+      8,
+      375,
+      210.94
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "color": "#303030"
+      },
+      {
+       "type": "image"
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.6
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "inside",
+     "translucent": true,
+     "mask": "image",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4507",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:play",
+     "bounds": [
+      175.57,
+      90.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "play",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "play",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4337",
+     "name": "Frame 8",
+     "type": "frame",
+     "path": "Frame 8",
+     "bounds": [
+      93,
+      87,
+      53.57,
+      50
+     ],
+     "radius": 7.14,
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 9.52,
+       "color": "#000000",
+       "alpha": 0.7,
+       "offset": [
+        0,
+        4.76
+       ]
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4338",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:previous",
+     "bounds": [
+      98.36,
+      90.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "previous",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "previous",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4339",
+     "name": "Frame 10",
+     "type": "frame",
+     "path": "Frame 10",
+     "bounds": [
+      243,
+      87,
+      53.57,
+      50
+     ],
+     "radius": 7.14,
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 9.52,
+       "color": "#000000",
+       "alpha": 0.7,
+       "offset": [
+        0,
+        4.76
+       ]
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4340",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:next",
+     "bounds": [
+      248.36,
+      90.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "next",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "next",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4479",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:open",
+     "bounds": [
+      342,
+      24,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "open",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "open",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1905:7374",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:close",
+     "bounds": [
+      24,
+      24,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "close",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "close",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4342",
+     "name": "Frame 21",
+     "type": "frame",
+     "path": "Frame 21",
+     "bounds": [
+      8,
+      222.94,
+      375,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4343",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      10,
+      224.94,
+      96,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4511",
+     "name": "Rectangle 10",
+     "type": "rectangle",
+     "path": "Rectangle 10",
+     "bounds": [
+      99,
+      224.94,
+      8,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/Main",
+       "dark": "#D37918",
+       "light": "#E8851A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4346",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "The Wand_S01E11.mp4",
+     "bounds": [
+      16,
+      262,
+      174,
+      19
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4350",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:folder",
+     "bounds": [
+      16,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "folder",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "folder",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4351",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      48,
+      301.5,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4353",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:artist",
+     "bounds": [
+      96,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "artist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "artist",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4354",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      128,
+      301.5,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4355",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      345,
+      295,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "I975:4355;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:lists",
+     "bounds": [
+      348,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "lists",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "lists",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    }
+   ]
+  },
+  {
+   "node": "1919:9515",
+   "name": "Property 1=Variant5",
+   "props": {
+    "Property 1": "Variant5"
+   },
+   "bounds": [
+    20,
+    2457.38,
+    391,
+    339
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 14,
+   "elements": [
+    {
+     "id": "1919:9517",
+     "name": "Frame 28",
+     "type": "frame",
+     "path": "Frame 28",
+     "bounds": [
+      8,
+      8,
+      375,
+      210.94
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "color": "#303030"
+      },
+      {
+       "color": "#202020"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "inside",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9518",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:replay",
+     "bounds": [
+      175.57,
+      90.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "replay",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "replay",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9519",
+     "name": "Frame 8",
+     "type": "frame",
+     "path": "Frame 8",
+     "bounds": [
+      93,
+      87,
+      53.57,
+      50
+     ],
+     "radius": 7.14,
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 9.52,
+       "color": "#000000",
+       "alpha": 0.7,
+       "offset": [
+        0,
+        4.76
+       ]
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9520",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:previous",
+     "bounds": [
+      98.36,
+      90.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "previous",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "previous",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9521",
+     "name": "Frame 10",
+     "type": "frame",
+     "path": "Frame 10",
+     "bounds": [
+      243,
+      87,
+      53.57,
+      50
+     ],
+     "radius": 7.14,
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 9.52,
+       "color": "#000000",
+       "alpha": 0.7,
+       "offset": [
+        0,
+        4.76
+       ]
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9522",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:next",
+     "bounds": [
+      248.36,
+      90.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "next",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "next",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9523",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:open",
+     "bounds": [
+      342,
+      24,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "open",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "open",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9524",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:close",
+     "bounds": [
+      24,
+      24,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "close",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "close",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9526",
+     "name": "Frame 21",
+     "type": "frame",
+     "path": "Frame 21",
+     "bounds": [
+      8,
+      222.94,
+      375,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9527",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      10,
+      224.94,
+      96,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9528",
+     "name": "Rectangle 10",
+     "type": "rectangle",
+     "path": "Rectangle 10",
+     "bounds": [
+      99,
+      224.94,
+      8,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/Main",
+       "dark": "#D37918",
+       "light": "#E8851A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9531",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "The Wand_S01E11.mp4",
+     "bounds": [
+      16,
+      262,
+      174,
+      19
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9535",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:folder",
+     "bounds": [
+      16,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "folder",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "folder",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9536",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      48,
+      301.5,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9538",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:artist",
+     "bounds": [
+      96,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "artist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "artist",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9539",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      128,
+      301.5,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1919:9540",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      345,
+      295,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "I1919:9540;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:lists",
+     "bounds": [
+      348,
+      299,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "lists",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "lists",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    }
+   ]
+  },
+  {
+   "node": "970:3092",
+   "name": "Property 1=Variant2",
+   "props": {
+    "Property 1": "Variant2"
+   },
+   "bounds": [
+    20,
+    454,
+    391,
+    689.69
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 14,
+   "elements": [
+    {
+     "id": "970:3180",
+     "name": "Queue",
+     "type": "frame",
+     "path": "Queue",
+     "bounds": [
+      8,
+      8,
+      375,
+      331
+     ],
+     "radius": 10,
+     "fills": [
+      {
+       "token": "BG/A3",
+       "dark": "#1B1B1B",
+       "light": "#D5D5D5"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:4274",
+     "name": "Frame 61",
+     "type": "frame",
+     "path": "Queue",
+     "bounds": [
+      0,
+      0,
+      391,
+      58
+     ],
+     "radius": [
+      14,
+      14,
+      2,
+      2
+     ],
+     "fills": [
+      {
+       "token": "BG/A5",
+       "dark": "#151515",
+       "light": "#888888"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:4276",
+     "name": "Queue",
+     "type": "text",
+     "path": "Queue / Queue",
+     "bounds": [
+      8,
+      20,
+      375,
+      19
+     ],
+     "text": {
+      "content": "Queue",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "center",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3189",
+     "name": "4 items - 2h 3m",
+     "type": "text",
+     "path": "Queue / 4 items - 2h 3m",
+     "bounds": [
+      36,
+      82.5,
+      105,
+      17
+     ],
+     "text": {
+      "content": "4 items - 2h 3m",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3191",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:sort",
+     "bounds": [
+      251,
+      79,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "sort",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "sort",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3192",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:remove",
+     "bounds": [
+      295,
+      79,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "remove",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "remove",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3193",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:add",
+     "bounds": [
+      339,
+      79,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "add",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "add",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3197",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      124,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3198",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E11.mp4",
+     "bounds": [
+      70,
+      131.5,
+      240,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3199",
+     "name": "23:06",
+     "type": "text",
+     "path": "Queue / 23:06",
+     "bounds": [
+      320,
+      131.5,
+      39,
+      17
+     ],
+     "text": {
+      "content": "23:06",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3201",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      168,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3202",
+     "name": "The Wand_S01E12.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E12.mp4",
+     "bounds": [
+      70,
+      175.5,
+      242,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E12.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3203",
+     "name": "24:18",
+     "type": "text",
+     "path": "Queue / 24:18",
+     "bounds": [
+      322,
+      175.5,
+      37,
+      17
+     ],
+     "text": {
+      "content": "24:18",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3205",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      212,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3206",
+     "name": "The Wand_S01E13.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E13.mp4",
+     "bounds": [
+      70,
+      219.5,
+      240,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E13.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3207",
+     "name": "25:00",
+     "type": "text",
+     "path": "Queue / 25:00",
+     "bounds": [
+      320,
+      219.5,
+      39,
+      17
+     ],
+     "text": {
+      "content": "25:00",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3209",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      256,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3210",
+     "name": "The Wand_S01E14.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E14.mp4",
+     "bounds": [
+      70,
+      263.5,
+      240,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E14.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3211",
+     "name": "22:35",
+     "type": "text",
+     "path": "Queue / 22:35",
+     "bounds": [
+      320,
+      263.5,
+      39,
+      17
+     ],
+     "text": {
+      "content": "22:35",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3094",
+     "name": "Frame 28",
+     "type": "frame",
+     "path": "Frame 28",
+     "bounds": [
+      8,
+      359,
+      375,
+      210.94
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "color": "#303030"
+      },
+      {
+       "type": "image"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "inside",
+     "mask": "image",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3097",
+     "name": "Frame 21",
+     "type": "frame",
+     "path": "Frame 21",
+     "bounds": [
+      8,
+      573.94,
+      375,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3098",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      10,
+      575.94,
+      96,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3102",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "The Wand_S01E11.mp4",
+     "bounds": [
+      16,
+      612.69,
+      174,
+      19
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3106",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:folder",
+     "bounds": [
+      16,
+      649.69,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "folder",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "folder",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3107",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      48,
+      652.19,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3109",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:artist",
+     "bounds": [
+      96,
+      649.69,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "artist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "artist",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3110",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      128,
+      652.19,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "970:3111",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      345,
+      645.69,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "I970:3111;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:lists",
+     "bounds": [
+      348,
+      649.69,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "lists",
+      "direction": "default",
+      "state": "active",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "lists",
+     "rows": [
+      15,
+      197,
+      198,
+      199,
+      343
+     ]
+    }
+   ]
+  },
+  {
+   "node": "975:4377",
+   "name": "Property 1=Variant4",
+   "props": {
+    "Property 1": "Variant4"
+   },
+   "bounds": [
+    20,
+    1672.69,
+    391,
+    689.69
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 14,
+   "elements": [
+    {
+     "id": "975:4378",
+     "name": "Queue",
+     "type": "frame",
+     "path": "Queue",
+     "bounds": [
+      8,
+      8,
+      375,
+      331
+     ],
+     "radius": 10,
+     "fills": [
+      {
+       "token": "BG/A3",
+       "dark": "#1B1B1B",
+       "light": "#D5D5D5"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1002:5210",
+     "name": "Frame 62",
+     "type": "frame",
+     "path": "Queue",
+     "bounds": [
+      0,
+      0,
+      391,
+      58
+     ],
+     "radius": [
+      14,
+      14,
+      2,
+      2
+     ],
+     "fills": [
+      {
+       "token": "BG/A5",
+       "dark": "#151515",
+       "light": "#888888"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1002:5212",
+     "name": "Queue",
+     "type": "text",
+     "path": "Queue / Queue",
+     "bounds": [
+      8,
+      20,
+      375,
+      19
+     ],
+     "text": {
+      "content": "Queue",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "center",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4383",
+     "name": "4 items - 2h 3m",
+     "type": "text",
+     "path": "Queue / 4 items - 2h 3m",
+     "bounds": [
+      36,
+      82.5,
+      105,
+      17
+     ],
+     "text": {
+      "content": "4 items - 2h 3m",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4385",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:sort",
+     "bounds": [
+      251,
+      79,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "sort",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "sort",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4386",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:remove",
+     "bounds": [
+      295,
+      79,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "remove",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "remove",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4387",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:add",
+     "bounds": [
+      339,
+      79,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "add",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "add",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4391",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      124,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4392",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E11.mp4",
+     "bounds": [
+      70,
+      131.5,
+      240,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4393",
+     "name": "23:06",
+     "type": "text",
+     "path": "Queue / 23:06",
+     "bounds": [
+      320,
+      131.5,
+      39,
+      17
+     ],
+     "text": {
+      "content": "23:06",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4395",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      168,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4396",
+     "name": "The Wand_S01E12.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E12.mp4",
+     "bounds": [
+      70,
+      175.5,
+      242,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E12.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4397",
+     "name": "24:18",
+     "type": "text",
+     "path": "Queue / 24:18",
+     "bounds": [
+      322,
+      175.5,
+      37,
+      17
+     ],
+     "text": {
+      "content": "24:18",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4399",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      212,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4400",
+     "name": "The Wand_S01E13.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E13.mp4",
+     "bounds": [
+      70,
+      219.5,
+      240,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E13.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4401",
+     "name": "25:00",
+     "type": "text",
+     "path": "Queue / 25:00",
+     "bounds": [
+      320,
+      219.5,
+      39,
+      17
+     ],
+     "text": {
+      "content": "25:00",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4403",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Queue / Icon:move",
+     "bounds": [
+      28,
+      256,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "move",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "move",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4404",
+     "name": "The Wand_S01E14.mp4",
+     "type": "text",
+     "path": "Queue / The Wand_S01E14.mp4",
+     "bounds": [
+      70,
+      263.5,
+      240,
+      17
+     ],
+     "text": {
+      "content": "The Wand_S01E14.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4405",
+     "name": "22:35",
+     "type": "text",
+     "path": "Queue / 22:35",
+     "bounds": [
+      320,
+      263.5,
+      39,
+      17
+     ],
+     "text": {
+      "content": "22:35",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "right",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4407",
+     "name": "Frame 28",
+     "type": "frame",
+     "path": "Frame 28",
+     "bounds": [
+      8,
+      359,
+      375,
+      210.94
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "color": "#303030"
+      },
+      {
+       "type": "image"
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.6
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "inside",
+     "translucent": true,
+     "mask": "image",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4502",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:play",
+     "bounds": [
+      175.57,
+      441.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "play",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "play",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4464",
+     "name": "Frame 8",
+     "type": "frame",
+     "path": "Frame 8",
+     "bounds": [
+      93,
+      438,
+      53.57,
+      50
+     ],
+     "radius": 7.14,
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 9.52,
+       "color": "#000000",
+       "alpha": 0.7,
+       "offset": [
+        0,
+        4.76
+       ]
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4465",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:previous",
+     "bounds": [
+      98.36,
+      441.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "previous",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "previous",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4466",
+     "name": "Frame 10",
+     "type": "frame",
+     "path": "Frame 10",
+     "bounds": [
+      243,
+      438,
+      53.57,
+      50
+     ],
+     "radius": 7.14,
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 9.52,
+       "color": "#000000",
+       "alpha": 0.7,
+       "offset": [
+        0,
+        4.76
+       ]
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4467",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:next",
+     "bounds": [
+      248.36,
+      441.57,
+      42.86,
+      42.86
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "next",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "next",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4489",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:open",
+     "bounds": [
+      342,
+      375.31,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "open",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "open",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "1905:7380",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:close",
+     "bounds": [
+      24,
+      375,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "close",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "close",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4410",
+     "name": "Frame 21",
+     "type": "frame",
+     "path": "Frame 21",
+     "bounds": [
+      8,
+      573.94,
+      375,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4411",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      10,
+      575.94,
+      96,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4412",
+     "name": "Rectangle 10",
+     "type": "rectangle",
+     "path": "Rectangle 10",
+     "bounds": [
+      99,
+      575.94,
+      8,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/Main",
+       "dark": "#D37918",
+       "light": "#E8851A"
+      }
+     ],
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4415",
+     "name": "The Wand_S01E11.mp4",
+     "type": "text",
+     "path": "The Wand_S01E11.mp4",
+     "bounds": [
+      16,
+      612.69,
+      174,
+      19
+     ],
+     "text": {
+      "content": "The Wand_S01E11.mp4",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "file name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4419",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:folder",
+     "bounds": [
+      16,
+      649.69,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "folder",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "folder",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4420",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      48,
+      652.19,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4422",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:artist",
+     "bounds": [
+      96,
+      649.69,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "artist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "artist",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4423",
+     "name": "S01",
+     "type": "text",
+     "path": "S01",
+     "bounds": [
+      128,
+      652.19,
+      28,
+      19
+     ],
+     "text": {
+      "content": "S01",
+      "font": "Inter",
+      "weight": 400,
+      "size": 16,
+      "line_height": 19.36,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "975:4424",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      345,
+      645.69,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      197,
+      198,
+      199,
+      343
+     ]
+    },
+    {
+     "id": "I975:4424;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:lists",
+     "bounds": [
+      348,
+      649.69,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "lists",
+      "direction": "default",
+      "state": "active",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "lists",
+     "rows": [
+      15,
+      197,
+      198,
+      199,
+      343
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1138 @@
+{
+ "format": 1,
+ "node": "2160:8301",
+ "name": "Player - customize",
+ "png": "Player - customize-7.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1920,
+  1080
+ ],
+ "theme": "dark",
+ "rows": [
+  304,
+  306,
+  307,
+  322,
+  348
+ ],
+ "background": [
+  {
+   "color": "#000000"
+  },
+  {
+   "type": "image"
+  }
+ ],
+ "background_mask": "image",
+ "elements": [
+  {
+   "id": "6613:20510",
+   "name": "Frame 312",
+   "type": "frame",
+   "path": "Frame 312",
+   "bounds": [
+    0,
+    31,
+    1920,
+    951
+   ],
+   "radius": 19,
+   "strokes": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "stroke_weight": 20,
+   "stroke_align": "center",
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  },
+  {
+   "id": "2160:8304",
+   "name": "Controls",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    0,
+    972,
+    1920,
+    54
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true,
+   "rows": [
+    304,
+    306,
+    307,
+    348
+   ]
+  },
+  {
+   "id": "2160:8305",
+   "name": "Controls",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    0,
+    1026,
+    1920,
+    54
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true,
+   "rows": [
+    304,
+    306,
+    307,
+    348
+   ]
+  },
+  {
+   "id": "2160:8308",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:previous",
+   "bounds": [
+    898,
+    1040,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "previous",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "previous",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8310",
+   "name": "play",
+   "type": "instance",
+   "path": "Controls / play",
+   "bounds": [
+    935,
+    1038,
+    50,
+    28
+   ],
+   "component": "play",
+   "variant": {
+    "type": "play"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "rows": [
+    17,
+    21,
+    47,
+    48,
+    148
+   ]
+  },
+  {
+   "id": "I2160:8310;848:1707",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / play / Icon:play",
+   "bounds": [
+    949,
+    1040,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "play",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "play",
+   "rows": [
+    17,
+    21,
+    26,
+    27,
+    47
+   ]
+  },
+  {
+   "id": "2160:8312",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:next",
+   "bounds": [
+    998,
+    1040,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "next",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "next",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8314",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:volume",
+   "bounds": [
+    1545,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "volume",
+    "direction": "default",
+    "state": "default",
+    "value": "high",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "volume",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8315",
+   "name": "volume",
+   "type": "instance",
+   "path": "Controls / volume",
+   "bounds": [
+    1577,
+    1039,
+    88,
+    28
+   ],
+   "component": "volume",
+   "variant": {
+    "Property 1": "50%"
+   },
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "I2160:8315;244:211",
+   "name": "Rectangle 6",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1577,
+    1039,
+    89,
+    28
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "I2160:8315;244:213",
+   "name": "Rectangle 7",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1577,
+    1038,
+    33,
+    30
+   ],
+   "fills": [
+    {
+     "color": "#262626"
+    }
+   ],
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "I2160:8315;244:214",
+   "name": "Rectangle 6",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1578.5,
+    1040.5,
+    86,
+    25
+   ],
+   "radius": 2,
+   "fills": [
+    {
+     "type": "gradient_linear",
+     "stops": [
+      {
+       "pos": 0,
+       "color": "#95D318",
+       "alpha": 1
+      },
+      {
+       "pos": 0.58,
+       "color": "#B2A918",
+       "alpha": 1
+      },
+      {
+       "pos": 0.79,
+       "color": "#D37918",
+       "alpha": 1
+      },
+      {
+       "pos": 1,
+       "color": "#FF3737",
+       "alpha": 1
+      }
+     ]
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "2160:8317",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1685,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "rows": [
+    304,
+    306,
+    307,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:8317;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:audio",
+   "bounds": [
+    1688,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "audio",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "audio",
+   "rows": [
+    22,
+    26,
+    54,
+    132,
+    344
+   ]
+  },
+  {
+   "id": "2160:8318",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1727,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "rows": [
+    304,
+    306,
+    307,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:8318;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:subtitles",
+   "bounds": [
+    1730,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitles",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitles",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8319",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1769,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "rows": [
+    304,
+    306,
+    307,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:8319;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:settings",
+   "bounds": [
+    1772,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "settings",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "settings",
+   "rows": [
+    26
+   ]
+  },
+  {
+   "id": "2160:8320",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1819,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "rows": [
+    304,
+    306,
+    307,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:8320;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:lists",
+   "bounds": [
+    1822,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "lists",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "lists",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8322",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:0",
+   "bounds": [
+    593,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8324",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:0",
+   "bounds": [
+    1271,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:8326",
+   "name": "Current Time",
+   "type": "instance",
+   "path": "seekbar / Current Time",
+   "bounds": [
+    20,
+    985,
+    76,
+    28
+   ],
+   "component": "Current Time",
+   "variant": {
+    "state": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    328
+   ]
+  },
+  {
+   "id": "I2160:8326;1904:7236",
+   "name": "00:02:10",
+   "type": "text",
+   "path": "seekbar / Current Time / 00:02:10",
+   "bounds": [
+    26.5,
+    990.5,
+    63,
+    17
+   ],
+   "text": {
+    "content": "00:02:10",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time",
+   "rows": [
+    328
+   ]
+  },
+  {
+   "id": "2160:8327",
+   "name": "Frame 21",
+   "type": "frame",
+   "path": "seekbar",
+   "bounds": [
+    104,
+    985,
+    1712,
+    28
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "2160:8328",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "seekbar",
+   "bounds": [
+    106,
+    987,
+    192,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ],
+   "mask": "seek bar content"
+  },
+  {
+   "id": "2160:8329",
+   "name": "Rectangle 10",
+   "type": "rectangle",
+   "path": "seekbar",
+   "bounds": [
+    290,
+    987,
+    8,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "mask": "seek bar content"
+  },
+  {
+   "id": "2160:8330",
+   "name": "Duration",
+   "type": "instance",
+   "path": "seekbar / Duration",
+   "bounds": [
+    1824,
+    985,
+    76,
+    28
+   ],
+   "component": "Duration",
+   "variant": {
+    "state": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    33,
+    35
+   ]
+  },
+  {
+   "id": "I2160:8330;1905:7314",
+   "name": "00:25:40",
+   "type": "text",
+   "path": "seekbar / Duration / 00:25:40",
+   "bounds": [
+    1829.5,
+    990,
+    65,
+    18
+   ],
+   "text": {
+    "content": "00:25:40",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time",
+   "rows": [
+    33,
+    35
+   ]
+  },
+  {
+   "id": "2160:8400",
+   "name": "topbar",
+   "type": "frame",
+   "path": "topbar",
+   "bounds": [
+    0,
+    0,
+    1920,
+    40
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  },
+  {
+   "id": "2160:8403",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:vlc",
+   "bounds": [
+    13,
+    8,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "vlc",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "vlc",
+   "brand": true,
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8406",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:more",
+   "bounds": [
+    21,
+    1039,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "more",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "more",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8407",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:sidebar",
+   "bounds": [
+    59,
+    1039,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "sidebar",
+    "direction": "left",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "sidebar",
+   "rows": [
+    186
+   ]
+  },
+  {
+   "id": "2160:8409",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:divider",
+   "bounds": [
+    87,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "divider",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "divider",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8412",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:folder",
+   "bounds": [
+    111,
+    1039,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "folder",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8413",
+   "name": "S01",
+   "type": "text",
+   "path": "topbar / S01",
+   "bounds": [
+    143,
+    1044.5,
+    25,
+    17
+   ],
+   "text": {
+    "content": "S01",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "sample name"
+  },
+  {
+   "id": "2160:8415",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:minimize",
+   "bounds": [
+    1806,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "minimize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "minimize",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8416",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:maximize",
+   "bounds": [
+    1842,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "maximize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "maximize",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8417",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:close",
+   "bounds": [
+    1878,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8418",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:fullscreen",
+   "bounds": [
+    1864,
+    1041,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "fullscreen",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "fullscreen",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:8420",
+   "name": "The Wand S01E11",
+   "type": "text",
+   "path": "topbar / The Wand S01E11",
+   "bounds": [
+    190,
+    1045,
+    117,
+    17
+   ],
+   "text": {
+    "content": "The Wand S01E11",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6613:20505",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:favorite",
+   "bounds": [
+    320,
+    1040,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "favorite",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "favorite"
+  }
+ ]
+}

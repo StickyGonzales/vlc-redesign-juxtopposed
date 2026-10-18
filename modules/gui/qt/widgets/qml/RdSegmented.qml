@@ -93,6 +93,10 @@ Rectangle {
 
                 Text {
                     anchors.centerIn: parent
+                    // a label longer than a narrow segment is elided instead of running into the
+                    // next one
+                    width: Math.min(implicitWidth, Math.max(0, segment.width - 2 * VLCStyle.dp(4)))
+                    elide: Text.ElideRight
                     text: segment.modelData
                     font.family: VLCStyle.rd_fontFamily
                     font.pixelSize: VLCStyle.rd_fontSize_label

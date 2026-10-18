@@ -1,0 +1,246 @@
+{
+ "format": 1,
+ "node": "6456:13892",
+ "name": "sub filename",
+ "png": "sub filename.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  406,
+  422
+ ],
+ "theme": "dark",
+ "rows": [
+  72
+ ],
+ "variants": [
+  {
+   "node": "6456:13893",
+   "name": "state=default",
+   "props": {
+    "state": "default"
+   },
+   "bounds": [
+    22,
+    22,
+    362,
+    48
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "6456:13894",
+     "name": "option",
+     "type": "instance",
+     "path": "option",
+     "bounds": [
+      2,
+      2,
+      358,
+      44
+     ],
+     "component": "option",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ]
+    },
+    {
+     "id": "I6456:13894;2107:5930",
+     "name": "Option",
+     "type": "text",
+     "path": "option / Option",
+     "bounds": [
+      16,
+      15.5,
+      296,
+      17
+     ],
+     "text": {
+      "content": "Title with extra characters",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      72
+     ]
+    },
+    {
+     "id": "I6456:13894;2107:5931",
+     "name": "Icon",
+     "type": "instance",
+     "path": "option / Icon:chevron",
+     "bounds": [
+      322,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "down",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      206
+     ]
+    }
+   ]
+  },
+  {
+   "node": "6456:13895",
+   "name": "state=open",
+   "props": {
+    "state": "open"
+   },
+   "bounds": [
+    22,
+    90,
+    362,
+    48
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "6456:13896",
+     "name": "Options",
+     "type": "frame",
+     "path": "Options",
+     "bounds": [
+      0,
+      0,
+      362,
+      232
+     ],
+     "clipped": true,
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "effects": [
+      {
+       "type": "drop_shadow",
+       "radius": 13.8,
+       "color": "#000000",
+       "alpha": 0.35,
+       "offset": [
+        0,
+        4
+       ]
+      }
+     ]
+    },
+    {
+     "id": "6456:13897",
+     "name": "option",
+     "type": "instance",
+     "path": "Options / option",
+     "bounds": [
+      2,
+      2,
+      358,
+      44
+     ],
+     "component": "option",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4
+    },
+    {
+     "id": "I6456:13897;2107:5930",
+     "name": "Option",
+     "type": "text",
+     "path": "Options / option / Option",
+     "bounds": [
+      16,
+      15.5,
+      296,
+      17
+     ],
+     "text": {
+      "content": "Off",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      72
+     ]
+    },
+    {
+     "id": "I6456:13897;2107:5931",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Options / option / Icon:check",
+     "bounds": [
+      322,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "check",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "check",
+     "rows": [
+      206
+     ]
+    }
+   ]
+  }
+ ]
+}

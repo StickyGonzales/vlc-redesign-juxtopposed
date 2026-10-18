@@ -17,6 +17,7 @@
  *****************************************************************************/
 
 #include "firstrunwizard.hpp"
+#include "util/brand.hpp"
 #include "util/color_scheme_model.hpp"
 #include "maininterface/mainctx.hpp"
 #include "dialogs/toolbar/controlbar_profile_model.hpp"
@@ -48,6 +49,21 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
     ui.setupUi( this );
 
     /* Set the privacy and network policy */
+#ifdef VLC_BRAND_PUBLIC
+    ui.policy->setHtml( qtr( "<p>In order to protect your privacy, <i>Cone</i> "
+                             "does <b>not</b> collect personal data or transmit them, "
+                             "not even in anonymized form, to anyone."
+                             "</p>\n"
+                             "<p>Nevertheless, <i>Cone</i> is able to automatically retrieve "
+                             "information about the media in your play queue from third party "
+                             "Internet-based services. This includes cover art, track names, "
+                             "artist names and other meta-data."
+                             "</p>\n"
+                             "<p>Consequently, this may entail identifying some of your media files to third party "
+                             "entities. Therefore the <i>Cone</i> developers require your express "
+                             "consent for the media player to access the Internet automatically."
+                             "</p>\n" ) );
+#else
     ui.policy->setHtml( qtr( "<p>In order to protect your privacy, <i>VLC media player</i> "
         "does <b>not</b> collect personal data or transmit them, "
         "not even in anonymized form, to anyone."
@@ -61,7 +77,14 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
         "entities. Therefore the <i>VLC</i> developers require your express "
         "consent for the media player to access the Internet automatically."
         "</p>\n" ) );
+#endif
     ui.policy->setReadOnly( true );
+
+#ifdef VLC_BRAND_PUBLIC
+    /* brand layer: the .ui texts of the default choices name VLC */
+    ui.explainerLabel->setText( qtr( "<i>Cone will automatically switch to dark mode accordingly with system settings</i>" ) );
+    ui.layoutExplainer->setText( qtr( "<i>Cone will use a modern layout with no menubar or pinned controls but with client-side decoration</i>" ) );
+#endif
 
     /* Set up the button group for colour schemes. */
     /* Creating in Qt Designer has unstable ordering when calling buttons() */
@@ -202,13 +225,25 @@ void FirstRunWizard::updateColorLabel( QAbstractButton* btn )
     switch ( colorSchemeGroup->id(btn) )
     {
         case ColorSchemeModel::System:
+#ifdef VLC_BRAND_PUBLIC
+            ui.explainerLabel->setText( qtr( "<i>Cone will automatically switch to dark mode accordingly with system settings</i>" ) );
+#else
             ui.explainerLabel->setText( qtr( "<i>VLC will automatically switch to dark mode accordingly with system settings</i>" ) );
+#endif
             break;
         case ColorSchemeModel::Day:
+#ifdef VLC_BRAND_PUBLIC
+            ui.explainerLabel->setText( qtr( "<i>Cone will automatically use light mode</i>" ) );
+#else
             ui.explainerLabel->setText( qtr( "<i>VLC will automatically use light mode</i>" ) );
+#endif
             break;
         case ColorSchemeModel::Night:
+#ifdef VLC_BRAND_PUBLIC
+            ui.explainerLabel->setText( qtr( "<i>Cone will automatically use dark mode</i>" ) );
+#else
             ui.explainerLabel->setText( qtr( "<i>VLC will automatically use dark mode</i>" ) );
+#endif
             break;
     }
 }
@@ -222,10 +257,18 @@ void FirstRunWizard::updateLayoutLabel( QAbstractButton* btn )
     switch ( ui.layoutGroup->id( btn ) )
     {
         case MODERN:
+#ifdef VLC_BRAND_PUBLIC
+            ui.layoutExplainer->setText( qtr( "<i>Cone will use a modern layout with no menubar or pinned controls but with client-side decoration</i>" ) );
+#else
             ui.layoutExplainer->setText( qtr( "<i>VLC will use a modern layout with no menubar or pinned controls but with client-side decoration</i>" ) );
+#endif
             break;
         case CLASSIC:
+#ifdef VLC_BRAND_PUBLIC
+            ui.layoutExplainer->setText( qtr( "<i>Cone will use a classic layout with a menubar and pinned controls but with no client-side decoration</i>" ) );
+#else
             ui.layoutExplainer->setText( qtr( "<i>VLC will use a classic layout with a menubar and pinned controls but with no client-side decoration</i>" ) );
+#endif
             break;
     }
 }

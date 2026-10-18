@@ -113,11 +113,13 @@ QtObject {
     // the chosen tracks play with the file (VLC's input-slave option). The Add Subtitles
     // dialog (W6.5) replaces this picker once it exists.
     function addTracks(item, subtitles) {
-        const files = RdLibraryStore.pickFiles(subtitles ? qsTr("Add Subtitle Tracks") : qsTr("Add Audio Tracks"), false)
-        if (files.length === 0)
-            return
-        const slaves = files.map((url) => url.toString()).join("#")
-        MediaLib.addAndPlay(item.mrl, [":input-slave=" + slaves])
+        const mrl = item.mrl
+        RdLibraryStore.pickFiles(subtitles ? qsTr("Add Subtitle Tracks") : qsTr("Add Audio Tracks"), false, (files) => {
+            if (files.length === 0)
+                return
+            const slaves = files.map((url) => url.toString()).join("#")
+            MediaLib.addAndPlay(mrl, [":input-slave=" + slaves])
+        })
     }
 
     function properties(item) {
@@ -132,22 +134,26 @@ QtObject {
 
     // a folder of `category` picked by the user; the library opens it once it is scanned. The
     // picker opens in `startMrl` (the library folder on screen: its subfolders are one click
-    // away), else in the user's Videos or Music folder
+    // away), else in the user's Videos or Music folder. The picker opens after the click that
+    // asked for it (RdLibraryStore.pickFolder): the callback uses singletons only, the page or
+    // menu that asked may be gone by then
     function addFolder(category, startMrl) {
-        const url = RdLibraryStore.pickFolder(qsTr("Add Folder"), startMrl ?? "", category)
-        if (url.toString() === "")
-            return
-        RdLibraryStore.addFolder(category, url)
+        RdLibraryStore.pickFolder(qsTr("Add Folder"), startMrl ?? "", category, (url) => {
+            if (url.toString() !== "")
+                RdLibraryStore.addFolder(category, url)
+        })
     }
 
     // files picked by the user join the queue, or the playlist being shown
     function addFiles(playlistId) {
-        const files = RdLibraryStore.pickFiles(qsTr("Add File"), false)
-        if (files.length === 0)
-            return
-        if (playlistId && playlistId.isValid())
-            RdLibraryStore.appendToPlaylist(playlistId, files)
-        else
-            MainPlaylistController.append(files, false)
+        const parent = RdLibraryNav.detachedId(playlistId)
+        RdLibraryStore.pickFiles(qsTr("Add File"), false, (files) => {
+            if (files.length === 0)
+                return
+            if (parent && parent.isValid())
+                RdLibraryStore.appendToPlaylist(parent, files)
+            else
+                MainPlaylistController.append(files, false)
+        })
     }
 }

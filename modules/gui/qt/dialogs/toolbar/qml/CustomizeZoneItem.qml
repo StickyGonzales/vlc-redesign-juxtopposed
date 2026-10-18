@@ -67,7 +67,8 @@ Item {
         anchors.verticalCenter: (parent === control) ? parent.verticalCenter : undefined
 
         // the control's place in the bar, as in the live bar (the outline may reach into the gaps)
-        width: Math.max(loader.width, VLCStyle.rd_iconButtonWidth)
+        width: Math.max(loader.width, control.isIconButton ? control.zone.iconWidth
+                                                           : (control.zone.topBar ? 0 : VLCStyle.rd_iconButtonWidth))
         height: Math.max(loader.height, VLCStyle.rd_iconSize)
 
         z: Drag.active ? 100 : 0
@@ -77,9 +78,24 @@ Item {
 
         // Figma's outlines around the bar controls ("Player - customize"): icon buttons 30x32
         // (Icon Wrapper), previous / next 30x28, the play button 3 px around it, the volume
-        // 5 px left and right, 4 px above and below
+        // 5 px left and right, 4 px above and below; the top bar's icons 28x28, and the items
+        // that are as high as their place (divider, names, title, folder chip, thumbnail)
+        // outlined on themselves
         readonly property real _padH: (control.controlId === ControlListModel.VOLUME) ? VLCStyle.dp(5) : 0
         readonly property real _padV: {
+            switch (control.controlId) {
+            case ControlListModel.RD_DIVIDER:
+            case ControlListModel.RD_FILE_NAME:
+            case ControlListModel.RD_ARTIST_NAME:
+            case ControlListModel.RD_FOLDER_NAME:
+            case ControlListModel.RD_PLAYLIST_NAME:
+            case ControlListModel.RD_MEDIA_TITLE:
+            case ControlListModel.RD_FOLDER_CHIP:
+            case ControlListModel.RD_THUMBNAIL:
+                return 0
+            }
+            if (control.zone.topBar)
+                return control.zone.topBarIconPadding
             switch (control.controlId) {
             case ControlListModel.PREVIOUS_BUTTON:
             case ControlListModel.NEXT_BUTTON:
@@ -112,7 +128,7 @@ Item {
                 item.paintOnly = true
                 item.enabled = false
                 if (item.rdMinimumWidth !== undefined)
-                    item.rdMinimumWidth = VLCStyle.rd_iconButtonWidth
+                    item.rdMinimumWidth = control.zone.iconWidth
             }
         }
     }

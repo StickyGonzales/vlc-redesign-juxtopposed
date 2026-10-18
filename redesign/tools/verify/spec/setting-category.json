@@ -1,0 +1,174 @@
+{
+ "format": 1,
+ "node": "3021:9835",
+ "name": "setting category",
+ "png": "setting category.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  228,
+  140
+ ],
+ "theme": "dark",
+ "rows": [
+  268,
+  269
+ ],
+ "variants": [
+  {
+   "node": "3021:9834",
+   "name": "selected=no",
+   "props": {
+    "selected": "no"
+   },
+   "bounds": [
+    20,
+    20,
+    188,
+    40
+   ],
+   "fills": [],
+   "radius": 2,
+   "elements": [
+    {
+     "id": "3021:9830",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:interface",
+     "bounds": [
+      4,
+      4,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "interface",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "interface",
+     "rows": [
+      206,
+      268,
+      269
+     ]
+    },
+    {
+     "id": "3021:9831",
+     "name": "Interface",
+     "type": "text",
+     "path": "Interface",
+     "bounds": [
+      44,
+      11.5,
+      60,
+      17
+     ],
+     "text": {
+      "content": "Interface",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      268,
+      269
+     ]
+    }
+   ]
+  },
+  {
+   "node": "3021:9836",
+   "name": "selected=yes",
+   "props": {
+    "selected": "yes"
+   },
+   "bounds": [
+    20,
+    80,
+    188,
+    40
+   ],
+   "fills": [
+    {
+     "token": "BG/A1",
+     "dark": "#222222",
+     "light": "#EDEDED"
+    }
+   ],
+   "radius": 2,
+   "elements": [
+    {
+     "id": "3021:9837",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:interface",
+     "bounds": [
+      4,
+      4,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "interface",
+      "direction": "default",
+      "state": "active",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "interface",
+     "rows": [
+      15,
+      206,
+      268,
+      269
+     ]
+    },
+    {
+     "id": "3021:9838",
+     "name": "Interface",
+     "type": "text",
+     "path": "Interface",
+     "bounds": [
+      44,
+      11.5,
+      60,
+      17
+     ],
+     "text": {
+      "content": "Interface",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/1",
+       "dark": "#EAEAEA",
+       "light": "#111111"
+      }
+     },
+     "rows": [
+      268,
+      269
+     ]
+    }
+   ]
+  }
+ ]
+}

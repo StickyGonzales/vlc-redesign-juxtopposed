@@ -42,6 +42,7 @@
 #include <vlc_url.h>
 
 #include "medialib.hpp"
+#include "dialogs/dialogs_provider.hpp"
 #include "mlhelper.hpp"
 #include "rdlibrarymodel.hpp"
 #include "network/networkmediamodel.hpp"
@@ -198,29 +199,64 @@ void RdLibraryStore::setCompactViewMode(const QString& mode)
     emit viewModeChanged();
 }
 
-QUrl RdLibraryStore::pickFolder(const QString& title, const QUrl& start, const QString& category) const
+void RdLibraryStore::openDialogLater(std::function<void()> dialog)
 {
-    // the start folder is not checked: the native dialog falls back by itself when it is gone
-    QUrl dir;
-    if (start.isLocalFile())
-        dir = start;
-    else if (!category.isEmpty())
-    {
-        // the folder sortStandardFolders() gives the category, as VLC names it
-        const QString standard = QVLCUserDir(category == QLatin1String("music") ? VLC_MUSIC_DIR
-                                                                                : VLC_VIDEOS_DIR);
-        if (!standard.isEmpty())
-            dir = QUrl::fromLocalFile(QDir::fromNativeSeparators(standard));
-    }
-    if (dir.isEmpty())
-        dir = QUrl::fromLocalFile(QDir::homePath());
-    return QFileDialog::getExistingDirectoryUrl(nullptr, title, dir);
+    if (m_dialogPending)
+        return;
+    m_dialogPending = true;
+    QMetaObject::invokeMethod(this, [this, dialog = std::move(dialog)]() {
+        // the menus, popups and panels close first, as for VLC's own pickers
+        if (DialogsProvider* provider = Singleton<DialogsProvider>::getInstance<false>())
+            emit provider->dialogOpening();
+        dialog();
+        m_dialogPending = false;
+    }, Qt::QueuedConnection);
 }
 
-QList<QUrl> RdLibraryStore::pickFiles(const QString& title, bool images) const
+void RdLibraryStore::warnOnError(const QJSValue& result) const
 {
-    const QString filter = images ? qtr("Images (*.png *.jpg *.jpeg *.bmp *.webp)") : QString();
-    return QFileDialog::getOpenFileUrls(nullptr, title, QUrl::fromLocalFile(QDir::homePath()), filter);
+    // the callback runs after the click: the item that asked may be gone by then
+    if (result.isError())
+        msg_Warn(p_intf, "library picker callback: %s", qtu(result.toString()));
+}
+
+void RdLibraryStore::pickFolder(const QString& title, const QUrl& start, const QString& category,
+                                QJSValue callback)
+{
+    openDialogLater([this, title, start, category, callback]() mutable {
+        // the start folder is not checked: the native dialog falls back by itself when it is gone
+        QUrl dir;
+        if (start.isLocalFile())
+            dir = start;
+        else if (!category.isEmpty())
+        {
+            // the folder sortStandardFolders() gives the category, as VLC names it
+            const QString standard = QVLCUserDir(category == QLatin1String("music") ? VLC_MUSIC_DIR
+                                                                                    : VLC_VIDEOS_DIR);
+            if (!standard.isEmpty())
+                dir = QUrl::fromLocalFile(QDir::fromNativeSeparators(standard));
+        }
+        if (dir.isEmpty())
+            dir = QUrl::fromLocalFile(QDir::homePath());
+        const QUrl url = QFileDialog::getExistingDirectoryUrl(nullptr, title, dir);
+
+        QJSEngine* engine = qjsEngine(this);
+        if (engine && callback.isCallable())
+            warnOnError(callback.call({ engine->toScriptValue(url) }));
+    });
+}
+
+void RdLibraryStore::pickFiles(const QString& title, bool images, QJSValue callback)
+{
+    openDialogLater([this, title, images, callback]() mutable {
+        const QString filter = images ? qtr("Images (*.png *.jpg *.jpeg *.bmp *.webp)") : QString();
+        const QList<QUrl> urls = QFileDialog::getOpenFileUrls(nullptr, title,
+                                                              QUrl::fromLocalFile(QDir::homePath()), filter);
+
+        QJSEngine* engine = qjsEngine(this);
+        if (engine && callback.isCallable())
+            warnOnError(callback.call({ engine->toScriptValue(urls) }));
+    });
 }
 
 /* folders */
@@ -915,12 +951,18 @@ void RdLibraryStore::exportPlaylist(const MLItemId& playlistId, const QString& n
     if (!m_mediaLib || !playlistId.isValid())
         return;
 
-    const QString file = QFileDialog::getSaveFileName(nullptr, qtr("Export Playlist"),
-                                                      QDir(QDir::homePath()).filePath(name + QStringLiteral(".m3u8")),
-                                                      qtr("M3U playlist (*.m3u8 *.m3u)"));
-    if (file.isEmpty())
-        return;
+    // asked from a menu row: the dialog opens once the menu's click is handled (see pickFolder)
+    openDialogLater([this, playlistId, name]() {
+        const QString file = QFileDialog::getSaveFileName(nullptr, qtr("Export Playlist"),
+                                                          QDir(QDir::homePath()).filePath(name + QStringLiteral(".m3u8")),
+                                                          qtr("M3U playlist (*.m3u8 *.m3u)"));
+        if (!file.isEmpty())
+            writePlaylist(playlistId, file);
+    });
+}
 
+void RdLibraryStore::writePlaylist(const MLItemId& playlistId, const QString& file)
+{
     struct Ctx {
         QStringList lines;
     };

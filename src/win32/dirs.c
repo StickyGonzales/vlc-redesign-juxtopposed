@@ -50,6 +50,14 @@ static char *config_GetKnownFolder (KNOWNFOLDERID id)
     return result;
 }
 
+/* redesign (brand layer, public profile): Cone keeps its settings, media library, art cache
+ * and data in its own folder, apart from an installed VLC's (redesign/CONE_RELEASE_NOTES.md) */
+#ifdef VLC_BRAND_PUBLIC
+# define APP_DIR_NAME "Cone"
+#else
+# define APP_DIR_NAME "vlc"
+#endif
+
 static char *config_GetAppDir (void)
 {
     /* if portable directory exists, use it */
@@ -75,7 +83,7 @@ static char *config_GetAppDir (void)
     char *psz_parent = config_GetKnownFolder (FOLDERID_RoamingAppData);
 
     if (psz_parent == NULL
-     ||  asprintf (&psz_dir, "%s\\vlc", psz_parent) == -1)
+     ||  asprintf (&psz_dir, "%s\\" APP_DIR_NAME, psz_parent) == -1)
         psz_dir = NULL;
     free (psz_parent);
     return psz_dir;

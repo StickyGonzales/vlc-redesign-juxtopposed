@@ -1,0 +1,280 @@
+{
+ "format": 1,
+ "node": "1899:3055",
+ "name": "Onboarding",
+ "png": "Onboarding.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1090,
+  759
+ ],
+ "theme": "dark",
+ "rows": [
+  311,
+  312
+ ],
+ "background": [
+  {
+   "token": "BG/B1",
+   "dark": "#0E0E0E",
+   "light": "#E7E7E7"
+  }
+ ],
+ "elements": [
+  {
+   "id": "1899:3056",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:vlc",
+   "bounds": [
+    475,
+    116,
+    141,
+    141
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "vlc",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "vlc",
+   "brand": true
+  },
+  {
+   "id": "1899:3057",
+   "name": "Welcome to VLC!",
+   "type": "text",
+   "path": "Welcome to VLC!",
+   "bounds": [
+    417,
+    286,
+    256,
+    39
+   ],
+   "text": {
+    "content": "Welcome to VLC!",
+    "font": "Inter",
+    "weight": 300,
+    "size": 32,
+    "line_height": 38.73,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/1",
+     "dark": "#EAEAEA",
+     "light": "#111111"
+    }
+   },
+   "brand": true,
+   "rows": [
+    311
+   ]
+  },
+  {
+   "id": "1899:3058",
+   "name": "VLC is a free and open source cross-platform multimedia player and framework that plays most multimedia files as well as DVDs, Audio CDs, VCDs, and various streaming protocols.",
+   "type": "text",
+   "path": "VLC is a free and open source cross-platform multimedia player and framework that plays most multimedia files as well as DVDs, Audio CDs, VCDs, and various streaming protocols.",
+   "bounds": [
+    248,
+    362,
+    595,
+    84
+   ],
+   "text": {
+    "content": "VLC is a free and open source cross-platform multimedia player and framework that plays most multimedia files as well as DVDs, Audio CDs, VCDs, and various streaming protocols.",
+    "font": "Inter",
+    "weight": 300,
+    "size": 16,
+    "line_height": 28,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "brand": true
+  },
+  {
+   "id": "1902:3383",
+   "name": "Frame 140",
+   "type": "frame",
+   "path": "Frame 140",
+   "bounds": [
+    928,
+    671,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ]
+  },
+  {
+   "id": "1902:3384",
+   "name": "Next",
+   "type": "text",
+   "path": "Next",
+   "bounds": [
+    959.5,
+    677.5,
+    37,
+    19
+   ],
+   "text": {
+    "content": "Next",
+    "font": "Inter",
+    "weight": 600,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/B1",
+     "dark": "#161616",
+     "light": "#161616"
+    }
+   }
+  },
+  {
+   "id": "6689:20694",
+   "name": "Choose a Media Folder to get started with",
+   "type": "text",
+   "path": "Choose a Media Folder to get started with",
+   "bounds": [
+    248,
+    500,
+    280,
+    17
+   ],
+   "text": {
+    "content": "Choose a Media Folder to get started with",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6689:20697",
+   "name": "Frame 86",
+   "type": "frame",
+   "path": "Frame 86",
+   "bounds": [
+    248,
+    533,
+    471,
+    36
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6689:20705",
+   "name": "~/Videos",
+   "type": "text",
+   "path": "~/Videos",
+   "bounds": [
+    262,
+    537,
+    69,
+    28
+   ],
+   "text": {
+    "content": "~/Videos",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 28,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   },
+   "mask": "sample name"
+  },
+  {
+   "id": "6689:20698",
+   "name": "Frame 141",
+   "type": "frame",
+   "path": "Frame 141",
+   "bounds": [
+    729,
+    533.5,
+    114,
+    35
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ]
+  },
+  {
+   "id": "6689:20699",
+   "name": "Browse",
+   "type": "text",
+   "path": "Browse",
+   "bounds": [
+    757.5,
+    541.5,
+    57,
+    19
+   ],
+   "text": {
+    "content": "Browse",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  }
+ ]
+}

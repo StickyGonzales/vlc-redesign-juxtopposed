@@ -58,6 +58,11 @@ T.Control {
     // a typed value not applied yet (Enter applies it, leaving the box drops it)
     readonly property bool dirty: editing && input.text !== control.text
 
+    // drops a value being typed: the box shows the current value again (a wheel step moved it)
+    function cancelEdit() {
+        input.focus = false
+    }
+
     implicitWidth: VLCStyle.dp(140)
     implicitHeight: framed ? VLCStyle.dp(36) : VLCStyle.dp(32)
 

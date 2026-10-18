@@ -1,16 +1,74 @@
 <?xml version='1.0'?>
 <Include>
+    <!-- redesign: brand layer (configure option with-brand). Cone's names, ProgIDs, registry keys,
+         upgrade code and component GUIDs are its own, so installing or removing it never
+         touches an installed VLC (redesign/CONE_RELEASE_NOTES.md) -->
+    <?if "@BRAND_PROGID@" = "VLC" ?>
     <?define ShortProductName = "VLC" ?>
     <?define ProductName = "VLC media player" ?>
     <?define Manufacturer = "VideoLAN" ?>
     <?define AboutURL = "https://www.videolan.org/vlc/" ?>
     <?define SupportURL = "https://www.videolan.org/support/" ?>
     <?define UpdatesURL = "https://www.videolan.org/vlc/" ?>
+    <?define PackageDescription = "VLC - The video swiss knife" ?>
+    <?define WebsiteName = "VideoLAN website" ?>
+    <?define WebsiteURL = "https://www.videolan.org/" ?>
+    <?define DocumentationURL = "https://www.videolan.org/doc/" ?>
+    <?define ExeName = "vlc.exe" ?>
+    <?define IconFile = "vlc.ico" ?>
+    <?define RegKey = "Software\VideoLAN\VLC" ?>
+    <?define ProgIdPrefix = "VLC" ?>
+    <?define BannerBmp = "bannrbmp.bmp" ?>
+    <?define UpgradeCode = "d2e0205b-0d3a-46e2-adf7-0504ff48cf04" ?>
+    <?define BaseGuid = "d2e0205b-0d3a-46e2-adf7-0504ff48cf" ?>
+    <?define GuidCompTXT = "7fbd228c-87d8-4e91-85b3-aa65e03c9f1e" ?>
+    <?define GuidCompLibvlccore = "efa826fd-0037-4ccd-9573-604fde3b9efa" ?>
+    <?define GuidCompLibvlc = "50d7e1e1-4512-4020-9f7b-5dc8484574f3" ?>
+    <?define GuidCompCacheGen = "e1b4a499-e223-4c18-9de0-258f12b8dcfa" ?>
+    <?define GuidCompPreparserExe = "83ff6660-bf97-4c6e-a6eb-123df8ec9cb1" ?>
+    <?define GuidCompIcon = "8707410c-55fe-4c38-924e-438762b8b82e" ?>
+    <?define GuidCompPluginsCache = "0b72e987-8e3c-4201-aa3e-5b57ca9c040e" ?>
+    <?define GuidCompPlayDiscs = "b0d90296-b20c-4c74-a3b3-a7694e011f25" ?>
+    <?define GuidCompAudioFileAssociation = "b531047e-3556-4dff-8f96-6a2b596d5b0a" ?>
+    <?define GuidCompVideoFileAssociation = "869e8d63-30fe-47a0-bb36-0f98ae80a9d0" ?>
+    <?define GuidCompOtherFileAssociation = "da4482a9-c3bd-4fcc-84eb-e5cf9e09b65e" ?>
+    <?else ?>
+    <?define ShortProductName = "@BRAND_PRODUCT_NAME@" ?>
+    <?define ProductName = "@BRAND_PRODUCT_NAME@" ?>
+    <?define Manufacturer = "@BRAND_COMPANY@" ?>
+    <?define AboutURL = "@BRAND_WEBSITE@" ?>
+    <?define SupportURL = "@BRAND_WEBSITE@" ?>
+    <?define UpdatesURL = "@BRAND_WEBSITE@" ?>
+    <?define PackageDescription = "@BRAND_PRODUCT_NAME@, a media player based on VLC media player" ?>
+    <?define WebsiteName = "@BRAND_PRODUCT_NAME@ website" ?>
+    <?define WebsiteURL = "@BRAND_WEBSITE@" ?>
+    <?define DocumentationURL = "@BRAND_WEBSITE@#readme" ?>
+    <?define ExeName = "@BRAND_EXE@" ?>
+    <?define IconFile = "@BRAND_ICON_FILE@" ?>
+    <?define RegKey = "@BRAND_REGKEY@" ?>
+    <?define ProgIdPrefix = "@BRAND_PROGID@" ?>
+    <?define BannerBmp = "../brand/public/msi-banner.bmp" ?>
+    <?define DialogBmp = "../brand/public/msi-dialog.bmp" ?>
+    <?define UpgradeCode = "9bb28ebc-9905-4529-a697-d46342b0d3fb" ?>
+    <?define BaseGuid = "177cca66-4e68-4358-926d-235fdf97a7" ?>
+    <?define GuidCompTXT = "30f4c932-e3b0-4624-a3d2-2ea8b2ecd2b6" ?>
+    <?define GuidCompLibvlccore = "73c8a73d-2063-413d-941f-07764648a0b2" ?>
+    <?define GuidCompLibvlc = "51b73a50-180c-4be4-8c07-7da9ccf8c800" ?>
+    <?define GuidCompCacheGen = "6f78b616-d7a7-4224-b238-ae108716d416" ?>
+    <?define GuidCompPreparserExe = "fcbc5751-ae64-4ffc-9840-9efa3032fd2b" ?>
+    <?define GuidCompIcon = "7d6bdecd-2a3c-496f-bb7a-7ae75ea2e16f" ?>
+    <?define GuidCompPluginsCache = "7d61e66b-df17-496f-9e37-057f6510b5d3" ?>
+    <?define GuidCompPlayDiscs = "5991ce00-09f8-4017-98d2-e95f45a58cb7" ?>
+    <?define GuidCompAudioFileAssociation = "521dc226-acc0-4b32-a677-16ffd56063dd" ?>
+    <?define GuidCompVideoFileAssociation = "6f3702f2-e6ee-47d0-9e73-15ca18cca2f0" ?>
+    <?define GuidCompOtherFileAssociation = "67022ca8-dfc1-4f58-801d-9328c01524a8" ?>
+    <?endif ?>
 
-    <?define VerMajor = "@VERSION_MAJOR@" ?>
-    <?define VerMinor = "@VERSION_MINOR@" ?>
-    <?define VerPatch = "@VERSION_REVISION@" ?>
-    <?define VerExtra = "@VERSION_EXTRA@" ?>
+    <!-- the product's version: Cone's own in the public profile (Decision 58), VLC's in the vlc profile -->
+    <?define VerMajor = "@BRAND_VERSION_MAJOR@" ?>
+    <?define VerMinor = "@BRAND_VERSION_MINOR@" ?>
+    <?define VerPatch = "@BRAND_VERSION_REVISION@" ?>
+    <?define VerExtra = "@BRAND_VERSION_EXTRA@" ?>
     <?define Version = "$(var.VerMajor).$(var.VerMinor).$(var.VerPatch)" ?>
     <?define VersionLong = "$(var.Version).$(var.VerExtra)" ?>
 
@@ -41,10 +99,8 @@
         <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
     <?endif ?>
 
-    <?define AppFolder = "VLC" ?>
+    <?define AppFolder = "$(var.ShortProductName)" ?>
 
-
-    <?define BaseGuid = "d2e0205b-0d3a-46e2-adf7-0504ff48cf" ?>
     <?define CompInstallRegDir = "$(var.BaseGuid)10" ?>
     <?define CompVLCexe = "$(var.BaseGuid)11" ?>
 </Include>

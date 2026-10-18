@@ -58,6 +58,20 @@
 
 #include "../video_output/vout_internal.h"
 
+/* redesign (brand layer, public profile): the codec error dialogs name Cone, not VLC; the vlc
+ * profile compiles VLC's texts as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_CODEC_UNSUPPORTED _("Cone could not decode the format \"%4.4s\" (%s)")
+# define BRAND_TEXT_CODEC_UNIDENTIFIED _("Cone could not identify the audio or video codec" )
+# define BRAND_TEXT_MODULE_FAILED _("Cone could not open the %s module.")
+# define BRAND_TEXT_DECODER_FAILED _("Cone could not open the decoder module.")
+#else
+# define BRAND_TEXT_CODEC_UNSUPPORTED _("VLC could not decode the format \"%4.4s\" (%s)")
+# define BRAND_TEXT_CODEC_UNIDENTIFIED _("VLC could not identify the audio or video codec" )
+# define BRAND_TEXT_MODULE_FAILED _("VLC could not open the %s module.")
+# define BRAND_TEXT_DECODER_FAILED _("VLC could not open the decoder module.")
+#endif
+
 
 /**
  * \file src/input/decoder.c
@@ -2414,12 +2428,12 @@ static void DecoderUnsupportedCodec( decoder_t *p_dec, const es_format_t *fmt, b
             desc = N_("No description for this codec");
         msg_Err( p_dec, "Codec `%4.4s' (%s) is not supported.", (char*)&fmt->i_codec, desc );
         vlc_dialog_display_error( p_dec, _("Codec not supported"),
-            _("VLC could not decode the format \"%4.4s\" (%s)"),
+            BRAND_TEXT_CODEC_UNSUPPORTED,
             (char*)&fmt->i_codec, desc );
     } else if( b_decoding ){
         msg_Err( p_dec, "could not identify codec" );
         vlc_dialog_display_error( p_dec, _("Unidentified codec"),
-            _("VLC could not identify the audio or video codec" ) );
+            BRAND_TEXT_CODEC_UNIDENTIFIED );
     }
 }
 
@@ -2435,7 +2449,7 @@ decoder_New( vlc_object_t *p_parent, const struct vlc_input_decoder_cfg *cfg )
     {
         msg_Err( p_parent, "could not create %s", cfg->str_id );
         vlc_dialog_display_error( p_parent, _("Streaming / Transcoding failed"),
-            _("VLC could not open the %s module."), vlc_gettext( psz_type ) );
+            BRAND_TEXT_MODULE_FAILED, vlc_gettext( psz_type ) );
         return NULL;
     }
 
@@ -2872,7 +2886,7 @@ vlc_input_decoder_CreateSubDec(vlc_input_decoder_t *p_owner,
         msg_Err( p_dec, "could not create decoder" );
         vlc_dialog_display_error( p_dec,
             _("Streaming / Transcoding failed"), "%s",
-            _("VLC could not open the decoder module.") );
+            BRAND_TEXT_DECODER_FAILED );
         vlc_mutex_unlock(&p_owner->subdecs.lock);
         return NULL;
     }

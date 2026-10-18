@@ -28,6 +28,8 @@
 //   it slides back to the normal view.
 // - Arrow keys step by `step` past the range; a value set from outside (typed, VLC) scrolls the
 //   window to show it.
+// - The mouse wheel over the bar or the labels steps by `wheelStep` (Decision 54), past the range
+//   like the keys.
 // The window always starts on a step (rangeFrom + n steps), so ticks, labels and arrow-key steps
 // land on the same values as in the normal view (a drag is not snapped, as in RdSlider).
 //
@@ -54,6 +56,8 @@ RdSlider {
     property real current: 0
     // value units per second while the pointer is held past an end
     property real scrollSpeed: (rangeTo - rangeFrom) * VLCStyle.rd_sliderScrollRate
+    // one mouse wheel notch (Decision 54): the step unless the slider sets a finer one
+    property real wheelStep: step
 
     readonly property bool endless: limitFrom < rangeFrom || limitTo > rangeTo
 
@@ -101,6 +105,10 @@ RdSlider {
     Keys.priority: endless ? Keys.BeforeItem : Keys.AfterItem
     Keys.onLeftPressed: (event) => _keyStep(event, mirrored ? 1 : -1)
     Keys.onRightPressed: (event) => _keyStep(event, mirrored ? -1 : 1)
+
+    // the wheel moves on the wheel step's values and, like the keys, past the window
+    customWheel: true
+    onWheelStepped: (steps) => _wheelMove(steps)
 
     function _clamped(lo, hi) {
         return Math.max(lo, Math.min(hi, _shown))
@@ -164,6 +172,24 @@ RdSlider {
         }
         // on a step: a typed value off the steps lands on the nearest one in that direction
         const v = _limit(_gridRound(_shown + direction * (step > 0 ? step : _span / 100)))
+        if (Math.abs(v - _shown) <= _eps / 2)
+            return
+        _show(v)
+        valueMoved(v)
+    }
+
+    // `steps` wheel notches from the value shown, on the multiples of the wheel step from
+    // rangeFrom: a value between two of them goes to the next one in that direction first. A value
+    // within 5 % of a step of a multiple counts as on it: VLC hands values back as 32-bit floats
+    // (2.1x reads 2.0999999) or rounded (Background Opacity 38.25 is stored as 38)
+    function _wheelMove(steps) {
+        const quantum = wheelStep > 0 ? wheelStep : (step > 0 ? step : _span / 100)
+        const n = (_shown - rangeFrom) / quantum
+        const near = Math.round(n)
+        const base = Math.abs(n - near) < 0.05 ? near : (steps > 0 ? Math.floor(n) : Math.ceil(n))
+        // rounded: no floating point residue in the value box or the stored value
+        const target = Math.round((rangeFrom + (base + steps) * quantum) * 1e9) / 1e9
+        const v = endless ? _limit(target) : Math.max(rangeFrom, Math.min(rangeTo, target))
         if (Math.abs(v - _shown) <= _eps / 2)
             return
         _show(v)

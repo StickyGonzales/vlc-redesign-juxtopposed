@@ -32,7 +32,9 @@ public:
     enum ID
     {
         Scale,
-        MinimalView
+        MinimalView,
+        // redesign: Ctrl+B and the Bookmarks tab "+" (P7-04)
+        Bookmark
     };
 
     Q_ENUM(ID)

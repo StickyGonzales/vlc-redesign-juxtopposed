@@ -103,7 +103,7 @@ T.ProgressBar {
     // Playback tab's "Show Waveform on Seekbar" on, the thick bar draws the playing file's
     // waveform once its background scan is ready (RdWaveform); until then the plain fill stays,
     // then the bars fade in over it and the playhead narrows to 4 px around the same center.
-    // The layer takes no input: hover, drag, the preview card, wheel, keys and the right click
+    // The layer takes no input: hover, drag, the preview card, keys and the right click
     // stay the bar's
     readonly property bool _waveformOption: RdEffects.values[RdEffects.optionKey("qt-seek-waveform")] === true
     readonly property bool waveformShown: waveform.ready
@@ -385,39 +385,8 @@ T.ProgressBar {
             }
         }
 
-        WheelHandler {
-            orientation: Qt.Vertical | Qt.Horizontal
-
-            acceptedDevices: PointerDevice.AllDevices
-
-            onWheel: (wheel) => {
-                wheelToVLC.qmlWheelEvent(wheel)
-                wheel.accepted = true
-            }
-        }
-
-        WheelToVLCConverter {
-            id: wheelToVLC
-
-            function handleVertical(steps: int) {
-                if (steps > 0)
-                    Player.jumpFwd()
-                else
-                    Player.jumpBwd()
-            }
-
-            function handleHorizontal(steps: int) {
-                if (steps > 0)
-                    Player.jumpBwd()
-                else
-                    Player.jumpFwd()
-            }
-
-            Component.onCompleted: {
-                wheelUpDown.connect(wheelToVLC, wheelToVLC.handleVertical)
-                wheelLeftRight.connect(wheelToVLC, wheelToVLC.handleHorizontal)
-            }
-        }
+        // redesign: the seek bar takes no wheel (Decision 54): over the bars only the volume control
+        // reacts to it, the control bar takes the rest
     }
 
     background: Item {

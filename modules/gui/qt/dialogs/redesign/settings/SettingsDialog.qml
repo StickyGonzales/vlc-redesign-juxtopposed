@@ -614,6 +614,14 @@ Item {
                             }
                         }
 
+                        // the pages count their matching rows after the search text reached
+                        // them: a current page that turns out to have none moves the dialog to
+                        // the first category that has some (else its pane would stay empty)
+                        onHasMatchesChanged: {
+                            if (current && !hasMatches)
+                                Qt.callLater(root._ensureCurrentMatches)
+                        }
+
                         Loader {
                             id: pageLoader
 

@@ -1,0 +1,215 @@
+{
+ "format": 1,
+ "node": "2459:9352",
+ "name": "playlist",
+ "png": "playlist.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  377,
+  228
+ ],
+ "theme": "dark",
+ "rows": [
+  24,
+  28,
+  29,
+  151,
+  152,
+  193,
+  199,
+  200,
+  227,
+  337,
+  339
+ ],
+ "variants": [
+  {
+   "node": "2459:9357",
+   "name": "Property 1=unwatched",
+   "props": {
+    "Property 1": "unwatched"
+   },
+   "bounds": [
+    20,
+    71,
+    337,
+    32
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "2459:9358",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:playlist",
+     "bounds": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "playlist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "playlist",
+     "rows": [
+      24,
+      25,
+      28,
+      29,
+      151
+     ]
+    },
+    {
+     "id": "2459:9359",
+     "name": "Cool Playlist",
+     "type": "text",
+     "path": "Cool Playlist",
+     "bounds": [
+      42,
+      7.5,
+      295,
+      17
+     ],
+     "text": {
+      "content": "Cool Playlist",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A1",
+       "dark": "#969696",
+       "light": "#3C3C3C"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      24,
+      28,
+      29,
+      151,
+      152
+     ]
+    }
+   ]
+  },
+  {
+   "node": "2459:9365",
+   "name": "Property 1=hover-unwatched",
+   "props": {
+    "Property 1": "hover-unwatched"
+   },
+   "bounds": [
+    20,
+    122,
+    337,
+    32
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "2459:9366",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:playlist",
+     "bounds": [
+      0,
+      0,
+      32,
+      32
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "playlist",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "playlist",
+     "rows": [
+      24,
+      25,
+      28,
+      29,
+      151
+     ]
+    },
+    {
+     "id": "2459:9367",
+     "name": "Cool Playlist",
+     "type": "text",
+     "path": "Cool Playlist",
+     "bounds": [
+      42,
+      7.5,
+      261,
+      17
+     ],
+     "text": {
+      "content": "Cool Playlist",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/2",
+       "dark": "#C6C6C6",
+       "light": "#222222"
+      }
+     },
+     "mask": "sample name",
+     "rows": [
+      24,
+      28,
+      29,
+      151,
+      152
+     ]
+    },
+    {
+     "id": "2459:9368",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:more",
+     "bounds": [
+      313,
+      4,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "more",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "more",
+     "rows": [
+      24,
+      25,
+      28,
+      29,
+      151
+     ]
+    }
+   ]
+  }
+ ]
+}

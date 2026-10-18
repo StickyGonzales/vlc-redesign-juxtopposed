@@ -65,6 +65,20 @@ See http://www.vdr-wiki.de/ and http://www.tvdr.de/ for more information.
 #include <vlc_configuration.h>
 #include <vlc_memstream.h>
 
+/* redesign (brand layer, public profile): the file errors name Cone, not VLC; the vlc profile
+ * compiles VLC's texts as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_READ_FAILED _("Cone could not read the file (%s).")
+# define BRAND_TEXT_OPEN_FILE_FAILED \
+    _("Cone could not" \
+    " open the file \"%s\" (%s).")
+#else
+# define BRAND_TEXT_READ_FAILED _("VLC could not read the file (%s).")
+# define BRAND_TEXT_OPEN_FILE_FAILED \
+    _("VLC could not" \
+    " open the file \"%s\" (%s).")
+#endif
+
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
@@ -378,7 +392,7 @@ static ssize_t Read( stream_t *p_access, void *p_buffer, size_t i_len )
         /* abort on read error */
         msg_Err( p_access, "failed to read (%s)", vlc_strerror_c(errno) );
         vlc_dialog_display_error( p_access, _("File reading failed"),
-            _("VLC could not read the file (%s)."),
+            BRAND_TEXT_READ_FAILED,
             vlc_strerror(errno) );
         SwitchFile( p_access, -1 );
         return 0;
@@ -543,8 +557,7 @@ static bool SwitchFile( stream_t *p_access, unsigned i_file )
     return true;
 
 error:
-    vlc_dialog_display_error (p_access, _("File reading failed"), _("VLC could not"
-        " open the file \"%s\" (%s)."), psz_path, vlc_strerror(errno) );
+    vlc_dialog_display_error (p_access, _("File reading failed"), BRAND_TEXT_OPEN_FILE_FAILED, psz_path, vlc_strerror(errno) );
     if( p_sys->fd != -1 )
     {
         vlc_close( p_sys->fd );

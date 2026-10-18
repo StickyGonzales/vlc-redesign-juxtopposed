@@ -34,6 +34,7 @@
 #include "util/color_scheme_model.hpp"
 #include "util/proxycolumnmodel.hpp"
 #include "medialibrary/mlrecentmediamodel.hpp"
+#include "util/brand.hpp"
 
 #include <vlc_config_cat.h>
 #include <vlc_configuration.h>
@@ -709,7 +710,7 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
             HKEY h_key;
             char *langReg = NULL;
-            if( RegOpenKeyEx( HKEY_CURRENT_USER, TEXT("Software\\VideoLAN\\VLC\\"), 0, KEY_READ, &h_key )
+            if( RegOpenKeyEx( HKEY_CURRENT_USER, TEXT(BRAND_REGISTRY_KEY), 0, KEY_READ, &h_key )
                     == ERROR_SUCCESS )
             {
                 WCHAR szData[256];
@@ -724,7 +725,11 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
 //            ui.defaultLabel->setFont( italicFont );
             ui.skinsLabel->setText(
+#ifdef VLC_BRAND_PUBLIC
+                    qtr( "This is Cone's skinnable interface. You can download other skins at" )
+#else
                     qtr( "This is VLC's skinnable interface. You can download other skins at" )
+#endif
                     + QString( " <a href=\"https://www.videolan.org/vlc/skins.php\">" )
                     + qtr( "VLC skins website" ) + QString( "</a>." ) );
             ui.skinsLabel->setFont( italicFont );
@@ -775,6 +780,25 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
             connect( ui.stylesCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &SPrefsPanel::changeStyle );
+
+#ifdef VLC_BRAND_PUBLIC
+            /* brand layer: the .ui tooltips name VLC */
+            {
+                const QString skinTip = qtr( "Cone will use custom skin." );
+                const QString modernTip = qtr( "Cone will use a modern layout with\n"
+                                               "no menubar or pinned controls but\n"
+                                               "with client-side decoration." );
+                const QString classicTip = qtr( "Cone will use a classic layout with\n"
+                                                "a menubar and pinned controls but\n"
+                                                "with no client-side decoration." );
+                ui.skins->setToolTip( skinTip );
+                ui.skinImage->setToolTip( skinTip );
+                ui.modernButton->setToolTip( modernTip );
+                ui.modernImage->setToolTip( modernTip );
+                ui.classicButton->setToolTip( classicTip );
+                ui.classicImage->setToolTip( classicTip );
+            }
+#endif
 
             radioGroup = new QButtonGroup(this);
             radioGroup->addButton( ui.modernButton, 0 );
@@ -1378,9 +1402,11 @@ void SPrefsPanel::configML()
 
 void SPrefsPanel::cleanLang() {
     QVLCRegistry qvReg( HKEY_CURRENT_USER );
-    qvReg.DeleteValue( "Software\\VideoLAN\\VLC\\", "Lang" );
+    qvReg.DeleteValue( BRAND_REGISTRY_KEY, "Lang" );
+#ifndef VLC_BRAND_PUBLIC
     qvReg.DeleteKey( "Software\\VideoLAN\\", "VLC" );
     qvReg.DeleteKey( "Software\\", "VideoLAN" );
+#endif
 }
 
 void SPrefsPanel::saveLang() {
@@ -1392,7 +1418,7 @@ void SPrefsPanel::saveLang() {
     else
     {
         QVLCRegistry qvReg( HKEY_CURRENT_USER );
-        qvReg.WriteRegistry( "Software\\VideoLAN\\VLC\\", "Lang", lang );
+        qvReg.WriteRegistry( BRAND_REGISTRY_KEY, "Lang", lang );
     }
 }
 
@@ -1400,7 +1426,7 @@ bool SPrefsPanel::addType( const char * psz_ext, QTreeWidgetItem* current,
                            QTreeWidgetItem* parent, QVLCRegistry *qvReg )
 {
     bool b_temp;
-    const char* psz_VLC = "VLC";
+    const char* psz_VLC = BRAND_PROGID;
     current = new QTreeWidgetItem( parent, QStringList( psz_ext ) );
 
     char* psz_reg = qvReg->ReadRegistry( psz_ext, "", "" );
@@ -1435,7 +1461,7 @@ void SPrefsPanel::assoDialog()
                                 NULL, CLSCTX_INPROC_SERVER,
                                 IID_PPV_ARGS(&p_regui));
             if( SUCCEEDED(hr) )
-                p_regui->LaunchAdvancedAssociationUI(L"VLC" );
+                p_regui->LaunchAdvancedAssociationUI(L"" BRAND_PROGID );
         }
         CoUninitialize();
     }
@@ -1580,14 +1606,14 @@ void SPrefsPanel::updateCheckBoxes(QTreeWidgetItem* item, int column)
 
 void addAsso( QVLCRegistry *qvReg, const char *psz_ext )
 {
-    QString s_path( "VLC" ); s_path += psz_ext;
+    QString s_path( BRAND_PROGID ); s_path += psz_ext;
     QString s_path2 = s_path;
 
     /* Save a backup if already assigned */
     char *psz_value = qvReg->ReadRegistry( psz_ext, "", ""  );
 
     if( !EMPTY_STR(psz_value) && strcmp( qtu(s_path), psz_value ) )
-        qvReg->WriteRegistry( psz_ext, "VLC.backup", psz_value );
+        qvReg->WriteRegistry( psz_ext, BRAND_PROGID ".backup", psz_value );
     free( psz_value );
 
     /* Put a "link" to VLC.EXT as default */
@@ -1602,7 +1628,7 @@ void addAsso( QVLCRegistry *qvReg, const char *psz_ext )
 
         /* Get the installer path */
         QVLCRegistry qvReg2( HKEY_LOCAL_MACHINE );
-        QString str_temp = qvReg2.ReadRegistry( "Software\\VideoLAN\\VLC", "", "" );
+        QString str_temp = qvReg2.ReadRegistry( BRAND_INSTALL_REGKEY, "", "" );
 
         if( str_temp.size() )
         {
@@ -1617,17 +1643,17 @@ void addAsso( QVLCRegistry *qvReg, const char *psz_ext )
 
 void delAsso( QVLCRegistry *qvReg, const char *psz_ext )
 {
-    QString s_path( "VLC"); s_path += psz_ext;
+    QString s_path( BRAND_PROGID ); s_path += psz_ext;
     char *psz_value = qvReg->ReadRegistry( psz_ext, "", "" );
 
     if( psz_value && !strcmp( qtu(s_path), psz_value ) )
     {
         free( psz_value );
-        psz_value = qvReg->ReadRegistry( psz_ext, "VLC.backup", "" );
+        psz_value = qvReg->ReadRegistry( psz_ext, BRAND_PROGID ".backup", "" );
         if( psz_value )
             qvReg->WriteRegistry( psz_ext, "", psz_value );
 
-        qvReg->DeleteValue( psz_ext, "VLC.backup" );
+        qvReg->DeleteValue( psz_ext, BRAND_PROGID ".backup" );
     }
     free( psz_value );
 }

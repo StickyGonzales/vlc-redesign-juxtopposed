@@ -54,6 +54,7 @@ T.AbstractButton {
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            control._toolTipDismissed = true
             control.clicked()
             event.accepted = true
             return
@@ -69,7 +70,14 @@ T.AbstractButton {
     Navigation.rightAction: () => RdLibraryNav.focusStep(control, true)
     Navigation.cancelAction: () => RdLibraryNav.goBack()
 
-    T.ToolTip.visible: (hovered || visualFocus) && description !== ""
+    // redesign: a press hides the tooltip until the pointer and the keyboard focus leave the
+    // button: it would stay over the menu or popup the button opened
+    property bool _toolTipDismissed: false
+    onPressedChanged: if (pressed) _toolTipDismissed = true
+    onHoveredChanged: if (!hovered && !visualFocus) _toolTipDismissed = false
+    onVisualFocusChanged: if (!hovered && !visualFocus) _toolTipDismissed = false
+
+    T.ToolTip.visible: (hovered || visualFocus) && description !== "" && !_toolTipDismissed
     T.ToolTip.delay: VLCStyle.delayToolTipAppear
     T.ToolTip.text: description
 

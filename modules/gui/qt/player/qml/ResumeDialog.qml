@@ -17,10 +17,12 @@
  *****************************************************************************/
 
 // redesign: resume toast near the playback controls (video 13:55-14:10, Figma "continue":
-// 552x52 pill, radius 16, BG/A3 95%, Inter 16 FG/2 text with the time in bold, "Continue Watching"
-// primary button 146x32, dark 44x32 close button).
+// a pill hugging its content, 552x52 with the English sentence, radius 16, BG/A3 95%, padding
+// 10/10/10/20, Inter 16 FG/2 text with the time in Inter 600, 60 px to the buttons, "Continue
+// Watching" primary button 146x32, 10 px, dark 44x32 close button).
+// The text is never cut: the toast hugs it up to the room it is given; with less room the sentence
+// wraps onto more lines, and in a very narrow room the buttons move under the sentence.
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Templates as T
 
 
@@ -33,17 +35,52 @@ import VLC.Util
 FocusScope {
     id: resumePanel
 
-    property int maxWidth: VLCStyle.dp(552, VLCStyle.scale)
+    // the widest the toast may get (Player.qml: the video area left of an open panel)
+    property real maxWidth: Number.POSITIVE_INFINITY
 
-    implicitHeight: VLCStyle.dp(52, VLCStyle.scale)
-    implicitWidth: Math.min(maxWidth, content.implicitWidth + VLCStyle.dp(30, VLCStyle.scale))
+    readonly property real _padLeft: VLCStyle.dp(20, VLCStyle.scale)
+    readonly property real _padRight: VLCStyle.dp(10, VLCStyle.scale)
+    readonly property real _padVertical: VLCStyle.dp(10, VLCStyle.scale)
+    // Figma: 60 px between the sentence and the buttons, 10 px between the buttons
+    readonly property real _textGap: VLCStyle.dp(60, VLCStyle.scale)
+    readonly property real _buttonSpacing: VLCStyle.dp(10, VLCStyle.scale)
+    // stacked: 10 px between the sentence and the buttons under it
+    readonly property real _stackGap: VLCStyle.dp(10, VLCStyle.scale)
 
-    // the narrowest useful toast: both buttons and the sentence elided to its first 120 px
-    readonly property real minimumWidth: content.implicitWidth + VLCStyle.dp(30, VLCStyle.scale)
-                                         - labelRow.Layout.preferredWidth
-                                         + Math.min(labelRow.Layout.preferredWidth, VLCStyle.dp(120, VLCStyle.scale))
+    readonly property real _buttonsWidth: continueBtn.implicitWidth + _buttonSpacing + closeBtn.implicitWidth
+    readonly property real _buttonsHeight: Math.max(continueBtn.implicitHeight, closeBtn.implicitHeight)
 
-    baselineOffset: label.baselineOffset
+    // the sentence on one line (Text's implicitWidth ignores the wrapping width)
+    readonly property real _textNaturalWidth: Math.ceil(label.implicitWidth)
+    // a longer sentence (a translation, the question without a time) wraps rather than stretching
+    // the toast across the player
+    readonly property real _textMaxWidth: VLCStyle.dp(480, VLCStyle.scale)
+    // below this sentence column the buttons move under the sentence
+    readonly property real _textMinWidth: VLCStyle.dp(160, VLCStyle.scale)
+
+    // the sentence column next to the buttons
+    readonly property real _sideColumnWidth: maxWidth - _padLeft - _textGap - _buttonsWidth - _padRight
+
+    // stacked when the column beside the buttons is too narrow or would need more than two lines
+    // (1.85: word wrapping leaves room at the line ends)
+    readonly property bool _stacked: _sideColumnWidth < Math.min(_textNaturalWidth, _textMinWidth)
+                                     || _textNaturalWidth > 1.85 * _sideColumnWidth
+
+    // stacked, the toast is never narrower than its buttons (hidden below that, Player.qml)
+    readonly property real _textWidth: Math.max(0, Math.min(_textNaturalWidth, _textMaxWidth,
+                                                            _stacked ? Math.max(maxWidth - _padLeft - _padRight, _buttonsWidth)
+                                                                     : _sideColumnWidth))
+
+    implicitWidth: _stacked ? _padLeft + Math.max(_textWidth, _buttonsWidth) + _padRight
+                            : _padLeft + _textWidth + _textGap + _buttonsWidth + _padRight
+    // one line: Figma's 52 px (rounded once, not per padding; the buttons are centered in it)
+    implicitHeight: _stacked ? 2 * _padVertical + label.height + _stackGap + _buttonsHeight
+                             : Math.max(VLCStyle.dp(52, VLCStyle.scale), 2 * _padVertical + label.height)
+
+    // the narrowest toast: the buttons, with the sentence wrapped above them
+    readonly property real minimumWidth: _padLeft + _buttonsWidth + _padRight
+
+    baselineOffset: label.y + label.baselineOffset
 
     visible: false
     enabled: visible
@@ -135,74 +172,59 @@ FocusScope {
         radius: VLCStyle.rd_radius_toast
         // opaque: the bg blur cannot run over the native video (Decision: opaque popups)
         color: Qt.alpha(VLCStyle.palette.rdBgA3Transparent, 1.0)
+
+        // the wheel over the toast does not reach the video (volume, Decision 54)
+        Widgets.RdWheelSink {
+            anchors.fill: parent
+        }
     }
 
-    RowLayout {
-        id: content
+    // Figma 1922:9584: Inter 400 16 FG/2 with the time in Inter 600 (StyledText has no 600 weight,
+    // so rich text). Side by side it is centered on the buttons; stacked it sits above them.
+    T.Label {
+        id: label
 
-        anchors.fill: parent
-        anchors.leftMargin: VLCStyle.dp(20, VLCStyle.scale)
-        anchors.rightMargin: VLCStyle.dp(10, VLCStyle.scale)
-        spacing: VLCStyle.dp(10, VLCStyle.scale)
+        // the saved progress times the file length (known once playback starts)
+        readonly property bool _hasRestoreTime: resumePanel._lengthKnown && Player.restoreProgress > 0
+        readonly property string _time: _hasRestoreTime
+                                        ? Player.length.scale(Player.restoreProgress).formatHHMMSS() : ""
 
-        // Figma 1922:9584: Inter 400 16 FG/2 with the time in Inter 600. StyledText has no 600
-        // weight and RichText cannot elide, so the sentence is split around the time.
-        Row {
-            id: labelRow
-
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: label.implicitWidth + timeLabel.implicitWidth + suffixLabel.implicitWidth
-
-            // the saved progress times the file length (known once playback starts)
-            readonly property bool _hasRestoreTime: resumePanel._lengthKnown && Player.restoreProgress > 0
-            readonly property var _parts: qsTr("You already watched till %1").split("%1")
-
-            T.Label {
-                id: label
-
-                width: Math.max(0, Math.min(implicitWidth,
-                                            labelRow.width - timeLabel.implicitWidth - suffixLabel.implicitWidth))
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                color: VLCStyle.palette.rdFg2
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_header
-
-                text: labelRow._hasRestoreTime
-                      ? labelRow._parts[0]
-                      : qsTr("Do you want to restart the playback where you left off?")
-            }
-
-            T.Label {
-                id: timeLabel
-
-                visible: labelRow._hasRestoreTime
-                width: visible ? implicitWidth : 0
-                color: VLCStyle.palette.rdFg2
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_header
-                font.weight: Font.DemiBold
-                text: visible ? Player.length.scale(Player.restoreProgress).formatHHMMSS() : ""
-            }
-
-            T.Label {
-                id: suffixLabel
-
-                visible: text.length > 0
-                width: visible ? implicitWidth : 0
-                color: VLCStyle.palette.rdFg2
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_header
-                text: labelRow._hasRestoreTime && labelRow._parts.length > 1 ? labelRow._parts[1] : ""
-            }
+        function _escaped(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         }
+
+        x: resumePanel._padLeft
+        y: resumePanel._stacked ? resumePanel._padVertical
+                                : Math.round((resumePanel.height - height) / 2)
+        width: resumePanel._textWidth
+
+        textFormat: Text.RichText
+        wrapMode: Text.Wrap
+        color: VLCStyle.palette.rdFg2
+        font.family: VLCStyle.rd_fontFamily
+        font.pixelSize: VLCStyle.rd_fontSize_header
+
+        text: _hasRestoreTime
+              ? _escaped(qsTr("You already watched till %1"))
+                    .arg("<span style=\"font-weight:600\">" + _time + "</span>")
+              : _escaped(qsTr("Do you want to restart the playback where you left off?"))
+
+        Accessible.name: _hasRestoreTime ? qsTr("You already watched till %1").arg(_time)
+                                         : qsTr("Do you want to restart the playback where you left off?")
+    }
+
+    Row {
+        id: buttons
+
+        x: resumePanel.width - resumePanel._padRight - width
+        y: resumePanel._stacked ? label.y + label.height + resumePanel._stackGap
+                                : Math.round((resumePanel.height - height) / 2)
+        spacing: resumePanel._buttonSpacing
 
         Widgets.RdButton {
             id: continueBtn
 
-            Layout.alignment: Qt.AlignVCenter
-            Layout.leftMargin: VLCStyle.dp(50, VLCStyle.scale)
+            anchors.verticalCenter: parent.verticalCenter
 
             style: Widgets.RdButton.Style.Primary
             text: qsTr("Continue Watching")
@@ -227,7 +249,7 @@ FocusScope {
                 cursorShape: Qt.PointingHandCursor
             }
 
-            Layout.alignment: Qt.AlignVCenter
+            anchors.verticalCenter: parent.verticalCenter
             implicitWidth: VLCStyle.dp(44, VLCStyle.scale)
             implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
 

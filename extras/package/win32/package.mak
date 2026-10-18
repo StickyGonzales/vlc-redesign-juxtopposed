@@ -16,14 +16,25 @@ build-npapi: package-win-install
 endif
 
 if HAVE_ARM64
-WINVERSION=vlc-$(VERSION)-winarm64
+WINARCH=winarm64
 else
 if HAVE_WIN64
-WINVERSION=vlc-$(VERSION)-win64
+WINARCH=win64
 else
-WINVERSION=vlc-$(VERSION)-win32
+WINARCH=win32
 endif
 endif
+# redesign: brand layer, the portable package's name and its top folder: VLC's in the vlc
+# profile, "Cone-<version><suffix>" in the public profile (the app's own version, Decision 58;
+# BRAND_PACKAGE_SUFFIX, e.g. "-beta", only goes into the package names, never into the app's
+# version: make package-win32-zip BRAND_PACKAGE_SUFFIX=-beta)
+BRAND_PACKAGE_SUFFIX=
+if BRAND_PUBLIC
+WINPACKAGE=$(BRAND_PRODUCT_NAME)-$(BRAND_VERSION)$(BRAND_PACKAGE_SUFFIX)
+else
+WINPACKAGE=vlc-$(VERSION)
+endif
+WINVERSION=$(WINPACKAGE)-$(WINARCH)
 
 package-win-install:
 	$(MAKE) install
@@ -68,7 +79,12 @@ endif
 	for file in NEWS COPYING; \
 		do cp "$(srcdir)/$$file" "$(win32_destdir)/$${file}.txt"; \
 	done
+if BRAND_PUBLIC
+# redesign: brand layer, Cone's own read-me (the repository's README.md describes the project)
+	cp "$(srcdir)/extras/package/win32/brand/public/README.txt" "$(win32_destdir)/README.txt"
+else
 	cp "$(srcdir)/README.md" "$(win32_destdir)/README.txt"
+endif
 
 	cp $(srcdir)/$(BRAND_ICON_SRC) $(win32_destdir)
 	for plugindir in $(pkglibdir)/plugins/*/; do \
@@ -93,6 +109,11 @@ if BUILD_LUA
 	mkdir -p $(win32_destdir)/lua/
 	cp -r $(pkglibexecdir)/lua/* $(win32_destdir)/lua/
 	cp -r $(pkgdatadir)/lua/* $(win32_destdir)/lua/
+if BRAND_PUBLIC
+# redesign: brand layer, the web interface's titles and pictures name and show the app
+	$(SHELL) "$(srcdir)/extras/package/win32/brand/public/brand-webintf.sh" "$(win32_destdir)/lua/http" \
+		"$(BRAND_PRODUCT_NAME)" "$(srcdir)/modules/gui/qt/pixmaps/brand/public" "$(srcdir)/$(BRAND_ICON_SRC)"
+endif
 endif
 
 if BUILD_SKINS
@@ -148,6 +169,12 @@ if HAVE_MAKENSIS
 	cp -r $(srcdir)/extras/package/win32/NSIS/helpers             "$(win32_destdir)/"
 	cp "$(top_srcdir)/extras/package/win32/NSIS/nsProcess.nsh" "$(win32_destdir)/NSIS/"
 	cp "$(top_srcdir)/extras/package/win32/NSIS/vlc_branding.bmp" "$(win32_destdir)/NSIS/"
+if BRAND_PUBLIC
+# redesign: brand layer, Cone's installer images and texts
+	cp "$(top_srcdir)/extras/package/win32/brand/public/nsis-welcome.bmp" "$(win32_destdir)/NSIS/"
+	cp "$(top_srcdir)/extras/package/win32/brand/public/nsis-header.bmp" "$(win32_destdir)/NSIS/"
+	$(SHELL) "$(top_srcdir)/extras/package/win32/NSIS/brand-languages.sh" "$(win32_destdir)/languages" "$(BRAND_PRODUCT_NAME)"
+endif
 endif
 
 if HAVE_MAKENSIS
@@ -162,11 +189,20 @@ endif
 
 package-win32-zip: package-win-strip
 	rm -f -- $(WINVERSION).zip
-	zip -r -9 $(WINVERSION).zip vlc-$(VERSION) --exclude \*.nsi \*NSIS\* \*languages\* \*sdk\* \*helpers\* spad\*
+if BRAND_PUBLIC
+# the zip's top folder takes the package name: a link to the package folder, which zip follows
+	rm -f -- "$(WINPACKAGE)"
+	ln -s vlc-$(VERSION) "$(WINPACKAGE)"
+endif
+	zip -r -9 $(WINVERSION).zip $(WINPACKAGE) --exclude \*.nsi \*NSIS\* \*languages\* \*sdk\* \*helpers\* spad\*
 
 package-win32-debug-zip: package-win-common
 	rm -f -- $(WINVERSION)-debug.zip
-	zip -r -9 $(WINVERSION)-debug.zip vlc-$(VERSION)
+if BRAND_PUBLIC
+	rm -f -- "$(WINPACKAGE)"
+	ln -s vlc-$(VERSION) "$(WINPACKAGE)"
+endif
+	zip -r -9 $(WINVERSION)-debug.zip $(WINPACKAGE)
 
 package-win32-7zip: package-win-strip
 	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION).7z vlc-$(VERSION)
@@ -176,6 +212,9 @@ package-win32-debug-7zip: package-win-common
 
 package-win32-cleanup:
 	rm -Rf $(win32_destdir) $(win32_debugdir)
+if BRAND_PUBLIC
+	rm -f -- "$(WINPACKAGE)"
+endif
 
 package-win32: package-win32-zip package-win32-7zip package-win32-exe
 
@@ -188,6 +227,11 @@ package-win32-release: package-win32-src $(win32_destdir)/NSIS/nsProcess.dll pac
 	cp    $(top_srcdir)/extras/package/win32/msi/extensions.wxs	  "$(win32_destdir)/msi/"
 	cp    $(top_srcdir)/extras/package/win32/msi/LICENSE.rtf	  "$(win32_destdir)/msi/"
 	cp    $(top_srcdir)/extras/package/win32/msi/product.wxs	  "$(win32_destdir)/msi/"
+if BRAND_PUBLIC
+	mkdir -p "$(win32_destdir)/brand/public/"
+	cp    $(top_srcdir)/extras/package/win32/brand/public/msi-banner.bmp  "$(win32_destdir)/brand/public/"
+	cp    $(top_srcdir)/extras/package/win32/brand/public/msi-dialog.bmp  "$(win32_destdir)/brand/public/"
+endif
 
 	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION)-release.7z $(win32_debugdir) "$(win32_destdir)/"
 
@@ -201,6 +245,14 @@ EXTRA_DIST += \
 	extras/package/win32/NSIS/vlc.win32.nsi.in \
 	extras/package/win32/NSIS/spad.nsi.in \
 	extras/package/win32/NSIS/vlc_branding.bmp \
+	extras/package/win32/NSIS/brand-languages.sh \
+	extras/package/win32/brand/public/installer-art.js \
+	extras/package/win32/brand/public/brand-webintf.sh \
+	extras/package/win32/brand/public/README.txt \
+	extras/package/win32/brand/public/nsis-welcome.bmp \
+	extras/package/win32/brand/public/nsis-header.bmp \
+	extras/package/win32/brand/public/msi-banner.bmp \
+	extras/package/win32/brand/public/msi-dialog.bmp \
 	extras/package/win32/NSIS/languages/BengaliExtra.nsh \
 	extras/package/win32/NSIS/languages/BasqueExtra.nsh \
 	extras/package/win32/NSIS/languages/PortugueseBRExtra.nsh \

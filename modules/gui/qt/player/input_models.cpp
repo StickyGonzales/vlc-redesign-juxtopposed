@@ -19,6 +19,29 @@
 
 #include "player/player_controller.hpp"
 
+#include <cstring>
+
+#include <QCryptographicHash>
+#include <QUrl>
+
+#include <vlc_input_item.h>
+
+namespace {
+
+// redesign: the tracks of the played file have string ids such as "spu/3"; those of a file added
+// next to it (VLC's "slave": an external subtitle or audio file) start with the MD5 of that
+// file's URI, "<32 hex digits>/spu/0" (src/input/es_out.c, EsOutCreateStrId)
+constexpr int kSlaveIdLength = 32;
+
+bool isExternalTrack(vlc_es_id_t* id)
+{
+    const char* strId = vlc_es_id_GetStrId(id);
+    const char* slash = strId ? std::strchr(strId, '/') : nullptr;
+    return slash && slash - strId == kSlaveIdLength;
+}
+
+} // namespace
+
 //***************************
 //  track list model
 //***************************
@@ -44,11 +67,41 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
     int row = index.row();
     if (row >= m_data.size())
         return QVariant{};
+    const Data& track = m_data[row];
     if (role == Qt::DisplayRole)
-        return m_data[row].m_title;
+    {
+        if (track.m_external)
+        {
+            if (track.m_fileName.isEmpty())
+                track.m_fileName = externalFileName(track.m_id.get());
+            if (!track.m_fileName.isEmpty())
+                return track.m_fileName;
+        }
+        return track.m_title;
+    }
     else if (role == Qt::CheckStateRole)
-        return QVariant::fromValue<bool>(m_data[row].m_selected);
+        return QVariant::fromValue<bool>(track.m_selected);
+    else if (role == ExternalRole)
+        return track.m_external;
     return QVariant{};
+}
+
+QString TrackListModel::externalFileName(vlc_es_id_t* id) const
+{
+    const QByteArray slaveId = QByteArray(vlc_es_id_GetStrId(id), kSlaveIdLength);
+
+    vlc_player_locker lock{ m_player };
+    input_item_t* item = vlc_player_GetCurrentMedia(m_player);
+    if (!item)
+        return {};
+    vlc_mutex_locker itemLock{ &item->lock };
+    for (int i = 0; i < item->i_slaves; ++i)
+    {
+        const QByteArray uri(item->pp_slaves[i]->psz_uri);
+        if (QCryptographicHash::hash(uri, QCryptographicHash::Md5).toHex() == slaveId)
+            return QUrl(QString::fromUtf8(uri)).fileName();
+    }
+    return {};
 }
 
 bool TrackListModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -153,6 +206,7 @@ QHash<int, QByteArray> TrackListModel::roleNames() const
 {
     QHash<int, QByteArray> roleNames = this->QAbstractListModel::roleNames();
     roleNames[Qt::CheckStateRole] = QByteArrayLiteral("checked");
+    roleNames[ExternalRole] = QByteArrayLiteral("external");
     return roleNames;
 }
 
@@ -186,6 +240,7 @@ TrackListModel::Data::Data(const vlc_player_track *track_info)
     : m_title( qfu(track_info->name) )
     , m_id( track_info->es_id, true )
     , m_selected( track_info->selected )
+    , m_external( isExternalTrack(track_info->es_id) )
 {
 }
 
@@ -194,6 +249,7 @@ void TrackListModel::Data::update(const vlc_player_track *track_info)
     m_id.reset(track_info->es_id, true);
     m_title = qfu(track_info->name);
     m_selected = track_info->selected;
+    m_external = isExternalTrack(track_info->es_id);
 }
 
 
@@ -326,7 +382,9 @@ QVariant ChapterListModel::data(const QModelIndex &index, int role) const
     else if (role == Qt::CheckStateRole)
         return QVariant::fromValue<bool>(row == m_current);
     else if (role == ChapterListRoles::TimeRole )
-        return QVariant::fromValue<VLCTime>(chapter.time);
+        // redesign: the chapter's offset from the start of the title (the first one is 0, which
+        // a VLCTime built from the raw tick would read as invalid: "--:--")
+        return QVariant::fromValue<VLCTime>(VLCTime(VLCDuration(chapter.time)));
     else if (role == ChapterListRoles::StartPositionRole && (m_title->length != 0))
         return QVariant::fromValue<float>(chapter.time / (float) m_title->length);
     else if (role == ChapterListRoles::EndPositionRole && (m_title->length != 0))

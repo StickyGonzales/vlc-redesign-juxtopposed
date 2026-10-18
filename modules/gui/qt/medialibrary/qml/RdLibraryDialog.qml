@@ -89,6 +89,14 @@ T.Popup {
 
     parent: T.Overlay.overlay
     anchors.centerIn: parent
+    // a Templates popup has no implicit size of its own: without these the dialog was 0 high,
+    // its top sat at the window's centre, the body had no background and the footer ran out
+    // of the window under the control bar (P6-16, IB-30)
+    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                            implicitContentWidth + leftPadding + rightPadding)
+    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                             implicitContentHeight + topPadding + bottomPadding)
+    // inside the window with 20 around it, over the bars (the body scrolls when it is too low)
     width: Math.min(preferredWidth, parent ? parent.width - VLCStyle.dp(40) : preferredWidth)
     height: Math.min(implicitHeight, parent ? parent.height - VLCStyle.dp(40) : implicitHeight)
 

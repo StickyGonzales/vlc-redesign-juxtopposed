@@ -19,6 +19,7 @@
 #include "ui_notifier.hpp"
 
 #include "maininterface/mainctx.hpp"
+#include "medialibrary/medialib.hpp"
 
 UINotifier::UINotifier(MainCtx *ctx, QObject *parent)
     : QObject {parent}
@@ -42,4 +43,16 @@ void UINotifier::setupNotifications()
             emit showNotification(MinimalView
                                   , qtr("Minimal View"));
     });
+
+    // redesign: a bookmark made without a dialog is confirmed here, in the interface, above
+    // the control bar. VLC's own on-screen message (vlc_player_osd_Message) is drawn in the
+    // top right corner of the video window, which the opaque top bar and the open sidebar
+    // cover (BUILD_NOTES 2026-10-16).
+    if (MediaLib* medialib = m_ctx->getMediaLibrary())
+    {
+        connect(medialib, &MediaLib::bookmarkAdded, this, [this](const QString& name)
+        {
+            emit showNotification(Bookmark, qtr("Bookmark added: %1").arg(name));
+        });
+    }
 }

@@ -19,6 +19,11 @@
 // redesign: single 40 px top bar (video 3:35-5:14, 11:24-11:40; Figma "topbar"):
 // [cone] [...] [sidebar toggle] | [folder chip]      title      [minimize maximize fullscreen close]
 // Background BG/A3. Title Inter 400 14 FG/A2, centered on the window.
+// In the player (showLibraryButtons) everything but the cone and the window buttons is the
+// profile's top bar layout (W8.1b, RdProfiles.topBarModel, edited in Customize Player): its
+// left zone after the cone, its center zone centered on the window, its right zone between
+// maximize and close (where Figma has the fullscreen button), or at the right end without the
+// window buttons. The library's top bar keeps the fixed [...] title [fullscreen].
 import QtQuick
 import QtQuick.Templates as T
 import QtQuick.Layouts
@@ -58,12 +63,11 @@ FocusScope{
 
     property bool playlistVisible: false
 
-    // the compact library is open (sidebar toggle shown active)
-    property bool libraryOpen: false
-    // the sidebar toggle and the folder chip belong to the player; the full library's top bar
+    // the player's top bar: the editable layout (W8.1b); the full library's top bar
     // (MainDisplay.qml, Figma Player-3.png) has only the cone, "...", the title and the window
     // buttons
     property bool showLibraryButtons: true
+    readonly property bool _editable: showLibraryButtons && !!RdProfiles.topBarModel
     property string accessibleName: qsTr("Player topbar")
 
     readonly property ColorContext colorContext: ColorContext {
@@ -71,23 +75,11 @@ FocusScope{
         colorSet: ColorContext.Window
     }
 
-    // Parent folder of the playing file, shown in the folder chip (video 11:24-11:31)
-    readonly property string folderName: {
-        const url = Player.url ? Player.url.toString() : ""
-        if (url === "")
-            return ""
-        const parts = decodeURIComponent(url).replace(/\\/g, "/").split("/").filter((p) => p !== "")
-        return parts.length >= 2 ? parts[parts.length - 2] : ""
-    }
-
     // Signals
 
     signal togglePlaylistVisibility()
     signal requestLockUnlockAutoHide(bool lock)
     signal backRequested()
-    // sidebar toggle and folder chip: open or close the compact library (Player.qml)
-    signal libraryToggleRequested()
-    signal folderRequested()
 
     ///incomming signal to request all menu and popup to close
     signal forceUnlock()
@@ -106,6 +98,12 @@ FocusScope{
     Rectangle {
         anchors.fill: parent
         color: VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3 : VLCStyle.palette.rdBgA3Transparent
+    }
+
+    // the wheel over the top bar, its empty parts included, never reaches the video (volume /
+    // seek, Decision 54); under the controls, so a volume control in a zone still gets it first
+    Widgets.RdWheelSink {
+        anchors.fill: parent
     }
 
     //drag and dbl click the titlebar in CSD mode
@@ -176,11 +174,12 @@ FocusScope{
 
                 AccessibleCompat.id: "topBarMenuButton"
 
-                focus: true
+                focus: !root._editable
                 checked: contextMenu.visible
 
+                visible: !root._editable
+
                 Navigation.parentItem: root
-                Navigation.rightItem: root.showLibraryButtons ? sidebarButton : null
 
                 onClicked: contextMenu.popupBelow(menuSelector, visualFocus)
 
@@ -202,109 +201,54 @@ FocusScope{
                     }
                 }
             }
+        }
 
-            // sidebar toggle (video 11:37): opens and closes the compact library
-            Item {
-                visible: root.showLibraryButtons
-                width: VLCStyle.dp(10, VLCStyle.scale)
-                height: 1
-            }
+        // the player's editable zones (W8.1b)
+        RdTopBarZone {
+            id: leftZone
 
-            Widgets.IconToolButton {
-                id: sidebarButton
+            // the keyboard enters the top bar here when "..." is a control of the layout
+            focus: root._editable
+            visible: root._editable
+            anchors.left: leftGroup.right
+            anchors.verticalCenter: parent.verticalCenter
+            // shrinks (the folder chip and names elide) before it reaches the window buttons
+            width: Math.min(implicitWidth, Math.max(0, Math.min(centerZone.x, rightGroup.x)
+                                                       - VLCStyle.dp(10, VLCStyle.scale) - x))
+            height: parent.height
 
-                visible: root.showLibraryButtons
-                anchors.verticalCenter: parent.verticalCenter
-                width: VLCStyle.dp(28, VLCStyle.scale)
-                height: VLCStyle.rd_iconButtonHeight
-                font.pixelSize: VLCStyle.rd_iconSize
+            model: root._editable ? RdProfiles.topBarModel.left : null
 
-                text: VLCIcons.panel_left
-                rdIcon: "sidebar_direction-left"
-                // Figma "sidebar" icon state=active: the filled panel, in the icon's own color
-                rdIconChecked: "sidebar_state-active"
-                checked: root.libraryOpen
-                color: colorContext.fg.primary
-                description: qsTr("Library")
+            Navigation.parentItem: root
+            // an empty zone is passed over
+            Navigation.rightItem: (centerZone.count > 0 && centerZone.width > 0) ? centerZone : rightZone
 
-                AccessibleCompat.id: "topBarBackButton"
+            onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
+            Component.onCompleted: root.forceUnlock.connect(leftZone.forceUnlock)
+        }
 
-                Navigation.parentItem: root
-                Navigation.leftItem: menuSelector
-                Navigation.rightItem: folderChip
+        RdTopBarZone {
+            id: centerZone
 
-                onClicked: root.libraryToggleRequested()
-                onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-            }
+            // centered on the window, kept between the other zones
+            readonly property real _min: leftZone.x + leftZone.implicitWidth + VLCStyle.dp(10, VLCStyle.scale)
+            readonly property real _max: rightGroup.x - VLCStyle.dp(10, VLCStyle.scale)
 
-            Item {
-                visible: folderChip.visible
-                anchors.verticalCenter: parent.verticalCenter
-                width: VLCStyle.dp(24, VLCStyle.scale)
-                height: VLCStyle.dp(28, VLCStyle.scale)
+            visible: root._editable
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(0, Math.min(implicitWidth, _max - _min))
+            height: parent.height
+            x: Math.max(_min, Math.min(Math.round((parent.width - width) / 2), _max - width))
 
-                // Figma "Vector 26": an 18 px line, 1.5 px stroke with round caps (19.5 x 1.5 drawn,
-                // 3 px wide in the 2x export). Not rounded through dp(): 1.5 would become 2.
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: 1.5 * VLCStyle.scale
-                    height: 19.5 * VLCStyle.scale
-                    radius: width / 2
-                    color: VLCStyle.palette.rdDividerBright
-                }
-            }
+            alignment: Qt.AlignHCenter
+            model: root._editable ? RdProfiles.topBarModel.center : null
 
-            // folder chip (Figma "Frame 12": 82x28 min, radius 6, gap 4): folder icon + folder name
-            T.AbstractButton {
-                id: folderChip
+            Navigation.parentItem: root
+            Navigation.leftItem: leftZone.count > 0 ? leftZone : null
+            Navigation.rightItem: rightZone.count > 0 ? rightZone : null
 
-                // the pointing hand over the clickable controls
-                HoverHandler {
-                    cursorShape: Qt.PointingHandCursor
-                }
-
-                visible: root.showLibraryButtons && root.folderName !== ""
-                anchors.verticalCenter: parent.verticalCenter
-
-                implicitHeight: VLCStyle.dp(28, VLCStyle.scale)
-                implicitWidth: Math.max(VLCStyle.dp(82, VLCStyle.scale), chipRow.implicitWidth + VLCStyle.dp(8, VLCStyle.scale))
-
-                Accessible.name: qsTr("Open folder %1 in the library").arg(root.folderName)
-
-                Navigation.parentItem: root
-                Navigation.leftItem: sidebarButton
-
-                onClicked: root.folderRequested()
-                onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-
-                background: Rectangle {
-                    radius: VLCStyle.rd_radius_normal
-                    color: folderChip.hovered ? VLCStyle.palette.rdHoverOverlay : "transparent"
-                }
-
-                contentItem: Row {
-                    id: chipRow
-
-                    spacing: VLCStyle.dp(4, VLCStyle.scale)
-                    leftPadding: VLCStyle.dp(4, VLCStyle.scale)
-
-                    Widgets.RdIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: "folder"
-                        color: VLCStyle.palette.rdFgA2
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.folderName
-                        elide: Text.ElideRight
-                        width: Math.min(implicitWidth, VLCStyle.dp(220, VLCStyle.scale))
-                        font.family: VLCStyle.rd_fontFamily
-                        font.pixelSize: VLCStyle.rd_fontSize_label
-                        color: VLCStyle.palette.rdFgA2
-                    }
-                }
-            }
+            onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
+            Component.onCompleted: root.forceUnlock.connect(centerZone.forceUnlock)
         }
 
         T.Label {
@@ -317,7 +261,7 @@ FocusScope{
             anchors.centerIn: parent
             width: Math.min(implicitWidth, _maxWidth)
 
-            visible: width > 0
+            visible: !root._editable && width > 0
 
             text: root.title
             color: VLCStyle.palette.rdFgA2
@@ -336,7 +280,9 @@ FocusScope{
             anchors.top: parent.top
             anchors.bottom: parent.bottom
 
-            width: root.showCSD ? csdDecorations.width : fullscreenButton.width + VLCStyle.dp(6, VLCStyle.scale)
+            // (a themed window button set has no middle slot: the right zone sits before it)
+            width: root.showCSD ? csdDecorations.width + ((root._editable && !rightZone._slot) ? rightZone.width : 0)
+                                : (root._editable ? rightZone.width : fullscreenButton.width) + VLCStyle.dp(6, VLCStyle.scale)
 
             Loader {
                 id: csdDecorations
@@ -353,9 +299,13 @@ FocusScope{
                     ? "qrc:///qt/qml/VLC/Widgets/CSDThemeButtonSet.qml"
                     : "qrc:///qt/qml/VLC/Widgets/CSDWindowButtonSet.qml"
 
+                // the player's right zone takes the place of the fullscreen button (between
+                // maximize and close); a themed button set has no room inside: before it
                 onLoaded: {
                     if (item.showFullscreenButton !== undefined)
-                        item.showFullscreenButton = true
+                        item.showFullscreenButton = Qt.binding(() => !root._editable)
+                    if (item.middleItem !== undefined)
+                        item.middleItem = Qt.binding(() => root._editable ? rightZone : null)
                 }
 
                 Connections {
@@ -365,11 +315,45 @@ FocusScope{
                 }
             }
 
-            // fullscreen when the window has native decorations (or a themed CSD set)
+            // the player's right zone: in the window buttons, else at the right end
+            RdTopBarZone {
+                id: rightZone
+
+                // the window buttons' middle slot (CSDWindowButtonSet makes it as wide as this
+                // zone while it is its middleItem). The zone stays a child of the group, drawn
+                // over the slot: no reparenting, so focus, hover and the zone's place survive the
+                // set being unloaded (fullscreen, native decorations)
+                readonly property Item _slot: (root.showCSD && !!csdDecorations.item
+                                               && !!csdDecorations.item.middleSlotItem)
+                                              ? csdDecorations.item.middleSlotItem : null
+
+                visible: root._editable
+                width: implicitWidth
+                height: rightGroup.height
+                x: _slot ? csdDecorations.x + _slot.x
+                         : (root.showCSD ? csdDecorations.x - width
+                                         : rightGroup.width - VLCStyle.dp(6, VLCStyle.scale) - width)
+
+                // Figma: 36 wide cells as the window buttons, no gap
+                iconWidth: VLCStyle.dp(36, VLCStyle.scale)
+                spacing: 0
+                alignment: Qt.AlignRight
+                model: root._editable ? RdProfiles.topBarModel.right : null
+
+                Navigation.parentItem: root
+                Navigation.leftItem: (centerZone.count > 0 && centerZone.width > 0) ? centerZone : leftZone
+
+                onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
+                Component.onCompleted: root.forceUnlock.connect(rightZone.forceUnlock)
+            }
+
+            // fullscreen in the library's top bar when the window has native decorations (or a
+            // themed CSD set)
             Widgets.IconToolButton {
                 id: fullscreenButton
 
-                visible: !root.showCSD || !(csdDecorations.item && csdDecorations.item.showFullscreenButton !== undefined)
+                visible: !root._editable
+                         && (!root.showCSD || !(csdDecorations.item && csdDecorations.item.showFullscreenButton !== undefined))
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: root.showCSD ? csdDecorations.left : parent.right
                 anchors.rightMargin: root.showCSD ? 0 : VLCStyle.dp(6, VLCStyle.scale)

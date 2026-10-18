@@ -59,9 +59,11 @@ SettingsPage {
     readonly property bool _installPending: !!_selected && !!_installRequested[_selectedKey]
     // VLC's installer has no installer for these kinds (addons_manager: EINVAL): Add would do
     // nothing and stay usable
+    // Cone has no skins interface (Decision 63): a skin add-on would install for nothing
     readonly property bool _unsupportedType: !!_selected
-                                             && [ServicesDiscoveryModel.TYPE_UNKNOWN, ServicesDiscoveryModel.TYPE_PLUGIN,
-                                                 ServicesDiscoveryModel.TYPE_OTHER].map(Number).indexOf(Number(_selected.type)) >= 0
+                                             && ([ServicesDiscoveryModel.TYPE_UNKNOWN, ServicesDiscoveryModel.TYPE_PLUGIN,
+                                                  ServicesDiscoveryModel.TYPE_OTHER].map(Number).indexOf(Number(_selected.type)) >= 0
+                                                 || (Brand.isPublic && Number(_selected.type) === Number(ServicesDiscoveryModel.TYPE_SKIN2)))
     readonly property bool _canInstall: !!_selected && _selected.state === ServicesDiscoveryModel.STATE_NOTINSTALLED
                                         && !_installPending && !_unsupportedType
     readonly property bool _canRemove: !!_selected && _selected.state === ServicesDiscoveryModel.STATE_INSTALLED
@@ -76,9 +78,12 @@ SettingsPage {
             return ""
         if (searchField.text !== "")
             return qsTr("No add-on matches \"%1\"").arg(searchField.text)
+        // public profile (brand layer): the catalog is VideoLAN's, named without VLC's name
         if (_catalog)
-            return qsTr("No add-ons found. VLC's add-on catalog needs an internet connection.")
-        return qsTr("No add-ons installed. Find more extensions to browse VLC's add-on catalog.")
+            return Brand.isPublic ? qsTr("No add-ons found. The online add-on catalog needs an internet connection.")
+                                  : qsTr("No add-ons found. VLC's add-on catalog needs an internet connection.")
+        return Brand.isPublic ? qsTr("No add-ons installed. Find more extensions to browse the online add-on catalog.")
+                              : qsTr("No add-ons installed. Find more extensions to browse VLC's add-on catalog.")
     }
 
     function _keyOf(data) {
@@ -171,7 +176,8 @@ SettingsPage {
     function _addPackage() {
         _notice = ""
         const path = SettingsCatalog.pickFile(qsTr("Add an add-on package (.vlp)"), "", false,
-                                              qsTr("VLC add-on packages (*.vlp)"))
+                                              Brand.isPublic ? qsTr("Add-on packages (*.vlp)")
+                                                             : qsTr("VLC add-on packages (*.vlp)"))
         if (path === "")
             return
         if (!_isPackageName(path))
@@ -185,7 +191,8 @@ SettingsPage {
             return true
         _notice = /\.vlp$/i.test(path)
                 ? qsTr("%1 reads add-on packages whose name ends in \".vlp\" in lower case: rename \"%2\".").arg(Brand.shortName).arg(path)
-                : qsTr("\"%1\" is not a VLC add-on package (.vlp).").arg(path)
+                : (Brand.isPublic ? qsTr("\"%1\" is not an add-on package (.vlp).")
+                                  : qsTr("\"%1\" is not a VLC add-on package (.vlp).")).arg(path)
         return false
     }
 
@@ -441,7 +448,8 @@ SettingsPage {
                 text: root._catalog ? qsTr("Show installed") : qsTr("Find more extensions")
                 enabled: root._catalog || !root._gathering
                 Accessible.description: root._catalog ? qsTr("List the installed add-ons only")
-                                                      : qsTr("Browse VLC's online add-on catalog")
+                                                      : Brand.isPublic ? qsTr("Browse the online add-on catalog")
+                                                                       : qsTr("Browse VLC's online add-on catalog")
                 onClicked: root._showCatalog(!root._catalog)
             }
 

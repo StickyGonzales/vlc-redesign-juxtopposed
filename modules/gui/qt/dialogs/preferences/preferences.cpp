@@ -381,7 +381,11 @@ void PrefsDialog::save()
         int restart = QMessageBox::question(
                           this,
                           qtr( "Restart Required" ),
+#ifdef VLC_BRAND_PUBLIC
+                          qtr( "Cone needs to be restarted for the reset to take full effect.\n\nRestart now?" ),
+#else
                           qtr( "VLC needs to be restarted for the reset to take full effect.\n\nRestart now?" ),
+#endif
                           QMessageBox::Yes | QMessageBox::No,
                           QMessageBox::Yes);
         
@@ -418,7 +422,11 @@ void PrefsDialog::reset()
     int ret = QMessageBox::question(
                  this,
                  qtr( "Reset Preferences" ),
+#ifdef VLC_BRAND_PUBLIC
+                 qtr( "Are you sure you want to reset your Cone preferences?" ),
+#else
                  qtr( "Are you sure you want to reset your VLC media player preferences?" ),
+#endif
                  QMessageBox::Ok | QMessageBox::Cancel,
                  QMessageBox::Ok);
 

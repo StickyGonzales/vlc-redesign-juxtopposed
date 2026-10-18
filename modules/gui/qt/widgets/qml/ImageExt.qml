@@ -155,13 +155,19 @@ Item {
         anchors.alignWhenCentered: true
         anchors.centerIn: parent
 
-        implicitWidth: (source.status === Image.Ready) ? source.implicitWidth : 64
-        implicitHeight: (source.status === Image.Ready) ? source.implicitHeight : 64
+        // redesign: an Image with `retainWhileLoading` keeps painting (and providing the texture
+        // of) its previous picture while the next one loads; it stays rounded meanwhile instead
+        // of flashing square corners (music player cover between two songs)
+        readonly property bool sourceReady: (source.status === Image.Ready)
+                                            || ((source.status === Image.Loading) && ((source.paintedWidth ?? 0) > 0))
+
+        implicitWidth: sourceReady ? source.implicitWidth : 64
+        implicitHeight: sourceReady ? source.implicitHeight : 64
 
         width: paintedSize.width
         height: paintedSize.height
 
-        visible: (source.status === Image.Ready) &&
+        visible: sourceReady &&
                  (GraphicsInfo.shaderType === GraphicsInfo.RhiShader) &&
                  (root.radius > 0.0 ||
                   root.borderWidth > 0 ||
@@ -207,7 +213,7 @@ Item {
             let ret = Qt.size(0.0, 0.0)
 
             // No need to calculate if the texture is not ready:
-            if (source.status !== Image.Ready)
+            if (!sourceReady)
                 return ret
 
             // NOTE: Calculations are based on `QQuickImage`,
@@ -240,7 +246,7 @@ Item {
         }
 
         // (2 / width) seems to be a good coefficient to make it similar to `Rectangle.border`:
-        readonly property double borderRange: (source.status === Image.Ready) ? (root.borderWidth / width * 2.) : 0.0 // no need for outlining if there is no image (nothing to outline)
+        readonly property double borderRange: sourceReady ? (root.borderWidth / width * 2.) : 0.0 // no need for outlining if there is no image (nothing to outline)
         readonly property color borderColor: root.borderColor
 
         // QQuickImage as texture provider, no need for ShaderEffectSource.

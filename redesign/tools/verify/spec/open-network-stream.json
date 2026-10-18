@@ -1,0 +1,465 @@
+{
+ "format": 1,
+ "node": "6216:13614",
+ "name": "Open network stream",
+ "png": "Open network stream.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1048,
+  631
+ ],
+ "theme": "dark",
+ "rows": [
+  222,
+  224,
+  225
+ ],
+ "background": [
+  {
+   "token": "BG/A3 Transparent",
+   "dark": "#191919",
+   "light": "#D5D5D5",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "6216:13615",
+   "name": "Frame 120",
+   "type": "frame",
+   "path": "Frame 120",
+   "bounds": [
+    0,
+    0,
+    1048,
+    50
+   ],
+   "radius": [
+    14,
+    14,
+    0,
+    0
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "6216:13617",
+   "name": "Open Network Stream",
+   "type": "text",
+   "path": "Open Network Stream",
+   "bounds": [
+    19,
+    16.5,
+    147,
+    17
+   ],
+   "text": {
+    "content": "Open Network Stream",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    224,
+    225
+   ]
+  },
+  {
+   "id": "6216:13618",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Icon Wrapper",
+   "bounds": [
+    1007,
+    9,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I6216:13618;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon Wrapper / Icon:close",
+   "bounds": [
+    1011,
+    13,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close"
+  },
+  {
+   "id": "6216:13624",
+   "name": "Network URL",
+   "type": "text",
+   "path": "Network URL",
+   "bounds": [
+    20,
+    72,
+    1008,
+    28
+   ],
+   "text": {
+    "content": "Network URL ",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 28,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   },
+   "rows": [
+    224,
+    225
+   ]
+  },
+  {
+   "id": "6251:13833",
+   "name": "You can enter multiple links to load.",
+   "type": "text",
+   "path": "You can enter multiple links to load.",
+   "bounds": [
+    20,
+    105,
+    1008,
+    25
+   ],
+   "text": {
+    "content": "You can enter multiple links to load.",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 24.5,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   }
+  },
+  {
+   "id": "6251:13829",
+   "name": "Frame 86",
+   "type": "frame",
+   "path": "Frame 86",
+   "bounds": [
+    20,
+    150,
+    1008,
+    194
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6251:13831",
+   "name": "e.g., https://www.example.com/stream.avi",
+   "type": "text",
+   "path": "e.g., https://www.example.com/stream.avi",
+   "bounds": [
+    34,
+    160,
+    279,
+    17
+   ],
+   "text": {
+    "content": "e.g., https://www.example.com/stream.avi",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    224,
+    225
+   ]
+  },
+  {
+   "id": "6251:13898",
+   "name": "Vector",
+   "type": "vector",
+   "path": "Vector",
+   "bounds": [
+    20,
+    364,
+    1008,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Dim",
+     "dark": "#222222",
+     "light": "#ACACAC"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "6251:13901",
+   "name": "Playlist Name (optional)",
+   "type": "text",
+   "path": "Playlist Name (optional)",
+   "bounds": [
+    20,
+    384,
+    1008,
+    28
+   ],
+   "text": {
+    "content": "Playlist Name (optional)",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 28,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   },
+   "rows": [
+    225
+   ]
+  },
+  {
+   "id": "6251:13902",
+   "name": "The playlist will be saved and displayed with this title.",
+   "type": "text",
+   "path": "The playlist will be saved and displayed with this title.",
+   "bounds": [
+    20,
+    417,
+    1008,
+    25
+   ],
+   "text": {
+    "content": "The playlist will be saved and displayed with this title.",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 24.5,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    225
+   ]
+  },
+  {
+   "id": "6251:13904",
+   "name": "Frame 86",
+   "type": "frame",
+   "path": "Frame 86",
+   "bounds": [
+    20,
+    464,
+    1008,
+    37
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6251:13905",
+   "name": "e.g., Favorite TV Channels",
+   "type": "text",
+   "path": "e.g., Favorite TV Channels",
+   "bounds": [
+    34,
+    474,
+    174,
+    17
+   ],
+   "text": {
+    "content": "e.g., Favorite TV Channels",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "6216:13750",
+   "name": "Frame 140",
+   "type": "frame",
+   "path": "Frame 140",
+   "bounds": [
+    20,
+    579,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ]
+  },
+  {
+   "id": "6216:13751",
+   "name": "Cancel",
+   "type": "text",
+   "path": "Cancel",
+   "bounds": [
+    46,
+    586.5,
+    48,
+    17
+   ],
+   "text": {
+    "content": "Cancel",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6216:13752",
+   "name": "Frame 141",
+   "type": "frame",
+   "path": "Frame 141",
+   "bounds": [
+    928,
+    579,
+    100,
+    32
+   ],
+   "radius": 6,
+   "opacity": 0.5,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "6216:13753",
+   "name": "Save",
+   "type": "text",
+   "path": "Save",
+   "bounds": [
+    961.5,
+    586.5,
+    33,
+    17
+   ],
+   "text": {
+    "content": "Save",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   }
+  }
+ ]
+}

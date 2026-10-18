@@ -44,6 +44,22 @@
 #include <fluidlite.h>
 #endif
 
+/* redesign (brand layer, public profile): the sound font error names Cone, not VLC; the vlc
+ * profile compiles VLC's text as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_NO_SOUNDFONT \
+    _("A sound font file (.SF2) is required for MIDI synthesis.\n" \
+    "Please install a sound font and configure it " \
+    "from the Cone preferences " \
+    "(Input / Codecs > Audio codecs > FluidSynth).\n")
+#else
+# define BRAND_TEXT_NO_SOUNDFONT \
+    _("A sound font file (.SF2) is required for MIDI synthesis.\n" \
+    "Please install a sound font and configure it " \
+    "from the VLC preferences " \
+    "(Input / Codecs > Audio codecs > FluidSynth).\n")
+#endif
+
 #define SOUNDFONT_TEXT N_("SoundFont file")
 #define SOUNDFONT_LONGTEXT N_( \
     "SoundFont file to use for software synthesis." )
@@ -178,10 +194,7 @@ static int Open (vlc_object_t *p_this)
     {
         msg_Err (p_this, "sound font file required for synthesis");
         vlc_dialog_display_error (p_this, _("MIDI synthesis not set up"),
-            _("A sound font file (.SF2) is required for MIDI synthesis.\n"
-              "Please install a sound font and configure it "
-              "from the VLC preferences "
-              "(Input / Codecs > Audio codecs > FluidSynth).\n"));
+            BRAND_TEXT_NO_SOUNDFONT);
         delete_fluid_synth (p_sys->synth);
         delete_fluid_settings (p_sys->settings);
         free (p_sys);

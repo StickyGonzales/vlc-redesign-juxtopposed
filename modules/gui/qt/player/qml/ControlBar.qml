@@ -70,6 +70,11 @@ T.Pane {
 
     enabled: visible
 
+    // the bar takes the wheel its controls leave, its empty parts included, so it never reaches
+    // the video or the music view behind it (volume / seek, Decision 54); only the volume control
+    // in the bar uses the wheel
+    wheelEnabled: true
+
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => root.Navigation.defaultKeyAction(event)
     Navigation.cancelAction: function() { History.previous(Qt.BacktabFocusReason) }
@@ -126,14 +131,31 @@ T.Pane {
     // PlayerControlLayout moves it into its middle slot
     readonly property Item inlineSeekRow: inlineSeekRowItem
 
+    // redesign: a layout with center controls has no middle slot between the left and right
+    // controls, so the seek row gets its own full-width row above them (Figma "Player -
+    // customize-1" / "-6" / "-7", the alternate layout of video 19:24-19:28: two 54 px rows).
+    // A layout with no control at all has no middle slot either: the seek row is then the only
+    // row.
+    readonly property bool _seekRowOnOwnRow: {
+        if (textPosition !== ControlBar.TimeTextPosition.Inline)
+            return false
+        const model = playerControlLayout.model
+        if (!model)
+            return false
+        return model.center.count > 0 || (model.left.count === 0 && model.right.count === 0)
+    }
+
     // redesign: narrow window. The right controls are hidden first (from the queue button
     // inwards, VLC's ControlRepeater rule) while the seek row keeps both times; when even the
     // room left with no right control is too small, the duration goes, then the current time.
-    // The seek bar itself never gets narrower than rd_seekBarMinimumWidth.
+    // The seek bar itself never gets narrower than rd_seekBarMinimumWidth. On its own row the seek
+    // row has the bar's whole width and keeps both times.
     readonly property real _inlineSpacing: VLCStyle.dp(8, VLCStyle.scale)
     readonly property real _inlineTimeSlot: VLCStyle.rd_timeLabelWidth + _inlineSpacing
-    readonly property bool _inlineShowsTime: playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + _inlineTimeSlot
-    readonly property bool _inlineShowsLength: playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + 2 * _inlineTimeSlot
+    readonly property bool _inlineShowsTime: _seekRowOnOwnRow
+                                             || playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + _inlineTimeSlot
+    readonly property bool _inlineShowsLength: _seekRowOnOwnRow
+                                               || playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + 2 * _inlineTimeSlot
 
     // redesign: Figma "Controls": BG/A3, no stroke (the 1 px top line was not in the design)
     background: Rectangle {
@@ -155,7 +177,8 @@ T.Pane {
             width: parent ? parent.width : 0
             height: VLCStyle.rd_seekBarHeight
 
-            children: (root.textPosition === ControlBar.TimeTextPosition.Inline) ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
+            children: (root.textPosition === ControlBar.TimeTextPosition.Inline && !root._seekRowOnOwnRow)
+                      ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
         }
     }
 
@@ -466,6 +489,9 @@ T.Pane {
                 case ControlBar.TimeTextPosition.LeftRightSlider:
                     return [mediaTime, trackPositionSlider, mediaRemainingTime]
                 case ControlBar.TimeTextPosition.Inline:
+                    // redesign: the seek row on its own row (Figma "seekbar": 20 from the sides,
+                    // centered in the first 54 px row, 8 between its parts)
+                    return root._seekRowOnOwnRow ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
                 default:
                     return []
                 }
@@ -473,14 +499,21 @@ T.Pane {
 
             visible: children.length > 0
 
-            spacing: VLCStyle.margin_xsmall
+            spacing: (textPosition === ControlBar.TimeTextPosition.Inline) ? root._inlineSpacing : VLCStyle.margin_xsmall
 
             Layout.fillWidth: true
             Layout.fillHeight: false
+            Layout.preferredHeight: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_controlBarHeight - 2 * VLCStyle.rd_controlBarPaddingV
+                                                                                          : -1
             Layout.leftMargin: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.margin_xsmall
-                                                                                              : 0
+                             : (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_controlBarSpacing
+                                                                                     : 0
 
             Layout.rightMargin: Layout.leftMargin
+            // the rows' padding between the seek row and the controls (Figma: two 54 px rows);
+            // from the model, not the controls' visibility, which a faded out bar also clears
+            Layout.bottomMargin: (root._seekRowOnOwnRow && !(playerControlLayout.model?.empty ?? true))
+                                 ? 2 * VLCStyle.rd_controlBarPaddingV - parent.spacing : 0
         }
 
         PlayerControlLayout {

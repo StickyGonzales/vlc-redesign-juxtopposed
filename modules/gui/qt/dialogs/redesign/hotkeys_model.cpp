@@ -36,6 +36,7 @@
 
 #include "qt.hpp"
 #include "dialogs/dialogs/dialogmodel.hpp"
+#include "util/brand.hpp"
 #include "util/vlchotkeyconverter.hpp"
 
 namespace {
@@ -400,11 +401,11 @@ void HotkeysModel::reload()
         if (info >= 0 && actionTable[info].label)
             entry.action = qfut(actionTable[info].label);
         else if (item->psz_text && *item->psz_text)
-            entry.action = qfut(item->psz_text);
+            entry.action = brand::engineText(qfut(item->psz_text));
         else
             entry.action = entry.configName;
         if (item->psz_longtext && *item->psz_longtext)
-            entry.description = qfut(item->psz_longtext);
+            entry.description = brand::engineText(qfut(item->psz_longtext));
 
         entry.defaultKeys = qfu(item->orig.psz);
         entry.keys = entry.savedKeys = configKeys(item->psz_name);

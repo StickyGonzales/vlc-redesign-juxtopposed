@@ -26,7 +26,7 @@
  * extras/package/win32/build.sh -B, the build-windows workflow's "brand" input). The "public"
  * profile defines VLC_BRAND_PUBLIC in config.h.
  * - vlc (default): VLC's name and cone, exactly what the interface showed before this layer.
- * - public: "Cone" with Sticky's logo (pixmaps/brand/public). Layout, colors, fonts, the accent
+ * - public: "Cone" with StickyGonzales' logo (pixmaps/brand/public). Layout, colors, fonts, the accent
  *   and the cone-shaped volume slider are the same in both profiles.
  *
  * The texts are macros so qtr() keeps looking up VLC's exact source strings, and so their VLC
@@ -58,11 +58,13 @@
 # define BRAND_ABOUT_TEXT       "<p>Cone, based on <a href=\"https://www.videolan.org/vlc/\"><span style=\" text-decoration: underline; color:#0057ae;\">VLC media player</span></a> by VideoLAN. " \
                                 "Design by <a href=\"https://www.figma.com/community/file/1691465999134370980/vlc-redesign\"><span style=\" text-decoration: underline; color:#0057ae;\">Juxtopposed</span></a> " \
                                 "(<a href=\"https://creativecommons.org/licenses/by/4.0/\"><span style=\" text-decoration: underline; color:#0057ae;\">CC BY 4.0</span></a>). " \
-                                "Built by Sticky.</p><p>Cone is not affiliated with VideoLAN or Juxtopposed."
+                                "Built by StickyGonzales.</p><p>Cone is not affiliated with VideoLAN or Juxtopposed."
 /* VLC's seasonal cones (Christmas, April fools) are VLC logos: none in Cone */
 # define BRAND_SEASONAL_LOGOS   0
-/* About dialog version line: the version only, without VLC's release codename */
-# define BRAND_VERSION_TEXT     VERSION
+/* About dialog: "Cone 0.1.0" as the title, "based on VLC <version>" under it (Decision 58;
+ * BRAND_VERSION comes from configure --with-brand-version / meson -Dbrand-version) */
+# define BRAND_ABOUT_TITLE      "Cone " BRAND_VERSION
+# define BRAND_VERSION_TEXT     "based on VLC " VERSION
 
 /* logo for the redesign's icon path (widgets/qml/RdIcon.qml loads qrc:///rd/<name>.svg): one
  * path filled with #FF8800, the colorizer's accent slot (util/color_svg_image_provider.cpp
@@ -72,6 +74,17 @@
 # define BRAND_LOGO_ICON        "cone-logo-24"
 # define BRAND_LOGO_ICON_LARGE  "cone-logo"
 # define BRAND_LOGO_SVG         "qrc:///rd/cone-logo.svg"
+
+/* where the app keeps its settings, apart from an installed VLC's: the folder in %APPDATA%
+ * (src/win32/dirs.c APP_DIR_NAME), the Qt settings' organization (vlc-qt-interface.ini in it)
+ * and the registry key of the interface language (bin/winvlc.c reads it at startup) */
+# define BRAND_CONFIG_DIR       "Cone"
+# define BRAND_REGISTRY_KEY     "Software\\Cone\\"
+/* the installer's ProgID prefix and registered application name, and its install key
+ * (extras/package/win32/NSIS, configure BRAND_PROGID / BRAND_REGKEY): the file association
+ * dialog of the preferences uses them */
+# define BRAND_PROGID           "Cone"
+# define BRAND_INSTALL_REGKEY   "Software\\Cone"
 
 #else
 
@@ -89,6 +102,7 @@
                                 "various streaming protocols."
 # define BRAND_ABOUT_TEXT       "<p>VLC media player is a free and open source media player, encoder, and streamer made by the volunteers of the <a href=\"https://www.videolan.org/\"><span style=\" text-decoration: underline; color:#0057ae;\">VideoLAN</span></a> community.</p><p>VLC uses its internal codecs, works on essentially every popular platform, and can read almost all files, CDs, DVDs, network streams, capture cards and other media formats!</p><p><a href=\"https://www.videolan.org/contribute/\"><span style=\" text-decoration: underline; color:#0057ae;\">Help and join us!</span></a>"
 # define BRAND_SEASONAL_LOGOS   1
+# define BRAND_ABOUT_TITLE      BRAND_NAME
 # define BRAND_VERSION_TEXT     VERSION_MESSAGE
 
 /* the Figma "vlc" icon (pixmaps/redesign/vlc.svg) at every size, and VLC's cone */
@@ -96,6 +110,11 @@
 # define BRAND_LOGO_ICON        "vlc"
 # define BRAND_LOGO_ICON_LARGE  "vlc"
 # define BRAND_LOGO_SVG         "qrc:///misc/cone.svg"
+
+# define BRAND_CONFIG_DIR       "vlc"
+# define BRAND_REGISTRY_KEY     "Software\\VideoLAN\\VLC\\"
+# define BRAND_PROGID           "VLC"
+# define BRAND_INSTALL_REGKEY   "Software\\VideoLAN\\VLC"
 
 #endif
 
@@ -118,6 +137,11 @@ QIcon trayMenuIcon();
 QPixmap aboutLogo(qt_intf_t* intf);
 /* extension without an icon of its own (dialogs/plugins) */
 QPixmap extensionFallbackIcon();
+/* a text of the engine (option, choice, plugin and hotkey texts, already translated) as the
+ * redesign's Settings show it: in the public profile the app's name replaces VLC's ("VLC media
+ * player" and "VLC", but not "VLC" before a version number such as "VLC 3.0"), so the text keeps
+ * its translation; the vlc profile returns the text unchanged */
+QString engineText(const QString& text);
 }
 
 /**

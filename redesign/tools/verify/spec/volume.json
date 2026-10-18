@@ -1,0 +1,1503 @@
+{
+ "format": 1,
+ "node": "244:184",
+ "name": "volume",
+ "png": "volume.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  130,
+  646
+ ],
+ "theme": "dark",
+ "rows": [
+  30,
+  31,
+  32,
+  330
+ ],
+ "variants": [
+  {
+   "node": "244:185",
+   "name": "Property 1=0",
+   "props": {
+    "Property 1": "0"
+   },
+   "bounds": [
+    21,
+    21,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:186",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:188",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      1,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:189",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:190",
+   "name": "Property 1=10%",
+   "props": {
+    "Property 1": "10%"
+   },
+   "bounds": [
+    21,
+    69,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:191",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:193",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      7,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:194",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:195",
+   "name": "Property 1=20%",
+   "props": {
+    "Property 1": "20%"
+   },
+   "bounds": [
+    21,
+    117,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:196",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:198",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      14,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:199",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:200",
+   "name": "Property 1=30%",
+   "props": {
+    "Property 1": "30%"
+   },
+   "bounds": [
+    21,
+    165,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:201",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:203",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      20,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:204",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:205",
+   "name": "Property 1=40%",
+   "props": {
+    "Property 1": "40%"
+   },
+   "bounds": [
+    21,
+    213,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:206",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:208",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      26,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:209",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:210",
+   "name": "Property 1=50%",
+   "props": {
+    "Property 1": "50%"
+   },
+   "bounds": [
+    21,
+    261,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:211",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:213",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      33,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:214",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:215",
+   "name": "Property 1=60%",
+   "props": {
+    "Property 1": "60%"
+   },
+   "bounds": [
+    21,
+    309,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:216",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:218",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      41,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:219",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:220",
+   "name": "Property 1=70%",
+   "props": {
+    "Property 1": "70%"
+   },
+   "bounds": [
+    21,
+    357,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:221",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:223",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      48,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:224",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:225",
+   "name": "Property 1=80%",
+   "props": {
+    "Property 1": "80%"
+   },
+   "bounds": [
+    21,
+    405,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:226",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:228",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      53,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:229",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:230",
+   "name": "Property 1=90%",
+   "props": {
+    "Property 1": "90%"
+   },
+   "bounds": [
+    21,
+    453,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:231",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:233",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      58,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:234",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:235",
+   "name": "Property 1=100%",
+   "props": {
+    "Property 1": "100%"
+   },
+   "bounds": [
+    21,
+    501,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:236",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:238",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      63,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:239",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:240",
+   "name": "Property 1=150%",
+   "props": {
+    "Property 1": "150%"
+   },
+   "bounds": [
+    21,
+    549,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:241",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:243",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      75,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:244",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  },
+  {
+   "node": "244:183",
+   "name": "Property 1=200%",
+   "props": {
+    "Property 1": "200%"
+   },
+   "bounds": [
+    21,
+    597,
+    88,
+    28
+   ],
+   "fills": [],
+   "elements": [
+    {
+     "id": "244:179",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      0,
+      0,
+      89,
+      28
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:181",
+     "name": "Rectangle 7",
+     "type": "vector",
+     "path": "Rectangle 7",
+     "bounds": [
+      0,
+      -1,
+      88,
+      30
+     ],
+     "clipped": true,
+     "fills": [
+      {
+       "color": "#262626"
+      }
+     ],
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    },
+    {
+     "id": "244:182",
+     "name": "Rectangle 6",
+     "type": "vector",
+     "path": "Rectangle 6",
+     "bounds": [
+      1.5,
+      1.5,
+      86,
+      25
+     ],
+     "radius": 2,
+     "fills": [
+      {
+       "type": "gradient_linear",
+       "stops": [
+        {
+         "pos": 0,
+         "color": "#95D318",
+         "alpha": 1
+        },
+        {
+         "pos": 0.58,
+         "color": "#B2A918",
+         "alpha": 1
+        },
+        {
+         "pos": 0.79,
+         "color": "#D37918",
+         "alpha": 1
+        },
+        {
+         "pos": 1,
+         "color": "#FF3737",
+         "alpha": 1
+        }
+       ]
+      },
+      {
+       "color": "#000000",
+       "alpha": 0.2
+      }
+     ],
+     "translucent": true,
+     "rows": [
+      30,
+      31,
+      330
+     ]
+    }
+   ]
+  }
+ ]
+}

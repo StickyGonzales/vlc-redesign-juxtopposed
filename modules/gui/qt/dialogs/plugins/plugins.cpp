@@ -360,10 +360,13 @@ AddonsTab::AddonsTab( qt_intf_t *p_intf_ ) : QVLCFrame( p_intf_ )
 
     addCategory( qtr("All"), qtr("Interface Settings"),
                   AddonsModel::Type::TYPE_NONE );
+#ifndef VLC_BRAND_PUBLIC
+    // redesign: brand layer (Decision 63), Cone has no skins interface
     addCategory( qtr("Skins"),
                   qtr( "Skins customize player's appearance."
                        " You can activate them through preferences." ),
                   AddonsModel::Type::TYPE_SKIN2 );
+#endif
     addCategory( qtr("Playlist parsers"),
                   qtr( "Playlist parsers add new capabilities to read"
                        " internet streams or extract meta data." ),

@@ -45,8 +45,15 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd,
 #include <vlc_modules.h>
 #include "mmdevice.h"
 
+/* redesign (brand layer, public profile): Cone's own audio session (own volume mixer entry and
+ * own saved session volume), apart from an installed VLC's; must be same as in winstore.c */
+#ifdef VLC_BRAND_PUBLIC
+DEFINE_GUID (GUID_VLC_AUD_OUT, 0xd6fea21e, 0x9ef9, 0x4b64,
+   0x84, 0xa9, 0x08, 0x90, 0x84, 0xe6, 0xf2, 0x38);
+#else
 DEFINE_GUID (GUID_VLC_AUD_OUT, 0x4533f59d, 0x59ee, 0x00c6,
    0xad, 0xb2, 0xc6, 0x8b, 0x50, 0x1a, 0x66, 0x55);
+#endif
 
 static int TryEnterMTA(vlc_object_t *obj)
 {
