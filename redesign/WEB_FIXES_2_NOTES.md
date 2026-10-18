@@ -1,5 +1,7 @@
 # Web fixes 2 (branch wip/web-fixes-2)
 
+**Still to do: the sandbox recheck of every fixed row on the Linux AppImage of build-linux run 39130495590 (not done yet; nothing below is rechecked on Linux either).**
+
 Branch `wip/web-fixes-2`, made from `origin/wip/verify-linux` (771aae56f7). Fixes for the failures logged in `redesign/LINUX_VERIFY.md`. **Nothing here is verified on Windows**: it needs a build of this branch and a check on the PC. Left as it is on purpose: the time field selects its text on click (existing decision).
 
 | # | What changed | File | How to retest on Windows |
