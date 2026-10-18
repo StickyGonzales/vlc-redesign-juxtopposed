@@ -22,6 +22,7 @@
 #include <cstring>
 
 #include <QCryptographicHash>
+#include <QTimer>
 #include <QUrl>
 
 #include <vlc_input_item.h>
@@ -32,6 +33,11 @@ namespace {
 // next to it (VLC's "slave": an external subtitle or audio file) start with the MD5 of that
 // file's URI, "<32 hex digits>/spu/0" (src/input/es_out.c, EsOutCreateStrId)
 constexpr int kSlaveIdLength = 32;
+
+// VLC lists a file added during playback on the media just after it creates the file's track:
+// its name is looked up again this many times, this often, until it is there
+constexpr int kFileNameLookups = 10;
+constexpr int kFileNameLookupDelayMs = 100;
 
 bool isExternalTrack(vlc_es_id_t* id)
 {
@@ -73,7 +79,12 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
         if (track.m_external)
         {
             if (track.m_fileName.isEmpty())
+            {
                 track.m_fileName = externalFileName(track.m_id.get());
+                // the row shows the file's name (Figma "Frame 67"), not VLC's "Track 2 - [English]"
+                if (track.m_fileName.isEmpty() && track.m_fileNameLookups++ < kFileNameLookups)
+                    lookUpFileNameLater(track.m_id.get());
+            }
             if (!track.m_fileName.isEmpty())
                 return track.m_fileName;
         }
@@ -102,6 +113,23 @@ QString TrackListModel::externalFileName(vlc_es_id_t* id) const
             return QUrl(QString::fromUtf8(uri)).fileName();
     }
     return {};
+}
+
+void TrackListModel::lookUpFileNameLater(vlc_es_id_t* id) const
+{
+    // the row asks for its name again; `id` is only compared, never used
+    TrackListModel* self = const_cast<TrackListModel*>(this);
+    QTimer::singleShot(kFileNameLookupDelayMs, self, [self, id]() {
+        for (qsizetype row = 0; row < self->m_data.size(); ++row)
+        {
+            if (self->m_data[row].m_id.get() == id)
+            {
+                const QModelIndex changed = self->index(row);
+                emit self->dataChanged(changed, changed, { Qt::DisplayRole });
+                return;
+            }
+        }
+    });
 }
 
 bool TrackListModel::setData(const QModelIndex &index, const QVariant &value, int role)
