@@ -948,16 +948,17 @@ static void SubpicUpdateWrapper( subpicture_t *p_subpic,
         p_entry->b_last_region_saved = true;
     }
 
-    vlc_spu_regions_Clear( &p_subpic->regions );
-
     /* call source update */
     struct vlc_spu_updater_configuration new_cfg = *cfg;
     new_cfg.pts = p_entry->p_source->i_start +
                 ( (double)( p_entry->p_source->i_stop - p_entry->p_source->i_start ) * ( cfg->pts - p_entry->p_source->i_start ) ) /
                 ( p_entry->i_new_stop - p_entry->p_source->i_start );
 
-    /* the source has no regions of its own (they live in the local subpic): the update fills
-     * its list, then they move back */
+    /* the regions live in the local subpic: the source's updater gets them for its update and
+     * gives them back. It keeps them when nothing changed and rebuilds them otherwise, so they
+     * are not cleared here (cleared, a subtitle showed for one frame at most) */
+    SubpicMoveRegions( &p_entry->p_source->regions, &p_entry->p_subpic->regions );
+
     subpicture_updater_t *updater = &p_entry->p_source->updater;
     updater->ops->update( p_entry->p_source, &new_cfg );
 
