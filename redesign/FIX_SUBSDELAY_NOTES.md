@@ -11,17 +11,17 @@ The bug in STATUS.md on wip/next-test (picking an embedded subtitle track freeze
 - Why the beta looked fine and wip/next-test did not (inferred, please confirm on the PC): the filter is a setting (`sub-filter=subsdelay` in vlcrc, and the factor in the "Default Preset", which keeps it for every file), not code that changed between the builds (the code paths are the same in the beta). The PC's lag test of 2026-10-19 dragged the Subtitle Duration Factor slider in the test folder, which switched the filter on for every later run with that portable folder. Check: the portable vlcrc of the runs that froze has `sub-filter=subsdelay`; the beta and stock runs' had not. The "quit hang after slider drags and keys" of the same day is the same bug: the drags turned the filter on, the key loops picked a subtitle (v).
 
 ## Fix
-`SubpicClone()` gives the clone an empty list of its own and moves the regions into it; `SubpicUpdateWrapper()` lets the source's updater fill the source's (empty) list and moves the result back. A helper, `SubpicMoveRegions()`, moves the nodes; ownership is unchanged (the regions belong to the clone the subtitle renderer shows; `SubpicDestroyClone()` frees the source without regions).
+- `SubpicClone()` gives the clone an empty list of its own and moves the regions into it. A helper, `SubpicMoveRegions()`, moves the nodes; ownership is unchanged (the regions belong to the clone the subtitle renderer shows; `SubpicDestroyClone()` frees the source without regions).
+- `SubpicUpdateWrapper()` no longer clears the regions before the source's update: it moves them to the source, lets the source's updater keep or rebuild them, and moves them back. In VLC 4 a text updater returns early and keeps its regions when nothing changed; cleared first, a subtitle showed for one frame at most (found on the first test build: no freeze, but no subtitle either).
 
 ## Sandbox test (Linux)
-The Linux build with assertions shows the bug at once, so the test is: the abort is gone, the picture moves, subtitles show and change with the factor, Cone quits.
-Media: generated MKV, stereo AAC, two embedded SubRip tracks, a two-line cue every 6 s.
+Generated MKV, stereo AAC, two embedded SubRip tracks, a cue every 3 s, every other one on two lines; fresh profile, `v` picks the track, screenshots every 0.8 s looked at. Builds: before = build 11 of wip/linux-recheck (39274608830), after = build-linux 39299659350 of the test-only branch `wip/fix-subs-linux` (wip/next-test + this branch + wip/fix-subtitle-lift + the Linux build job).
 
-| Run | Before (wip/linux-recheck build 11) | After (this branch) |
+| Run | Before | After |
 |---|---|---|
-| Fresh profile, no filter, `v` | picture moves, subtitles shown | see LINUX_RESULTS below |
-| Fresh profile, `--sub-filter=subsdelay`, `v` | abort on the first subtitle (assertion above), picture frozen | |
-| Profile with "Subtitle Duration Factor" set (preset value), `v` | abort | |
+| No filter, `v` | picture moves, subtitles shown | same |
+| `--sub-filter=subsdelay`, `v` | abort on the first subtitle (assertion above), picture frozen | no abort, picture moves, one- and two-line cues show and change on time (a cue that the filter lengthens over the next one is drawn fainter: the filter's own overlap fading, `subsdelay-min-alpha`) |
+| Profile with the duration factor in the "Default Preset" (vlcrc `sub-filter=subsdelay`), `v` | abort | (first test build, regions not yet kept) no abort, picture moves, Cone quits with exit 0 in about 1.5 s with the window's close button |
 
 ## Retest on Windows
 1. Use the test folder that froze (its vlcrc has `sub-filter=subsdelay`): open the test film, seek to 0:55, pick "Track 2 - English" in the tracks popup: the picture keeps moving and the subtitle line shows. Press v twice: same.
