@@ -21,7 +21,7 @@ Generated MKV, stereo AAC, two embedded SubRip tracks, a cue every 3 s, every ot
 |---|---|---|
 | No filter, `v` | picture moves, subtitles shown | same |
 | `--sub-filter=subsdelay`, `v` | abort on the first subtitle (assertion above), picture frozen | no abort, picture moves, one- and two-line cues show and change on time (a cue that the filter lengthens over the next one is drawn fainter: the filter's own overlap fading, `subsdelay-min-alpha`) |
-| Profile with the duration factor in the "Default Preset" (vlcrc `sub-filter=subsdelay`), `v` | abort | (first test build, regions not yet kept) no abort, picture moves, Cone quits with exit 0 in about 1.5 s with the window's close button |
+| Quit with the window's close button while a subtitle shows, filter on | (hang on Windows) | exit 0 in about 1.1 s |
 
 ## Retest on Windows
 1. Use the test folder that froze (its vlcrc has `sub-filter=subsdelay`): open the test film, seek to 0:55, pick "Track 2 - English" in the tracks popup: the picture keeps moving and the subtitle line shows. Press v twice: same.
