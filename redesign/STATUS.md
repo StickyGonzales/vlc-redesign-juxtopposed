@@ -2,6 +2,13 @@
 
 - Updated: 2026-10-19 evening. Phase 2 PC work on build 39133249819 is done; the PC session stopped here. Next: the web session fixes the bugs below on wip/next-test (or a branch merged into it), then the PC session rebuilds, runs the smoke + touched-screen retest and merges wip/next-test into redesign (Decisions 55 / 64).
 
+## PC test round 2 (2026-10-19, in progress)
+- PR #28 (Decision 67, notes only): merged into wip/next-test (90941fa89cb); VIDEO_INDEX row 139 keeps "dropped (Decision 67 ...)", rows 140-142 keep their verified status.
+- PR #23 + PR #26 merged together on wip/test-pr23-26 (eef6c172ecc), build 39273864186. Overlaps resolved toward #23: TextInfoWidget takes the whole text's TextMetrics width, rounded up (covers #26's whole-pixel fix); queue / library click rule is #23's (_libraryToggled + press in the library), #26's _inLibrary / _libraryAtPress dropped; #26's Escape, presets, subtitle-lift and QML warning fixes kept. qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
+- PR #25 on wip/test-pr25 (742392bdcb4), build 39273870359.
+- Next: 8 quit-hang runs on <TEST_MOVIE> (4 window close, 4 Ctrl+Q), then each fix of #23 / #26, #25 vs Figma; then PR #22 and WINDOWS_CHECKLIST.md when the web session lands them.
+
+
 ## PR test round (2026-10-19 evening, stopped: #20 and #10 merged into wip/next-test, #22 half tested)
 - Test branches = wip/next-test b8c6aae5826 + one PR each, each with its own Windows build (public profile): wip/test-pr20 (PR #20 web fixes 3) run 39148069447; wip/test-pr22 (PR #22 must-haves 2, core changes, includes Decision 66 + notes 1cf2c8f1611) run 39148594527 (the first run 39148087476 was cancelled: Decision 66 landed); wip/test-pr10 (PR #10 + its hookup patch) run 39148097688. qmlcheck errors 1 / crashed 0 and buildlists 0 on all three trees.
 - Merge conflicts resolved in the test merges (not in the PR branches): PR #20 input_models.hpp (both new members kept); PR #22 input_models.cpp/.hpp (its externalUri() kept with next-test's file name lookup retry) and VIDEO_INDEX.md (both sides' Decisions, each row from the side that changed it). PR #10's SIDEBAR_MUSTHAVES_HOOKUP.patch no longer applies to next-test as is: three one-line hunks (rd_filter_preview moc entry in Makefile.am / meson.build, its include in mainui.cpp) added by hand.
