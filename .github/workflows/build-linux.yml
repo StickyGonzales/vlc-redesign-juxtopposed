@@ -1,0 +1,223 @@
+# Linux 64-bit portable build of Cone (redesign/LINUX_NOTES.md). Manual runs:
+#   Actions > build-linux > Run workflow (or: gh workflow run build-linux.yml --ref <branch>)
+# GitHub offers the manual run only once this file is on the default branch (redesign); until
+# then pushes to the Linux branch start it (commits with [skip ci] do not).
+# Mirrors VideoLAN's own "debian" job (extras/ci/gitlab-ci.yml): same Docker image, VLC built
+# with autotools against the image's system libraries; the media library, which the image has no
+# package of, comes from VLC's contrib recipe. The result is a folder that runs from wherever it
+# is unpacked (.github/scripts/linux-package.sh), uploaded as a tarball.
+name: build-linux
+
+on:
+  push:
+    branches: [wip/linux-build, wip/fix-subs-linux]
+    # documentation-only pushes do not need a build
+    paths-ignore:
+      - 'redesign/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      package-suffix:
+        # brand layer: appended to the package name only (e.g. "-beta":
+        # Cone-0.1.0-beta-linux-x86_64.tar.xz), never to the app's version
+        description: 'Package name suffix (e.g. -beta)'
+        type: string
+        default: ''
+  # release-linux.yml: the Linux release (Decision (Sticky) 3: its own beta); a linux-vX.Y.Z tag
+  # sets the version, as a vX.Y.Z tag does for Windows
+  workflow_call:
+    inputs:
+      package-suffix:
+        type: string
+        default: ''
+
+concurrency:
+  # github.workflow is the caller's name when release-linux.yml calls this: a release never
+  # cancels a normal build
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep in sync with VLC_DEBIAN_IMAGE in extras/ci/gitlab-ci.yml
+  VLC_IMAGE: registry.videolan.org/vlc-debian-unstable:20260611225331
+  # Cone, the public profile (Decision 50); the vlc profile is not built for Linux
+  VLC_BRAND: public
+  # ccache used inside the image (it has none): pinned release and its SHA-256
+  CCACHE_VERSION: 4.10.2
+  CCACHE_SHA256: 80cab87bd510eca796467aee8e663c398239e0df1c4800a0b5dff11dca0b4f18
+  # patchelf for the package's RUNPATHs (linux-package.sh): pinned release and its SHA-256
+  PATCHELF_VERSION: 0.18.0
+  PATCHELF_SHA256: ce84f2447fb7a8679e58bc54a20dc2b01b37b5802e12c57eece772a6f14bf3f0
+  # Qt's SVG image and icon plugins, which the image lacks (linux-package.sh): Debian's
+  # qt6-svg-plugins of the image's exact qt6-svg version, from snapshot.debian.org; change both
+  # with VLC_IMAGE (its qt6-svg-dev version: dpkg -l qt6-svg-dev in the image)
+  QT_SVG_PLUGINS_DEB: https://snapshot.debian.org/file/730481d39dc33b54bd8001af08ff9a36364370bf
+  QT_SVG_PLUGINS_VERSION: 6.10.2-8
+  QT_SVG_PLUGINS_SHA256: ae80a1d333bf1676d1b17fdcbf155a936e5b46994a1c3c5c8385ef54e5f0075c
+  # AppImage runtime (linux-appimage.sh, Decision (Sticky) 2): AppImage's static type-2 runtime,
+  # build 8f39b89 of github.com/AppImage/type2-runtime (published only as "continuous"), pinned by
+  # its SHA-256; a newer runtime there fails this check until the hash is updated here
+  APPIMAGE_RUNTIME_URL: https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+  APPIMAGE_RUNTIME_SHA256: 156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074
+
+jobs:
+  linux64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      # the media library from VLC's contrib, kept while its recipe and the image stay the same
+      - name: Cache the media library
+        uses: actions/cache@v4
+        with:
+          path: contrib/linux-ml
+          key: contrib-linux-ml-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/medialibrary/*', 'contrib/src/sqlite/*', 'contrib/src/main.mak', 'contrib/bootstrap') }}
+
+      # Compiler cache, one per branch, as the Windows build's ("ccache-linux-public:<branch>:<commit>");
+      # a branch without one starts from redesign's
+      - name: Compiler cache keys
+        id: cachekey
+        run: |
+          {
+            echo "key=ccache-linux-$VLC_BRAND:$GITHUB_REF_NAME:$GITHUB_SHA"
+            echo "restore<<EOF"
+            echo "ccache-linux-$VLC_BRAND:$GITHUB_REF_NAME:"
+            echo "ccache-linux-$VLC_BRAND:redesign:"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore compiler cache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ${{ steps.cachekey.outputs.key }}
+          restore-keys: ${{ steps.cachekey.outputs.restore }}
+
+      # without it (download failed) the build still runs, only without the compiler cache
+      - name: ccache for the build image
+        continue-on-error: true
+        run: |
+          mkdir -p .ccache-tool
+          curl -sSLf -o /tmp/ccache.tar.xz \
+            "https://github.com/ccache/ccache/releases/download/v$CCACHE_VERSION/ccache-$CCACHE_VERSION-linux-x86_64.tar.xz"
+          echo "$CCACHE_SHA256  /tmp/ccache.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/ccache.tar.xz -C .ccache-tool --strip-components=1 "ccache-$CCACHE_VERSION-linux-x86_64/ccache"
+
+      - name: patchelf for the package
+        run: |
+          mkdir -p .patchelf-tool
+          curl -sSLf -o /tmp/patchelf.tar.gz \
+            "https://github.com/NixOS/patchelf/releases/download/$PATCHELF_VERSION/patchelf-$PATCHELF_VERSION-x86_64.tar.gz"
+          echo "$PATCHELF_SHA256  /tmp/patchelf.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/patchelf.tar.gz -C .patchelf-tool ./bin/patchelf
+          .patchelf-tool/bin/patchelf --version
+
+      - name: Qt SVG plugins for the package
+        run: |
+          curl -sSLf --retry 3 -o /tmp/qt6-svg-plugins.deb "$QT_SVG_PLUGINS_DEB"
+          echo "$QT_SVG_PLUGINS_SHA256  /tmp/qt6-svg-plugins.deb" | sha256sum -c -
+          dpkg-deb -x /tmp/qt6-svg-plugins.deb .qt-svg-plugins
+          find .qt-svg-plugins -name '*.so'
+
+      - name: Pull build image
+        run: docker pull "$VLC_IMAGE"
+
+      # Cone's version and the package name suffix: a linux-vX.Y.Z tag sets X.Y.Z (default 0.1.0);
+      # linux-vX.Y.Z-<label> (linux-v0.1.0-beta) also puts "-<label>" into the package names, like
+      # the package-suffix input (as build-windows.yml does with vX.Y.Z tags)
+      - name: Version
+        id: version
+        env:
+          PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
+        run: |
+          BRAND_VERSION=""
+          BRAND_PACKAGE_SUFFIX="$PACKAGE_SUFFIX_INPUT"
+          case "$GITHUB_REF" in refs/tags/linux-v*) BRAND_VERSION="${GITHUB_REF_NAME#linux-v}" ;; esac
+          if echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-[A-Za-z0-9.]+$'; then
+            BRAND_PACKAGE_SUFFIX="-${BRAND_VERSION#*-}"
+            BRAND_VERSION="${BRAND_VERSION%%-*}"
+          fi
+          if [ -n "$BRAND_VERSION" ] && ! echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::warning::tag $GITHUB_REF_NAME is not linux-vX.Y.Z: the build uses the default version"
+            BRAND_VERSION=""
+          fi
+          if [ -n "$BRAND_PACKAGE_SUFFIX" ] && ! echo "$BRAND_PACKAGE_SUFFIX" | grep -Eq '^-[A-Za-z0-9.]+$'; then
+            echo "::warning::the package suffix is not -<letters, digits, dots>: not used"
+            BRAND_PACKAGE_SUFFIX=""
+          fi
+          echo "brand-version=$BRAND_VERSION" >> "$GITHUB_OUTPUT"
+          echo "package-suffix=$BRAND_PACKAGE_SUFFIX" >> "$GITHUB_OUTPUT"
+          echo "Version: ${BRAND_VERSION:-0.1.0 (default)}, package suffix: '$BRAND_PACKAGE_SUFFIX'"
+
+      - name: Build in VideoLAN's image
+        run: |
+          mkdir -p .ccache
+          # run as the runner's user so the checkout, caches and build output have one owner
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
+            -e VLC_BRAND="$VLC_BRAND" \
+            -e BRAND_VERSION="${{ steps.version.outputs.brand-version }}" \
+            "$VLC_IMAGE" .github/scripts/linux-build.sh build
+          df -h /
+
+      - name: Compiler cache result
+        if: ${{ !cancelled() }}
+        run: |
+          SUMMARY=$(cat .ccache-summary.txt 2>/dev/null || echo "ccache: no statistics (the build did not reach ccache)")
+          echo "$SUMMARY"
+          echo "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+
+      # saved even when the build failed, so the next run starts from what was compiled
+      - name: Save compiler cache
+        if: ${{ !cancelled() && steps.ccache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ${{ steps.cachekey.outputs.key }}
+
+      - name: Portable package
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
+            -e VLC_BRAND="$VLC_BRAND" \
+            -e BRAND_VERSION="${{ steps.version.outputs.brand-version }}" \
+            -e BRAND_PACKAGE_SUFFIX="${{ steps.version.outputs.package-suffix }}" \
+            -e PATCHELF=/build/.patchelf-tool/bin/patchelf \
+            "$VLC_IMAGE" .github/scripts/linux-build.sh package
+          grep -h "glibc" linux/*/README-LINUX.txt | head -n 1 >> "$GITHUB_STEP_SUMMARY" || true
+
+      # the AppImage of the same folder (Decision (Sticky) 2): runtime + SquashFS image
+      - name: AppImage
+        run: |
+          sudo apt-get install -y -qq squashfs-tools >/dev/null
+          curl -sSLf --retry 3 -o /tmp/appimage-runtime "$APPIMAGE_RUNTIME_URL"
+          echo "$APPIMAGE_RUNTIME_SHA256  /tmp/appimage-runtime" | sha256sum -c -
+          TARBALL=$(ls linux/*-linux-x86_64.tar.xz | head -n 1)
+          FOLDER=${TARBALL%.tar.xz}
+          # Cone-0.1.0-beta-linux-x86_64.tar.xz -> Cone-0.1.0-beta-x86_64.AppImage
+          APPIMAGE=$(basename "$FOLDER" | sed 's/-linux-x86_64$/-x86_64/').AppImage
+          .github/scripts/linux-appimage.sh "$FOLDER" /tmp/appimage-runtime "linux/$APPIMAGE"
+          echo "AppImage: $APPIMAGE ($(du -h "linux/$APPIMAGE" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      # the tarball and the AppImage themselves (an artifact zip drops the files' execute permission:
+      # after unzipping, chmod +x the AppImage)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-linux-x86_64
+          path: linux/*.tar.xz
+          compression-level: 0
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-linux-appimage-x86_64
+          path: linux/*.AppImage
+          compression-level: 0
+          retention-days: 14

@@ -113,6 +113,17 @@ struct Job
     QSize box;
 };
 
+// the image mirrored along `orientation`: QImage::flipped() from Qt 6.9 (mirrored() is deprecated
+// there), mirrored() before (VLC's Windows build uses Qt 6.8)
+QImage flipped(const QImage& image, Qt::Orientations orientation)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    return image.flipped(orientation);
+#else
+    return image.mirrored(orientation.testFlag(Qt::Horizontal), orientation.testFlag(Qt::Vertical));
+#endif
+}
+
 // the decoded frame, scaled to fit `box` with its display aspect and orientation, as RGBA
 QImage frameToImage(RdSeekThumbnailer::Converter& converter, picture_t* picture, const QSize& box)
 {
@@ -182,13 +193,13 @@ QImage frameToImage(RdSeekThumbnailer::Converter& converter, picture_t* picture,
     case ORIENT_ROTATED_270:
         return image.transformed(QTransform().rotate(270));
     case ORIENT_HFLIPPED:
-        return image.mirrored(true, false);
+        return flipped(image, Qt::Horizontal);
     case ORIENT_VFLIPPED:
-        return image.mirrored(false, true);
+        return flipped(image, Qt::Vertical);
     case ORIENT_TRANSPOSED:
-        return image.transformed(QTransform().rotate(90)).mirrored(true, false);
+        return flipped(image.transformed(QTransform().rotate(90)), Qt::Horizontal);
     case ORIENT_ANTI_TRANSPOSED:
-        return image.transformed(QTransform().rotate(90)).mirrored(false, true);
+        return flipped(image.transformed(QTransform().rotate(90)), Qt::Vertical);
     default:
         return image;
     }
