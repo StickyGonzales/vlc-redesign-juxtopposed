@@ -152,9 +152,10 @@ T.Pane {
     // row has the bar's whole width and keeps both times.
     readonly property real _inlineSpacing: VLCStyle.dp(8, VLCStyle.scale)
     readonly property real _inlineTimeSlot: VLCStyle.rd_timeLabelWidth + _inlineSpacing
-    // the subtitle timeline's buttons on both sides of the bar, while it shows
+    // the subtitle timeline's buttons on both sides of the bar, while it shows (they touch the
+    // bar: no spacing on its side)
     readonly property real _inlineTimelineRoom: trackPositionSlider.timelineShown
-                                                ? 2 * (timelineLeading.implicitWidth + _inlineSpacing) : 0
+                                                ? 2 * timelineLeading.implicitWidth : 0
     readonly property bool _inlineShowsTime: _seekRowOnOwnRow
                                              || playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + _inlineTimelineRoom + _inlineTimeSlot
     readonly property bool _inlineShowsLength: _seekRowOnOwnRow
@@ -443,13 +444,15 @@ T.Pane {
                 onRightClicked: root.contextMenuRequested()
             },
             // redesign: the subtitle timeline's buttons, on both sides of the bar while it
-            // shows it (P3-16 / IA-27)
+            // shows it (P3-16 / IA-27); they touch the bar's ends (video 7:04), so the seek
+            // row's spacing is taken back on the bar's side
             SubtitleTimelineButtons {
                 id: timelineLeading
 
                 slider: trackPositionSlider
                 leading: true
                 Layout.alignment: Qt.AlignVCenter
+                Layout.rightMargin: -root._inlineSpacing
             },
             SubtitleTimelineButtons {
                 id: timelineTrailing
@@ -457,6 +460,7 @@ T.Pane {
                 slider: trackPositionSlider
                 leading: false
                 Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: -root._inlineSpacing
             },
             Loader {
                 id: bookmarksLoader
