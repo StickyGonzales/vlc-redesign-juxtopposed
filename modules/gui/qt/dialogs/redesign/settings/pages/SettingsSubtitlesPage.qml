@@ -40,6 +40,7 @@ SettingsPage {
     readonly property bool _shadow: Number(_option("freetype-shadow-opacity") ?? 0) > 0
     readonly property bool _background: Number(_option("freetype-background-opacity") ?? 0) > 0
     readonly property bool _title: _option("video-title-show") === true
+    readonly property bool _osd: _option("osd") !== false
 
     // the size in words (percent of VLC's default size)
     readonly property var _sizes: [
@@ -328,9 +329,29 @@ SettingsPage {
     SettingsSection {
         title: qsTr("On-Screen Messages")
 
+        // VLC's on-screen messages; in the Cone build a message caused by a shortcut also names
+        // the key ("Pressed C", modules/control/hotkeys.c, video 15:23-15:28)
         SettingsOption {
             option: "osd"
             text: qsTr("Show feedback for shortcuts")
+        }
+
+        // Figma "Frame 146": 0.5 s to 5 s, ten ticks; the messages' time on the video (a core
+        // option of the Cone build, src/video_output/video_text.c)
+        SettingsOption {
+            option: "osd-duration"
+            text: qsTr("Show feedback for")
+            kind: "slider"
+            valueScale: 1000
+            from: 0.5
+            to: 5
+            step: 0.1
+            decimals: 1
+            tickStep: 0.5
+            labelStep: 4.5
+            labelAnchor: 0.5
+            labelText: (v) => qsTr("%1 s").arg(Math.round(v * 10) / 10)
+            available: root._osd
         }
 
         SettingsOption {

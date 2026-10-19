@@ -49,9 +49,11 @@ class TrackListModel : public QAbstractListModel
 
 public:
     // redesign: "external" is true for a track of a file added next to the played one (an
-    // external subtitle or audio file, VLC's "slave"); such a track shows its file's name
+    // external subtitle or audio file, VLC's "slave"); such a track shows its file's name.
+    // "externalUri": that file's URI (empty until the file is listed on the media)
     enum Roles {
-        ExternalRole = Qt::UserRole + 1
+        ExternalRole = Qt::UserRole + 1,
+        ExternalUriRole
     };
 
     TrackListModel(vlc_player_t* player, QObject* parent = nullptr);
@@ -106,8 +108,8 @@ private:
         // the track's language code or name as the file gives it, empty when none
         QString m_language;
     };
-    QString externalFileName(vlc_es_id_t* id) const;
     void lookUpFileNameLater(vlc_es_id_t* id) const;
+    QByteArray externalUri(vlc_es_id_t* id) const;
 
     QList<Data> m_data;
     bool m_multiSelect = false; // this only work for subtitles
