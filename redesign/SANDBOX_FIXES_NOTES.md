@@ -1,6 +1,6 @@
 # Sandbox bug sweep of the beta (branch claude/zen-mendel-p1anpd)
 
-StickyGonzales reported that "half of the stuff doesn't really work" in the published beta. The web session swept the beta's code in its Linux sandbox and fixed what it found. Branch made from `wip/next-test` 2ffda4e20b (the beta in `redesign` plus the fixes already tested on Windows; every file changed here is identical in `redesign`). Pull request into `wip/next-test`. **Verified on Linux only** (screenshots below, in the session's scratchpad, not committed): it needs one Windows build and a test round on the PC before it goes on (Decision 55). No core changes.
+StickyGonzales reported that "half of the stuff doesn't really work" in the published beta. Section 6 adds Decisions 67 and 68 (2026-10-19). The web session swept the beta's code in its Linux sandbox and fixed what it found. Branch made from `wip/next-test` 2ffda4e20b (the beta in `redesign` plus the fixes already tested on Windows; every file changed here is identical in `redesign`). Pull request into `wip/next-test`. **Verified on Linux only** (screenshots below, in the session's scratchpad, not committed): it needs one Windows build and a test round on the PC before it goes on (Decision 55). One core change: the default of `video-title-show` in the Cone build (Decision 67, section 6).
 
 ## 1. How it was tested
 - Built `wip/next-test` with `--with-brand=public --disable-skins2` and the media library in VideoLAN's Debian image (Qt 6.10.2), run on Xvfb at 1500 x 900 with xdotool input and a screenshot after every step; the QML warnings of each step were read from the log.
@@ -29,14 +29,34 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
 
 ## 5. Found, not changed (for StickyGonzales)
 - **Quit hang (PC, HIGH):** not reproducible on Linux (3 runs of the PC's sequence, clean exit every time). The PC's stuck threads include Windows audio (`vlc-mmdevice`), which the sandbox cannot run. Fix 1 removes a source of churn in that sequence (each `B` press or output restart re-applied both delays and the speed), but it is not known to be the cause: retest the PC sequence on this build.
-- **VLC's file-name message at the start of each file is half hidden** under the control bar (it shows at the bottom of the video while the bars are up). Options: show it at the top (`video-title-position`), or turn it off by default (the top bar shows the title already). A default change: Sticky's call.
-- **"All Cone Settings"** opens VLC's old preferences window (VLC cone icons, "Modern / Classic" pictures of VLC). Already listed as open in BUILD_NOTES.md (stock dialogs). Proposal: open it on its "All" (tree) view, which has no VLC pictures.
 - When one library folder is in both Videos and Music, Videos lists its music folders and Music its video folders (leading to empty pages). The normal setup (Videos and Music folders) does not show it; hiding them needs a recursive check of every subfolder. Low.
 - `CustomizeZoneItem.qml:70` logs one "Binding loop detected for property width" when Customize Player opens (present before these changes, nothing visible). Low.
 - Settings > Subtitles "Size values" stays Relative / Precise: the pixel size is still waiting on Sticky's decision (CLAUDE.md).
 - Stock VLC behavior, left as is: a single click on the video pauses (VLC 4's mouse-pause-policy), the control bar switches to the audio layout for a moment at the end of a video, clicking a library item adds it to the queue and plays it.
 
-## 6. How to test on Windows
+## 6. Decisions 67 and 68 (StickyGonzales, 2026-10-19)
+
+### Decision 67: no file name over the video in Cone
+- VLC showed the file name at the bottom of the video for 5 s whenever a file started; under Cone's control bar it was half hidden, and the top bar shows the title already.
+- **Change (core, one line, public profile only):** `src/libvlc-module.c`, the default of `video-title-show` is false inside `#ifdef VLC_BRAND_PUBLIC`; the vlc profile keeps VLC's default (on). Listed in VIDEO_INDEX "Core changes (status)".
+- Settings > Subtitles > On-Screen Messages "Show filename when a video starts" still turns it on. A settings file that saved the old value keeps it; VLC only writes values that differ from the default, so a beta's settings file has none and follows the new default.
+- Verified in the sandbox: the beta shows "movie.mp4" over the video at 0:03; the new build shows nothing from 0:02 to 0:05 (a screenshot every 0.3 s from the start of the file).
+- Build rule note: this PR now holds one core change next to its Qt changes. It is a default value inside the brand switch, nothing else in core moves; if the core changes must still get their own build, the commit "core: Cone starts without the file name over the video" is separate and can go alone.
+
+### Decision 68: "All Cone Settings" with the Cone logo and the redesign's look
+- **Cone logo for every VLC cone picture (public profile only):**
+  - the seven category icons of the Simple view (Interface, Audio, Video, Subtitles / OSD, Input / Codecs, Hotkeys, Media Library) show the Cone logo (`:/brand/cone-128.png`, already in the public build);
+  - the Modern / Classic layout previews are new pictures, `pixmaps/brand/public/prefs-sample-modern.png` and `prefs-sample-classic.png`: VLC's previews with the Cone logo in place of the cone (video area and title bar) and "Cone" as the window title. They are made by `redesign/tools/make_prefs_samples.sh` (ImageMagick 6) from VLC's own previews, so they can be made again.
+  - The All view's tree icons and the Expert view have no cone (grey glyphs); the skins preview is already hidden in Cone (no skins, Decision 63).
+- **Dark theme:** the window takes the redesign's dialog look, `RdWidgetStyle::apply()`, as the Open, Convert and Stream Output dialogs already do (both profiles, like those dialogs): Figma colors, Inter 14, the accent Save button; it follows Dark / Light and the accent color live. Three rules were added to that shared style sheet, so they also apply to the other dialogs using it: alternate rows of lists and tables (were white), table headers (were light), and the selected button of a row of checkable tool buttons (the categories: only the hover showed it).
+- **Not simple, left as is:**
+  - the sliders (Audio volume, Video) and the spin box and combo box arrows keep Qt's own drawing (a light groove in the dark window), as in the other redesigned dialogs: styling them means a QStyle subclass, not a style sheet;
+  - the All view's tree icons are VLC's dark grey glyphs (#757575): readable but low contrast on the dark background; recoloring them means new SVGs or a tinting proxy style;
+  - the window keeps VLC's layout; with Inter 14 the pages are a little longer and scroll more;
+  - "Customize Toolbar" in the Interface page still opens VLC's old toolbar editor, and the Interface page's "Modern / Classic" choice and window style options are VLC's (they still work).
+- Verified in the sandbox: before / after screenshots of the Interface page, Hotkeys, the All tree and the Expert list in Dark, and the Interface and Hotkeys pages in Light.
+
+## 7. How to test on Windows
 1. Play a video with subtitles, set Subtitle Track Delay to about 2 s in the sidebar, then pick Spectrometer under Playback > Audio Visualizer: the delay stays, the visualizer stays selected and shows. Press `B` (audio track): the delay stays.
 2. Set the speed to 1.5x and a visualizer, play the next file (both carry over), quit and start Cone again: 1x and Disabled.
 3. A file with a title tag ("Episode 2" style) and a short file name: the top bar shows the whole title. Customize Player, move the title into the bottom bar, Save: the whole name shows (the PC test's "Bet...").
@@ -45,3 +65,5 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
 6. Library open: Escape closes it. Click a folder in it, then Escape: closes. Type in its search, Escape: the search closes, a second Escape closes the library. With the keyboard (Tab into the library, arrows, Enter on a folder), check that Escape goes back a page.
 7. Sidebar Audio tab: no line under Defaults.
 8. Quit hang sequence from STATUS.md on the real film.
+9. Play a video from the start: no file name over the video. Settings > Subtitles > "Show filename when a video starts" on: it shows again on the next file.
+10. Settings > All Cone Settings: Cone logos on the seven categories and in both layout previews; the window dark, then Light after switching the theme in Settings > General; the selected category in the accent color; the Hotkeys table and the All / Expert lists readable (no white rows).
