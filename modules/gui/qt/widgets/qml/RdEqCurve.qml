@@ -16,9 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-// Redesign equalizer preset icon (IA-40 / P4-25 / P4-26, Figma icon set "name=EQ"): the 24x24
-// icon box with the FG/A2 baseline and the Accent/Main lobes of the preset's curve, drawn by
-// RdEqCurveItem from the preset's real band gains. Its colours follow the palette, so the accent
+// Redesign equalizer preset icon drawn from the preset's band gains (IA-40 / P4-25 / P4-26): the
+// 24x24 icon box with the FG/A2 baseline and the Accent/Main lobes of the curve, drawn by
+// RdEqCurveItem. Only for a preset without its own icon in Figma's set "name=EQ" (those show the
+// exported SVG, RdEffects.equalizerPresetIcon). Its colours follow the palette, so the accent
 // colour and the light theme apply live.
 import QtQuick
 

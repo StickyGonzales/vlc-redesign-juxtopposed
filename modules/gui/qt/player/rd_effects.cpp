@@ -21,6 +21,7 @@
 
 #include "rd_effects.hpp"
 
+#include <QFile>
 #include <QLocale>
 #include <QMetaObject>
 
@@ -802,6 +803,26 @@ QStringList RdEffects::equalizerPresetNames() const
     for (int i = 0; i < NB_PRESETS; ++i)
         names << qfut(preset_list_text[i]);
     return names;
+}
+
+QString RdEffects::equalizerPresetIcon(int preset) const
+{
+    if (preset < 0 || preset >= NB_PRESETS)
+        return {};
+    // Figma's icon set "name=EQ" has one variant per preset, exported as pixmaps/redesign/
+    // eq_eq-<preset>.svg with the words of the name split ("full bass and treble"); its default
+    // variant, the plain line (eq.svg), is the flat preset
+    static const QHash<QString, QString> fileNames = {
+        { QStringLiteral("flat"), QStringLiteral("eq") },
+        { QStringLiteral("fullbass"), QStringLiteral("eq_eq-full-bass") },
+        { QStringLiteral("fullbasstreble"), QStringLiteral("eq_eq-full-bass-and-treble") },
+        { QStringLiteral("fulltreble"), QStringLiteral("eq_eq-full-treble") },
+        { QStringLiteral("largehall"), QStringLiteral("eq_eq-large-hall") },
+        { QStringLiteral("softrock"), QStringLiteral("eq_eq-soft-rock") },
+    };
+    const QString id = QString::fromLatin1(preset_list[preset]);
+    const QString name = fileNames.value(id, QStringLiteral("eq_eq-") + id);
+    return QFile::exists(QStringLiteral(":/rd/") + name + QStringLiteral(".svg")) ? name : QString();
 }
 
 QVariantList RdEffects::equalizerPresetBands(int preset) const
