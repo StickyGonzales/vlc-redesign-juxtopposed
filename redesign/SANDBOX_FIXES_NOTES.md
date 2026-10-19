@@ -45,16 +45,18 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
 
 ### Decision 68: "All Cone Settings" with the Cone logo and the redesign's look
 - **Cone logo for every VLC cone picture (public profile only):**
-  - the seven category icons of the Simple view (Interface, Audio, Video, Subtitles / OSD, Input / Codecs, Hotkeys, Media Library) show the Cone logo (`:/brand/cone-128.png`, already in the public build);
+  - the category icons of the Simple view (Interface, Audio, Video, Subtitles / OSD, Input / Codecs, Hotkeys, and Media Library when the media library is on) show the Cone logo (`:/brand/cone-128.png`, already in the public build);
   - the Modern / Classic layout previews are new pictures, `pixmaps/brand/public/prefs-sample-modern.png` and `prefs-sample-classic.png`: VLC's previews with the Cone logo in place of the cone (video area and title bar) and "Cone" as the window title. They are made by `redesign/tools/make_prefs_samples.sh` (ImageMagick 6) from VLC's own previews, so they can be made again.
   - The All view's tree icons and the Expert view have no cone (grey glyphs); the skins preview is already hidden in Cone (no skins, Decision 63).
-- **Dark theme:** the window takes the redesign's dialog look, `RdWidgetStyle::apply()`, as the Open, Convert and Stream Output dialogs already do (both profiles, like those dialogs): Figma colors, Inter 14, the accent Save button; it follows Dark / Light and the accent color live. Three rules were added to that shared style sheet, so they also apply to the other dialogs using it: alternate rows of lists and tables (were white), table headers (were light), and the selected button of a row of checkable tool buttons (the categories: only the hover showed it).
+- **Dark theme:** the window takes the redesign's dialog look, `RdWidgetStyle::apply()`, as the Open, Convert and Stream Output dialogs already do (both profiles, like those dialogs): Figma colors, Inter 14, the accent Save button; it follows Dark / Light and the accent color live. Rules added to that shared style sheet (no other dialog using it has such widgets, so only this window changes): alternate rows of lists and tables (were white; BG/A4 in Dark, half of it in Light), table headers (were light), the selected button of a row of checkable tool buttons (the categories: only the hover showed it), and the layout previews drawn without the button tile (they are flat picture buttons, which a style sheet otherwise fills). The two new pictures are in configure's and meson's checks of the brand files.
 - **Not simple, left as is:**
   - the sliders (Audio volume, Video) and the spin box and combo box arrows keep Qt's own drawing (a light groove in the dark window), as in the other redesigned dialogs: styling them means a QStyle subclass, not a style sheet;
   - the All view's tree icons are VLC's dark grey glyphs (#757575): readable but low contrast on the dark background; recoloring them means new SVGs or a tinting proxy style;
-  - the window keeps VLC's layout; with Inter 14 the pages are a little longer and scroll more;
+  - the window keeps VLC's layout; with Inter 14 the pages are a little longer and scroll more, and the "Show settings" title sits at the left (the shared style puts every group title there);
   - "Customize Toolbar" in the Interface page still opens VLC's old toolbar editor, and the Interface page's "Modern / Classic" choice and window style options are VLC's (they still work).
-- Verified in the sandbox: before / after screenshots of the Interface page, Hotkeys, the All tree and the Expert list in Dark, and the Interface and Hotkeys pages in Light.
+- Verified in the sandbox: before / after screenshots of the Interface page, Hotkeys, the All tree and the Expert list in Dark, and Hotkeys and the All tree in Light.
+- Reviewed by a fresh agent: no HIGH findings; the preview tiles, the Light row contrast and the brand file checks it found are fixed.
+- Numbering: Decision 66 ("Additional command line options" ignores interface options) is on `wip/musthaves-2` (PR #22) and not in this branch yet; merging both keeps 66, 67 and 68 in order.
 
 ## 7. How to test on Windows
 1. Play a video with subtitles, set Subtitle Track Delay to about 2 s in the sidebar, then pick Spectrometer under Playback > Audio Visualizer: the delay stays, the visualizer stays selected and shows. Press `B` (audio track): the delay stays.
