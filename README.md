@@ -1,10 +1,10 @@
 # Cone
 
-**Juxtopposed's VLC Redesign, working for real on VLC 4.** Cone is VLC media player with her whole redesign on top: new player, sidebars, library, settings and onboarding. Same VLC engine underneath, under its own name so it can sit next to your regular VLC.
+**Juxtopposed's redesign on a real VLC 4 fork, not a skin.** Cone is VLC media player with her whole redesign on top: new player, sidebars, library, settings and onboarding. Same VLC engine underneath, under its own name so it can sit next to your regular VLC.
 
 ![Cone: the library with the mini player (Figma design by Juxtopposed)](docs/images/hero.png)
 
-<sub>This image is a frame of Juxtopposed's Figma design, which Cone implements. Screenshots of Cone itself go in the gallery below.</sub>
+<sub>This image is a frame of Juxtopposed's Figma design, which Cone implements. Screenshots of Cone itself are below.</sub>
 
 ## Download
 
@@ -25,8 +25,19 @@ It's a beta built on VLC 4 development code, so expect rough edges. Found a bug?
 - Queue, bookmarks (Ctrl+B) and chapters, the new main and right-click menus, Keyboard Shortcuts and the new Settings
 - A library with Home, Videos, Music, Playlists and Recent, a music view and a mini player
 - Customize Player and profiles, onboarding, dark and light themes, 9 accent colors
+- Subtitles move above the control bar while it shows
+- Its own settings folder, its own entry in the Windows volume mixer and its own single-instance name, so it never takes over an installed VLC
 
-## Known issues
+## Coming in beta 2
+
+- A subtitle timeline on the seek bar, for syncing subtitles by eye
+- A "Pressed" line under on-screen messages that shows the key you pressed
+- An "Additional command line options" field in Settings
+- Equalizer preset icons drawn exactly like the Figma design
+- A link button for the crop filter, so all four edges change together
+- A fix for a video freeze after switching subtitle tracks, and for Cone sometimes not quitting
+
+## Known issues (beta 1)
 
 - Rarely, Windows logs a background error after closing Settings. Nothing visible happens.
 - Escape doesn't close the library sidebar in the player. Use the library button.
@@ -35,21 +46,20 @@ It's a beta built on VLC 4 development code, so expect rough edges. Found a bug?
 - The About dialog still has the old light look in dark mode.
 - Light theme: a thin grey line at the top of the control bar.
 - An external subtitle file is listed with its full file name.
+- The installer comes later; this beta is the portable zip only.
+- The portable zip doesn't show up in Windows' "Open with" menu yet. Drag files onto Cone, or use "Choose another app" and browse to `Cone.exe`.
 - Like VLC, Cone keeps a small graphics cache in `%LOCALAPPDATA%\Cone\cache`, even when run from the zip.
 
 ## Screenshots
 
-Real Cone screenshots land here as each screen is verified.
-
-<!-- Put real build screenshots in docs/images/cone-*.png and replace each placeholder below. -->
+Cone 0.1.0 beta on Windows, with generated test media and the purple accent.
 
 | | |
 |---|---|
-| **Player**<br>*screenshot coming* | **Home**<br>*screenshot coming* |
-| **Library and mini player**<br>*screenshot coming* | **Settings sidebar**<br>*screenshot coming* |
-| **Settings**<br>*screenshot coming* | **Onboarding**<br>*screenshot coming* |
+| **Player**<br><img src="docs/images/cone-player.png" alt="Cone player"> | **Settings sidebar**<br><img src="docs/images/cone-settings-sidebar.png" alt="Cone settings sidebar"> |
+| **Library and mini player**<br><img src="docs/images/cone-library.png" alt="Cone library and mini player"> | **Settings**<br><img src="docs/images/cone-settings.png" alt="Cone Settings"> |
 
-### The design
+### The design being built
 
 Juxtopposed's Figma frames, the source for every size, color and spacing in Cone.
 
