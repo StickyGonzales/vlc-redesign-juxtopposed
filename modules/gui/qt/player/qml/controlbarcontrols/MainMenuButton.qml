@@ -47,7 +47,8 @@ Widgets.IconToolButton {
     }
 
     function forceUnlock() {
-        mainMenu.close()
+        // called while the bar is torn down too, when the menu is already gone
+        mainMenu?.close()
     }
 
     Menus.RdMainMenu {

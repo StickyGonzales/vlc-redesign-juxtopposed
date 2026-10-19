@@ -23,7 +23,9 @@
 // While the dialog's search is active the row hides itself unless its text, description,
 // keywords or its section title match. Hide a row conditionally with `shown`, not `visible`;
 // set `available: false` while it depends on a setting that is off: the row is drawn at 30 %
-// and its control disabled, its info icon stays usable.
+// and its control disabled, its info icon stays usable. The redesign controls draw themselves
+// at 30 % while disabled, so the row dims its label, info icon and `below` items only: dimming
+// the whole row as well put its control at 9 % (Figma: the row frame alone at 30 %).
 // Escape closes an open info popover first (before the search field and the dialog).
 import QtQuick
 import QtQuick.Layouts
@@ -65,7 +67,7 @@ ColumnLayout {
 
     visible: shown && matches
     // a setting that depends on another one that is off (Figma "Settings - library", video 18:15)
-    opacity: available ? 1.0 : VLCStyle.rd_disabledRowOpacity
+    readonly property real _dimmedOpacity: available ? 1.0 : VLCStyle.rd_disabledRowOpacity
     Layout.fillWidth: true
     spacing: VLCStyle.dp(5)
 
@@ -117,6 +119,7 @@ ColumnLayout {
             font.family: VLCStyle.rd_fontFamily
             font.pixelSize: VLCStyle.rd_fontSize_label
             color: root.rdPalette.rdFgA2
+            opacity: root._dimmedOpacity
         }
 
         // Figma "Icon" name=info at 18 px, FG/A4
@@ -130,6 +133,7 @@ ColumnLayout {
 
             implicitWidth: VLCStyle.dp(18)
             implicitHeight: VLCStyle.dp(18)
+            opacity: root._dimmedOpacity
 
             focusPolicy: Qt.StrongFocus
             hoverEnabled: true
@@ -249,6 +253,7 @@ ColumnLayout {
         id: belowSlot
 
         enabled: root.available
+        opacity: root._dimmedOpacity
         visible: children.length > 0 && root.belowShown
         Layout.fillWidth: true
     }

@@ -154,6 +154,9 @@ public:
     COLOR_DEFINITION(rdSwatchStroke, QColor(0xFF, 0xFF, 0xFF, 54));
     // selected text on the Accent/DIm selection (no Figma style): FG/1 in Dark, BG/A1 in Light
     COLOR_DEFINITION(rdSelectionText, "#EAEAEA");
+    // the BG/A5 input fields (search fields, Add Subtitles fields and dropdowns): BG/A5 in Dark,
+    // BG/A3 in Light, where BG/A5 #888888 is a dark block that hides the FG/A4 placeholder
+    COLOR_DEFINITION(rdBgField, "#151515");
     COLOR_DEFINITION(rdShadow, QColor(0x00, 0x00, 0x00, 117)); // Figma effect drop shadow #000000 46%
     COLOR_DEFINITION(rdCardShadow, QColor(0x00, 0x00, 0x00, 97)); // Figma onboarding drop shadow #000000 38% (y 4, blur 11.8)
     COLOR_DEFINITION(rdKeyShadow, QColor(0x5C, 0x5C, 0x5C, 64)); // Figma onboarding keycap drop shadow #5C5C5C 25% (y 6, no blur)

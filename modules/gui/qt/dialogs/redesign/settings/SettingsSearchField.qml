@@ -63,7 +63,7 @@ T.TextField {
 
     background: Rectangle {
         radius: VLCStyle.rd_radius_normal
-        color: control.rdPalette.rdBgA5
+        color: control.rdPalette.rdBgField
 
         Widgets.RdIcon {
             x: VLCStyle.dp(8)
