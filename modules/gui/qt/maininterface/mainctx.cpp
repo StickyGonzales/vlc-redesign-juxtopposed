@@ -82,6 +82,7 @@
 
 #ifdef _WIN32
 #include <QFileInfo>
+#include <QTimer>
 #endif
 
 #include <vlc_interface.h>
@@ -976,6 +977,11 @@ VideoSurfaceProvider* MainCtx::getVideoSurfaceProvider() const
  * Events stuff
  ************************************************************************/
 
+namespace {
+// a stop takes well under a second (30 of 30 quits in at most 0.7 s on the PC)
+constexpr int kCloseStopTimeoutMs = 3000;
+}
+
 void MainCtx::onWindowClose( QWindow* )
 {
     PlaylistController* playlistController = p_intf->p_mainPlaylistController;
@@ -988,11 +994,16 @@ void MainCtx::onWindowClose( QWindow* )
     //from the main window is still valid.
     //vlc_window_ReportClose is currently stubbed
     if (playerController && playerController->hasVideoOutput()) {
-        connect(playerController, &PlayerController::playingStateChanged, [this](PlayerController::PlayingState state){
+        connect(playerController, &PlayerController::playingStateChanged, this, [this](PlayerController::PlayingState state){
             if (state == PlayerController::PLAYING_STATE_STOPPED) {
                 emit askToQuit();
             }
         });
+        // redesign: the window is already hidden here, so a stop that never reports STOPPED left
+        // Cone running without a window (PC session: after a sidebar slider drag and key
+        // actions, 8 of 8 closes). Quit anyway once a stop has had its time; quitting twice is
+        // harmless (DialogsProvider::quit)
+        QTimer::singleShot(kCloseStopTimeoutMs, this, [this]() { emit askToQuit(); });
         playlistController->stop();
     }
     else

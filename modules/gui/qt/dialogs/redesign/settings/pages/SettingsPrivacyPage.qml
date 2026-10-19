@@ -77,6 +77,8 @@ SettingsPage {
             Widgets.RdButton {
                 style: Widgets.RdButton.Style.Plain
                 text: qsTr("Clear")
+                // the row's 30 %, not the 50 % of a disabled button on its own
+                opacity: enabled ? 1.0 : VLCStyle.rd_disabledRowOpacity
                 onClicked: {
                     if (DialogsProvider.questionDialog(qsTr("Forget everything you played?"), qsTr("Clear history")))
                         SettingsCatalog.clearHistory()

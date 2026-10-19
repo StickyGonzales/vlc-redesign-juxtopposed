@@ -1405,6 +1405,11 @@ FocusScope {
             property Item _panelItem: null
             property bool _dragged: false
             property point _lastPosition
+            // the compact library and the queue sit side by side (video 11:44 drags a library
+            // row into the open queue): a press in the library, or a click on its sidebar
+            // toggle or folder chip (the libraryRequested handler below sets this), leaves the
+            // queue open
+            property bool _libraryToggled: false
 
             onPointChanged: {
                 if (!active)
@@ -1430,10 +1435,12 @@ FocusScope {
                     const panel = RdPanels.tracksOpen ? tracksPopupLoader
                                 : RdPanels.settingsOpen ? settingsPanelLoader
                                 : RdPanels.queueOpen ? queuePanelLoader : null
-                    _panel = _inside(panel, p) ? "" : RdPanels.current
+                    const inLibrary = RdPanels.queueOpen && rootPlayer._libraryShown && _inside(libraryHost, p)
+                    _panel = (_inside(panel, p) || inLibrary) ? "" : RdPanels.current
                     _panelItem = panel
                     _dragged = false
                     _lastPosition = p
+                    _libraryToggled = false
                 } else if (_panel !== "") {
                     const panel = _panel
                     _panel = ""
@@ -1442,8 +1449,11 @@ FocusScope {
                     if (droppedInto)
                         return
                     Qt.callLater(() => {
-                        if (RdPanels.current === panel)
-                            RdPanels.close()
+                        if (RdPanels.current !== panel)
+                            return
+                        if (RdPanels.queueOpen && panelOutsidePress._libraryToggled)
+                            return
+                        RdPanels.close()
                     })
                 }
             }
@@ -1521,6 +1531,7 @@ FocusScope {
             target: RdPanels
 
             function onLibraryRequested(reveal) {
+                panelOutsidePress._libraryToggled = true
                 rootPlayer.toggleLibrary(reveal)
             }
         }

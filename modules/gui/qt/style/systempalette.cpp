@@ -407,6 +407,10 @@ void SystemPalette::applyRdColors()
     // selected text on Accent/DIm (Figma shows no text selection): FG/1 in Dark; in Light FG/1
     // (#111111) on #965916 reads badly (3.4:1), BG/A1 gives 4.8:1
     rdSelectionText = m_isDark ? rdFg1 : rdBgA1;
+    // the BG/A5 input fields: in Light BG/A5 (#888888) is darker than every other surface and
+    // the FG/A4 placeholder (#8A8A8A, Decision 44) vanishes on it; BG/A3 sits a little darker
+    // than the light pages, as BG/A5 sits a little lighter than the dark ones
+    rdBgField = m_isDark ? rdBgA5 : rdBgA3;
     rdVolumeEmpty = QColor(t.volumeEmpty);
     rdVolumeTint = QColor::fromRgba(t.volumeTint);
 
