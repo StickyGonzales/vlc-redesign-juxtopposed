@@ -15,7 +15,7 @@ Open pull requests that change these rows: #22 (subtitle timeline, "Pressed" lin
 
 ## Linux re-check (wip/linux-recheck)
 
-Test-only branch `wip/linux-recheck` (never merged): wip/next-test plus the open PRs #22, #23, #25 and #26 and the Linux build job. Run 39270926487 (build 10) had everything but the latest PR #22 commits; run 39274608830 (build 11) adds them. Xvfb 1920x1080, scale 100 %, every screenshot looked at.
+Test-only branch `wip/linux-recheck` (never merged): wip/next-test plus the open PRs #22, #23, #25 and #26 and the Linux build job. Run 39270926487 (build 10) had everything but the latest PR #22 commits; run 39274608830 (build 11, green) adds them (the timeline rows below were tested on it). Xvfb 1920x1080, scale 100 %, every screenshot looked at.
 
 | Screen / feature | PR | Result on Linux |
 |---|---|---|
@@ -32,6 +32,11 @@ Test-only branch `wip/linux-recheck` (never merged): wip/next-test plus the open
 | Settings > General > Advanced Options | #22 | pass: "Additional command line options" with the note "Options that change the interface are ignored: --intf, -I, --extraintf, skins" |
 | Library file "..." menu, Add to Playlist > New Playlist... | next-test | pass (run 9): all 12 items in Figma order; the new playlist is created with the file |
 | Library playlist "..." menu | next-test | **finding:** no "Favorite" item (F-11) |
+| Subtitle timeline buttons | #22 | pass (build 11): `-` and `+` touch the bar's ends (no gap pixel), all four buttons 28 px tall in line with the bar; `<` / `-` dimmed at the start of the file |
+| Timeline block colours | #22 | pass: played-side blocks #49331C, unplayed blocks #1F1F1F, played fill #371F06 |
+| Timeline at 760 x 520 and 600 x 520 | #22 | pass: nothing overlaps; at 760 the right controls hide and the volume stays, at 600 the volume hides too; the bar stays wider than a time label (about 150 px); the labels show the timeline window's ends with "*" by design |
+| "Show feedback for" default | #22 (core) | pass: fresh profile, Settings > Subtitles > On-Screen Messages: the thumb sits halfway between the 2.5 s and 3 s ticks (2.75 s) |
+| Message position clear of the top bar | #22 | not done: core layout change, waiting for a decision by StickyGonzales (MUSTHAVES_2_NOTES.md section 9.5) |
 
 ## Player bars and seek bar
 
@@ -48,9 +53,9 @@ Test-only branch `wip/linux-recheck` (never merged): wip/next-test plus the open
 
 | # | ID | Mark | Why / what to do |
 |---|---|---|---|
-| 87 | P3-16 | full Windows test | timeline in the seek bar: PR #22 (core build); redo block drag, G / H, page turn while playing; recheck the button, colour and narrow-window changes |
-| 88 | IA-27 | full Windows test | cue blocks and buttons: PR #22 (core build); redo block drag, G / H, page turn while playing; recheck the button, colour and narrow-window changes |
-| 145 | P4-35 | full Windows test | "Show Subtitle Timeline on Seekbar" row: PR #22 (core build); redo block drag, G / H, page turn while playing; recheck the button, colour and narrow-window changes |
+| 87 | P3-16 | full Windows test | timeline in the seek bar: PR #22 (core build); buttons, block colours and the 760 x 520 window pass on Linux (build 11); on Windows redo block drag, G / H, page turn while playing, and crop the bar next to the video at 7:00 / 7:04 |
+| 88 | IA-27 | full Windows test | cue blocks and buttons: PR #22 (core build); buttons, block colours and the 760 x 520 window pass on Linux (build 11); on Windows redo block drag, G / H, page turn while playing, and crop the bar next to the video at 7:00 / 7:04 |
+| 145 | P4-35 | full Windows test | "Show Subtitle Timeline on Seekbar" row: PR #22 (core build); buttons, block colours and the 760 x 520 window pass on Linux (build 11); on Windows redo block drag, G / H, page turn while playing, and crop the bar next to the video at 7:00 / 7:04 |
 
 ## On-screen messages (PR #22)
 
