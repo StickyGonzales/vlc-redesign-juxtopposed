@@ -45,7 +45,17 @@ Not reproduced on Linux: on these builds the interface thread never waits for th
   - Linux build: see below.
 
 ## Sandbox (Linux), with the fix
-Build: see the next section (test-only branch `wip/fix-quit-linux` = wip/next-test + this fix + the Linux build job; never merge it).
+Build: build-linux run 39313634848 of the test-only branch `wip/fix-quit-linux` (wip/next-test bfc747782b + this fix + the Linux build job; never merge it). Built without errors. Every run below was compared with the build before the fix (39299659350): screenshots looked at side by side.
+
+| Run | Result |
+|---|---|
+| Quit recipe, X11, 3 runs | exit in 0.76 to 0.80 s each (before: 0.65 to 0.83 s) |
+| Quit recipe, Wayland (threaded render loop), 3 runs | exit each time |
+| Quit recipe, X11, player thread held 4 s inside the disable | exit |
+| Two files queued: play, next file (`n`), stop (`s`, the view goes Home), play from Continue Watching, stop and play again, double click fullscreen in, out, in, top bar in fullscreen, Ctrl+Q from fullscreen; X11 | same screens as before the fix at every step (video back in the window after each stop and play, fullscreen in and out); exit in 0.45 s; no assertion or warning in the log |
+| Same on Wayland | same screens as before the fix; exit in 0.25 s |
+
+Seen on Wayland with both builds (so not from this fix): right after the next file and right after leaving fullscreen, the picture is drawn at the old size in the top left for a moment.
 
 ## Retest on Windows
 Use a build of this branch (or wip/next-test with it merged) and the test folder of the hang runs. Before each run, check that no Cone is left running. Stop at the first hang.
