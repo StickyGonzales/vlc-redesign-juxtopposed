@@ -288,7 +288,19 @@ FocusScope {
                 const maximumWidth = (item && item.Layout.maximumWidth > 0) ? item.Layout.maximumWidth : implicitWidth
 
                 if ((loaderLeft.active && (loaderLeft.width > 0)) || (loaderRight.active && (loaderRight.width > 0))) {
-                    return minimumWidth
+                    // redesign: an item that can shrink (the title moved here in Customize
+                    // Player) takes the room both groups leave free around the centered zone,
+                    // instead of staying at its minimum width ("Bet..."); with no room to
+                    // spare this is the minimum width, as before
+                    const groupWidth = (loader) => {
+                        if (!loader.active || !loader.item)
+                            return 0
+                        const group = loader.item
+                        return ((group.Layout.maximumWidth > 0) ? group.Layout.maximumWidth : group.implicitWidth)
+                               + playerControlLayout.layoutSpacing - playerControlLayout.spacing
+                    }
+                    const room = loaderCenter.parent.width - 2 * Math.max(groupWidth(loaderLeft), groupWidth(loaderRight))
+                    return Math.max(minimumWidth, Math.min(maximumWidth, room))
                 } else {
                     return Math.min(loaderCenter.parent.width, maximumWidth)
                 }

@@ -95,9 +95,12 @@ FocusScope{
     // Children
 
     // Figma "topbar": BG/A3 in the dark Player frames, BG/A3 Transparent in "Player - Light"
+    // made opaque like the control bar (its 75 % assumes a background blur: over the video or the
+    // library it showed as off-palette greys, #A0A0A0 over black, #DADADA over BG/B1)
     Rectangle {
         anchors.fill: parent
-        color: VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3 : VLCStyle.palette.rdBgA3Transparent
+        color: VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3
+                                       : Qt.alpha(VLCStyle.palette.rdBgA3Transparent, 1.0)
     }
 
     // the wheel over the top bar, its empty parts included, never reaches the video (volume /
