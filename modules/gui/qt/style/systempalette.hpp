@@ -176,6 +176,12 @@ public:
     COLOR_DEFINITION(rdCoverGlow, QColor(0xFF, 0xFF, 0xFF, 8));
     // the dashed border of the New Playlist drop zone (Figma "new playlist": #2D2D2D)
     COLOR_DEFINITION(rdDropZoneDash, "#2D2D2D");
+    // the subtitle timeline's blocks on the seek bar (video 7:00-7:04, no Figma style): the
+    // surface under them with 9 % white (Dark) or black (Light) over it. Played side: over
+    // BG/Accent Bright (the played fill), #4A331D in the video; the rest: over BG/B2 (the
+    // track), which is BG/A2 in Dark
+    COLOR_DEFINITION(rdSeekBlockPlayed, "#49331C");
+    COLOR_DEFINITION(rdSeekBlockUnplayed, "#1F1F1F");
 
     COLOR_DEFINITION(orange400, "#f89a06"); //FIXME name have been chosen randomly by me
     COLOR_DEFINITION(orange200, "#e29a06"); //FIXME name have been chosen randomly by me

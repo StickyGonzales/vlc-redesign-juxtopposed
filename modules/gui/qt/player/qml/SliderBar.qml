@@ -734,8 +734,9 @@ T.ProgressBar {
             horizontalPadding: VLCStyle.rd_waveformPadding
         }
 
-        // the blocks of the subtitle timeline, over the played fill: on the played side
-        // Accent/DIm, on the rest BG/A1 (IA-27; both follow the live accent and theme)
+        // the blocks of the subtitle timeline, over the played fill: a lighter brown on the
+        // played side, BG/A2 on the rest (IA-27, video 7:00-7:04; both follow the live accent
+        // and theme)
         RdSubtitleTimelineItem {
             id: subtitleTimeline
 
@@ -754,8 +755,8 @@ T.ProgressBar {
             // a window panned away from the playhead is all played or all to come
             playheadX: control._playheadInView ? sliderHandle.x + sliderHandle.width / 2
                      : (control.visualPosition < control._viewFrom ? 0 : width)
-            playedColor: VLCStyle.palette.rdAccentDim
-            unplayedColor: VLCStyle.palette.rdBgA1
+            playedColor: VLCStyle.palette.rdSeekBlockPlayed
+            unplayedColor: VLCStyle.palette.rdSeekBlockUnplayed
         }
 
         Rectangle {
