@@ -36,8 +36,13 @@ Row {
     // true: the buttons left of the bar ("<", "-"), false: right of it ("+", ">")
     property bool leading: true
 
+    // false: the window is too narrow for the buttons (ControlBar's narrow window rule)
+    property bool fits: true
+    // the row's width with both buttons, also while it is hidden
+    readonly property real fullWidth: VLCStyle.rd_timelineChevronWidth + spacing + VLCStyle.rd_timelineButtonWidth
+
     spacing: VLCStyle.dp(4, VLCStyle.scale)
-    visible: root.slider?.timelineShown ?? false
+    visible: (root.slider?.timelineShown ?? false) && root.fits
 
     component TimelineButton: T.AbstractButton {
         id: button

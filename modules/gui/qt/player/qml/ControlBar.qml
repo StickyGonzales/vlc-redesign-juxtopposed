@@ -146,20 +146,28 @@ T.Pane {
     }
 
     // redesign: narrow window. The right controls are hidden first (from the queue button
-    // inwards, VLC's ControlRepeater rule) while the seek row keeps both times; when even the
-    // room left with no right control is too small, the duration goes, then the current time.
-    // The seek bar itself never gets narrower than rd_seekBarMinimumWidth. On its own row the seek
-    // row has the bar's whole width and keeps both times.
+    // inwards, VLC's ControlRepeater rule) while the seek row keeps all its parts; when even the
+    // room left with no right control is too small, the subtitle timeline's buttons go (its
+    // window still turns its pages by itself), then the duration, then the current time. The
+    // seek bar itself never gets narrower than _inlineBarMinimum. On its own row the seek row
+    // has the bar's whole width and keeps every part.
     readonly property real _inlineSpacing: VLCStyle.dp(8, VLCStyle.scale)
     readonly property real _inlineTimeSlot: VLCStyle.rd_timeLabelWidth + _inlineSpacing
-    // the subtitle timeline's buttons on both sides of the bar, while it shows (they touch the
-    // bar: no spacing on its side)
-    readonly property real _inlineTimelineRoom: trackPositionSlider.timelineShown
-                                                ? 2 * timelineLeading.implicitWidth : 0
+    // the subtitle timeline keeps a wider bar than the normal one, so that the blocks of a one
+    // minute window can still be told apart and grabbed, unless the room is smaller
+    readonly property real _inlineBarMinimum: trackPositionSlider.timelineShown
+                                              ? Math.max(VLCStyle.rd_seekBarMinimumWidth,
+                                                         Math.min(VLCStyle.rd_seekTimelineMinimumWidth, playerControlLayout.middleRoom))
+                                              : VLCStyle.rd_seekBarMinimumWidth
+    // the subtitle timeline's buttons on both sides of the bar (they touch the bar: no spacing
+    // on its side)
+    readonly property real _inlineTimelineRoom: 2 * timelineLeading.fullWidth
+    readonly property bool _inlineShowsTimelineButtons: _seekRowOnOwnRow
+                                                        || playerControlLayout.middleRoom >= _inlineBarMinimum + _inlineTimelineRoom + 2 * _inlineTimeSlot
     readonly property bool _inlineShowsTime: _seekRowOnOwnRow
-                                             || playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + _inlineTimelineRoom + _inlineTimeSlot
+                                             || playerControlLayout.middleRoom >= _inlineBarMinimum + _inlineTimeSlot
     readonly property bool _inlineShowsLength: _seekRowOnOwnRow
-                                               || playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + _inlineTimelineRoom + 2 * _inlineTimeSlot
+                                               || playerControlLayout.middleRoom >= _inlineBarMinimum + 2 * _inlineTimeSlot
 
     // redesign: Figma "Controls": BG/A3, no stroke (the 1 px top line was not in the design)
     background: Rectangle {
@@ -427,7 +435,7 @@ T.Pane {
                 AccessibleCompat.id: "progressSlider"
 
                 Layout.fillWidth: true
-                Layout.minimumWidth: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_seekBarMinimumWidth : -1
+                Layout.minimumWidth: (textPosition === ControlBar.TimeTextPosition.Inline) ? root._inlineBarMinimum : -1
                 enabled: Player.playingState === Player.PLAYING_STATE_PLAYING || Player.playingState === Player.PLAYING_STATE_PAUSED
 
                 Navigation.parentItem: root
@@ -451,6 +459,7 @@ T.Pane {
 
                 slider: trackPositionSlider
                 leading: true
+                fits: root._inlineShowsTimelineButtons
                 Layout.alignment: Qt.AlignVCenter
                 Layout.rightMargin: -root._inlineSpacing
             },
@@ -459,6 +468,7 @@ T.Pane {
 
                 slider: trackPositionSlider
                 leading: false
+                fits: root._inlineShowsTimelineButtons
                 Layout.alignment: Qt.AlignVCenter
                 Layout.leftMargin: -root._inlineSpacing
             },
@@ -559,8 +569,9 @@ T.Pane {
             identifier: root.identifier
 
             middleItem: (textPosition === ControlBar.TimeTextPosition.Inline) ? inlineSeekRow : null
-            middleItemMinimumWidth: VLCStyle.rd_seekBarMinimumWidth + (root._inlineShowsTime ? root._inlineTimeSlot : 0)
+            middleItemMinimumWidth: root._inlineBarMinimum + (root._inlineShowsTime ? root._inlineTimeSlot : 0)
                                     + (root._inlineShowsLength ? root._inlineTimeSlot : 0)
+                                    + ((trackPositionSlider.timelineShown && root._inlineShowsTimelineButtons) ? root._inlineTimelineRoom : 0)
             spacing: (textPosition === ControlBar.TimeTextPosition.Inline) ? root._inlineSpacing : VLCStyle.margin_normal
             layoutSpacing: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_controlBarSpacing : VLCStyle.margin_xxlarge
             figmaGaps: textPosition === ControlBar.TimeTextPosition.Inline
