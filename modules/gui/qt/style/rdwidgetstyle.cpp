@@ -127,9 +127,22 @@ QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabl
 QTimeEdit:disabled, QPlainTextEdit:disabled, QTextEdit:disabled {
     color: {fgA4};
 }
+/* lists with alternating rows (the preferences' trees and tables) */
+QListView, QTreeView {
+    alternate-background-color: {bgA4};
+}
 QListView::item, QTreeView::item {
     padding: 4px;
     border-radius: 4px;
+}
+QHeaderView, QHeaderView::section {
+    background-color: {bgB2};
+    color: {fgA3};
+    border: none;
+}
+QHeaderView::section {
+    padding: 4px 8px;
+    border-bottom: 1px solid {dividerDim};
 }
 QListView::item:hover, QTreeView::item:hover {
     background-color: {bgA2};
@@ -170,6 +183,11 @@ QPushButton:pressed, QToolButton:pressed {
 }
 QPushButton:focus, QToolButton:focus {
     border-color: {btnFocus};
+}
+/* the selected one of a row of checkable tool buttons (the preferences' categories) */
+QToolButton:checked {
+    background-color: {bgAccentBright};
+    color: {accentMain};
 }
 QPushButton:disabled, QToolButton:disabled {
     background-color: {btnDisabledBg};
