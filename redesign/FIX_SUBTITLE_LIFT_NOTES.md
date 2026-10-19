@@ -17,3 +17,6 @@ Files: `modules/gui/qt/player/qml/Player.qml`, `modules/gui/qt/player/rd_subtitl
 2. Fullscreen, pointer at the bottom edge: same.
 3. A 16:9 file: unchanged from the beta (line just above the bar).
 4. Pinned controls (video above the bar): subtitles do not move.
+
+## Sandbox result (Linux)
+Build-linux run 39295788358 of the test-only branch `wip/fix-subs-linux` (wip/next-test + this branch + wip/fix-subsdelay + the Linux build job), same 2.39:1 MKV, window 1920 x 1080, bars shown (screenshots every 0.5 s looked at): one-line and two-line cues sit fully above the control bar, nothing under it; bars hidden: the lines go back down onto the black bar. Before (build 11 of wip/linux-recheck): the lower line half under the bar, one-line cues cut.
