@@ -1,3 +1,5 @@
+# Cone {{VERSION}}: Juxtopposed's redesign on a real VLC 4 fork, not a skin
+
 **Cone** is a media player for Windows: the playback engine of VLC media player with a new interface built from Juxtopposed's VLC Redesign.
 
 > **Experimental build.** Cone follows the development branch of VLC 4 (VLC version {{VLC_VERSION}} inside), so expect rough edges and bugs. Keep your normal VLC installed: Cone installs next to it with its own settings, file associations and data folder, and never changes VLC's.

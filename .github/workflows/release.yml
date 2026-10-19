@@ -100,7 +100,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           EVENT: ${{ github.event_name }}
         run: |
-          ARGS=(--title "Cone $VERSION" --notes-file out/release-notes.md)
+          ARGS=(--title "Cone $VERSION: Juxtopposed's redesign on a real VLC 4 fork, not a skin" --notes-file out/release-notes.md)
           if [ "$EVENT" = push ]; then
             ARGS+=(--verify-tag)
           else
