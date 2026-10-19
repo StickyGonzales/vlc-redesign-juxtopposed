@@ -42,6 +42,23 @@
 
 #include "../lib/libvlc_internal.h"
 
+/* redesign (brand layer, public profile): the name, application id and icon the sound mixer
+ * (PulseAudio, PipeWire) and the start banner show for Cone, never VLC's; the id and icon are
+ * the Linux package's desktop file and icon (cone.desktop, cone.png, redesign/LINUX_NOTES.md) */
+#ifdef VLC_BRAND_PUBLIC
+# define APP_ID "cone"
+# define APP_VERSION BRAND_VERSION
+# define APP_ICON_NAME "cone"
+# define USER_AGENT_NAME "Cone"
+# define START_BANNER_FORMAT "Cone " BRAND_VERSION ", based on VLC %s (revision %s)\n"
+#else
+# define APP_ID "org.VideoLAN.VLC"
+# define APP_VERSION PACKAGE_VERSION
+# define APP_ICON_NAME PACKAGE_NAME
+# define USER_AGENT_NAME "VLC media player"
+# define START_BANNER_FORMAT "VLC media player %s (revision %s)\n"
+#endif
+
 #ifdef __OS2__
 # include <iconv.h>
 
@@ -167,7 +184,7 @@ int main(int argc, const char *argv[])
     if (isatty (STDERR_FILENO))
         /* This message clutters error logs. It is printed only on a TTY.
          * Fortunately, LibVLC prints version info with -vv anyway. */
-        fprintf (stderr, "VLC media player %s (revision %s)\n",
+        fprintf (stderr, START_BANNER_FORMAT,
                  libvlc_get_version(), libvlc_get_changeset());
 
     sigset_t set;
@@ -243,8 +260,8 @@ int main(int argc, const char *argv[])
 
     int ret = 1;
     libvlc_SetExitHandler(vlc->p_libvlc_int, vlc_kill, &self);
-    libvlc_set_app_id (vlc, "org.VideoLAN.VLC", PACKAGE_VERSION, PACKAGE_NAME);
-    libvlc_set_user_agent (vlc, "VLC media player", "VLC/"PACKAGE_VERSION);
+    libvlc_set_app_id (vlc, APP_ID, APP_VERSION, APP_ICON_NAME);
+    libvlc_set_user_agent (vlc, USER_AGENT_NAME, "VLC/"PACKAGE_VERSION);
 
     if (libvlc_InternalAddIntf (vlc->p_libvlc_int, NULL))
     {
