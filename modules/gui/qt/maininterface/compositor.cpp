@@ -45,6 +45,11 @@
 #include <vlc_window.h>
 #include <vlc_modules.h>
 
+#include <QThread>
+
+#include <atomic>
+#include <memory>
+
 
 using namespace vlc;
 
@@ -112,6 +117,10 @@ struct CompositorWindow {
     /* Callback setup from commonSetupVoutWindow. It usually comes from the main qt.cpp
      * file so as to handle the reference counting of Qt's resources. */
     void (*destroy_cb)(struct vlc_window *wnd);
+
+    /* redesign: a disable queued to the interface thread that has not run yet (see
+     * windowDisableCb); shared with the queued call, which can outlive this structure */
+    std::shared_ptr<std::atomic<bool>> disablePending = std::make_shared<std::atomic<bool>>(false);
 };
 
 }
@@ -133,9 +142,20 @@ static void windowDisableCb(vlc_window_t* p_wnd)
 {
     assert(p_wnd->sys);
     auto that = static_cast<CompositorWindow*>(p_wnd->sys);
-    QMetaObject::invokeMethod(that->compositor, [that](){
-        that->compositor->windowDisable();
-    }, Qt::BlockingQueuedConnection);
+    // redesign: queued, not blocking. The core calls this with the video output's window lock
+    // held, and at the end of playback also with the input resource lock (the player thread
+    // stops the kept output, input_resource_StopFreeVout). Waiting here for the interface
+    // thread can deadlock, as that thread can itself wait for the window lock (a fullscreen,
+    // on-top or zoom change reaching that output); the Windows quit hang left the player
+    // thread in this wait for good (redesign/FIX_QUIT_DEADLOCK_NOTES.md). The output has
+    // closed its display already; windowDestroyCb runs a disable still waiting here before
+    // the window goes away.
+    that->disablePending->store(true);
+    vlc::CompositorVideo* compositor = that->compositor;
+    QMetaObject::invokeMethod(compositor, [compositor, pending = that->disablePending](){
+        if (pending->exchange(false))
+            compositor->windowDisable();
+    }, Qt::QueuedConnection);
 }
 
 static void windowResizeCb(vlc_window_t* p_wnd, unsigned width, unsigned height)
@@ -149,6 +169,22 @@ static void windowDestroyCb(struct vlc_window * p_wnd)
 {
     assert(p_wnd->sys);
     auto that = static_cast<CompositorWindow*>(p_wnd->sys);
+
+    // redesign: a disable still queued (windowDisableCb) runs first, so the interface stops
+    // using the window before it goes away. The last reference to the output can be dropped
+    // on the interface thread itself (a model holding the output): run it directly there.
+    if (that->disablePending->load())
+    {
+        const auto runPendingDisable = [that](){
+            if (that->disablePending->exchange(false))
+                that->compositor->windowDisable();
+        };
+        if (QThread::currentThread() == that->compositor->thread())
+            runPendingDisable();
+        else
+            QMetaObject::invokeMethod(that->compositor, runPendingDisable, Qt::BlockingQueuedConnection);
+    }
+
     that->compositor->windowDestroy();
     that->compositor = nullptr;
 
