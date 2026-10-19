@@ -2005,7 +2005,9 @@ libqt_plugin_la_BRAND_PUBLIC_RES = \
 	pixmaps/brand/public/cone-48.png \
 	pixmaps/brand/public/cone-64.png \
 	pixmaps/brand/public/cone-128.png \
-	pixmaps/brand/public/cone-256.png
+	pixmaps/brand/public/cone-256.png \
+	pixmaps/brand/public/prefs-sample-modern.png \
+	pixmaps/brand/public/prefs-sample-classic.png
 
 EXTRA_DIST += brand_public.qrc $(libqt_plugin_la_BRAND_PUBLIC_RES)
 
