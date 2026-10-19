@@ -26,23 +26,18 @@ class PlayerController;
 
 /**
  * redesign: keeps the subtitles above the control bar while the bar covers the bottom of the
- * picture (redesign/BETA_SUBS_NOTES.md).
+ * video surface (redesign/BETA_SUBS_NOTES.md).
  *
- * The player sets `lift`, the height in display pixels of the picture the bar covers (0 while
- * the bars are hidden); it goes to every video output as "sub-ui-margin", which VLC adds to the
- * user's "Subtitle position" (sub-margin) and applies to all subtitles, without an on-screen
+ * The player sets `lift`, the height in display pixels of the video surface the bar covers (0
+ * while the bars are hidden); it goes to every video output as "sub-ui-margin", which VLC adds to
+ * the user's "Subtitle position" (sub-margin) and applies to all subtitles, without an on-screen
  * message. A new video output gets the current value.
- *
- * `pictureAspect` is the display aspect ratio of the picture (the playing video track with its
- * pixel aspect and orientation, or the forced aspect ratio), 0 while unknown: the player uses it
- * to find the bottom of the picture inside the video surface (letterboxed films need no lift).
  */
 class RdSubtitleLift : public QObject
 {
     Q_OBJECT
 
     Q_PROPERTY(int lift READ lift WRITE setLift NOTIFY liftChanged FINAL)
-    Q_PROPERTY(double pictureAspect READ pictureAspect NOTIFY pictureAspectChanged FINAL)
 
 public:
     RdSubtitleLift(PlayerController* player, QObject* parent = nullptr);
@@ -50,19 +45,14 @@ public:
     int lift() const { return m_lift; }
     void setLift(int lift);
 
-    double pictureAspect() const { return m_pictureAspect; }
-
 signals:
     void liftChanged();
-    void pictureAspectChanged();
 
 private:
     void apply();
-    void updatePictureAspect();
 
     PlayerController* m_player = nullptr;
     int m_lift = 0;
-    double m_pictureAspect = 0.;
 };
 
 #endif // RD_SUBTITLE_LIFT_HPP
