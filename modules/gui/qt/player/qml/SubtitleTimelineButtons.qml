@@ -16,10 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 // redesign: the buttons beside the subtitle timeline seek bar (IA-27, video 6:52-7:04; no Figma
-// frame, Decision 21): small filled accent squares with dark glyphs, "<" and "-" left of the
-// bar, "+" and ">" right of it. "<" / ">" move the time window by half its length, "-" / "+"
-// show a longer / shorter window (SliderBar.timelinePan / timelineZoom). Shown only while the
-// bar shows the timeline.
+// frame, Decision 21): filled accent buttons with dark glyphs, as tall as the bar and touching
+// its ends (ControlBar removes the row's gap on the bar's side), "<" and "-" left of the bar,
+// "+" and ">" right of it; the chevrons are narrower than "-" / "+" (video 7:04). "<" / ">"
+// move the time window by half its length, "-" / "+" show a longer / shorter window
+// (SliderBar.timelinePan / timelineZoom). Shown only while the bar shows the timeline.
 import QtQuick
 import QtQuick.Templates as T
 
@@ -35,17 +36,24 @@ Row {
     // true: the buttons left of the bar ("<", "-"), false: right of it ("+", ">")
     property bool leading: true
 
+    // false: the window is too narrow for the buttons (ControlBar's narrow window rule)
+    property bool fits: true
+    // the row's width with both buttons, also while it is hidden
+    readonly property real fullWidth: VLCStyle.rd_timelineChevronWidth + spacing + VLCStyle.rd_timelineButtonWidth
+
     spacing: VLCStyle.dp(4, VLCStyle.scale)
-    visible: root.slider?.timelineShown ?? false
+    visible: (root.slider?.timelineShown ?? false) && root.fits
 
     component TimelineButton: T.AbstractButton {
         id: button
 
         property string iconName: ""
         property string tip: ""
+        // "<" / ">" are narrower than "-" / "+"
+        property bool chevron: false
 
-        implicitWidth: VLCStyle.dp(20, VLCStyle.scale)
-        implicitHeight: implicitWidth
+        implicitWidth: button.chevron ? VLCStyle.rd_timelineChevronWidth : VLCStyle.rd_timelineButtonWidth
+        implicitHeight: root.slider?.barHeight ?? VLCStyle.rd_seekBarHeight
         anchors.verticalCenter: parent.verticalCenter
         focusPolicy: Qt.TabFocus
 
@@ -79,6 +87,7 @@ Row {
 
     TimelineButton {
         iconName: root.leading ? "chevron_direction-left" : "add"
+        chevron: root.leading
         tip: root.leading ? qsTr("Show earlier subtitles") : qsTr("Show a shorter time span")
         enabled: root.leading ? (root.slider?.timelineCanPanBack ?? false)
                               : (root.slider?.timelineCanZoomIn ?? false)
@@ -92,6 +101,7 @@ Row {
 
     TimelineButton {
         iconName: root.leading ? "remove" : "chevron_direction-right"
+        chevron: !root.leading
         tip: root.leading ? qsTr("Show a longer time span") : qsTr("Show later subtitles")
         enabled: root.leading ? (root.slider?.timelineCanZoomOut ?? false)
                               : (root.slider?.timelineCanPanForward ?? false)

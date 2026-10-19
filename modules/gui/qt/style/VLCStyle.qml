@@ -375,6 +375,15 @@ QtObject {
     readonly property int rd_waveformPlayheadGap: MainCtx.dp(3, scale)
     // narrow window: the seek bar never gets narrower than a time label
     readonly property int rd_seekBarMinimumWidth: MainCtx.dp(76, scale)
+    // the subtitle timeline's bar stays wider while there is room: 2 px per second of its one
+    // minute window, so a two second line is still a block to grab (the volume control keeps
+    // its place in a 760 px wide window)
+    readonly property int rd_seekTimelineMinimumWidth: MainCtx.dp(120, scale)
+    // the buttons beside the subtitle timeline seek bar (video 7:04, no Figma frame): as tall as
+    // the bar, "-" / "+" about square (20x22 in the video), "<" / ">" narrower (0.73 of the bar
+    // height)
+    readonly property int rd_timelineButtonWidth: MainCtx.dp(26, scale)
+    readonly property int rd_timelineChevronWidth: MainCtx.dp(20, scale)
     // seek bar preview card (Figma "thumbnail" 272x189: padding 10, gap 10, picture 252x142 r4,
     // time box 17 high, card radius rd_radius_large); the prototype opens it at -132,-209 of the
     // 8x24 playhead, so its bottom edge is 18 px above the seek track
