@@ -5299,6 +5299,8 @@ AS_CASE(["${with_brand}"],
         modules/gui/qt/pixmaps/brand/public/cone-64.png \
         modules/gui/qt/pixmaps/brand/public/cone-128.png \
         modules/gui/qt/pixmaps/brand/public/cone-256.png \
+        modules/gui/qt/pixmaps/brand/public/prefs-sample-modern.png \
+        modules/gui/qt/pixmaps/brand/public/prefs-sample-classic.png \
         extras/package/win32/brand/public/cone.ico; do
       AS_IF([test -f "${srcdir}/${brand_file}"],, [
         AC_MSG_ERROR([--with-brand=public needs the Cone logo file ${brand_file}; build with --with-brand=vlc until it is added])

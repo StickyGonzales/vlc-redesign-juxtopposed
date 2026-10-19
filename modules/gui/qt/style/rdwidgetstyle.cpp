@@ -129,7 +129,7 @@ QTimeEdit:disabled, QPlainTextEdit:disabled, QTextEdit:disabled {
 }
 /* lists with alternating rows (the preferences' trees and tables) */
 QListView, QTreeView {
-    alternate-background-color: {bgA4};
+    alternate-background-color: {altRowBg};
 }
 QListView::item, QTreeView::item {
     padding: 4px;
@@ -169,6 +169,12 @@ QPushButton, QToolButton {
     border-radius: 6px;
     padding: 4px 8px;
     font-weight: 600;
+}
+/* the old preferences' layout previews are flat picture buttons (sprefs_interface.ui) */
+QPushButton#modernImage, QPushButton#classicImage, QPushButton#skinImage {
+    background: transparent;
+    border: none;
+    padding: 0px;
 }
 /* fixed 100 px in open_net.ui, too narrow for the Figma button text */
 QPushButton#clearHistoryButton {
@@ -306,6 +312,9 @@ QString makeStyleSheet( const SystemPalette& p )
     const std::pair<const char*, QColor> colors[] = {
         { "{bg}", bg },
         { "{btnBg}", btnBg },
+        /* alternate rows: BG/A4 over the field's BG/B2; in Light half of it, BG/A4 is much
+         * darker than the hover and selection there */
+        { "{altRowBg}", dark ? p.get_rdBgA4() : halfOver( p.get_rdBgA4(), p.get_rdBgB2() ) },
         { "{btnFg}", btnFg },
         { "{btnHoverBg}", dark ? p.get_rdDividerBright() : p.get_rdFgA1() },
         { "{btnHoverFg}", dark ? p.get_rdFg2() : p.get_rdBgA1() },
