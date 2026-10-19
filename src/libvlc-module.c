@@ -1828,7 +1828,8 @@ vlc_module_begin ()
         change_safe ()
     add_bool( "osd", true, OSD_TEXT, OSD_LONGTEXT )
 #ifdef VLC_BRAND_PUBLIC
-    add_integer_with_range( "osd-duration", 1000, 500, 5000,
+    /* redesign: 2.75 s, the slider's position in the video (18:12) and in Figma */
+    add_integer_with_range( "osd-duration", 2750, 500, 5000,
                             OSD_DURATION_TEXT, OSD_DURATION_LONGTEXT )
 #endif
     add_module("text-renderer", "text renderer", "any",
