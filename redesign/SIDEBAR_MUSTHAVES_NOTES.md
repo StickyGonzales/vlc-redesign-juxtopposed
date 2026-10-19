@@ -82,3 +82,11 @@ Checks after the fixes:
   - A row whose two crop values are both 0 links as equal, not by ratio.
   - A linked edit sets the two crop variables one after the other, so one frame may show only one side changed.
   - The EQ curve shapes come from the real gains and differ in detail from Figma's hand-drawn ones.
+
+## EQ preset icons from Figma's own SVGs (PR #25 update, 2026-10-19)
+- Why: the PC session compared the drawn curves on Windows and the shapes still differed from Figma. Each preset now shows its icon exported from Figma's set "name=EQ" (`pixmaps/redesign/eq_eq-<preset>.svg`; Flat is the set's default variant, the plain line, `eq.svg`), through `RdIcon`: the colorizer turns the SVG's #FF00FF into FG/A2 and its #FF8800 into Accent/Main, so the accent colour and the light theme apply live as before.
+- `RdEffects.equalizerPresetIcon(preset)` maps VLC's preset id to the file ("fullbasstreble" to "eq_eq-full-bass-and-treble") and returns an empty name when the file is not in the resources; then the row keeps the curve drawn from the bands (`RdEqCurve`, now only a fallback). All 18 VLC presets have an icon.
+- Files: `player/rd_effects.hpp`, `.cpp`, `player/qml/AudioSettingsPage.qml`, `widgets/qml/RdEqCurve.qml` (comment).
+- Sandbox check: build-linux run 39297306743 (test-only branch `wip/eq-icons-linux`, this branch + the Linux build job), sidebar > Audio > Equalizer list scrolled through all presets: each icon cut 1:1 from the screenshots next to the same variant cropped from Figma `Icon.png` (scaled to 1x): same shapes and positions for all 18, the largest difference 26 / 255 on a few edge pixels (anti-aliasing, Figma's 2x export scaled down). Offline, the recoloured SVGs rendered with Qt at 2x against `Icon.png`: at most 4 edge pixels per icon differ. Light theme: the line turns Light FG/A2, the shapes stay Accent/Main.
+- Checks: qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0; `rd_effects.cpp` compiles without warnings (-Wall -Wextra, Qt 6 headers).
+- Retest on Windows: sidebar > Audio > Equalizer: each preset's icon next to Figma "EQ presets" / the "name=EQ" icons; switch the accent colour and the light theme with the list open.
