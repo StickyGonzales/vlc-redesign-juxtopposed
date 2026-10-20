@@ -307,6 +307,7 @@ Extra decisions made during the build, one line each (date, row IDs, decision, r
 - 2026-10-18 web fixes 1 (P8-07): Privacy page keeps "Ask about internet access when Cone starts" (VLC's first-run question, qt-privacy-ask), placed after Figma's rows at the end of Network, so every Figma row keeps its place.
 - 2026-10-18 web fixes 1 (IA-29): "Applies from the next file" is not a line in the sidebar's Subtitles Defaults (Figma has none) but part of the info popovers of the same options in Settings (Default subtitle track, Preferred language).
 - 2026-10-18 web fixes 1 (P3-10): External Tracks rows show the file name as in Figma "Frame 67" (with extension, no language), also for a file added during playback.
+- 2026-10-20 quit watchdog (PC session, handed over by StickyGonzales): when a quit starts (main window close, Quit, Ctrl+Q) Cone saves the Qt and VLC settings and the resume position of the current media, then ends itself if it is still running 5 s later (logged in the Cone log), so a quit that hangs in teardown never leaves Cone running without a window. Both profiles, Windows and Linux; redesign/QUIT_WATCHDOG_NOTES.md.
 
 ## Core changes (status)
 Approved by Decision 27 (minimal and isolated); reverse playback postponed (Decision 29).

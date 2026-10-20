@@ -98,6 +98,7 @@ extern "C" char **environ;
 #include "style/defaultthemeproviders.hpp"
 #include "style/rdfonts.hpp"
 #include "util/brand.hpp"
+#include "util/quit_watchdog.hpp"
 #include "dialogs/extensions/extensions_manager.hpp" /* Extensions manager */
 #include "dialogs/help/help.hpp"     /* Launch Update */
 #include "util/dismiss_popup_event_filter.hpp"
@@ -849,6 +850,8 @@ static void Close( vlc_object_t *p_this )
     auto p_intf = reinterpret_cast<qt_intf_t*>(intfThread->p_sys);
     if (p_intf)
     {
+        QuitWatchdog::interfaceClosing();
+
         //cleanup the interface
         QMetaObject::invokeMethod( p_intf->p_mi, [p_intf] () {
             ThreadCleanup(p_intf, CLEANUP_INTF_CLOSED);

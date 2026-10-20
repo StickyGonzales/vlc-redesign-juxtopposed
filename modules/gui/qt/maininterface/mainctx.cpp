@@ -42,6 +42,7 @@
 
 #include "util/vlchotkeyconverter.hpp"
 #include "util/qt_dirs.hpp"                     // toNativeSeparators
+#include "util/quit_watchdog.hpp"
 
 #include "util/color_scheme_model.hpp"
 
@@ -980,6 +981,9 @@ void MainCtx::onWindowClose( QWindow* )
 {
     PlaylistController* playlistController = p_intf->p_mainPlaylistController;
     PlayerController* playerController = p_intf->p_mainPlayerController;
+
+    // redesign: the quit starts here (the stop below can hang in the core): save and arm
+    QuitWatchdog::arm(p_intf);
 
     if (m_videoSurfaceProvider)
         m_videoSurfaceProvider->onWindowClosed();
