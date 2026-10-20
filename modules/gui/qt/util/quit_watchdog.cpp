@@ -107,10 +107,12 @@ void saveState(qt_intf_t *p_intf)
     saveResumePosition(p_intf);
 }
 
-/* through the VLC logger (the Cone log) while the interface object exists; never blocks
- * the caller for long: the caller ends the process after kLogGrace whatever happens here */
+/* stderr, then the VLC logger (the Cone log) while the interface object exists; runs on its
+ * own thread: the caller ends the process after kLogGrace whatever happens here */
 void logFired(long long seconds)
 {
+    fprintf(stderr, "quit watchdog: quit did not finish within %lld s, ending the process\n",
+            seconds);
     std::unique_lock<std::mutex> lock(s_logLock, std::try_to_lock);
     if (lock.owns_lock() && s_intf != nullptr)
         msg_Err(s_intf, "quit watchdog: Cone did not finish quitting within %lld s, ending the "
@@ -120,7 +122,6 @@ void logFired(long long seconds)
 
 [[noreturn]] void endProcess()
 {
-    fflush(nullptr);
 #ifdef _WIN32
     TerminateProcess(GetCurrentProcess(), 0);
 #endif
@@ -132,8 +133,7 @@ void startTimer(std::chrono::seconds timeout)
     std::thread([timeout]() {
         std::this_thread::sleep_for(timeout);
         const long long seconds = static_cast<long long>(timeout.count());
-        fprintf(stderr, "quit watchdog: quit did not finish within %lld s, ending the process\n",
-                seconds);
+        /* nothing on this path may wait for a lock (stdio, the logger): the log thread does */
 #ifdef _WIN32
         OutputDebugStringW(L"quit watchdog: quit did not finish in time, ending the process\n");
 #endif
