@@ -135,6 +135,8 @@ public:
     // the media addresses of a playlist, in its order: callback([mrl]) (the Add Subtitles
     // dialog's "To This Playlist", W6.5)
     Q_INVOKABLE void playlistMedia(const MLItemId& playlistId, QJSValue callback);
+    // calls callback(bool) with the playlist's favorite state (read on the media library thread)
+    Q_INVOKABLE void playlistFavorite(const MLItemId& playlistId, QJSValue callback);
 
     // media and containers
     Q_INVOKABLE void setWatched(const QVariantList& mediaIds, bool watched);

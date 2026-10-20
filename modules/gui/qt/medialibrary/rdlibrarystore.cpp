@@ -1026,6 +1026,28 @@ void RdLibraryStore::playlistMedia(const MLItemId& playlistId, QJSValue callback
     });
 }
 
+void RdLibraryStore::playlistFavorite(const MLItemId& playlistId, QJSValue callback)
+{
+    if (!m_mediaLib || !playlistId.isValid() || !callback.isCallable())
+        return;
+
+    struct Ctx {
+        bool favorite = false;
+    };
+    const int64_t id = playlistId.id;
+    m_mediaLib->runOnMLThread<Ctx>(this,
+    [id](vlc_medialibrary_t* ml, Ctx& ctx) {
+        ml_unique_ptr<vlc_ml_playlist_t> playlist(vlc_ml_get_playlist(ml, id));
+        if (playlist)
+            ctx.favorite = playlist->b_is_favorite;
+    },
+    [this, callback](quint64, Ctx& ctx) mutable {
+        if (!qjsEngine(this))
+            return;
+        callback.call({ QJSValue(ctx.favorite) });
+    });
+}
+
 /* media */
 
 void RdLibraryStore::setWatched(const QVariantList& mediaIds, bool watched)

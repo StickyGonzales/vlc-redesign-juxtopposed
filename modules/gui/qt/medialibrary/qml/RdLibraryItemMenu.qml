@@ -35,6 +35,25 @@ Item {
     // the page the menu belongs to (RdLibraryNav location)
     property var location: RdLibraryNav.location
 
+    // the favorite state of the playlist shown by the page (its header "...", Figma "playlist
+    // context menu" F-11): the location does not carry it, so it is read when the page opens,
+    // off the UI thread, and the menu still opens at once
+    property var _pageFavorite: undefined
+
+    function _readPageFavorite() {
+        _pageFavorite = undefined
+        const loc = root.location
+        if (!loc || loc.page !== "playlist" || !loc.id)
+            return
+        RdLibraryStore.playlistFavorite(loc.id, (favorite) => {
+            if (root.location === loc)
+                root._pageFavorite = favorite
+        })
+    }
+
+    onLocationChanged: _readPageFavorite()
+    Component.onCompleted: _readPageFavorite()
+
     function _fileEntries(item) {
         const isLocal = (item.mrl ?? "").startsWith("file://")
         const isMl = item.kind === "media" && item.id && item.id.isValid()
@@ -81,7 +100,12 @@ Item {
             { text: qsTr("Play"), icon: "playback_two-tone-yes", action: () => RdLibraryActions.play(item) },
             // only where the model knows the favorite state, so it can be cleared again
             item.isFavorite !== undefined ? { text: qsTr("Favorite"), icon: "favorite_two-tone-yes", selected: !!item.isFavorite,
-                                              action: () => RdLibraryActions.toggleFavorite(item) } : null,
+                                              action: () => {
+                                                  RdLibraryActions.toggleFavorite(item)
+                                                  // the page's own state: the next menu shows the new one
+                                                  if (item.isPage)
+                                                      root._pageFavorite = !item.isFavorite
+                                              } } : null,
             { text: qsTr("Shuffle"), icon: "shuffle_two-tone-yes_direction-right", action: () => RdLibraryActions.shuffle(item) },
             { text: qsTr("Export Playlist"), icon: "save_two-tone-yes",
               action: () => RdLibraryStore.exportPlaylist(item.id, item.title) },
@@ -193,7 +217,8 @@ Item {
             entries = _folderEntries(null, "music")
             break
         case "playlist":
-            entries = _playlistEntries({ kind: "playlist", id: loc.id, title: loc.title })
+            entries = _playlistEntries({ kind: "playlist", id: loc.id, title: loc.title,
+                                         isFavorite: root._pageFavorite, isPage: true })
             break
         case "playlists":
             entries = [{ text: qsTr("Create playlist"), icon: "add", action: () => RdLibraryNav.playlistDialogRequested({ items: [] }) }]
