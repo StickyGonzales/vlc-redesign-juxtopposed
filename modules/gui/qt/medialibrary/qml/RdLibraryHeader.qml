@@ -67,13 +67,17 @@ Item {
         return qsTr("%1 - %2").arg(count).arg(status)
     }
 
-    // closing the search clears it
+    // closing the search clears it; the keyboard stays in the library, not in the hidden field
+    // (it kept the next Escape, which then never closed the library)
     onSearchOpenChanged: {
         if (searchOpen)
             return
+        const hadFocus = searchField.editing
         searchField.text = ""
         if (page)
             page.searchText = ""
+        if (hadFocus)
+            root.forceActiveFocus()
     }
 
     // the address line on screen, kept for the crossfade into the next one
@@ -458,6 +462,7 @@ Item {
 
         property alias text: input.text
         property Item page
+        readonly property bool editing: input.activeFocus
 
         signal escaped()
 

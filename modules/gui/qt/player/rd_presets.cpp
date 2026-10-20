@@ -273,25 +273,43 @@ Qt::CaseSensitivity pathCase()
 // "Default Preset" is VLC's own behavior: it keeps none of the values VLC starts again for every
 // file (the delays, zoom, aspect ratio and crop), so a delay fixed for one file does not follow
 // every file played after it. The speed, subtitle speed, stereo mode and visualizer VLC itself
-// keeps from file to file: so does "Default Preset".
-void stripPerFile(QJsonObject& values)
+// keeps from file to file, until it quits: so does "Default Preset" (`session` true while it
+// runs; false when the presets are read at start, which begins again with VLC's values).
+bool keptFromFileToFile(const Entry& entry)
+{
+    return entry.kind == Kind::Rate || entry.kind == Kind::SubFps
+            || qstrcmp(entry.name, "stereo-mode") == 0 || qstrcmp(entry.name, "visual") == 0;
+}
+
+void stripPerFile(QJsonObject& values, bool session)
 {
     for (const Entry& entry : entries())
     {
-        const bool kept = entry.kind == Kind::Rate || entry.kind == Kind::SubFps
-                || qstrcmp(entry.name, "stereo-mode") == 0 || qstrcmp(entry.name, "visual") == 0;
-        if (entry.perFile && !kept)
+        if (entry.perFile && !(session && keptFromFileToFile(entry)))
             values.remove(keyOf(entry));
     }
 }
 
-// the values "Default Preset" applies: its own, and the file's delays at VLC's start values, so
-// leaving a show's preset puts them back
+// a value a new video or audio output starts again from VLC's default (it is kept on the output
+// only): the zoom, aspect ratio and crop lists, the crop margins and the stereo mode. The
+// visualizer is not one: choosing it is what restarts the audio output, which keeps the choice
+bool outputValue(const Entry& entry)
+{
+    return (entry.kind == Kind::Choice && qstrcmp(entry.name, "visual") != 0)
+            || (entry.kind == Kind::VideoValue && entry.perFile);
+}
+
+// the values "Default Preset" applies: its own, the file's delays at VLC's start values, and the
+// speeds at VLC's start values while it has none of its own yet, so leaving a show's preset puts
+// them back
 QJsonObject defaultValues(const QJsonObject& values)
 {
     QJsonObject result = values;
     result.insert(keyOf({ Kind::SubDelay, "sub-delay", true }), 0);
     result.insert(keyOf({ Kind::AudioDelay, "audio-delay", true }), 0);
+    for (const Entry& speed : { Entry { Kind::Rate, "rate", true }, Entry { Kind::SubFps, "sub-fps", true } })
+        if (!result.contains(keyOf(speed)))
+            result.insert(keyOf(speed), 1.0);
     return result;
 }
 
@@ -309,6 +327,12 @@ RdPresets::RdPresets(qt_intf_t* intf, RdEffects* effects, QObject* parent)
     m_captureTimer.setInterval(captureDelay);
     connect(&m_captureTimer, &QTimer::timeout, this, &RdPresets::captureIntoCurrent);
 
+    // the lists of a new output reset one after another, and the cached values of the output
+    // (RdEffects) are read again just after: the output's values go out once, after both
+    m_outputsTimer.setSingleShot(true);
+    m_outputsTimer.setInterval(0);
+    connect(&m_outputsTimer, &QTimer::timeout, this, &RdPresets::applyToOutputs);
+
     // a change anywhere (sidebar, hotkeys, the Settings dialog) is kept in the selected preset
     connect(m_effects, &RdEffects::changed, this, &RdPresets::scheduleCapture);
     connect(m_player, &PlayerController::rateChanged, this, &RdPresets::scheduleCapture);
@@ -324,8 +348,8 @@ RdPresets::RdPresets(qt_intf_t* intf, RdEffects* effects, QObject* parent)
         connect(model, &QAbstractItemModel::dataChanged, this, &RdPresets::scheduleCapture);
         // the video and audio outputs can come after the file starts playing: their lists fill
         // then, and the file's values that need them go out at that moment
-        connect(model, &QAbstractItemModel::modelReset, this, &RdPresets::onOutputsChanged);
-        connect(model, &QAbstractItemModel::rowsInserted, this, &RdPresets::onOutputsChanged);
+        connect(model, &QAbstractItemModel::modelReset, &m_outputsTimer, qOverload<>(&QTimer::start));
+        connect(model, &QAbstractItemModel::rowsInserted, &m_outputsTimer, qOverload<>(&QTimer::start));
     }
 
     connect(m_player, &PlayerController::inputChanged, this, &RdPresets::onInputChanged);
@@ -663,9 +687,10 @@ QJsonObject RdPresets::capture() const
     return values;
 }
 
-void RdPresets::apply(const Preset& preset, bool perFileOnly)
+void RdPresets::apply(const Preset& preset, bool perFileOnly, bool listsOnly)
 {
-    const QJsonObject values = preset.id == defaultId ? defaultValues(preset.values) : preset.values;
+    const QJsonObject values = preset.id == defaultId && !listsOnly ? defaultValues(preset.values)
+                                                                    : preset.values;
 
     // the values this changes are not a change of the user's
     const bool wasBlocked = m_captureBlocked;
@@ -676,7 +701,8 @@ void RdPresets::apply(const Preset& preset, bool perFileOnly)
 
     for (const Entry& entry : entries())
     {
-        if (perFileOnly && !entry.perFile)
+        if ((perFileOnly && !entry.perFile)
+                || (listsOnly && entry.kind != Kind::Choice && !(entry.kind == Kind::VideoValue && entry.perFile)))
             continue;
         const QString key = keyOf(entry);
         const QJsonValue stored = values.value(key);
@@ -792,7 +818,7 @@ void RdPresets::captureIntoCurrent()
     bool changed = false;
     QJsonObject values = capture();
     if (preset->id == defaultId)
-        stripPerFile(values);
+        stripPerFile(values, true);
     for (auto it = values.begin(); it != values.end(); ++it)
     {
         if (!preset->values.contains(it.key()) || !sameValue(preset->values.value(it.key()), it.value()))
@@ -819,8 +845,9 @@ void RdPresets::onInputChanged(bool hasInput)
         if (Preset* preset = find(m_currentId))
         {
             const QJsonObject values = capture();
+            // (the speeds, stereo mode and visualizer go on to the next file: they are kept too)
             for (const Entry& entry : entries())
-                if (!entry.perFile && values.contains(keyOf(entry)))
+                if ((!entry.perFile || keptFromFileToFile(entry)) && values.contains(keyOf(entry)))
                     preset->values.insert(keyOf(entry), values.value(keyOf(entry)));
             save();
         }
@@ -906,13 +933,42 @@ void RdPresets::onPlayingStateChanged()
     m_captureBlocked = false;
 }
 
-void RdPresets::onOutputsChanged()
+void RdPresets::applyToOutputs()
 {
     if (!m_loaded || m_pendingApply
             || m_player->getPlayingState() == PlayerController::PLAYING_STATE_STOPPED)
         return;
-    if (const Preset* preset = find(m_currentId))
-        apply(*preset, true);
+    Preset* preset = find(m_currentId);
+    if (!preset)
+        return;
+
+    // a change still settling (a visualizer just picked restarts the audio output) is kept
+    // first, so the preset does not put the previous value back; the new output's own values
+    // are VLC's defaults, not a change of the user's
+    if (m_captureTimer.isActive() && !m_captureBlocked)
+    {
+        m_captureTimer.stop();
+        QJsonObject values = capture();
+        if (preset->id == defaultId)
+            stripPerFile(values, true);
+        bool changed = false;
+        for (const Entry& entry : entries())
+        {
+            const QString key = keyOf(entry);
+            if (outputValue(entry) || !values.contains(key))
+                continue;
+            if (!preset->values.contains(key) || !sameValue(preset->values.value(key), values.value(key)))
+            {
+                preset->values.insert(key, values.value(key));
+                changed = true;
+            }
+        }
+        if (changed)
+            save();
+    }
+    // only the values the new output keeps: the delays and the speed do not depend on it, and
+    // the ones set while the file plays stay
+    apply(*preset, true, true);
 }
 
 QString RdPresets::linkedPreset(const QString& folder) const
@@ -957,7 +1013,7 @@ void RdPresets::load(const QJsonObject& data)
         builtin.values = capture();
         m_presets.append(builtin);
     }
-    stripPerFile(find(defaultId)->values);
+    stripPerFile(find(defaultId)->values, false);
 
     m_currentId = data.value(QStringLiteral("current")).toString();
     if (!find(m_currentId))

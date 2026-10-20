@@ -113,15 +113,18 @@ private:
 
     // the settings as they are now, and applying stored ones (only those that differ)
     QJsonObject capture() const;
-    // "Default Preset" also puts the delays of the file back to 0
-    void apply(const Preset& preset, bool perFileOnly);
+    // "Default Preset" also puts the delays of the file back to 0, except with `listsOnly`: then
+    // only the values an output keeps (its lists: zoom, crop, stereo mode, visualizer ...; the
+    // crop margins) go out
+    void apply(const Preset& preset, bool perFileOnly, bool listsOnly = false);
     void scheduleCapture();
     void captureIntoCurrent();
 
     void onInputChanged(bool hasInput);
     void onPlayingStateChanged();
-    // a video or audio output appeared: its lists (zoom, crop, stereo mode ...) can take values
-    void onOutputsChanged();
+    // a video or audio output appeared: its lists (zoom, crop, stereo mode ...) and the crop
+    // margins can take values
+    void applyToOutputs();
     // the preset tied to `folder` or to the closest folder above it, empty when none
     QString linkedPreset(const QString& folder) const;
 
@@ -146,6 +149,7 @@ private:
 
     // changes are kept in the selected preset once they settle
     QTimer m_captureTimer;
+    QTimer m_outputsTimer;
     QThreadPool m_storePool;
 };
 
