@@ -8,11 +8,11 @@
 
 ## Download
 
-**[Cone 0.1.0 beta](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.1.0-beta)** is out.
+**[Cone 0.2.0 beta](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.2.0-beta)** is out.
 
-1. Grab `Cone-0.1.0-beta-win64.zip` (Windows 10 / 11, 64-bit).
+1. Grab `Cone-0.2.0-beta-win64.zip` (Windows 10 / 11, 64-bit).
 2. Unzip it anywhere and run `Cone.exe`. Nothing gets installed.
-3. Your settings stay in the `portable` folder next to `Cone.exe`. Your installed VLC isn't touched, and both can run side by side.
+3. Your settings stay in the `portable` folder next to `Cone.exe`. Your installed VLC isn't touched, and both can run side by side. Coming from 0.1.0 beta? Copy its `portable` folder over to keep your settings.
 
 It's a beta built on VLC 4 development code, so expect rough edges. Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues).
 
@@ -28,24 +28,26 @@ It's a beta built on VLC 4 development code, so expect rough edges. Found a bug?
 - Subtitles move above the control bar while it shows
 - Its own settings folder, its own entry in the Windows volume mixer and its own single-instance name, so it never takes over an installed VLC
 
-## Coming in beta 2
+## New in 0.2.0 beta
 
-- A subtitle timeline on the seek bar, for syncing subtitles by eye
-- A "Pressed" line under on-screen messages that shows the key you pressed
+- A subtitle timeline on the seek bar: every subtitle line is a block you can drag to sync subtitles by eye
+- On-screen messages show the key you pressed ("Pressed C")
 - An "Additional command line options" field in Settings
-- Equalizer preset icons drawn exactly like the Figma design
-- A link button for the crop filter, so all four edges change together
-- A fix for a video freeze after switching subtitle tracks, and for Cone sometimes not quitting
+- Equalizer preset icons drawn like the Figma design, and a link button for the crop filter
+- "All Cone Settings" (VLC's full preferences) in Cone's look, and no file name over the video when a film starts
+- Fixes: a video freeze with subtitles, Cone sometimes not quitting (a stuck quit now ends by itself after 5 s, with your settings saved), Escape closes the library, and the beta 1 issues with the About dialog, the light theme line and external subtitle names
 
-## Known issues (beta 1)
+Full list: [release notes](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.2.0-beta).
 
+## Known issues (0.2.0 beta)
+
+- With an audio visualizer on (for example Spectrometer), switching the audio track turns the visualizer window white.
+- Picking the Spectrometer visualizer can, rarely, crash Cone.
+- After a long session with many seeks and track switches on some HEVC (x265) videos, quitting can take 5 seconds. Settings and the resume position are kept.
+- Pressing M (mute) shows only the mute icon, without "Pressed M".
 - Rarely, Windows logs a background error after closing Settings. Nothing visible happens.
-- Escape doesn't close the library sidebar in the player. Use the library button.
 - New Cone texts are in English in every language for now.
-- The app says 0.1.0; "beta" is only in the file names.
-- The About dialog still has the old light look in dark mode.
-- Light theme: a thin grey line at the top of the control bar.
-- An external subtitle file is listed with its full file name.
+- The app says 0.2.0; "beta" is only in the file names.
 - The installer comes later; this beta is the portable zip only.
 - The portable zip doesn't show up in Windows' "Open with" menu yet. Drag files onto Cone, or use "Choose another app" and browse to `Cone.exe`.
 - Like VLC, Cone keeps a small graphics cache in `%LOCALAPPDATA%\Cone\cache`, even when run from the zip.
@@ -73,7 +75,7 @@ Juxtopposed's Figma frames, the source for every size, color and spacing in Cone
 
 ## Cone extras (not part of Juxtopposed's design)
 
-Features Cone adds beyond Juxtopposed's design (in neither her video nor her Figma file) are listed here, each marked as a Cone extra. They are not part of beta 2 or 1.0: each is built on its own branch and arrives after 1.0, starting with 1.1.
+Features Cone adds beyond Juxtopposed's design (in neither her video nor her Figma file) are listed here, each marked as a Cone extra. They are not part of the betas or 1.0: each is built on its own branch and arrives after 1.0, starting with 1.1.
 
 | Cone extra | Status | What it does |
 |---|---|---|
