@@ -1,6 +1,6 @@
 # Sandbox bug sweep of the beta (branch claude/zen-mendel-p1anpd)
 
-StickyGonzales reported that "half of the stuff doesn't really work" in the published beta. Section 6 adds Decisions 67 and 68 (2026-10-19). The web session swept the beta's code in its Linux sandbox and fixed what it found. Branch made from `wip/next-test` 2ffda4e20b (the beta in `redesign` plus the fixes already tested on Windows; every file changed here is identical in `redesign`). Pull request into `wip/next-test`. **Verified on Linux only** (screenshots below, in the session's scratchpad, not committed): it needs one Windows build and a test round on the PC before it goes on (Decision 55). One core change: the default of `video-title-show` in the Cone build (Decision 67, section 6).
+StickyGonzales reported that "half of the stuff doesn't really work" in the published beta. Section 6 adds Decisions 69 and 70 (2026-10-19). The web session swept the beta's code in its Linux sandbox and fixed what it found. Branch made from `wip/next-test` 2ffda4e20b (the beta in `redesign` plus the fixes already tested on Windows; every file changed here is identical in `redesign`). Pull request into `wip/next-test`. **Verified on Linux only** (screenshots below, in the session's scratchpad, not committed): it needs one Windows build and a test round on the PC before it goes on (Decision 55). One core change: the default of `video-title-show` in the Cone build (Decision 69, section 6).
 
 ## 1. How it was tested
 - Built `wip/next-test` with `--with-brand=public --disable-skins2` and the media library in VideoLAN's Debian image (Qt 6.10.2), run on Xvfb at 1500 x 900 with xdotool input and a screenshot after every step; the QML warnings of each step were read from the log.
@@ -34,16 +34,16 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
 - Settings > Subtitles "Size values" stays Relative / Precise: the pixel size is still waiting on Sticky's decision (CLAUDE.md).
 - Stock VLC behavior, left as is: a single click on the video pauses (VLC 4's mouse-pause-policy), the control bar switches to the audio layout for a moment at the end of a video, clicking a library item adds it to the queue and plays it.
 
-## 6. Decisions 67 and 68 (StickyGonzales, 2026-10-19)
+## 6. Decisions 69 and 70 (StickyGonzales, 2026-10-19)
 
-### Decision 67: no file name over the video in Cone
+### Decision 69: no file name over the video in Cone
 - VLC showed the file name at the bottom of the video for 5 s whenever a file started; under Cone's control bar it was half hidden, and the top bar shows the title already.
 - **Change (core, one line, public profile only):** `src/libvlc-module.c`, the default of `video-title-show` is false inside `#ifdef VLC_BRAND_PUBLIC`; the vlc profile keeps VLC's default (on). Listed in VIDEO_INDEX "Core changes (status)".
 - Settings > Subtitles > On-Screen Messages "Show filename when a video starts" still turns it on. A settings file that saved the old value keeps it; VLC only writes values that differ from the default, so a beta's settings file has none and follows the new default.
 - Verified in the sandbox: the beta shows "movie.mp4" over the video at 0:03; the new build shows nothing from 0:02 to 0:05 (a screenshot every 0.3 s from the start of the file).
 - Build rule note: this PR now holds one core change next to its Qt changes. It is a default value inside the brand switch, nothing else in core moves; if the core changes must still get their own build, the commit "core: Cone starts without the file name over the video" is separate and can go alone.
 
-### Decision 68: "All Cone Settings" with the Cone logo and the redesign's look
+### Decision 70: "All Cone Settings" with the Cone logo and the redesign's look
 - **Cone logo for every VLC cone picture (public profile only):**
   - the category icons of the Simple view (Interface, Audio, Video, Subtitles / OSD, Input / Codecs, Hotkeys, and Media Library when the media library is on) show the Cone logo (`:/brand/cone-128.png`, already in the public build);
   - the Modern / Classic layout previews are new pictures, `pixmaps/brand/public/prefs-sample-modern.png` and `prefs-sample-classic.png`: VLC's previews with the Cone logo in place of the cone (video area and title bar) and "Cone" as the window title. They are made by `redesign/tools/make_prefs_samples.sh` (ImageMagick 6) from VLC's own previews, so they can be made again.
@@ -56,7 +56,7 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
   - "Customize Toolbar" in the Interface page still opens VLC's old toolbar editor, and the Interface page's "Modern / Classic" choice and window style options are VLC's (they still work).
 - Verified in the sandbox: before / after screenshots of the Interface page, Hotkeys, the All tree and the Expert list in Dark, and Hotkeys and the All tree in Light.
 - Reviewed by a fresh agent: no HIGH findings; the preview tiles, the Light row contrast and the brand file checks it found are fixed.
-- Numbering: Decision 66 ("Additional command line options" ignores interface options) is on `wip/musthaves-2` (PR #22) and not in this branch yet; merging both keeps 66, 67 and 68 in order.
+- Numbering (2026-10-20): first recorded here as 67 and 68, which clashed with the filter previews (67, PR #28) and the release title rule (68) on `wip/next-test`; renumbered to 69 and 70, the next free numbers across `redesign` and every open branch (the older commit messages of this branch still say 67 and 68). Decision 66 ("Additional command line options" ignores interface options) is on `wip/musthaves-2` (PR #22).
 
 ## 7. How to test on Windows
 1. Play a video with subtitles, set Subtitle Track Delay to about 2 s in the sidebar, then pick Spectrometer under Playback > Audio Visualizer: the delay stays, the visualizer stays selected and shows. Press `B` (audio track): the delay stays.
@@ -69,3 +69,24 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
 8. Quit hang sequence from STATUS.md on the real film.
 9. Play a video from the start: no file name over the video. Settings > Subtitles > "Show filename when a video starts" on: it shows again on the next file.
 10. Settings > All Cone Settings: Cone logos on the seven categories and in both layout previews; the window dark, then Light after switching the theme in Settings > General; the selected category in the accent color; the Hotkeys table and the All / Expert lists readable (no white rows).
+
+## 8. Follow-up: Escape after the library search (branch wip/fix-library-escape, PR into this branch)
+The PC's Windows test of fix 6 failed on one step: type in the library search, Escape closes the search, and **the second Escape does not close the library**.
+
+- **Cause:**
+  1. Escape in the compact library's search field cleared and hid the field, but the keyboard focus stayed on its hidden text box. A hidden Qt Quick item keeps the focus.
+  2. The player's Escape shortcut is off while a text box in the library has the focus, so that the first Escape reaches the search.
+  3. So the second Escape went to the hidden box again, which had nothing left to close.
+- **Fix:**
+  - `medialibrary/qml/RdLibraryHeader.qml`: closing the search moves the focus to the library header when the field had it. The keyboard stays in the library, and typing no longer goes into a hidden field.
+  - `player/qml/Player.qml`: the shortcut only stands back for a text box that is shown.
+- **Checks:** qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
+- **Sandbox (Linux build 39420016007, test-only branch `wip/fix-library-escape-linux` = this branch + the Linux build job; screenshots looked at):**
+  - Compact library > Videos, search, type "abc": first Escape closes the search (the list comes back), second Escape closes the library.
+  - No regression: Escape alone closes the library, and so does Escape after a click in it (Music page).
+  - Not checked in the sandbox: the keyboard case (Tab into the library, Enter on a folder, Escape goes back a page), because the sandbox library is empty.
+
+**Retest on Windows** (build of this branch merged with #26, or #26 after this PR merges):
+1. Library open, click in its search, type a few letters. Escape: the search closes and the list shows everything again. Escape: the library closes.
+2. Library open, search open and typed, then click the search button again (the search closes): Escape closes the library.
+3. The other step-6 checks still pass: Escape alone closes the library, and closes it after a click on a folder. With the keyboard (Tab into the library, arrows, Enter on a folder), Escape goes back a page.

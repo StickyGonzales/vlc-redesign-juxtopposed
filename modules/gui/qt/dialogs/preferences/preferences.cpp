@@ -91,7 +91,7 @@ PrefsDialog::PrefsDialog( QWindow *parent, qt_intf_t *_p_intf )
     QPushButton *cancel = new QPushButton( qtr( "&Cancel" ) );
     QPushButton *reset = new QPushButton( qtr( "&Reset Preferences" ) );
 
-    /* redesign (Decision 68): the redesign's dialog look, following the color scheme live,
+    /* redesign (Decision 70): the redesign's dialog look, following the color scheme live,
      * as the other dialogs that stay Qt widgets */
     RdWidgetStyle::apply( this, p_intf );
     RdWidgetStyle::setPrimary( save );

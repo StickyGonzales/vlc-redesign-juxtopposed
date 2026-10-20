@@ -2227,7 +2227,7 @@ FocusScope {
     readonly property Item _focusItem: Window.activeFocusItem
     readonly property bool _escapeClosesLibrary: _libraryShown
             && !(librarySidebar.activeFocus
-                 && ((_focusItem instanceof TextInput)
+                 && (((_focusItem instanceof TextInput) && _focusItem.visible)
                      || ((librarySidebar.item?.canGoBack ?? false) && (_focusItem?.visualFocus ?? false))))
 
     Shortcut {

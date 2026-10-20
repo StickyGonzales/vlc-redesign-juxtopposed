@@ -325,7 +325,7 @@ Approved by Decision 27 (minimal and isolated); reverse playback postponed (Deci
 - Beta branding (public profile only, `#ifdef VLC_BRAND_PUBLIC` macros at the top of each file, the vlc profile compiles VLC's tokens; branch wip/beta-brand, BUILD_NOTES "2026-10-18 beta branding audit"): `src/config/help.c` --version line "Cone <version>, based on VLC <version>" and the help console title; `src/network/httpd.c` HTTP login realm "Cone"; `modules/lua/libs/httpd.c` title "Cone" of the web interface's no-password page. Written, not yet built (own build).
 - Subtitles above the control bar (beta, branch wip/beta-subs): `src/video_output/vout_intf.c` adds the vout variable "sub-ui-margin" (pixels the interface adds to "sub-margin", no on-screen message); both profiles.
 - Subtitle duration factor without a frozen picture (P3-19 / P3-20 sidebar "Subtitle Duration Factor", 2026-10-19 quit-hang bug; branch wip/fix-subsdelay, redesign/FIX_SUBSDELAY_NOTES.md): `modules/spu/subsdelay.c` (upstream VLC 4 bug, still in VLC master) copied a subtitle's region list head into its clone, so the regions stayed linked to the source; the clone now takes the regions over. Both profiles.
-- File name over the video off in Cone (Decision 67, public profile only, `#ifdef VLC_BRAND_PUBLIC`; branch claude/zen-mendel-p1anpd, PR #26, redesign/SANDBOX_FIXES_NOTES.md): `src/libvlc-module.c` default of `video-title-show` false; the vlc profile keeps true.
+- File name over the video off in Cone (Decision 69, public profile only, `#ifdef VLC_BRAND_PUBLIC`; branch claude/zen-mendel-p1anpd, PR #26, redesign/SANDBOX_FIXES_NOTES.md): `src/libvlc-module.c` default of `video-title-show` false; the vlc profile keeps true.
 
 ## Index
 
