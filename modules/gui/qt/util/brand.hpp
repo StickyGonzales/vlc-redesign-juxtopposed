@@ -86,6 +86,10 @@
  * dialog of the preferences uses them */
 # define BRAND_PROGID           "Cone"
 # define BRAND_INSTALL_REGKEY   "Software\\Cone"
+/* Linux: the desktop file of the app (cone.desktop of the Linux package, LINUX_NOTES.md), which
+ * Wayland and the desktops use to find the app's name and icon for its windows; the D-Bus MPRIS
+ * interface names the same one (modules/control/dbus/dbus_root.c) */
+# define BRAND_DESKTOP_FILE     "cone"
 
 #else
 
@@ -116,6 +120,7 @@
 # define BRAND_REGISTRY_KEY     "Software\\VideoLAN\\VLC\\"
 # define BRAND_PROGID           "VLC"
 # define BRAND_INSTALL_REGKEY   "Software\\VideoLAN\\VLC"
+# define BRAND_DESKTOP_FILE     PACKAGE
 
 #endif
 
