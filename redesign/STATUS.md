@@ -1,6 +1,7 @@
 # STATUS
 
-- Updated: 2026-10-20 20:45. **wip/next-test merged into redesign (922992ae01a)** after the smoke, the screens and the hang recipe passed (round 5 below). Next: Cone 0.2.0 beta (tag v0.2.0-beta, zip Cone-0.2.0-beta-win64.zip, pre-release, by hand like beta 1) after StickyGonzales reads the notes and says OK; then the visualizer white window and the Spectrometer crash (PC session, own branch).
+- Updated: 2026-10-20 21:20. **Cone 0.2.0 beta published** (pre-release, StickyGonzales's OK): tag v0.2.0-beta on 5e32ace57c3 (redesign), build 39477088729 from the tag (Cone.exe product version 0.2.0, folder Cone-0.2.0-beta), smoke pass on that build (7 shots looked at, gate-20261020-210545-v020-smoke). Assets: Cone-0.2.0-beta-win64.zip = the build folder + an empty portable folder (zipped with forward-slash entries; 524 files byte-identical to the tested build), sha256 35969ce0d681bc762120464fb5de91a531433c54c0f4589b68a267aa4f68fa4f, plus its .sha256 file. Next: README still points at 0.1.0 beta (download, "Coming in beta 2", beta 1 known issues); then the visualizer white window and the Spectrometer crash (PC session, own branch; read-only analysis done: mmdevice.c Stop releases the WASAPI stream without sys->lock while vlc-mmdevice plays; win32 window.c Enable / Disable make synchronous calls into the window thread while the vout locks are held).
+- 2026-10-20 20:45: wip/next-test merged into redesign (922992ae01a) after the smoke, the screens and the hang recipe passed (round 5 below).
 
 ## PC test round 2 (2026-10-19, in progress)
 - PR #28 (Decision 67, notes only): merged into wip/next-test (90941fa89cb); VIDEO_INDEX row 139 keeps "dropped (Decision 67 ...)", rows 140-142 keep their verified status.
