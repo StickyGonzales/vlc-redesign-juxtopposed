@@ -960,7 +960,8 @@ static void SubpicUpdateWrapper( subpicture_t *p_subpic,
     SubpicMoveRegions( &p_entry->p_source->regions, &p_entry->p_subpic->regions );
 
     subpicture_updater_t *updater = &p_entry->p_source->updater;
-    updater->ops->update( p_entry->p_source, &new_cfg );
+    if( updater->ops != NULL )
+        updater->ops->update( p_entry->p_source, &new_cfg );
 
     SubpicMoveRegions( &p_entry->p_subpic->regions, &p_entry->p_source->regions );
 
