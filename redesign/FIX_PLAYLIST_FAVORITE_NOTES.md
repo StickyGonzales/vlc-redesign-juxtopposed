@@ -5,9 +5,9 @@ Branch `wip/fix-playlist-favorite`, made from `origin/wip/next-test` (8e005df792
 WINDOWS_CHECKLIST.md row 337 (F-11): the playlist "..." menu had no "Favorite". Figma "playlist context menu": Play, Favorite, Shuffle, Export Playlist, Add to Queue, Add Subtitle Tracks, Add Audio Tracks, Properties & Metadata ("Delete Playlist" at the end is Decisions (Claude) 2026-10-14 Phase 5).
 
 ## 1. Cause
-There are two playlist "..." menus, both built by `RdLibraryItemMenu.qml` (`_playlistEntries`):
-- **A playlist row on the Playlists page:** its item comes from the library model, which knows the playlist's favorite state, so Favorite was there.
-- **The playlist page's own header "...":** its item was built from the library location (`{ kind, id, title }`). The location has no favorite state, and Favorite is only added when the state is known (so it can always be cleared again), so the entry was left out.
+There are two playlist "..." menus, both built by `RdLibraryItemMenu.qml` (`_playlistEntries`). Favorite is only added when the item's favorite state is known (so it can always be cleared again), and neither menu knew it:
+- **The playlist page's own header "...":** its item was built from the library location (`{ kind, id, title }`), which has no favorite state.
+- **A playlist row's "..." on the Playlists page:** the rows come from VLC's playlist list model (`MLPlaylistListModel`), which has no favorite role. (Found in the sandbox test of the first fix: the row menu had no Favorite either.)
 
 ## 2. Fix
 - `RdLibraryStore.playlistFavorite(id, callback)` (`rdlibrarystore.cpp/.hpp`) reads the playlist's favorite state on the media library thread, like `playlistMedia` does for its items.
@@ -16,9 +16,11 @@ There are two playlist "..." menus, both built by `RdLibraryItemMenu.qml` (`_pla
 - The library's jobs run on up to 4 threads, not in order. A read that started before a write could come back after it with the old state, so such a read is dropped (a count of writes seen), and an answer for a page that is no longer shown is dropped too. (Independent review finding, fixed before the test build.)
 - The menu still opens at once: nothing waits for the library when "..." is clicked.
 
+- **Rows:** `MLPlaylist` keeps the playlist's `b_is_favorite` and `MLPlaylistListModel` exposes it as `isFavorite` (new role at the end of the list, so the other roles keep their values; VLC's own views don't use it). The Playlists row passes it to its menu. A favorite change reaches the row through the library's playlist update event (`VLC_ML_EVENT_PLAYLIST_UPDATED`, which the model already handles).
+
 ## 3. Checks
 - qmlcheck: errors 1 (the known HighResolutionTimeWidget stub), crashed 0. buildlists: 0 problems. privacycheck: 0 problems.
-- `rdlibrarystore.cpp` compiles with no new warnings (g++, `-Wall -Wextra -Wconversion`, syntax check against Qt 6 headers).
+- `rdlibrarystore.cpp`, `mlplaylist.cpp` and `mlplaylistlistmodel.cpp` compile with no new warnings (g++, `-Wall -Wextra -Wconversion`, syntax check against Qt 6 headers).
 
 ## 4. Sandbox test (Linux)
 RESULTS
