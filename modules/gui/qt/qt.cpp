@@ -851,12 +851,8 @@ static void Close( vlc_object_t *p_this )
     if (p_intf)
     {
         QuitWatchdog::interfaceClosing();
-        {
-            // redesign: the last Qt interface going away means VLC is quitting
-            vlc::threads::mutex_locker locker(lock);
-            if (p_intf->refCount == 1)
-                QuitWatchdog::armWithoutSaving();
-        }
+        // redesign: the interface closes at quit only (video windows are not interfaces)
+        QuitWatchdog::armWithoutSaving();
 
         //cleanup the interface
         QMetaObject::invokeMethod( p_intf->p_mi, [p_intf] () {
