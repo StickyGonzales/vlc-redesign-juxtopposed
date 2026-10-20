@@ -15,6 +15,10 @@
 
 The files are not code-signed yet, so Windows SmartScreen may warn the first time: choose "More info", then "Run anyway".
 
+## Cone extras (not part of Juxtopposed's design)
+
+Features Cone adds beyond Juxtopposed's design are listed here, each marked as a Cone extra (Decision 71). Cone extras are not part of beta 2 or 1.0; they arrive after 1.0, starting with 1.1 ("Autoplay next episode" is the first). When a release has none, this section says so.
+
 ## Credits
 
 - **Based on [VLC media player](https://www.videolan.org/vlc/) by [VideoLAN](https://www.videolan.org/)**. All of the playback, codecs and streaming are VLC's work.
