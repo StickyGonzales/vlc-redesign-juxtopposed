@@ -61,9 +61,11 @@ constexpr double kResumeMaxPosition = 0.9;
 
 std::atomic<bool> s_armed{false};
 
-/* the interface object, for logging, while it exists; guarded by s_logLock */
+/* the object the message is logged through: the interface while it exists, then the libvlc
+ * instance, which the core frees only at the very end of the quit (a quit that got that far
+ * ends the process within milliseconds); guarded by s_logLock */
 std::mutex s_logLock;
-qt_intf_t *s_intf = nullptr;
+vlc_object_t *s_logObj = nullptr;
 
 /* the resume position of the current media, as the core saves it when an input stops
  * (vlc_player_UpdateMLStates); only the player controller's cached values are read, so
@@ -114,8 +116,8 @@ void logFired(long long seconds)
     fprintf(stderr, "quit watchdog: quit did not finish within %lld s, ending the process\n",
             seconds);
     std::unique_lock<std::mutex> lock(s_logLock, std::try_to_lock);
-    if (lock.owns_lock() && s_intf != nullptr)
-        msg_Err(s_intf, "quit watchdog: Cone did not finish quitting within %lld s, ending the "
+    if (lock.owns_lock() && s_logObj != nullptr)
+        msg_Err(s_logObj, "quit watchdog: Cone did not finish quitting within %lld s, ending the "
                         "process (the settings and the resume position were saved when the "
                         "quit started)", seconds);
     /* the file logger's stream is fully buffered on Windows (_IOLBF acts as _IOFBF): flush it
@@ -157,7 +159,7 @@ void QuitWatchdog::arm(qt_intf_t *p_intf)
     const bool recording = player != nullptr && player->isRecording();
     {
         std::lock_guard<std::mutex> lock(s_logLock);
-        s_intf = p_intf;
+        s_logObj = VLC_OBJECT(p_intf);
     }
     /* the timer runs before anything else, so a save that blocks cannot keep Cone alive */
     startTimer(recording ? kQuitTimeoutRecording : kQuitTimeout);
@@ -167,15 +169,20 @@ void QuitWatchdog::arm(qt_intf_t *p_intf)
     saveState(p_intf);
 }
 
-void QuitWatchdog::armWithoutSaving()
+void QuitWatchdog::armWithoutSaving(qt_intf_t *p_intf)
 {
+    {
+        std::lock_guard<std::mutex> lock(s_logLock);
+        if (s_logObj == nullptr)
+            s_logObj = VLC_OBJECT(vlc_object_instance(p_intf));
+    }
     if (s_armed.exchange(true))
         return;
     startTimer(kQuitTimeout);
 }
 
-void QuitWatchdog::interfaceClosing()
+void QuitWatchdog::interfaceClosing(qt_intf_t *p_intf)
 {
     std::lock_guard<std::mutex> lock(s_logLock);
-    s_intf = nullptr;
+    s_logObj = VLC_OBJECT(vlc_object_instance(p_intf));
 }

@@ -850,9 +850,9 @@ static void Close( vlc_object_t *p_this )
     auto p_intf = reinterpret_cast<qt_intf_t*>(intfThread->p_sys);
     if (p_intf)
     {
-        QuitWatchdog::interfaceClosing();
+        QuitWatchdog::interfaceClosing(p_intf);
         // redesign: the interface closes at quit only (video windows are not interfaces)
-        QuitWatchdog::armWithoutSaving();
+        QuitWatchdog::armWithoutSaving(p_intf);
 
         //cleanup the interface
         QMetaObject::invokeMethod( p_intf->p_mi, [p_intf] () {

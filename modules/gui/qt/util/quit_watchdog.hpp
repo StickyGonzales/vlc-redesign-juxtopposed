@@ -32,11 +32,11 @@ void arm(qt_intf_t *p_intf);
 
 /* For a quit that did not start in the interface (--play-and-exit, vlc://quit, a remote
  * control): the timer only, from the interface module's Close. */
-void armWithoutSaving();
+void armWithoutSaving(qt_intf_t *p_intf);
 
 /* Called from the interface module's Close: the interface object goes away, the watchdog
- * stops logging through it. */
-void interfaceClosing();
+ * logs through the libvlc instance from then on. */
+void interfaceClosing(qt_intf_t *p_intf);
 
 }
 
