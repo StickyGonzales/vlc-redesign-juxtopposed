@@ -51,7 +51,15 @@ If StickyGonzales wants the Windows window to read only "Cone", without the outp
 The blank white window is the stopped window thread of section 2. The same fix covers it.
 
 ## 5. Sandbox (Linux)
-Test build: build-linux of the test-only branch `wip/fix-visualizer-linux` (wip/next-test + this branch + the Linux build job; never merge it). Results: see the end of this file.
+- **Test build:** build-linux 39420013501 of the test-only branch `wip/fix-visualizer-linux` (wip/next-test + this branch + the Linux build job; never merge it). It compiles, including the X11 and Wayland window modules with the public brand.
+- **Before:** build-linux 39313634848 (wip/next-test + #32).
+- **Window title (X11):**
+  - Before: Spectrometer opens a separate 800 × 500 window titled "VLC media player".
+  - After: the same window is titled "Cone".
+  - Its picture is not drawn in the sandbox (software OpenGL, see section 2).
+- **The recipe** (Spectrometer, 40 × `h`, `b`, window close), 3 runs: exit in 2.76, 0.47 and 0.47 s (before: 0.82, 0.58 and 0.49 s). No hang. The 2.8 s run is once in three; watch the quit time in the Windows retest.
+- **Main window after `b`:** the same as before (screenshots compared).
+- **The ICC change** is Windows-only code, so it only compiles for Windows: syntax check above, and the Windows build of this branch.
 
 ## 6. Retest on Windows
 Use a build of this branch alone (core change), the test folder of the visdelay session, and the generated MKV with two audio tracks and the .srt. Before each run, check that no Cone is left running. Stop at the first hang.
