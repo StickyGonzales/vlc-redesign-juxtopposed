@@ -728,8 +728,13 @@ static int Open(vlc_window_t *wnd)
     xdg_toplevel_add_listener(toplevel, &xdg_toplevel_cbs, wnd);
 
     char *title = var_InheritString(wnd, "video-title");
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (brand layer, public profile): the window is named after Cone */
+    xdg_toplevel_set_title(toplevel, (title != NULL) ? title : VOUT_TITLE);
+#else
     xdg_toplevel_set_title(toplevel,
                            (title != NULL) ? title : _("VLC media player"));
+#endif
     free(title);
 
     char *app_id = var_InheritString(wnd, "app-id");
