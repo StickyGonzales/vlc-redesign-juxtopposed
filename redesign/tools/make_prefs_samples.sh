@@ -1,5 +1,5 @@
 #!/bin/sh
-# redesign (Decision 68): Cone versions of the old preferences' layout previews
+# redesign (Decision 70): Cone versions of the old preferences' layout previews
 # (pixmaps/prefs/sample_{minimal,complete}.png): the Cone logo for VLC's cone in the video
 # area and the title bar, "Cone" for the window title. Run from modules/gui/qt (ImageMagick 6, DejaVu Sans).
 set -e

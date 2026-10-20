@@ -236,7 +236,7 @@ SPrefsCatList::SPrefsCatList( qt_intf_t *_p_intf, QWidget *_parent ) :
     auto addCategory = [&]( QString label, QString ltooltip, QString icon, int numb) {
         QToolButton * button = new QToolButton( this );
 #ifdef VLC_BRAND_PUBLIC
-        /* redesign (Decision 68): the Cone logo for each of VLC's cone pictures */
+        /* redesign (Decision 70): the Cone logo for each of VLC's cone pictures */
         icon = QStringLiteral( ":/brand/cone-128.png" );
 #endif
         /* Scale icon to non native size outside of toolbutton to avoid widget size */
@@ -802,7 +802,7 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
                 ui.classicButton->setToolTip( classicTip );
                 ui.classicImage->setToolTip( classicTip );
 
-                /* Decision 68: the layout previews show Cone, not VLC's cone and name */
+                /* Decision 70: the layout previews show Cone, not VLC's cone and name */
                 ui.modernImage->setIcon( QIcon( QStringLiteral( ":/brand/prefs-sample-modern.png" ) ) );
                 ui.classicImage->setIcon( QIcon( QStringLiteral( ":/brand/prefs-sample-classic.png" ) ) );
             }
