@@ -311,6 +311,7 @@ Extra decisions made during the build, one line each (date, row IDs, decision, r
 - 2026-10-18 web fixes 1 (P3-10): External Tracks rows show the file name as in Figma "Frame 67" (with extension, no language), also for a file added during playback.
 - 2026-10-19 web fixes 4 (P4-15): like IA-29, "apply from the next file" is not a line in the sidebar's Audio Defaults (Figma has none) but part of the info popovers of the same options in Settings (Default audio track, Preferred audio language).
 - 2026-10-19 web fixes 4 (light theme): the BG/A5 input fields (library, Settings and Keyboard Shortcuts search, Add Subtitles fields and dropdowns) are BG/A3 #D5D5D5 in Light (palette rdBgField): Light/BG/A5 #888888 drew them as dark blocks and hid the FG/A4 placeholder (#8A8A8A, Decision 44); Figma has no light frame of them. Dark keeps BG/A5.
+- 2026-10-20 quit watchdog (PC session, handed over by StickyGonzales): when a quit starts (main window close, Quit, Ctrl+Q) Cone saves the Qt and VLC settings and the resume position of the current media, then ends itself if it is still running 5 s later (logged in the Cone log), so a quit that hangs in teardown never leaves Cone running without a window. Both profiles, Windows and Linux; redesign/QUIT_WATCHDOG_NOTES.md.
 
 ## Core changes (status)
 Approved by Decision 27 (minimal and isolated); reverse playback postponed (Decision 29).

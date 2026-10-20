@@ -70,6 +70,8 @@
 #include <QPointer>
 #include <QMessageBox>
 #include <QMetaMethod>
+
+#include "util/quit_watchdog.hpp"
 #include <QWindow>
 
 #include <vector>
@@ -168,6 +170,7 @@ void DialogsProvider::quit()
     if (b_isDying)
         return;
     b_isDying = true;
+    QuitWatchdog::arm(p_intf);
     assert(qApp);
     qApp->setProperty("isDying", true);
     libvlc_Quit( vlc_object_instance(p_intf) );

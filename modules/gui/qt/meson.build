@@ -577,6 +577,8 @@ qt_plugin_sources = files(
     'util/varchoicemodel.hpp',
     'util/variables.cpp',
     'util/variables.hpp',
+    'util/quit_watchdog.cpp',
+    'util/quit_watchdog.hpp',
     'util/vlctick.cpp',
     'util/vlctick.hpp',
     'util/vlchotkeyconverter.cpp',

@@ -402,6 +402,8 @@ libqt_plugin_la_SOURCES = \
 	util/varchoicemodel.cpp  util/varchoicemodel.hpp \
 	util/variables.cpp util/variables.hpp \
 	util/vlchotkeyconverter.cpp util/vlchotkeyconverter.hpp \
+	util/quit_watchdog.cpp \
+	util/quit_watchdog.hpp \
 	util/vlctick.cpp \
 	util/vlctick.hpp \
 	util/shared_input_item.hpp \
