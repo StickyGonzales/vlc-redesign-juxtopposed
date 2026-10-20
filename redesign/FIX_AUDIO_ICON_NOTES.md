@@ -23,7 +23,17 @@ The three entries use `audio_two-tone-yes`. The waveform icon stays in the icon 
 - privacycheck: 0 problems.
 
 ## 4. Sandbox test (Linux)
-RESULTS
+Linux build 27 (run 39434844289, branch `wip/fix-audio-icon-linux` = this branch + wip/linux-build), AppImage, Xvfb, openbox. A playlist row's "..." on the Playlists page; "before" = Linux build 26.
+
+| | Bars (x in the 24 px icon) | Accent bars | FG bars |
+|---|---|---|---|
+| Before | 6 (2, 6, 10, 14, 18, 22) | 2, 10, 18 | 6, 14, 22 |
+| After | 5 (4, 8, 12, 16, 20) | 8, 16 | 4, 12, 20 |
+| Figma (2461:9697) | 5 (4, 8, 12, 16, 20) | 8, 16 | 4, 12, 20 |
+
+Side by side at 4x (before / after / Figma "playlist context menu"): `redesign/fix-shots/audio_icon_sbs.png`. The accent bars use the same Accent/DIm colour as the other menu icons. Cone quits cleanly (exit 0).
+
+The other two entries (file "Add Audio Tracks", folder "Edit Audio Tracks") use the same icon name in the same file and were not opened in the sandbox; the Windows steps below cover them.
 
 ## 5. Windows retest steps
 1. Open the library, go to **Playlists**, open a playlist row's "...".
