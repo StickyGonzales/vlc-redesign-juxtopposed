@@ -1,5 +1,7 @@
 # Autoplay next episode ("Up Next"): plan and design (step 1 of 2)
 
+> **Cone extra (not part of Juxtopposed's design), Decision 71.** This feature is in neither her video nor her Figma file. It is not part of beta 2 or 1.0: it is built on its own branch and merged only after 1.0 is released, for 1.1. It is listed under "Cone extras (not part of Juxtopposed's design)" in the README and in the release notes.
+
 Design and plan only, no feature code. Branch `wip/up-next-plan` (from `wip/next-test`), docs and design images only.
 
 Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file, so everything is built from Cone's own Figma tokens, components and panel look (Decision 21 style).
@@ -18,6 +20,7 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 | **Recommended card** | Variant A (panel card, 400 wide), `01`/`02`/`05` images. |
 | **Core changes** | None expected; everything fits in `modules/gui/qt` (section 6.6). |
 | **Open decisions** | 9 items marked **needs Sticky**, collected in section 10. |
+| **Release** | Cone extra (Decision 71): not in beta 2 or 1.0; built on its own branch, merged after 1.0 is released, for 1.1. |
 
 ---
 
@@ -622,3 +625,5 @@ Rendered offscreen with Qt 6.8 Quick (VLC's Qt version), Inter, the redesign's o
 | U6 | Still watching, credits chapter point | U3 |
 
 Then the independent review, qmlcheck and buildlists, one Linux sandbox run (every test in section 8 that Linux can do), and the Windows test of every row of section 8.
+
+**Branch and release (Decision 71):** all of U1 to U6 live on one feature branch of their own (`wip/up-next`), not merged into `wip/next-test` or `redesign` before 1.0 is released. After 1.0 the branch is brought up to date with `redesign`, built and tested on its own, and merged for 1.1. The 1.1 release notes and the README list it under "Cone extras (not part of Juxtopposed's design)".
