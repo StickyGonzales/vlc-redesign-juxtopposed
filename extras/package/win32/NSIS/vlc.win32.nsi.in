@@ -404,10 +404,12 @@ skip_uninstall32_cleanup:
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities" "ApplicationName" "${PRODUCT_NAME}"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities" "ApplicationDescription" "${PRODUCT_DESCRIPTION}"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}" "" "${PRODUCT_NAME}"
+!if "${PRODUCT_PROGID}" == "VLC"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "HideIconsCommand" "$\"$INSTDIR\spad-setup.exe$\" /HideIcons /S"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "ShowIconsCommand" "$\"$INSTDIR\spad-setup.exe$\" /ShowIcons /S"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "ReinstallCommand" "$\"$INSTDIR\spad-setup.exe$\" /Reinstall /S"
     WriteRegDWORD HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "IconsVisible" 0x001
+!endif
   ${EndIf}
 ${MementoSectionEnd}
 
@@ -598,67 +600,17 @@ ${MementoSectionDone}
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC04} "$(Desc_Section04)"
 !endif
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC05} "$(Desc_Section05)"
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the file types are offered, never taken over (INSTALLER_NOTES.md);
+  ; in English for every language
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC06} "Lists ${PRODUCT_NAME} in Open with and Default apps for these file types; your default app stays."
+!else
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC06} "$(Desc_Section06)"
+!endif
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC07} "$(Desc_Section07)"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC08} "$(Desc_Section08)"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
-;;; redesign: brand layer (Decision 56). Next to an installed VLC the file associations start
-;;; unticked, so VLC keeps opening the user's files unless they tick them; without VLC they start
-;;; ticked, like VLC's installer. A choice saved by an earlier install of this app (Memento) wins.
-;;; Only reads VLC's keys, never writes them.
-!if "${PRODUCT_PROGID}" != "VLC"
-Var VlcInstalled
-
-Function DetectInstalledVlcInView
-  ReadRegStr $0 HKLM "Software\VideoLAN\VLC" "InstallDir"
-  ${If} $0 == ""
-    ReadRegStr $0 HKLM "Software\VideoLAN\VLC" ""
-  ${EndIf}
-  ${If} $0 == ""
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\VLC media player" "UninstallString"
-  ${EndIf}
-  ${If} $0 == ""
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\vlc.exe" ""
-  ${EndIf}
-  ${If} $0 != ""
-    StrCpy $VlcInstalled 1
-  ${EndIf}
-FunctionEnd
-
-Function UnselectAssociationsNextToVlc
-  Push $0
-  Push $1
-
-  ClearErrors
-  ReadRegStr $0 ${MEMENTO_REGISTRY_ROOT} `${MEMENTO_REGISTRY_KEY}` MementoSectionUsed
-  ${If} ${Errors}
-    ; a 64-bit or a 32-bit VLC
-    StrCpy $VlcInstalled 0
-    SetRegView 64
-    Call DetectInstalledVlcInView
-    SetRegView 32
-    Call DetectInstalledVlcInView
-@HAVE_WIN64_TRUE@    SetRegView 64
-@HAVE_WIN64_FALSE@   SetRegView default
-
-    ${If} $VlcInstalled == 1
-      ; every entry of the file associations group (SEC06 up to the next section, SEC07):
-      ; clear SF_SELECTED (1) and SF_PSELECTED (64)
-      StrCpy $0 ${SEC06}
-      ${DoWhile} $0 < ${SEC07}
-        SectionGetFlags $0 $1
-        IntOp $1 $1 & 0xFFFFFFBE
-        SectionSetFlags $0 $1
-        IntOp $0 $0 + 1
-      ${Loop}
-    ${EndIf}
-  ${EndIf}
-
-  Pop $1
-  Pop $0
-FunctionEnd
-!endif
 
 ;;; Start function
 Function .onInit
@@ -718,10 +670,6 @@ WinOk:
       StrCpy $PerformUpdate 0
     ${EndIf}
   ${EndIf}
-
-!if "${PRODUCT_PROGID}" != "VLC"
-  Call UnselectAssociationsNextToVlc
-!endif
 
   !insertmacro MUI_LANGDLL_DISPLAY
 
@@ -909,6 +857,11 @@ Section -Post
     "VersionMajor"  "@BRAND_VERSION_MAJOR@"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "VersionMinor" "@BRAND_VERSION_MINOR@"
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the size Settings > Apps shows (KB)
+  ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+  WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "EstimatedSize" $0
+!endif
 SectionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
