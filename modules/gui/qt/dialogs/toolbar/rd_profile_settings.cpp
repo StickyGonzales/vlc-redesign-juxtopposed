@@ -53,7 +53,10 @@ const QSet<QByteArray>& liveOptions()
     static const QSet<QByteArray> names {
         "qt-accent-color", "qt-fs-sensitivity", "qt-pin-controls", "qt-fs-opacity",
         "qt-smooth-scrolling", "qt-max-volume", "qt-safe-area", "qt-video-double-click",
-        "qt-cast-discovery", "qt-seek-thumbnails", "qt-seek-waveform", "mouse-hide-timeout",
+        "qt-cast-discovery", "qt-seek-thumbnails", "qt-seek-waveform", "qt-seek-subtitle-timeline",
+        "mouse-hide-timeout",
+        // read for every on-screen message (src/video_output/video_text.c, Cone build)
+        "osd-duration",
     };
     return names;
 }
