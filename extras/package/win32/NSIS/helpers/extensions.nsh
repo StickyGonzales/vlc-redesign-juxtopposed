@@ -10,6 +10,11 @@ ${StrCase}
 
 ;; Function that associates one extension with VLC
 Function AssociateExtension
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer (INSTALLER_NOTES.md): the app is offered for the type in Open with and
+  ; Default apps; it never takes the type over, the user picks the default in Windows
+  WriteRegStr HKCR "$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0" ""
+!else
   ; back up old value for extension $R0 (eg. ".opt")
   ReadRegStr $1 HKCR "$R0" ""
   StrCmp $1 "" NoBackup
@@ -17,6 +22,7 @@ Function AssociateExtension
     WriteRegStr HKCR "$R0" "${PRODUCT_PROGID}.backup" $1
 NoBackup:
   WriteRegStr HKCR "$R0" "" "${PRODUCT_PROGID}$R0"
+!endif
 FunctionEnd
 
 ;; Function that registers one extension for VLC
@@ -33,7 +39,13 @@ Function RegisterExtension
   WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "MultiSelectModel" "Player"
   WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
   WriteRegStr HKCR "${PRODUCT_PROGID}$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the extension itself (VLC writes $0, one stray value), so the app is
+  ; listed in Open with for each of its types
+  WriteRegStr HKCR "Applications\${PRODUCT_EXE}\SupportedTypes" $R0 ""
+!else
   WriteRegStr HKCR "Applications\${PRODUCT_EXE}\SupportedTypes" $0 ""
+!endif
 
   ${If} ${AtLeastWinVista}
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
@@ -52,6 +64,32 @@ Function RegisterSkinExtension
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
   ${EndIf}
 FunctionEnd
+
+;; redesign: brand layer, deletes the HKCR key on the stack when it holds no value and no subkey
+;; (DeleteRegKey /ifempty only looks at subkeys, and would remove other apps' values)
+!if "${PRODUCT_PROGID}" != "VLC"
+Function un.DeleteClassesKeyIfEmpty
+  Exch $0
+  Push $1
+  ClearErrors
+  EnumRegKey $1 HKCR "$0" 0
+  ${If} ${Errors}
+    Goto done ; no such key
+  ${EndIf}
+  ${If} $1 == ""
+    EnumRegValue $1 HKCR "$0" 0
+    ${If} $1 == ""
+      ReadRegStr $1 HKCR "$0" ""
+      ${If} $1 == ""
+        DeleteRegKey HKCR "$0"
+      ${EndIf}
+    ${EndIf}
+  ${EndIf}
+done:
+  Pop $1
+  Pop $0
+FunctionEnd
+!endif
 
 ;; Function that removes one extension that VLC owns.
 Function un.RegisterExtension
@@ -86,6 +124,15 @@ NoOwn:
     ; redesign: brand layer, another player took the extension after this app: drop only this
     ; app's own backup value
     DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
+!endif
+!if "${PRODUCT_PROGID}" != "VLC"
+    ; redesign: brand layer, the Open with entry; the keys it needed go only when nothing else
+    ; is in them
+    DeleteRegValue HKCR "$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0"
+    Push "$R0\OpenWithProgids"
+    Call un.DeleteClassesKeyIfEmpty
+    Push "$R0"
+    Call un.DeleteClassesKeyIfEmpty
 !endif
     DeleteRegKey HKCR "${PRODUCT_PROGID}$R0" ;Delete key with association settings
     DeleteRegKey HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations\${PRODUCT_PROGID}$R0" ; for vista
