@@ -236,6 +236,20 @@ jobs:
           path: dist/
           retention-days: 14
 
+      # debug symbols of the main binaries (objcopy --only-keep-debug in package-win-strip), so a
+      # stack from a hung or crashed test build can be mapped to functions; kept 7 days
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: debug-symbols-win64
+          path: |
+            win64/**/symbols-*/libqt_plugin.dll.dbg
+            win64/**/symbols-*/libvlccore.dll.dbg
+            win64/**/symbols-*/libvlc.dll.dbg
+            win64/**/symbols-*/*.exe.dbg
+          if-no-files-found: warn
+          retention-days: 7
+
       # brand layer: Cone's NSIS installer, built so its screens and texts can be checked
       # (redesign/CONE_RELEASE_NOTES.md); not published with the beta (Decision 61: portable zip
       # first); a failure here keeps the build green
