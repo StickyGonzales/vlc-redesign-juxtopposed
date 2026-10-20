@@ -1814,7 +1814,7 @@ FocusScope {
     }
 
     // redesign: the subtitles stay above the control bar while it covers the bottom of the
-    // picture (redesign/BETA_SUBS_NOTES.md). The covered height goes to VLC as a subtitle margin
+    // video area (redesign/BETA_SUBS_NOTES.md). The covered height goes to VLC as a subtitle margin
     // in display pixels (RdSubtitleLift); it follows the bar's fade, so the subtitles rise and
     // settle with the bar. Nothing is covered in the music view, with the controls under the
     // video (pinned), or while the player is not shown (minimal view, library).
@@ -1824,10 +1824,10 @@ FocusScope {
         const area = playerSpecializationLoader
         if (area.width <= 0 || area.height <= 0)
             return 0
-        // the picture fits inside the video area, centered (VLC's default fit)
-        const aspect = RdSubtitleLift.pictureAspect
-        const pictureHeight = aspect > 0 ? Math.min(area.height, area.width / aspect) : area.height
-        const covered = area.y + (area.height + pictureHeight) / 2 - controlBar.y
+        // measured from the bottom of the whole video area, not of the picture: VLC places text
+        // subtitles in the whole window ("spu-fill"), so in a letterboxed film they sit on the
+        // black bar under the picture, where the control bar covers them
+        const covered = area.y + area.height - controlBar.y
         if (covered <= 0)
             return 0
         const dpr = MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0

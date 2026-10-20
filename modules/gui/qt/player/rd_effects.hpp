@@ -111,6 +111,8 @@ public:
     // 10 band equalizer ("equalizer" audio filter)
     Q_INVOKABLE QStringList equalizerPresetNames() const;
     Q_INVOKABLE QVariantList equalizerPresetBands(int preset) const;
+    // the preset's icon exported from Figma (RdIcon name, "eq_eq-rock"), empty when it has none
+    Q_INVOKABLE QString equalizerPresetIcon(int preset) const;
     Q_INVOKABLE QStringList equalizerBandNames() const;
     Q_INVOKABLE int equalizerPreset();                 // -1: off ("None")
     Q_INVOKABLE void setEqualizerPreset(int preset);   // -1 disables the equalizer
