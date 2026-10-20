@@ -66,6 +66,12 @@ typedef struct vout_window_sys_t
     /* icc profile */
     char *icc_profile;
 
+    /* redesign: the profile goes to the video output from a timer thread (see ReportICCAsync) */
+    vlc_timer_t icc_timer;
+    vlc_mutex_t icc_lock;
+    bool icc_pending;
+    vlc_icc_profile_t *icc_pending_profile;
+
     /* mouse */
     unsigned button_pressed;
 
@@ -251,6 +257,41 @@ static void MouseReleased( vlc_window_t *wnd, unsigned button )
 
 #define MAX_ICC_FILE_SIZE  (100*1024*1024)
 
+/* redesign: the window thread must never wait for the video output. Reporting the profile takes
+ * the output's display lock, and the output opens its display in this window while holding that
+ * lock, which can need this thread to answer window messages: when a new window reported its
+ * monitor's profile while the display opened (each audio visualizer window, again after every
+ * audio track switch) both waited for good, the window turned white and VLC hung at quit
+ * (redesign/FIX_VISUALIZER_NOTES.md). The latest profile is handed over from a timer thread. */
+static void ReportICCCallback(void *data)
+{
+    vlc_window_t *wnd = data;
+    vout_window_sys_t *sys = wnd->sys;
+
+    vlc_mutex_lock(&sys->icc_lock);
+    const bool pending = sys->icc_pending;
+    vlc_icc_profile_t *icc = sys->icc_pending_profile;
+    sys->icc_pending = false;
+    sys->icc_pending_profile = NULL;
+    vlc_mutex_unlock(&sys->icc_lock);
+
+    if (pending)
+        vlc_window_ReportICCProfile(wnd, icc);
+}
+
+static void ReportICCAsync(vlc_window_t *wnd, vlc_icc_profile_t *icc)
+{
+    vout_window_sys_t *sys = wnd->sys;
+
+    vlc_mutex_lock(&sys->icc_lock);
+    free(sys->icc_pending_profile);
+    sys->icc_pending_profile = icc;
+    sys->icc_pending = true;
+    vlc_mutex_unlock(&sys->icc_lock);
+
+    vlc_timer_schedule_asap(sys->icc_timer, VLC_TIMER_FIRE_ONCE);
+}
+
 static void UpdateICCProfile(vlc_window_t *wnd, const wchar_t *pathw)
 {
     vout_window_sys_t *sys = wnd->sys;
@@ -261,7 +302,7 @@ static void UpdateICCProfile(vlc_window_t *wnd, const wchar_t *pathw)
         if (sys->icc_profile) {
             free(sys->icc_profile);
             sys->icc_profile = NULL;
-            vlc_window_ReportICCProfile(wnd, NULL);
+            ReportICCAsync(wnd, NULL);
         }
         return;
     }
@@ -298,7 +339,7 @@ error:
         msg_Err(wnd, "Failed to open ICC profile: %s", path ? path : "(unknown)");
 
     vlc_cleanup_pop();
-    vlc_window_ReportICCProfile(wnd, icc);
+    ReportICCAsync(wnd, icc);
 }
 
 static void MonitorChanged(vlc_window_t *wnd, HMONITOR monitor)
@@ -590,6 +631,10 @@ static void Close(vlc_window_t *wnd)
     vlc_join(sys->thread, NULL);
     free(atomic_load(&sys->pwz_title));
 
+    /* waits for a report in progress; one still waiting is dropped with the window */
+    vlc_timer_destroy(sys->icc_timer);
+    free(sys->icc_pending_profile);
+
     vlc_wasync_resize_compressor_destroy(&sys->compressor);
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -844,6 +889,14 @@ static int Open(vlc_window_t *wnd)
         return VLC_EGENERIC;
     }
     vlc_sem_init( &sys->ready, 0 );
+    vlc_mutex_init( &sys->icc_lock );
+    if( vlc_timer_create( &sys->icc_timer, ReportICCCallback, wnd ) )
+    {
+        UnregisterClass( sys->class_main, hInstance );
+        if( sys->vlc_icon )
+            DestroyIcon( sys->vlc_icon );
+        return VLC_ENOMEM;
+    }
     wnd->sys = sys;
 
     if( vlc_wasync_resize_compressor_init( &sys->compressor, wnd ) )
