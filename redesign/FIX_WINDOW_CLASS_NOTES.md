@@ -25,7 +25,16 @@ It merges cleanly with PR #36, which changes the lines just above.
 - privacycheck: 0 problems.
 
 ## 4. Sandbox test (Linux, together with PR #36)
-RESULTS
+Linux build 24 (run 39426976790, branch `wip/fix-window-class-linux` = this branch + PR #36 + wip/linux-build), AppImage, Xvfb, openbox. A film played with `--no-embedded-video`, so VLC opens its own X11 video window (the same window module the visualizer uses when the main window is taken). `xprop` on both windows:
+
+| Window | WM_CLASS | WM_NAME / _NET_WM_NAME | Role |
+|---|---|---|---|
+| Separate video window | "cone", "Cone" (before: "vlc", "Vlc") | "Cone" / "Cone" (PR #36) | vlc-video |
+| Cone main window | "cone", "Cone" | "The Wand S01E01 — Cone" | |
+
+Both windows now share the class of cone.desktop (`StartupWMClass=cone`), so a Linux taskbar shows Cone's icon for both and groups them. WM_ICON_NAME / _NET_WM_ICON_NAME of the video window: "Cone". Cone quit cleanly (exit 0).
+
+Note: on this branch alone, Cone's Qt windows still use VLC's class (`argv[0]` "vlc"). They take "cone" from wip/linux-build (`BRAND_DESKTOP_FILE` in qt.cpp), the branch the Linux builds come from. On Windows nothing in this file is built.
 
 ## 5. Windows retest steps (IA-01, quick look)
 1. Start Cone. Check the taskbar button, the Alt+Tab icon and the window's top-left icon.
