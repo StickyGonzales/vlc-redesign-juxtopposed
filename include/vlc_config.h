@@ -96,4 +96,13 @@
 #define VOUT_OUTMEM_SLEEP               VLC_TICK_FROM_MS(20)
 
 /* The default video output window title */
-#define VOUT_TITLE                      "VLC"
+#ifdef VLC_BRAND_PUBLIC
+/* redesign (brand layer, public profile): the video windows of their own (an audio visualizer
+ * next to the video, a video without the interface) are named after Cone */
+# define VOUT_TITLE                     "Cone"
+/* the title a video output gives its own window: only the name, without the output's */
+# define VOUT_OUTPUT_TITLE(output)      VOUT_TITLE
+#else
+# define VOUT_TITLE                     "VLC"
+# define VOUT_OUTPUT_TITLE(output)      VOUT_TITLE " (" output ")"
+#endif
