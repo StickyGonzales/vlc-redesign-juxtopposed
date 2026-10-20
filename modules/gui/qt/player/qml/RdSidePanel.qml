@@ -25,7 +25,8 @@
 //   tab: two-tone icon, FG/A2 label and a 2 px accent underline as wide as the Figma tab content
 //   frame (centered); inactive: plain icon, FG/A3 label
 // - pages (RdSidePanelPageLoader) are created on first use and cross-fade when the tab changes
-//   (video 8:40, IA-37)
+//   (video 8:40, P4-16, IA-37); the tabs' icons, labels and underlines cross-fade with them
+//   (VLCStyle.rd_tabSwitchDuration; instant when the system's animations are off)
 // - optional footer pinned at the bottom (preset selector, "Open Advanced Settings")
 import QtQuick
 import QtQuick.Templates as T
@@ -149,6 +150,18 @@ Widgets.RdPanel {
                     required property var modelData
                     required property int index
                     readonly property bool active: root.currentKey === modelData.key
+                    // 0 (not selected) to 1 (selected): the icon, the label and the underline
+                    // cross-fade with the page when the tab changes (P4-16, IA-37, video 8:40)
+                    property real selection: active ? 1 : 0
+
+                    Behavior on selection {
+                        enabled: MainCtx.systemAnimations
+
+                        NumberAnimation {
+                            duration: VLCStyle.rd_tabSwitchDuration
+                            easing.type: Easing.OutQuad
+                        }
+                    }
 
                     width: VLCStyle.dp(modelData.width ?? 100)
                     height: header.height
@@ -177,16 +190,34 @@ Widgets.RdPanel {
                             y: VLCStyle.dp(14)
                             spacing: VLCStyle.dp(8)
 
-                            Widgets.RdIcon {
-                                readonly property color inactiveColor: tab.hovered ? root.rdPalette.rdFgA3
-                                                                                   : root.rdPalette.rdFgA4
-
+                            // the plain and the two-tone icon, cross-faded by the selection
+                            Item {
                                 anchors.verticalCenter: parent.verticalCenter
-                                name: tab.active ? (tab.modelData.activeIcon ?? tab.modelData.icon + "_two-tone-yes")
-                                                 : (tab.modelData.inactiveIcon ?? tab.modelData.icon)
-                                size: VLCStyle.dp(20)
-                                color: tab.active ? (tab.modelData.activeColor ?? root.rdPalette.rdFgA3) : inactiveColor
-                                color2: tab.active ? root.rdPalette.rdAccentDim : inactiveColor
+                                width: VLCStyle.dp(20)
+                                height: width
+
+                                Widgets.RdIcon {
+                                    readonly property color inactiveColor: tab.hovered ? root.rdPalette.rdFgA3
+                                                                                       : root.rdPalette.rdFgA4
+
+                                    anchors.centerIn: parent
+                                    visible: opacity > 0
+                                    opacity: 1 - tab.selection
+                                    name: tab.modelData.inactiveIcon ?? tab.modelData.icon
+                                    size: VLCStyle.dp(20)
+                                    color: inactiveColor
+                                    color2: inactiveColor
+                                }
+
+                                Widgets.RdIcon {
+                                    anchors.centerIn: parent
+                                    visible: opacity > 0
+                                    opacity: tab.selection
+                                    name: tab.modelData.activeIcon ?? tab.modelData.icon + "_two-tone-yes"
+                                    size: VLCStyle.dp(20)
+                                    color: tab.modelData.activeColor ?? root.rdPalette.rdFgA3
+                                    color2: root.rdPalette.rdAccentDim
+                                }
                             }
 
                             Text {
@@ -194,12 +225,20 @@ Widgets.RdPanel {
                                 text: tab.modelData.label
                                 font.family: VLCStyle.rd_fontFamily
                                 font.pixelSize: VLCStyle.rd_fontSize_toggle
-                                color: tab.active || tab.hovered ? root.rdPalette.rdFgA2 : root.rdPalette.rdFgA3
+                                color: tab.hovered ? root.rdPalette.rdFgA2
+                                                   : Qt.tint(root.rdPalette.rdFgA3,
+                                                             Qt.rgba(root.rdPalette.rdFgA2.r,
+                                                                     root.rdPalette.rdFgA2.g,
+                                                                     root.rdPalette.rdFgA2.b,
+                                                                     root.rdPalette.rdFgA2.a * tab.selection))
                             }
                         }
 
+                        // the old tab's underline fades out while the new one fades in: both
+                        // show for a moment (P4-16, video 8:40-8:42)
                         Rectangle {
-                            visible: tab.active
+                            visible: opacity > 0
+                            opacity: tab.selection
                             x: (parent.width - width) / 2
                             anchors.bottom: parent.bottom
                             width: tab.modelData.underline ? VLCStyle.dp(tab.modelData.underline)
