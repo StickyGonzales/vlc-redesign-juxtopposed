@@ -377,7 +377,11 @@ static  void on_player_current_media_changed(vlc_player_t *, input_item_t *new_m
         that->UpdateMeta( newMediaPtr.get() );
         that->UpdateInfo( newMediaPtr.get() );
         that->UpdateName( newMediaPtr.get() );
-        that->m_url = vlc::wrap_cptr( input_item_GetURI( newMediaPtr.get() ) ).get();
+        {
+            auto uri = vlc::wrap_cptr( input_item_GetURI( newMediaPtr.get() ) );
+            that->m_url = uri.get();
+            that->m_mrl = QByteArray( uri ? uri.get() : "" );
+        }
 
         {
             vlc_player_locker lock{ that->m_player };
@@ -2398,6 +2402,7 @@ PRIMITIVETYPE_GETTER(QString, getArtist, m_artist)
 PRIMITIVETYPE_GETTER(QString, getAlbum, m_album)
 PRIMITIVETYPE_GETTER(QUrl, getArtwork, m_artwork)
 PRIMITIVETYPE_GETTER(QUrl, getUrl, m_url)
+PRIMITIVETYPE_GETTER(QByteArray, getMrl, m_mrl)
 
 TimedText PlayerController::getCurrentLyric() const
 {

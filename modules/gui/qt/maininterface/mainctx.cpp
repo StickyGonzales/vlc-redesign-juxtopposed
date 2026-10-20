@@ -43,6 +43,7 @@
 #include "util/vlchotkeyconverter.hpp"
 #include "util/qt_dirs.hpp"                     // toNativeSeparators
 #include "util/quit_watchdog.hpp"
+#include "widgets/native/qvlcframe.hpp"         // QVLCTools::saveWindowPosition
 
 #include "util/color_scheme_model.hpp"
 
@@ -322,44 +323,7 @@ MainCtx::~MainCtx()
 
     m_threadRunner->destroy();
 
-    if ( !p_intf->preferencesResetPending)
-    {
-        settings->beginGroup("MainWindow");
-        settings->setValue( "ShowRemainingTime", m_showRemainingTime );
-        settings->setValue( "interface-scale", QString::number( m_intfUserScaleFactor ) );
-
-        /* Save playlist state */
-        settings->setValue( "playqueue-panel-docked", m_playqueuePanel->m_docked );
-        settings->setValue( "playqueue-panel-visible", m_playqueuePanel->m_visible );
-        settings->setValue( "playqueue-panel-width", QString::number( m_playqueuePanel->m_width ) );
-
-        settings->setValue( "navigation-panel-visible", m_navigationPanel->m_visible );
-        settings->setValue( "navigation-panel-width", QString::number( m_navigationPanel->m_width ) );
-
-        settings->setValue( "player-playlist-width", QString::number( m_playerPlaylistWidth ) );
-        settings->setValue( "artist-albums-width", QString::number( m_artistAlbumsWidth ) );
-
-        settings->setValue( "grid-view", m_gridView );
-        settings->setValue( "grouping", m_grouping );
-
-        settings->setValue( "color-scheme-index", m_colorScheme->currentIndex() );
-
-        settings->setValue( "album-sections", m_albumSections );
-
-        settings->setValue( "lyrics-mode", m_lyricsMode );
-
-        /* Save the stackCentralW sizes */
-        settings->endGroup();
-    }
-    else
-    {
-        settings->remove("MainWindow");
-    }
-
-    if( !p_intf->preferencesResetPending && var_InheritBool( p_intf, "save-recentplay" ) )
-        getSettings()->setValue( "filedialog-path", m_dialogFilepath );
-    else
-        getSettings()->remove( "filedialog-path" );
+    saveSettings(false);
 
     /* Unregister callbacks */
     libvlc_int_t* libvlc = vlc_object_instance(p_intf);
@@ -966,6 +930,53 @@ QJSValue MainCtx::urlListToMimeData(const QJSValue &array) {
     QJSValue ret = engine->newObject();
     ret.setProperty(QStringLiteral("text/uri-list"), data);
     return ret;
+}
+
+void MainCtx::saveSettings(bool withGeometry)
+{
+    if ( !p_intf->preferencesResetPending)
+    {
+        settings->beginGroup("MainWindow");
+        settings->setValue( "ShowRemainingTime", m_showRemainingTime );
+        settings->setValue( "interface-scale", QString::number( m_intfUserScaleFactor ) );
+
+        /* Save playlist state */
+        settings->setValue( "playqueue-panel-docked", m_playqueuePanel->m_docked );
+        settings->setValue( "playqueue-panel-visible", m_playqueuePanel->m_visible );
+        settings->setValue( "playqueue-panel-width", QString::number( m_playqueuePanel->m_width ) );
+
+        settings->setValue( "navigation-panel-visible", m_navigationPanel->m_visible );
+        settings->setValue( "navigation-panel-width", QString::number( m_navigationPanel->m_width ) );
+
+        settings->setValue( "player-playlist-width", QString::number( m_playerPlaylistWidth ) );
+        settings->setValue( "artist-albums-width", QString::number( m_artistAlbumsWidth ) );
+
+        settings->setValue( "grid-view", m_gridView );
+        settings->setValue( "grouping", m_grouping );
+
+        settings->setValue( "color-scheme-index", m_colorScheme->currentIndex() );
+
+        settings->setValue( "album-sections", m_albumSections );
+
+        settings->setValue( "lyrics-mode", m_lyricsMode );
+
+        /* Save the stackCentralW sizes */
+        settings->endGroup();
+    }
+    else
+    {
+        settings->remove("MainWindow");
+    }
+
+    if( !p_intf->preferencesResetPending && var_InheritBool( p_intf, "save-recentplay" ) )
+        getSettings()->setValue( "filedialog-path", m_dialogFilepath );
+    else
+        getSettings()->remove( "filedialog-path" );
+
+    QWindow* const window = intfMainWindow();
+    if (withGeometry && window && !p_intf->preferencesResetPending
+        && var_InheritBool( p_intf, "qt-remember-window" ))
+        QVLCTools::saveWindowPosition(getSettings(), window, nativeFrameMargins(window));
 }
 
 VideoSurfaceProvider* MainCtx::getVideoSurfaceProvider() const

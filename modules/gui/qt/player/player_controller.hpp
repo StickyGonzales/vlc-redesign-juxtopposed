@@ -340,6 +340,7 @@ public slots:
     void openVLsub();
     void acknowledgeRestoreCallback();
     QUrl getUrl() const;
+    QByteArray getMrl() const; /* redesign: the current media address as VLC gives it */
 
     //tracks
     TrackListModel* getVideoTracks();

@@ -23,12 +23,16 @@ struct qt_intf_t;
 namespace QuitWatchdog
 {
 
-/* Called when the user quits (main window closed, Quit, Ctrl+Q). Saves what a forced end
- * would lose (the Qt interface settings, the VLC settings, the resume position of the
- * current media) and starts a timer: if the process is still running 5 s later, it ends
- * itself, so no player is ever left running without a window. Only the first call arms
- * the watchdog. Interface thread only. */
+/* Called when the user quits (main window closed, Quit, Ctrl+Q). Starts a timer: if the
+ * process is still running 5 s later (30 s while recording), it ends itself, so no player
+ * is ever left running without a window. Then saves what a forced end would lose (the
+ * interface state and window geometry, the Qt and VLC settings, the resume position of
+ * the current media). Only the first arm counts. Interface thread only. */
 void arm(qt_intf_t *p_intf);
+
+/* For a quit that did not start in the interface (--play-and-exit, vlc://quit, a remote
+ * control): the timer only, from the interface module's Close. */
+void armWithoutSaving();
 
 /* Called from the interface module's Close: the interface object goes away, the watchdog
  * stops logging through it. */

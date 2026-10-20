@@ -207,6 +207,7 @@ public:
     QString m_album;
     QUrl m_artwork;
     QUrl m_url;
+    QByteArray m_mrl; /* redesign: the same address, byte for byte as VLC gives it */
 
     mutable std::optional<QPair<QByteArray, size_t>> m_syltRaw;
     mutable std::optional<QList<TimedText>> m_syltLyrics;
