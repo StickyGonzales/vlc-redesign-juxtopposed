@@ -31,10 +31,11 @@
  * Geometry of the Figma icons, in a 24 x 24 box (scaled to the item's size): a 22 px baseline
  * from x 1 to x 23 on y 12, 2 px with round caps (`lineColor`, FG/A2); boosted bands are
  * filled lobes standing on y 10, cut bands lobes hanging from y 14 (1 px clear of the
- * baseline), filled with `fillColor` (Accent/Main), at most 6 px tall, about 0.6 px per dB.
- * The lobe outline is a smooth curve through the band gains (monotone cubic, so it never
- * overshoots between two bands), the first and last gains held to the box's edges. A flat
- * preset shows the baseline only.
+ * baseline), filled with `fillColor` (Accent/Main), about 0.6 px per dB at first, the height
+ * easing off towards 6 px. The lobes are rounded humps like Figma's hand-drawn ones: the curve
+ * is a Gaussian blend of the band gains, so it rises from the floor where a boost or cut
+ * begins and rounds over a run of equal bands instead of holding it flat; a lobe stands
+ * upright only at the ends of the box. A flat preset shows the baseline only.
  *
  * The icon is painted once and again only when the gains, the colours (live accent and
  * theme) or the size change.

@@ -227,7 +227,16 @@ RdSidePanelPage {
                 text: modelData
                 selected: eqPresets.currentIndex === index
                 highlighted: eqPresets.highlightedIndex === index
-                leading: index > 0 ? curve : null
+                // Figma's own icon of the preset (icon set "name=EQ"), recoloured like every
+                // RdIcon (FG/A2 line, Accent/Main shape); a preset without one draws its curve
+                readonly property string presetIcon: index > 0 ? RdEffects.equalizerPresetIcon(index - 1) : ""
+                leading: index === 0 ? null : (presetIcon !== "" ? figmaIcon : curve)
+
+                readonly property Component figmaIcon: Component {
+                    Widgets.RdIcon {
+                        name: presetIcon
+                    }
+                }
 
                 readonly property Component curve: Component {
                     Widgets.RdEqCurve {
