@@ -56,7 +56,7 @@ For every element, every time:
 
 ## Current phase
 - 2026-10-19: Cone 0.1.0 beta is published (v0.1.0-beta, build 39125167074). Phase 2 (test all untested code) runs on wip/next-test; redesign only receives verified code (Decision 55). The live status, open bugs and the test queue are in redesign/STATUS.md on wip/next-test; the rows still to verify are in redesign/WINDOWS_CHECKLIST.md (wip/windows-checklist).
-- Blocking now: a regression after the beta (subtitle track switch freezes the picture, then quitting hangs) that the web session fixes on wip/next-test; until it lands the PC session runs only safe checks (no test film, no embedded subtitle switching, no quit loops). Open PRs waiting on it: #22, #23 + #26; #25 waits for Figma-exact EQ icons (Q7).
+- 2026-10-20: wip/next-test verified on Windows and merged into redesign (922992ae01a): the subtitle freeze fix (#30), the quit watchdog (#34), #10 #20 #22 #23 #25 #26 #31 #35 #39 #40 #41 #42, the Cone window title and the subsdelay bitmap crash fix. Next: Cone 0.2.0 beta (tag v0.2.0-beta, zip only, pre-release, published by hand after StickyGonzales's OK), then the PC session fixes the visualizer white window and the Spectrometer crash on their own branch.
 - Decisions waiting for Sticky: pixel subtitle size / live style (core); message position clear of the top bar (#22, MUSTHAVES_2_NOTES section 9.5).
 - Test media: <TEST_MEDIA_DIR>\<TEST_VIDEO> (landscape) and <TEST_VIDEO_PORTRAIT> (portrait). Never test with the designer's video. Screenshots of them stay local (they show Sticky's screen).
 - Update this section after every item: last completed row/WP with commit hash, next WP, latest green run.
