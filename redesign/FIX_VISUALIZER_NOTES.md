@@ -42,11 +42,13 @@ This is upstream VLC 4 code. Cone did not change the window module before this b
 - Linux X11 and Wayland: "VLC media player".
 
 **The change, public profile only** (`#ifdef VLC_BRAND_PUBLIC`):
-- `VOUT_TITLE` is "Cone" (`include/vlc_config.h`), so the Windows window reads "Cone (Direct3D11 output)", in the same pattern as VLC.
-- The X11 and Wayland windows read "Cone".
-- The vlc profile is unchanged.
-
-If StickyGonzales wants the Windows window to read only "Cone", without the output name, that is a one-line change per display module (Direct3D11, Direct3D9, OpenGL, WinGDI): their own `vlc_window_SetTitle`.
+- `VOUT_TITLE` is "Cone" (`include/vlc_config.h`).
+- New `VOUT_OUTPUT_TITLE(output)`: just "Cone" in the public profile, VLC's "VLC (<output>)" in the vlc profile. Windows uses it everywhere it names a window: the window module's own window (`win32/window.c`, `win32/events.c`) and the Direct3D11, Direct3D9, OpenGL and WinGDI displays. So the visualizer window reads exactly **"Cone"** on Windows (StickyGonzales, 2026-10-20).
+- X11 and Wayland windows read "Cone".
+- The vlc profile is unchanged: "VLC (Direct3D11 output)" and the other VLC titles.
+- **Checks:**
+  - mingw-w64 syntax check of `window.c`, `events.c`, `direct3d9.c` and `wingdi.c` in both profiles: no warnings.
+  - The two files that need the full Windows build environment (`direct3d11.cpp`, `glwin32.c`): their title lines are checked by preprocessing, giving "Cone" in the public profile and "VLC (Direct3D11 output)" / "VLC (OpenGL output)" in the vlc profile.
 
 The blank white window is the stopped window thread of section 2. The same fix covers it.
 
@@ -65,7 +67,7 @@ The blank white window is the stopped window thread of section 2. The same fix c
 Use a build of this branch alone (core change), the test folder of the visdelay session, and the generated MKV with two audio tracks and the .srt. Before each run, check that no Cone is left running. Stop at the first hang.
 1. **The hang recipe.** Play the MKV, sidebar > Playback > Audio Visualizer > Spectrometer, `h` 40 times, `b`, close the window. Cone must exit within about 2 s. Run it 4 times.
 2. **The visualizer window after `b`:** it keeps drawing the spectrum (no white window). Press `b` 10 more times, about 1 s apart: it draws after each one.
-3. **Its title** reads "Cone (Direct3D11 output)" (the main window's title is unchanged).
+3. **Its title** (title bar and taskbar) reads exactly "Cone" (the main window's title is unchanged).
 4. **Other visualizers.** Scope, then VU meter, then Disabled: each window opens and draws, Disabled closes it, and quit exits.
 5. **Moving the window:** drag the visualizer window to a second monitor if there is one. It keeps drawing (the colour profile is sent from the timer now).
 6. **If it still hangs:** keep the process and capture every thread's stack. The `vlc-window-win` and `vlc-dec-audio` frames are the ones that matter.
