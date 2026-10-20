@@ -824,6 +824,16 @@ MainCtxWin32::MainCtxWin32(qt_intf_t * _p_intf )
     : MainCtx( _p_intf )
 {
     m_disableVolumeKeys = var_InheritBool( _p_intf, "qt-disable-volume-keys" );
+    updateSystemAnimations();
+}
+
+void MainCtxWin32::updateSystemAnimations()
+{
+    // Settings > Accessibility > Visual effects > Animation effects (SPI_SETCLIENTAREAANIMATION)
+    BOOL animations = TRUE;
+    if (!SystemParametersInfo(SPI_GETCLIENTAREAANIMATION, 0, &animations, 0))
+        animations = TRUE;
+    setSystemAnimations(animations != FALSE);
 }
 
 void MainCtxWin32::reloadPrefs()
@@ -1041,6 +1051,11 @@ bool InterfaceWindowHandlerWin32::eventFilter(QObject* obj, QEvent* ev)
     bool handled = false;
     switch( msg->message )
     {
+        case WM_SETTINGCHANGE:
+            // redesign: "Animation effects" switched on or off while Cone runs
+            if (msg->wParam == SPI_SETCLIENTAREAANIMATION)
+                static_cast<MainCtxWin32*>(m_mainCtx)->updateSystemAnimations();
+            break;
         case WM_APPCOMMAND:
             cmd = GET_APPCOMMAND_LPARAM(msg->lParam);
 

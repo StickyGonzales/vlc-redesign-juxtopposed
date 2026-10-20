@@ -410,6 +410,7 @@ QtObject {
     readonly property int rd_submenuGap: MainCtx.dp(11, scale)          // Figma "Profiles": menu to submenu
     readonly property int rd_menuPadding: MainCtx.dp(4, scale)          // Figma menus: padding 4
     readonly property int rd_menuFadeDuration: 120                       // menu fade-in, video 5:08 at 60 fps
+    readonly property int rd_tabSwitchDuration: 150                      // sidebar tab crossfades (P4-16, IA-37), ease-out
     readonly property int rd_rowHeight: MainCtx.dp(32, scale)
     // drag ghost of a list row (IB-15, video 11:45): the row content only; its FG/1 title measures
     // about #A9A9A9 over the black video, so about 75 % opaque
