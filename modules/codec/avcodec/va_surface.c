@@ -37,9 +37,6 @@
 
 #include "avcodec.h"
 
-/* how long va_pool_Get() waits for a surface to come back (as VLC 3.0 did) */
-#define SURFACE_WAIT_TIMEOUT VLC_TICK_FROM_SEC(1)
-
 struct vlc_va_surface_t {
     size_t               index;
     atomic_uintptr_t     refcount; // 1 ref for the surface existence, 1 per surface/clone in-flight
@@ -141,13 +138,7 @@ vlc_va_surface_t *va_pool_Get(va_pool_t *va_pool)
     if (unlikely(va_pool->surface_count == 0))
         return NULL;
 
-    /* Give up after a while, as documented: the frame is then dropped. The surfaces can all be
-     * held by frames the video output keeps while its clock does not run (the audio output
-     * restarting after a track change), and waiting for good there blocked the decoder thread
-     * and, through it, the input, so the clock never started again. */
-    if (vlc_sem_timedwait(&va_pool->available_surfaces,
-                          vlc_tick_now() + SURFACE_WAIT_TIMEOUT) != 0)
-        return NULL;
+    vlc_sem_wait(&va_pool->available_surfaces);
     surface = GetSurface(va_pool);
     assert(surface != NULL);
     return surface;
