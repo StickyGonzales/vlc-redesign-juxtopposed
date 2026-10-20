@@ -46,6 +46,7 @@
 #include <vlc_variables.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace {
 
@@ -257,6 +258,35 @@ QString languageName(const QString& code)
     if (code == QLatin1String("zh-tw"))
         return qtr("Chinese (Traditional)");
     return QLocale::languageToString(QLocale(code).language());
+}
+
+// VLC creates the track of a file added during playback a moment later; its string id starts
+// with the MD5 of the file's URI ("<32 hex digits>/spu/0", src/input/es_out.c). Looked up this
+// many times, this often, then selected alone (the video: the new file gets the check)
+constexpr int kSelectLookups = 20;
+constexpr int kSelectLookupDelayMs = 100;
+
+void selectSubtitleWhenListed(QObject* context, vlc_player_t* player, const QByteArray& uriHash, int lookups)
+{
+    QTimer::singleShot(kSelectLookupDelayMs, context, [context, player, uriHash, lookups]() {
+        {
+            vlc_player_locker lock{ player };
+            const size_t count = vlc_player_GetTrackCount(player, SPU_ES);
+            for (size_t i = 0; i < count; ++i)
+            {
+                const vlc_player_track* track = vlc_player_GetTrackAt(player, SPU_ES, i);
+                const char* strId = track ? vlc_es_id_GetStrId(track->es_id) : nullptr;
+                if (!strId || std::strncmp(strId, uriHash.constData(), uriHash.size()) != 0
+                    || strId[uriHash.size()] != '/')
+                    continue;
+                if (!track->selected)
+                    vlc_player_SelectTrack(player, track, VLC_PLAYER_SELECT_EXCLUSIVE);
+                return;
+            }
+        }
+        if (lookups > 1)
+            selectSubtitleWhenListed(context, player, uriHash, lookups - 1);
+    });
 }
 
 } // namespace
@@ -1381,12 +1411,22 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
     vlc_mutex_unlock(&item->lock);
 
     bool first = select;
+    QString selectUri;
     for (const QString& subtitle : subtitles)
     {
         const QString uri = QUrl(subtitle).scheme().size() > 1 ? subtitle : mrlOf(subtitle);
         if (uri.isEmpty() || loaded.contains(SubtitleStore::mediaKey(uri)))
             continue;
         vlc_player_AddAssociatedMedia(player, SPU_ES, qtu(uri), first, false, false);
+        if (first)
+            selectUri = uri;
         first = false;
     }
+
+    // the forced flag alone does not take the selection from a track the user picked (P3-10):
+    // the added file's track is selected once VLC lists it
+    if (!selectUri.isEmpty())
+        selectSubtitleWhenListed(this, player,
+                                 QCryptographicHash::hash(selectUri.toUtf8(), QCryptographicHash::Md5).toHex(),
+                                 kSelectLookups);
 }

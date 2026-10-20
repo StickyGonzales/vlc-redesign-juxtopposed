@@ -1797,6 +1797,36 @@ FocusScope {
         }
     }
 
+    // redesign: the subtitles stay above the control bar while it covers the bottom of the
+    // video area (redesign/BETA_SUBS_NOTES.md). The covered height goes to VLC as a subtitle margin
+    // in display pixels (RdSubtitleLift); it follows the bar's fade, so the subtitles rise and
+    // settle with the bar. Nothing is covered in the music view, with the controls under the
+    // video (pinned), or while the player is not shown (minimal view, library).
+    readonly property real _subtitleLift: {
+        if (!rootPlayer.visible || !MainCtx.hasEmbededVideo || !controlBar.visible || controlBar.opacity <= 0)
+            return 0
+        const area = playerSpecializationLoader
+        if (area.width <= 0 || area.height <= 0)
+            return 0
+        // measured from the bottom of the whole video area, not of the picture: VLC places text
+        // subtitles in the whole window ("spu-fill"), so in a letterboxed film they sit on the
+        // black bar under the picture, where the control bar covers them
+        const covered = area.y + area.height - controlBar.y
+        if (covered <= 0)
+            return 0
+        const dpr = MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0
+        return covered * controlBar.opacity * dpr
+    }
+
+    Binding {
+        target: RdSubtitleLift
+        property: "lift"
+        value: Math.round(rootPlayer._subtitleLift)
+
+        // the subtitles go back down when the player goes (minimal view, library)
+        Component.onDestruction: RdSubtitleLift.lift = 0
+    }
+
     ControlBar {
         id: controlBar
 
@@ -1884,18 +1914,13 @@ FocusScope {
             // redesign: opaque, like the panels and menus, so the fullscreen bar over the native
             // video looks like the windowed one: BG/A3 in Dark (the dark Player frames override
             // the bar fill to BG/A3, visual audit A2, like the top bar), BG/A3 Transparent made
-            // opaque in Light (its 95 % assumes a background blur); a 1 px Divider/Dim top line
-            // only in the light theme (Figma "Player - Light" has it, the dark frames have none)
+            // opaque in Light (its 95 % assumes a background blur); no top line in either theme:
+            // Figma "Player - Light" strokes the bar with Divider/Dim (#ACACAC), but over the
+            // video its 75 % bar renders the same #ABABAB, so the frame shows no line, while on the
+            // opaque bar it showed as a grey 1-2 px line (PC session, 2026-10-19)
             color: (controlBar.textPosition !== ControlBar.TimeTextPosition.Inline) ? windowTheme.bg.primary
                    : VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3
                                              : Qt.alpha(VLCStyle.palette.rdBgA3Transparent, 1.0)
-
-            Rectangle {
-                visible: controlBar.textPosition === ControlBar.TimeTextPosition.Inline && !VLCStyle.palette.isDark
-                width: parent.width
-                height: VLCStyle.dp(1, VLCStyle.scale)
-                color: VLCStyle.palette.rdDividerDim
-            }
         }
 
         FadeControllerStateGroup {

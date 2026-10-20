@@ -842,6 +842,31 @@ bool MainCtxWin32::getDisableVolumeKeys() const
     return m_disableVolumeKeys;
 }
 
+// redesign: with client-side decorations where Windows handles the resize, WM_NCCALCSIZE
+// (CSDWin32EventHandler) keeps a resize border outside the client area on the left, right and
+// bottom. Qt doesn't count it (the window is frameless for Qt), so a saved client geometry was
+// restored as the whole window and the window shrank by that border on every start. This returns
+// the border, in Qt's units, for the normal state only (maximized and full screen windows are
+// restored by their state).
+QMargins MainCtxWin32::nativeFrameMargins(QWindow *window) const
+{
+    if (!window || !useClientSideDecoration() || !platformHandlesResizeWithCSD())
+        return QMargins();
+    if (window->windowStates() & (Qt::WindowMaximized | Qt::WindowFullScreen | Qt::WindowMinimized))
+        return QMargins();
+    const HWND hwnd = WinId(window);
+    RECT windowRect, clientRect;
+    POINT origin = { 0, 0 };
+    if (!hwnd || !GetWindowRect(hwnd, &windowRect) || !GetClientRect(hwnd, &clientRect)
+        || !ClientToScreen(hwnd, &origin))
+        return QMargins();
+    const qreal dpr = window->devicePixelRatio();
+    return QMargins(qRound((origin.x - windowRect.left) / dpr),
+                    qRound((origin.y - windowRect.top) / dpr),
+                    qRound((windowRect.right - (origin.x + clientRect.right)) / dpr),
+                    qRound((windowRect.bottom - (origin.y + clientRect.bottom)) / dpr));
+}
+
 bool MainCtxWin32::createWindowWithoutRedirectionSurfaceImpl(QWindow *window)
 {
     assert(window);

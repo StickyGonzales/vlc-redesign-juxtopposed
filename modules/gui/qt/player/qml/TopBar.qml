@@ -259,15 +259,18 @@ FocusScope{
                                                                      root.width))
 
             anchors.centerIn: parent
-            width: Math.min(implicitWidth, _maxWidth)
+            // the whole free width, centred text: a width bound to implicitWidth kept the elided
+            // width of an intermediate title after the media changed (Qt 6.10)
+            width: _maxWidth
 
-            visible: !root._editable && width > 0
+            visible: !root._editable && width > 0 && text !== ""
 
             text: root.title
             color: VLCStyle.palette.rdFgA2
             font.family: VLCStyle.rd_fontFamily
             font.pixelSize: VLCStyle.rd_fontSize_label
             elide: Text.ElideRight
+            horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
 
