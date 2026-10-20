@@ -21,7 +21,24 @@ The sandbox test media and most real films are Matroska, so this showed on Windo
 - privacycheck: 0 problems. No QML changed.
 
 ## 4. Sandbox test (Linux)
-RESULTS
+Linux build 23 (run 39426741471, branch `wip/fix-chapter-title-linux` = this branch + wip/linux-build), AppImage, Xvfb 1920x1080 at 100%, openbox. Generated test media: "Test Show/Season 1", .mkv with the chapters Winter / Spring / Summer / Fall / Winter 10 Years Later.
+
+Distance from the panel's left edge to the first lit pixel, per row (before = Linux build 21, same profile):
+
+| Row | Number before | Number after | Title before | Title after | Figma title box |
+|---|---|---|---|---|---|
+| 1 Winter | 25 | 25 | 73 | 69 | 68 |
+| 2 Spring | 25 | 25 | 73 | 69 | 68 |
+| 3 Summer | 25 | 25 | 73 | 69 | 68 |
+| 4 Fall | 25 | 25 | 72 | 68 | 68 |
+
+The 1 px left after the fix is the letter's own side bearing: the same row file drawn outside Cone (Qt 6.8.3, offscreen) gives the same pixel.
+
+Side by side, at 2x (cyan line = 68 px, Figma's title box): `redesign/fix-shots/P7-06_chapters_sbs.png` (before / after / Figma Controls "chapters"). The rows, numbers and times did not move; only the titles moved 4 px left, onto Figma's line.
+
+Also checked:
+- The seek bar preview (time only, as before).
+- Cone quits cleanly (exit 0).
 
 ## 5. Windows retest steps
 1. Play a Matroska file with chapters (any .mkv with named chapters).
