@@ -5,9 +5,10 @@ Every VIDEO_INDEX row that is still not verified on wip/next-test (2ffda4e20b, 2
 - **quick look**: built, and passed on Linux or in an earlier Windows round; open it on Windows, glance at it next to Figma (Decision 65), mark the row.
 - **full Windows test**: needs Windows itself (core build, audio, folder dialog, network), her video (motion, montage), or a real mouse (drag and drop); use every control, then one screenshot next to Figma / the video frame.
 - **needs a fix first**: not built, or a known bug still open; the web session fixes it, then it gets a test.
+- **postponed**: not built on purpose under one of Sticky's decisions; nothing to fix or test until the decision changes.
 - **none (context row)**: old VLC, problem, B-roll, sponsor or meme rows: nothing to build or check (listed so the count is complete).
 
-Counts: quick look 18, full Windows test 28, needs a fix first 4, none (context row) 61.
+Counts: quick look 18, full Windows test 28, needs a fix first 3, postponed 1, none (context row) 61.
 
 Dropped: P4-30 (#139), the video filter preset previews, Decision 67 (PR #28); not counted.
 
@@ -76,7 +77,7 @@ Test-only branch `wip/linux-recheck` (never merged): wip/next-test plus the open
 | 129 | P4-22 | quick look | Compressor expanded: Linux pass; Windows look |
 | 131 | P4-24 | quick look | Equalizer expanded: Linux pass (0.0 dB fix; preset icons rounded like Figma "EQ presets" with PR #25); Windows look |
 | 138 | P4-29 | full Windows test | rows appear one by one: check against her video whether it is UI or editing (8:57-9:06) |
-| 143 | P4-33 | needs a fix first | Reverse toggle: not built (reverse playback postponed, Decision 29) |
+| 143 | P4-33 | postponed | Reverse toggle: postponed under Decision 29 (reverse playback); VLC's engine has no reverse playback, so a toggle would do nothing |
 
 ## Queue, bookmarks, chapters
 
