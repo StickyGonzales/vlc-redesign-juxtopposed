@@ -40,7 +40,9 @@ public:
         PLAYLIST_COUNT,
         PLAYLIST_NB_AUDIO,
         PLAYLIST_NB_VIDEO,
-        PLAYLIST_NB_UNKNOWN
+        PLAYLIST_NB_UNKNOWN,
+        // redesign: the favorite state, for the library's "..." menus
+        PLAYLIST_IS_FAVORITE
     };
     Q_ENUM(Roles)
 

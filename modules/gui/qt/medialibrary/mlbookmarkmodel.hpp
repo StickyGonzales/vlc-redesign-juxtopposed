@@ -56,7 +56,9 @@ public:
         NameRole = Qt::UserRole,
         TimeRole = Qt::UserRole + 1,
         PositionRole = Qt::UserRole + 2,
-        DescriptionRole = Qt::UserRole + 3
+        DescriptionRole = Qt::UserRole + 3,
+        // redesign: hh:mm:ss:mmm (Figma "bookmarks", 00:00:42:023)
+        PreciseTimeRole = Qt::UserRole + 4
     };
     QHash<int, QByteArray> roleNames() const override;
 

@@ -71,6 +71,14 @@ Juxtopposed's Figma frames, the source for every size, color and spacing in Cone
 | **Onboarding**<br><img src="docs/images/figma-onboarding.png" alt="Onboarding"> | **Keyboard Shortcuts**<br><img src="docs/images/figma-shortcuts.png" alt="Keyboard Shortcuts"> |
 | **Light theme**<br><img src="docs/images/figma-light.png" alt="Light theme"> | |
 
+## Cone extras (not part of Juxtopposed's design)
+
+Features Cone adds beyond Juxtopposed's design (in neither her video nor her Figma file) are listed here, each marked as a Cone extra. They are not part of beta 2 or 1.0: each is built on its own branch and arrives after 1.0, starting with 1.1.
+
+| Cone extra | Status | What it does |
+|---|---|---|
+| Autoplay next episode ("Up Next") | Planned for 1.1 | When an episode of a show folder ends, an "Up next" card counts down to the next episode. Off / Ask for each show / Always in Settings > Playback; single videos, recordings, clips and music are never treated as shows. Plan and designs: [UP_NEXT_PLAN.md](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/blob/wip/up-next-plan/redesign/UP_NEXT_PLAN.md) (branch wip/up-next-plan) |
+
 ## FAQ
 
 **Why "Cone" and not VLC?** "VLC" and the traffic cone icon are VideoLAN's trademarks, so this build has its own name and icon. Under the hood it's VLC.

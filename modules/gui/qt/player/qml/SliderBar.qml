@@ -40,7 +40,7 @@ T.ProgressBar {
     readonly property real _scaledSeekPointsRadius: _seekPointsRadius * _hoveredScalingFactor
 
     property bool _currentChapterHovered: false
-    property real _tooltipPosition: (Widgets.PointingToolTipAttached.instance?.pos.x ?? 0.0) / width
+    property real _tooltipPosition: control._positionAt(Widgets.PointingToolTipAttached.instance?.pos.x ?? 0.0)
 
     property color backgroundColor: theme.bg.primary
     // redesign: thick seek bar (Figma "Frame 21": 28 px track BG/B2 radius 6, 24 px played fill
@@ -92,12 +92,12 @@ T.ProgressBar {
     // the pointer is scrubbing: over the bar, or dragging it (also past its ends)
     readonly property bool scrubbing: hoverHandler.hovered || dragHandler.active
     readonly property bool dragging: dragHandler.active
-    readonly property bool _previewShown: control._previewAvailable && control.scrubbing
+    readonly property bool _previewShown: control._previewAvailable && control.scrubbing && !control.shifting
     readonly property real _scrubX: Helpers.clamp(dragHandler.active ? dragHandler.centroid.position.x
                                                                      : hoverHandler.point.position.x,
                                                   0, control.width)
     // the position under the pointer (0..1); the current time label shows it while dragging
-    readonly property real scrubPosition: control.width > 0 ? control._scrubX / control.width : 0
+    readonly property real scrubPosition: control._positionAt(control._scrubX)
 
     // redesign: waveform seek bar (P6-06 / IB-24, Figma Controls "Property 1=waveform"). With the
     // Playback tab's "Show Waveform on Seekbar" on, the thick bar draws the playing file's
@@ -106,7 +106,110 @@ T.ProgressBar {
     // The layer takes no input: hover, drag, the preview card, keys and the right click
     // stay the bar's
     readonly property bool _waveformOption: RdEffects.values[RdEffects.optionKey("qt-seek-waveform")] === true
-    readonly property bool waveformShown: waveform.ready
+    readonly property bool waveformShown: waveform.ready && !control.timelineShown
+
+    // redesign: subtitle timeline seek bar (P3-16 / IA-27, video 6:52-7:04; the Playback tab's
+    // "Show Subtitle Timeline on Seekbar", P4-35). With the option on and a subtitle track from
+    // a text file selected (RdSubtitleTimeline), the thick bar shows a time window around the
+    // playhead (`timelineSpan`, 1 min at first) with a block for every subtitle line. Dragging a
+    // block slides all of them: VLC's subtitle delay, applied live; a press beside the blocks
+    // seeks within the window. The window turns its page when the playhead leaves it and stays
+    // put while the bar is held; timelinePan() / timelineZoom() (the buttons beside the bar)
+    // move and resize it. The timeline replaces the waveform while it shows; the preview card,
+    // the right click and the keys work as on the plain bar
+    readonly property bool _timelineOption: RdEffects.values[RdEffects.optionKey("qt-seek-subtitle-timeline")] === true
+    readonly property real _lengthMs: RdSubtitleTimeline.lengthMs
+    readonly property bool timelineShown: subtitleTimeline.ready && control._lengthMs > 0
+    // the window lengths, shortest first; "-" / "+" step through them
+    readonly property var _timelineSpans: [10000, 30000, 60000, 120000, 300000]
+    property int _timelineZoom: 2
+    readonly property real timelineSpan: Math.min(control._timelineSpans[control._timelineZoom], control._lengthMs)
+    property real timelineStart: 0
+    // the window follows the playhead (until a pan leaves it elsewhere)
+    property bool _timelineFollows: true
+    readonly property bool timelineCanPanBack: control.timelineStart > 0
+    readonly property bool timelineCanPanForward: control.timelineStart + control.timelineSpan < control._lengthMs
+    readonly property bool timelineCanZoomIn: control._timelineZoom > 0
+    readonly property bool timelineCanZoomOut: control._timelineZoom < control._timelineSpans.length - 1
+                                               && control._timelineSpans[control._timelineZoom] < control._lengthMs
+    // the window's ends for the time labels, marked with an asterisk (video 6:52)
+    readonly property string timelineStartText: control.timelineShown
+        ? qsTr("%1*").arg(Player.length.scale(control.timelineStart / control._lengthMs).formatHHMMSS()) : ""
+    readonly property string timelineEndText: control.timelineShown
+        ? qsTr("%1*").arg(Player.length.scale(Math.min(1, (control.timelineStart + control.timelineSpan) / control._lengthMs)).formatHHMMSS()) : ""
+    // a block is being dragged
+    readonly property bool shifting: fsm._state === fsmShifting
+
+    // the part of the media across the bar (0..1 of the whole media)
+    readonly property real _viewFrom: control.timelineShown ? control.timelineStart / control._lengthMs : 0
+    readonly property real _viewSize: control.timelineShown ? control.timelineSpan / control._lengthMs : 1
+    // the playhead is inside the window (a pan can move the window away from it)
+    readonly property bool _playheadInView: !control.timelineShown
+                                            || (control.visualPosition >= control._viewFrom
+                                                && control.visualPosition <= control._viewFrom + control._viewSize)
+    // where the playhead is drawn (0..1 of the bar)
+    readonly property real _viewPosition: control.timelineShown
+                                          ? Helpers.clamp((control.visualPosition - control._viewFrom) / control._viewSize, 0, 1)
+                                          : control.visualPosition
+
+    // the media position under `x` (bar coordinates)
+    function _positionAt(x) {
+        return control._viewFrom + (control.width > 0 ? x / control.width : 0) * control._viewSize
+    }
+
+    // a block of the timeline at a media position (a few pixels around the block count too)
+    function _cueAtPosition(position) {
+        if (!control.timelineShown || control._viewSize <= 0)
+            return false
+        const x = (position - control._viewFrom) / control._viewSize * control.width
+        return subtitleTimeline.cueAt(x, VLCStyle.dp(3, VLCStyle.scale))
+    }
+
+    function _timelinePageStart(timeMs) {
+        return Helpers.clamp(Math.floor(timeMs / control.timelineSpan) * control.timelineSpan,
+                             0, Math.max(0, control._lengthMs - control.timelineSpan))
+    }
+
+    // the window turns its page when the playhead leaves it, unless the bar is held or a pan
+    // moved the window away from the playhead (it follows again once the playhead is inside)
+    function _timelineFollow() {
+        if (!control.timelineShown || control.timelineSpan <= 0 || fsm._state !== fsmReleased)
+            return
+        const timeMs = Player.position * control._lengthMs
+        if (timeMs >= control.timelineStart && timeMs < control.timelineStart + control.timelineSpan)
+            control._timelineFollows = true
+        else if (control._timelineFollows)
+            control.timelineStart = control._timelinePageStart(timeMs)
+    }
+
+    // -1: half a window earlier, +1: half a window later
+    function timelinePan(direction) {
+        control._timelineFollows = false
+        control.timelineStart = Helpers.clamp(control.timelineStart + direction * control.timelineSpan / 2,
+                                              0, Math.max(0, control._lengthMs - control.timelineSpan))
+        control._timelineFollow()
+    }
+
+    // +1: a shorter window ("+"), -1: a longer one ("-"); the playhead's page, or the same
+    // middle when the window was panned away
+    function timelineZoom(direction) {
+        const zoom = Helpers.clamp(control._timelineZoom - direction, 0, control._timelineSpans.length - 1)
+        if (zoom === control._timelineZoom || (direction < 0 && !control.timelineCanZoomOut))
+            return
+        const middle = control.timelineStart + control.timelineSpan / 2
+        control._timelineZoom = zoom
+        if (control._timelineFollows)
+            control.timelineStart = control._timelinePageStart(Player.position * control._lengthMs)
+        else
+            control.timelineStart = Helpers.clamp(middle - control.timelineSpan / 2,
+                                                  0, Math.max(0, control._lengthMs - control.timelineSpan))
+    }
+
+    onTimelineShownChanged: {
+        control._timelineFollows = true
+        if (control.timelineShown)
+            control.timelineStart = control._timelinePageStart(Player.position * control._lengthMs)
+    }
 
     function _updatePreview() {
         if (control._previewShown)
@@ -176,7 +279,7 @@ T.ProgressBar {
 
         const length = Player.length
         if (hoverHandler.hovered)
-            _text = length.scale(Widgets.PointingToolTipAttached.instance.pos.x / control.width)
+            _text = length.scale(control._positionAt(Widgets.PointingToolTipAttached.instance.pos.x))
         else
             _text = Player.time
 
@@ -189,7 +292,7 @@ T.ProgressBar {
     }
 
     Widgets.PointingToolTipAttached.pos: Qt.point(hoverHandler.hovered ? Helpers.clamp(hoverHandler.point.position.x, 0, control.availableWidth)
-                                                                       : (control.visualPosition * control.width), 0)
+                                                                       : (control._viewPosition * control.width), 0)
 
     FSM {
         id: fsm
@@ -237,12 +340,78 @@ T.ProgressBar {
                         control.value = position
                     }
                 },
-                "pressControl": {
+                "pressControl": [{
+                    // redesign: a press on a block of the subtitle timeline drags the subtitles
+                    guard: (position, forcePrecise) => control._cueAtPosition(position),
                     action: (position, forcePrecise) => {
                         control.forceActiveFocus()
-                        fsm._seekToPosition(position, VLCStyle.dp(4, VLCStyle.scale) / control.width, forcePrecise)
+                        fsmShifting.fromPosition = position
+                        fsmShifting.fromDelay = Player.subtitleDelayMS
+                        fsmShifting.moved = false
+                    },
+                    target: fsmShifting
+                }, {
+                    action: (position, forcePrecise) => {
+                        control.forceActiveFocus()
+                        fsm._seekToPosition(position, VLCStyle.dp(4, VLCStyle.scale) / control.width * control._viewSize, forcePrecise)
                     },
                     target: fsmHeld
+                }]
+            })
+        }
+
+        // redesign: dragging the subtitle timeline's blocks: once the pointer has moved a few
+        // pixels the subtitle delay follows it (the blocks move with it), within the -600 to
+        // 600 s of VLC's own Synchronization panel, written at most once per turn of the event
+        // loop (each write is a VLC message and a decoder change); a click without a drag
+        // seeks, as beside the blocks (they cover much of the bar)
+        FSMState {
+            id: fsmShifting
+
+            property real fromPosition: 0
+            property int fromDelay: 0
+            property bool moved: false
+            property int pendingDelay: 0
+
+            function applyDelay() {
+                if (Player.subtitleDelayMS !== fsmShifting.pendingDelay)
+                    Player.subtitleDelayMS = fsmShifting.pendingDelay
+            }
+
+            transitions: ({
+                "playerUpdatePosition": {
+                    action: (position) => {
+                        control.value = position
+                    }
+                },
+                "moveControl": {
+                    action: (position, forcePrecise) => {
+                        const pixels = Math.abs(position - fsmShifting.fromPosition) / control._viewSize * control.width
+                        if (!fsmShifting.moved && pixels < VLCStyle.dp(3, VLCStyle.scale))
+                            return
+                        fsmShifting.moved = true
+                        const delay = fsmShifting.fromDelay + (position - fsmShifting.fromPosition) * control._lengthMs
+                        fsmShifting.pendingDelay = Math.round(Helpers.clamp(delay, -600000, 600000))
+                        Qt.callLater(fsmShifting.applyDelay)
+                    }
+                },
+                "releaseControl": {
+                    action: (position, forcePrecise) => {
+                        // the bar's TapHandler also reports a release when the DragHandler
+                        // takes the press over on the first move: only a press that no drag
+                        // took over is a click
+                        if (!fsmShifting.moved) {
+                            Qt.callLater(() => {
+                                if (!dragHandler.active && fsm._state === fsmReleased)
+                                    fsm._seekToPosition(position, VLCStyle.dp(4, VLCStyle.scale) / control.width * control._viewSize, forcePrecise)
+                            })
+                        }
+                        Qt.callLater(control._timelineFollow)
+                    },
+                    target: fsmReleased
+                },
+                "inputChanged": {
+                    target: fsmReleased
                 }
             })
         }
@@ -253,11 +422,12 @@ T.ProgressBar {
             transitions: ({
                 "moveControl": {
                     action: (position, forcePrecise) => {
-                        fsm._seekToPosition(position, VLCStyle.dp(2, VLCStyle.scale) / control.width, forcePrecise)
+                        fsm._seekToPosition(position, VLCStyle.dp(2, VLCStyle.scale) / control.width * control._viewSize, forcePrecise)
                     }
                 },
                 "releaseControl": {
-                    target: fsmReleased
+                    target: fsmReleased,
+                    action: () => Qt.callLater(control._timelineFollow)
                 },
                 "inputChanged": {
                     target: fsmHeldWrongInput
@@ -285,8 +455,14 @@ T.ProgressBar {
 
     Connections {
         target: Player
-        function onPositionChanged() {  fsm.playerUpdatePosition(Player.position) }
-        function onInputChanged() {  fsm.inputChanged() }
+        function onPositionChanged() {
+            fsm.playerUpdatePosition(Player.position)
+            control._timelineFollow()
+        }
+        function onInputChanged() {
+            fsm.inputChanged()
+            control._timelineFollows = true
+        }
     }
 
     Component.onCompleted: value = Player.position
@@ -301,6 +477,11 @@ T.ProgressBar {
 
     HoverHandler {
         id: hoverHandler
+
+        // a block of the subtitle timeline can be dragged sideways
+        cursorShape: (control.shifting || (control.timelineShown && hovered
+                                           && subtitleTimeline.cueAt(point.position.x, VLCStyle.dp(3, VLCStyle.scale))))
+                     ? Qt.SizeHorCursor : undefined
 
         onHoveredChanged: () => {
             if (hovered) {
@@ -339,10 +520,10 @@ T.ProgressBar {
 
             onPressedChanged: {
                 if (pressed) {
-                    fsm.pressControl(point.position.x / control.width, point.modifiers === Qt.ShiftModifier)
+                    fsm.pressControl(control._positionAt(point.position.x), point.modifiers === Qt.ShiftModifier)
                 } else {
                     // NOTE: Point is still valid at this point.
-                    fsm.releaseControl(point.position.x / control.width, point.modifiers === Qt.ShiftModifier)
+                    fsm.releaseControl(control._positionAt(point.position.x), point.modifiers === Qt.ShiftModifier)
                 }
             }
         }
@@ -361,16 +542,16 @@ T.ProgressBar {
             property bool filterEvents: false
 
             function moveControl() {
-                fsm.moveControl(dragHandler.centroid.position.x / control.width,
+                fsm.moveControl(control._positionAt(dragHandler.centroid.position.x),
                                 dragHandler.centroid.modifiers === Qt.ShiftModifier)
             }
 
             onActiveChanged: {
                 if (active) {
                     filterEvents = false
-                    fsm.pressControl(centroid.position.x / control.width, centroid.modifiers === Qt.ShiftModifier)
+                    fsm.pressControl(control._positionAt(centroid.position.x), centroid.modifiers === Qt.ShiftModifier)
                 } else {
-                    fsm.releaseControl( centroid.position.x / control.width, centroid.modifiers === Qt.ShiftModifier)
+                    fsm.releaseControl(control._positionAt(centroid.position.x), centroid.modifiers === Qt.ShiftModifier)
                 }
             }
 
@@ -410,7 +591,9 @@ T.ProgressBar {
             height: control.barHeight
             visible: Player.hasChapters && !control.thick
 
-            model: Player.chapters
+            // redesign: a Repeater's delegates belong to its parent and ignore its `visible`;
+            // the thick bar draws no chapter segments (Figma "Frame 21"), so it creates none
+            model: control.thick ? 0 : Player.chapters
             Item {
                 Rectangle {
                     id: seekpointsRect
@@ -506,7 +689,7 @@ T.ProgressBar {
             id: progressRect
             x: control._inset
             y: control._inset
-            width: Math.max(0, control.visualPosition * (parent.width - 2 * control._inset))
+            width: Math.max(0, control._viewPosition * (parent.width - 2 * control._inset))
             visible: (control.thick || !Player.hasChapters) && opacity > 0
             opacity: control.waveformShown ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: VLCStyle.duration_short } }
@@ -537,7 +720,7 @@ T.ProgressBar {
             Behavior on opacity { NumberAnimation { duration: VLCStyle.duration_short } }
 
             source: RdWaveform
-            active: control.thick && control._waveformOption
+            active: control.thick && control._waveformOption && !control.timelineShown
 
             playheadX: sliderHandle.x + sliderHandle.width / 2
             playheadWidth: sliderHandle.width
@@ -551,6 +734,31 @@ T.ProgressBar {
             barMaxHeight: VLCStyle.rd_waveformBarMaxHeight
             barStep: VLCStyle.rd_waveformBarStep
             horizontalPadding: VLCStyle.rd_waveformPadding
+        }
+
+        // the blocks of the subtitle timeline, over the played fill: a lighter brown on the
+        // played side, BG/A2 on the rest (IA-27, video 7:00-7:04; both follow the live accent
+        // and theme)
+        RdSubtitleTimelineItem {
+            id: subtitleTimeline
+
+            x: 0
+            y: control._inset
+            width: parent.width
+            height: control.barHeight - 2 * control._inset
+
+            source: RdSubtitleTimeline
+            active: control.thick && control._timelineOption
+
+            windowStart: control.timelineStart
+            windowLength: control.timelineSpan
+            delay: Player.subtitleDelayMS
+            horizontalInset: control._inset
+            // a window panned away from the playhead is all played or all to come
+            playheadX: control._playheadInView ? sliderHandle.x + sliderHandle.width / 2
+                     : (control.visualPosition < control._viewFrom ? 0 : width)
+            playedColor: VLCStyle.palette.rdSeekBlockPlayed
+            unplayedColor: VLCStyle.palette.rdSeekBlockUnplayed
         }
 
         Rectangle {
@@ -677,7 +885,7 @@ T.ProgressBar {
         property int _size: control.barHeight * 3
 
         x: control.thick ? Math.max(control._inset, Math.min(control.availableWidth - width - control._inset,
-                                                             (control.visualPosition * control.availableWidth) - width / 2))
+                                                             (control._viewPosition * control.availableWidth) - width / 2))
                          : (control.visualPosition * control.availableWidth) - width / 2
         y: (control.barHeight - height) / 2
 
@@ -692,6 +900,8 @@ T.ProgressBar {
         implicitHeight: control.thick ? control.barHeight - 2 * control._inset : sliderHandle._size
         radius: control.thick ? VLCStyle.rd_radius_small : VLCStyle.margin_small
         color: theme.fg.primary
+        // the subtitle timeline's window was panned away from the playhead
+        opacity: control._playheadInView ? 1 : 0
 
         // We use dynamic mutability group because time interpolation
         // may induce rapid change:

@@ -77,6 +77,8 @@ SettingsPage {
             Widgets.RdButton {
                 style: Widgets.RdButton.Style.Plain
                 text: qsTr("Clear")
+                // the row's 30 %, not the 50 % of a disabled button on its own
+                opacity: enabled ? 1.0 : VLCStyle.rd_disabledRowOpacity
                 onClicked: {
                     if (DialogsProvider.questionDialog(qsTr("Forget everything you played?"), qsTr("Clear history")))
                         SettingsCatalog.clearHistory()
@@ -91,11 +93,6 @@ SettingsPage {
         SettingsOption {
             option: "metadata-network-access"
             text: qsTr("Fetch titles and cover art from the internet")
-        }
-
-        SettingsOption {
-            option: "qt-privacy-ask"
-            text: qsTr("Ask about internet access when %1 starts").arg(Brand.shortName)
         }
 
         SettingsInterfaceToggle {
@@ -124,6 +121,13 @@ SettingsPage {
             option: "scrobbler-url"
             text: qsTr("Last.fm submission URL")
             available: root._scrobbler
+        }
+
+        // not in Figma: last, so Figma's rows keep their places (Decisions (Claude),
+        // WEB_FIXES_1_NOTES.md)
+        SettingsOption {
+            option: "qt-privacy-ask"
+            text: qsTr("Ask about internet access when %1 starts").arg(Brand.shortName)
         }
     }
 }

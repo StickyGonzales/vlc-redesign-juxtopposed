@@ -72,7 +72,7 @@ T.Control {
 
     background: Rectangle {
         radius: VLCStyle.rd_radius_normal
-        color: (!root.editable && root.hovered) ? root.rdPalette.rdBgA4 : root.rdPalette.rdBgA5
+        color: (!root.editable && root.hovered) ? root.rdPalette.rdBgA4 : root.rdPalette.rdBgField
         border.width: (root.visualFocus || (input.activeFocus && (input.focusReason === Qt.TabFocusReason
                                                                   || input.focusReason === Qt.BacktabFocusReason)))
                       ? VLCStyle.dp(1) : 0

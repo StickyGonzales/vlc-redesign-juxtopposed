@@ -376,6 +376,14 @@ QColor deriveAccentShade(const QColor& main, const QColor& refMain, const QColor
     const float valRatio = refMain.valueF() > 0 ? refShade.valueF() / refMain.valueF() : 1.f;
     return QColor::fromHsvF(h, std::min(1.f, s * satRatio), std::min(1.f, v * valRatio));
 }
+
+// a color with a layer of `layer` at `opacity` painted over it
+QColor overlayColor(const QColor& base, const QColor& layer, float opacity)
+{
+    return QColor::fromRgbF(base.redF() + (layer.redF() - base.redF()) * opacity,
+                            base.greenF() + (layer.greenF() - base.greenF()) * opacity,
+                            base.blueF() + (layer.blueF() - base.blueF()) * opacity);
+}
 }
 
 void SystemPalette::applyRdColors()
@@ -407,6 +415,10 @@ void SystemPalette::applyRdColors()
     // selected text on Accent/DIm (Figma shows no text selection): FG/1 in Dark; in Light FG/1
     // (#111111) on #965916 reads badly (3.4:1), BG/A1 gives 4.8:1
     rdSelectionText = m_isDark ? rdFg1 : rdBgA1;
+    // the BG/A5 input fields: in Light BG/A5 (#888888) is darker than every other surface and
+    // the FG/A4 placeholder (#8A8A8A, Decision 44) vanishes on it; BG/A3 sits a little darker
+    // than the light pages, as BG/A5 sits a little lighter than the dark ones
+    rdBgField = m_isDark ? rdBgA5 : rdBgA3;
     rdVolumeEmpty = QColor(t.volumeEmpty);
     rdVolumeTint = QColor::fromRgba(t.volumeTint);
 
@@ -449,6 +461,13 @@ void SystemPalette::applyRdColors()
         rdBgAccentBright = deriveAccentShade(main, refMain, QColor(t.bgAccentBright));
         rdBgAccentDark = deriveAccentShade(main, refMain, QColor(t.bgAccentDark));
     }
+
+    // the subtitle timeline's blocks: the surface under them with 9 % white (Dark) or black
+    // (Light) over it (video 7:00-7:04: #4A331D over the #331902 fill); they follow the accent
+    const QColor blockLayer = m_isDark ? QColor(Qt::white) : QColor(Qt::black);
+    rdSeekBlockPlayed = overlayColor(rdBgAccentBright, blockLayer, 0.09f);
+    // Dark: exactly BG/A2 (video #1F1F1F); Light BG/A2 is as light as the track
+    rdSeekBlockUnplayed = m_isDark ? rdBgA2 : overlayColor(rdBgB2, blockLayer, 0.09f);
 }
 
 void SystemPalette::componentComplete()

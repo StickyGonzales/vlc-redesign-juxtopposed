@@ -315,7 +315,14 @@ static void OSDWidget(vout_thread_t *vout, int channel, vlc_osd_widget_type type
 
     subpic->i_channel  = channel;
     subpic->i_start    = vlc_tick_now();
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: as long as the messages ("Show feedback for", src/video_output/video_text.c),
+     * 200 ms longer, as before */
+    subpic->i_stop     = subpic->i_start
+                       + VLC_TICK_FROM_MS(var_InheritInteger(vout, "osd-duration") + 200);
+#else
     subpic->i_stop     = subpic->i_start + VLC_TICK_FROM_MS(1200);
+#endif
     subpic->b_ephemer  = true;
     subpic->b_fade     = true;
 

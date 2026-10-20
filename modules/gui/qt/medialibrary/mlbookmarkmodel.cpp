@@ -69,6 +69,15 @@ QVariant MLBookmarkModel::data( const QModelIndex &index, int role ) const
             return QVariant::fromValue( qfu( bookmark.psz_name ) );
         case BookmarkRoles::TimeRole:
             return QVariant::fromValue( VLCDuration::fromMS( bookmark.i_time ).formatHMS() );
+        case BookmarkRoles::PreciseTimeRole:
+        {
+            const int64_t ms = std::max<int64_t>( bookmark.i_time, 0 );
+            return QString::asprintf( "%02lld:%02lld:%02lld:%03lld",
+                                      static_cast<long long>( ms / 3600000 ),
+                                      static_cast<long long>( ms / 60000 % 60 ),
+                                      static_cast<long long>( ms / 1000 % 60 ),
+                                      static_cast<long long>( ms % 1000 ) );
+        }
         case BookmarkRoles::PositionRole:
         {
             vlc_player_locker lock{ m_player };
@@ -152,7 +161,8 @@ QHash<int, QByteArray> MLBookmarkModel::roleNames() const{
         {BookmarkRoles::NameRole, QByteArrayLiteral("name")},
         {BookmarkRoles::TimeRole, QByteArrayLiteral("time")},
         {BookmarkRoles::PositionRole, QByteArrayLiteral("position")},
-        {BookmarkRoles::DescriptionRole, QByteArrayLiteral("description")}
+        {BookmarkRoles::DescriptionRole, QByteArrayLiteral("description")},
+        {BookmarkRoles::PreciseTimeRole, QByteArrayLiteral("preciseTime")}
     };
 }
 

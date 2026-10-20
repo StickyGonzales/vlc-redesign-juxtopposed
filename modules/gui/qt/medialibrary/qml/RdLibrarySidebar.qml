@@ -48,6 +48,9 @@ FocusScope {
         })
     }
 
+    // the player's Escape goes back first while there is a page to go back to
+    readonly property bool canGoBack: RdLibraryNav.canGoBack
+
     // mouse back and forward buttons over the player
     function goBack() {
         RdLibraryNav.goBack()

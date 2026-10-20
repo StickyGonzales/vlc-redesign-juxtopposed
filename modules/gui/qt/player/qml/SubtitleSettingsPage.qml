@@ -110,7 +110,6 @@ RdSidePanelPage {
     Widgets.RdSettingsSection {
         title: qsTr("Defaults")
         showDivider: false
-        note: qsTr("Applies from the next file")
         // Figma "Frame 92" (845:1597): 10 px under the rows
         bottomPadding: VLCStyle.dp(10)
 

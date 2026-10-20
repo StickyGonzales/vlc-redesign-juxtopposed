@@ -393,6 +393,9 @@ public:
      * @brief ask for the application to terminate
      */
     void onWindowClose(QWindow* );
+    /* redesign: writes the interface state the destructor saves (and the window geometry
+     * when asked), so a quit that never reaches the destructor keeps it */
+    void saveSettings(bool withGeometry);
 
     bool acrylicActive() const;
     void setAcrylicActive(bool newAcrylicActive);
