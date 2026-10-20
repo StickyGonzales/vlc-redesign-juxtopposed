@@ -216,7 +216,10 @@ SettingsPage {
             property string result: ""
 
             text: qsTr("Rescan plugins")
-            description: qsTr("Looks through %1's plugin folder again and rebuilds the list of plugins, so plugins you added or removed are found. %1 uses the new list the next time it starts. In the Program Files folder, Windows asks for administrator rights.").arg(Brand.shortName)
+            // elsewhere (Linux) the folder must be writable: SettingsCatalog.rescanPlugins() reports the failure
+            description: Qt.platform.os === "windows"
+                         ? qsTr("Looks through %1's plugin folder again and rebuilds the list of plugins, so plugins you added or removed are found. %1 uses the new list the next time it starts. In the Program Files folder, Windows asks for administrator rights.").arg(Brand.shortName)
+                         : qsTr("Looks through %1's plugin folder again and rebuilds the list of plugins, so plugins you added or removed are found. %1 uses the new list the next time it starts. The plugin folder must be writable.").arg(Brand.shortName)
             keywords: "plugins cache rescan reset-plugins-cache vlc-cache-gen"
             belowShown: result !== ""
 

@@ -35,6 +35,16 @@
 #include <assert.h>
 #include <limits.h>
 
+/* redesign (brand layer, public profile): Cone keeps its settings, media library, art cache
+ * and data in its own XDG folders (~/.config/Cone, ~/.local/share/Cone, ~/.cache/Cone), apart
+ * from an installed VLC's; the Qt interface settings sit next to vlcrc (QSettings organization
+ * "Cone", modules/gui/qt/util/brand.hpp) as with VLC (redesign/LINUX_NOTES.md) */
+#ifdef VLC_BRAND_PUBLIC
+# define APP_DIR_NAME "Cone"
+#else
+# define APP_DIR_NAME "vlc"
+#endif
+
 /**
  * Determines the architecture-dependent data directory
  *
@@ -147,14 +157,14 @@ static char *config_GetAppDir (const char *xdg_name, const char *xdg_default)
     const char *home = getenv (var);
     if (home != NULL)
     {
-        if (asprintf (&psz_dir, "%s/vlc", home) == -1)
+        if (asprintf (&psz_dir, "%s/" APP_DIR_NAME, home) == -1)
             psz_dir = NULL;
         return psz_dir;
     }
 
     char *psz_home = config_GetHomeDir ();
     if( psz_home == NULL
-     || asprintf( &psz_dir, "%s/%s/vlc", psz_home, xdg_default ) == -1 )
+     || asprintf( &psz_dir, "%s/%s/" APP_DIR_NAME, psz_home, xdg_default ) == -1 )
         psz_dir = NULL;
     free (psz_home);
     return psz_dir;
