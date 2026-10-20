@@ -30,6 +30,9 @@
 /* Define to build the public brand (Cone) instead of VLC's name and cone */
 #mesondefine VLC_BRAND_PUBLIC
 
+/* Version of the public brand (Cone) */
+#mesondefine BRAND_VERSION
+
 /* Default font family */
 #mesondefine DEFAULT_FAMILY
 

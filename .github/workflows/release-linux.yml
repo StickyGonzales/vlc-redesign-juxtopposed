@@ -1,0 +1,107 @@
+# Cone for Linux release (redesign/LINUX_NOTES.md, Decision (Sticky) 3): Linux ships as its own
+# beta, apart from the Windows release (release.yml, vX.Y.Z tags). Builds the public profile with
+# build-linux.yml and prepares a GitHub Release with the AppImage, the portable tarball and their
+# SHA-256 checksums as a DRAFT pre-release: nothing is public until someone presses Publish on the
+# draft in the Releases page.
+#
+# Runs on a pushed tag linux-vX.Y.Z or linux-vX.Y.Z-<label> (linux-v0.1.0-beta), or by hand from
+# the Actions tab with "Use workflow from" set to such a tag. Only verified code is released: the
+# tag must point at a commit of the redesign branch.
+name: release-linux
+
+on:
+  push:
+    tags: ['linux-v[0-9]*']
+  workflow_dispatch:
+
+concurrency:
+  group: release-linux-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Only verified code (redesign), from a linux-v tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the redesign branch, to check where the commit comes from
+
+      - name: Check tag and commit
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/linux-v*) ;;
+            *) echo "::error::run this from a linux-vX.Y.Z tag (Use workflow from > Tags)"; exit 1 ;;
+          esac
+          if ! echo "${GITHUB_REF_NAME#linux-v}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$'; then
+            echo "::error::$GITHUB_REF_NAME is not linux-vX.Y.Z or linux-vX.Y.Z-<label>"
+            exit 1
+          fi
+          git fetch -q origin redesign
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/redesign; then
+            echo "::error::$GITHUB_REF_NAME ($GITHUB_SHA) is not on the redesign branch: only verified code is released"
+            exit 1
+          fi
+          echo "Releasing $GITHUB_REF_NAME ($GITHUB_SHA)"
+
+  build:
+    needs: guard
+    uses: ./.github/workflows/build-linux.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # the draft release
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-appimage-x86_64
+          path: out
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-x86_64
+          path: out
+
+      - name: Checksums and notes
+        run: |
+          cd out
+          chmod +x ./*.AppImage
+          sha256sum ./*.AppImage ./*.tar.xz | sed 's| \./| |' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          VERSION=${GITHUB_REF_NAME#linux-v}
+          # the oldest C library it runs with, from the package's readme
+          GLIBC=$(tar -xJOf ./*.tar.xz --wildcards '*/README-LINUX.txt' | grep -o 'glibc [0-9.]*' | head -n 1)
+          {
+            echo "Cone $VERSION for Linux (x86_64). Experimental: based on the development version of VLC media player (VLC 4)."
+            echo
+            echo "- **AppImage**: download, \`chmod +x\` it, start it. A folder named \`portable\` next to it keeps settings and library there."
+            echo "- **Portable tarball**: unpack, start \`./cone\`; \`README-LINUX.txt\` inside explains the rest."
+            echo "- Needs a 64-bit Linux desktop (X11 or Wayland) with ${GLIBC:-a recent glibc} or newer."
+            echo "- Cone keeps its own settings (\`~/.config/Cone\`, \`~/.local/share/Cone\`, \`~/.cache/Cone\`) and runs next to an installed VLC."
+            echo
+            echo "Design by Juxtopposed (CC BY 4.0), built by StickyGonzales. Not affiliated with VideoLAN."
+            echo
+            echo "SHA-256:"
+            echo '```'
+            cat SHA256SUMS.txt
+            echo '```'
+            echo
+            echo "Built from $GITHUB_SHA by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > notes.md
+          cat notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      # a draft pre-release: published by hand on the Releases page, never by this workflow
+      - name: Draft the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/*.AppImage out/*.tar.xz out/SHA256SUMS.txt \
+            --draft --prerelease --verify-tag \
+            --title "Cone ${GITHUB_REF_NAME#linux-v} for Linux" --notes-file out/notes.md
+          echo "Draft: $(gh release view "$GITHUB_REF_NAME" --json url --jq .url)" | tee -a "$GITHUB_STEP_SUMMARY"
