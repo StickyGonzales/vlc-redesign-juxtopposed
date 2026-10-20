@@ -23,7 +23,20 @@ There are two playlist "..." menus, both built by `RdLibraryItemMenu.qml` (`_pla
 - `rdlibrarystore.cpp`, `mlplaylist.cpp` and `mlplaylistlistmodel.cpp` compile with no new warnings (g++, `-Wall -Wextra -Wconversion`, syntax check against Qt 6 headers).
 
 ## 4. Sandbox test (Linux)
-RESULTS
+Linux build 26 (run 39431582848, branch `wip/fix-playlist-favorite-linux` = this branch + wip/linux-build), AppImage, Xvfb, openbox. Test playlist "Road Trip" made with Create playlist. "Before" = Linux build 21 (wip/next-test code).
+
+| Check | Result |
+|---|---|
+| Playlist page header "..." | **pass**: Play, Favorite, Shuffle, Export Playlist, Add to Queue, Add Subtitle Tracks, Add Audio Tracks, Properties & Metadata, Delete Playlist. Before: no Favorite. Side by side with Figma: `redesign/fix-shots/F-11_menu_sbs.png` |
+| Favorite from the page menu, menu opened again | **pass**: Favorite selected (check mark) |
+| Playlists row "..." | **pass**: Favorite there (it was missing there too before the second commit) |
+| Cleared in the row, then the page menu | **pass**: not selected |
+| Set on the page, back to Playlists, row menu | **pass**: selected (`redesign/fix-shots/F-11_favorite_sync.png`) |
+| Restart Cone | **pass**: the state survives (row menu after a restart) |
+| Page "..." opened and closed 10 times quickly | **pass**: opens at once each time |
+| Quit | **pass**: exit 0, no QML errors in the log |
+
+Remaining difference, not from this branch: the "Add Audio Tracks" icon has more bars than Figma's (same before and after).
 
 ## 5. Windows retest steps
 1. Start Cone, open the library (sidebar button in the top bar), go to **Playlists**, use **Create playlist**, name it, Save.
