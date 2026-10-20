@@ -110,6 +110,8 @@ SettingsPage {
         SettingsOption {
             option: "audio-track"
             text: qsTr("Default audio track")
+            // the note the sidebar's Audio Defaults had
+            note: qsTr("Applies from the next file.")
             choices: root._trackChoices()
         }
 

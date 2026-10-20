@@ -98,7 +98,6 @@ RdSidePanelPage {
     Widgets.RdSettingsSection {
         title: qsTr("Defaults")
         showDivider: false
-        note: qsTr("Track and language apply from the next file")
 
         Widgets.RdSettingRow {
             text: qsTr("Audio Track")

@@ -38,8 +38,9 @@ FocusScope {
     property Item _current: null
     property Item _previous: null
 
-    // Figma has no duration for this transition: 180 ms (Sticky's 150-200 ms rule)
-    readonly property int _fadeDuration: 180
+    // Figma has no duration for this transition: 180 ms (Sticky's 150-200 ms rule); the header's
+    // address line crossfades with it (RdLibraryHeader)
+    readonly property int _fadeDuration: VLCStyle.rd_libraryPageFadeDuration
 
     function _show(location) {
         // a transition still running ends at once
