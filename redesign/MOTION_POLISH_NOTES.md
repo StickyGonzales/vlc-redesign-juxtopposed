@@ -45,7 +45,25 @@ So the group has three rows, not four. Rows 119 and 120 are the same switch desc
 - `SPI_GETCLIENTAREAANIMATION` is in the mingw headers CI uses (needs `_WIN32_WINNT` 0x0600+; VLC targets Windows 7+).
 
 ## 5. Sandbox (Linux)
-Before: build-linux 39313634848 (wip/next-test + #32). After: the test-only branch `wip/motion-polish-linux` (wip/next-test + this branch + the Linux build job; never merge it). Results below.
+- **Builds:** before = build-linux 39313634848 (wip/next-test + #32); after = build-linux 39420022308 of the test-only branch `wip/motion-polish-linux` (wip/next-test + this branch + the Linux build job; never merge it).
+- **Method:** the settings sidebar on a paused video, dark and light theme.
+  - A still of every tab (Playback, Video, Audio, Subtitles).
+  - A 60 fps screen recording (ffmpeg x11grab, sidebar only) of a click from Subtitles to Audio.
+  - Screenshots and frames looked at side by side.
+
+| Check | Before | After |
+|---|---|---|
+| Settled tabs, dark | every tab as in Figma | the same. Tab bar pixel diff: no pixel off by more than 2 levels |
+| Settled tabs, light | every tab | the same. The only differing pixels (5) are in the panel's rounded corner, where the video shows through |
+| Mid-switch, dark and light | underline already only under Audio, Audio icon already two-tone and Subtitles grey, while the page is still half Subtitles | both underlines show (Subtitles fading out, Audio fading in), both icons and labels mid-fade, the page half and half |
+| End of the switch | Audio tab | the same final state |
+| Queue sidebar (same panel) | n/a | opens normally: Queue tab two-tone with its underline |
+| QML warnings in the log | none | none |
+
+**Limits of the sandbox:**
+- It renders with software OpenGL, so only 3 or 4 frames of each switch were drawn: the frames show the steps, not the 60 fps smoothness.
+- Windows' "Animation effects" setting does not exist on Linux (it is always on there).
+- Smoothness and the setting are Windows retest steps 5 and 6.
 
 ## 6. Retest on Windows
 Use a build of this branch merged with wip/next-test, a video, and the settings sidebar (gear). Then do the same with the queue sidebar.
