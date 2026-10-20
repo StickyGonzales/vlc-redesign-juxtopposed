@@ -451,6 +451,14 @@ int ChapterListModel::rowCount(const QModelIndex &) const
     return m_title ? m_title->chapter_count : 0;
 }
 
+// redesign: the chapter name as shown in the list and on the seek bar. The Matroska demuxer
+// writes a space (after a "+" per nesting level) in front of every chapter name, which put the
+// titles one space to the right of the Figma "chapters" rows (P7-06)
+static QString chapterName(const vlc_player_chapter& chapter)
+{
+    return qfu(chapter.name).trimmed();
+}
+
 QVariant ChapterListModel::data(const QModelIndex &index, int role) const
 {
     int row = index.row();
@@ -459,7 +467,7 @@ QVariant ChapterListModel::data(const QModelIndex &index, int role) const
     const vlc_player_chapter& chapter = m_title->chapters[row];
 
     if (role == Qt::DisplayRole)
-        return qfu(chapter.name);
+        return chapterName(chapter);
     else if (role == Qt::CheckStateRole)
         return QVariant::fromValue<bool>(row == m_current);
     else if (role == ChapterListRoles::TimeRole )
@@ -552,10 +560,10 @@ QString ChapterListModel::getNameAtPosition(float pos) const
             vlc_tick_t currentChapterTime = m_title->chapters[i].time;
 
             if(currentChapterTime > posTime)
-                return qfu(m_title->chapters[prevChapterIndex].name);
+                return chapterName(m_title->chapters[prevChapterIndex]);
 
             else if(i == (m_title->chapter_count - 1))
-                return qfu(m_title->chapters[i].name);
+                return chapterName(m_title->chapters[i]);
 
             prevChapterIndex = i;
         }
