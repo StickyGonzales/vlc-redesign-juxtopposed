@@ -80,7 +80,11 @@ The PC's Windows test of fix 6 failed on one step: type in the library search, E
 - **Fix:**
   - `medialibrary/qml/RdLibraryHeader.qml`: closing the search moves the focus to the library header when the field had it. The keyboard stays in the library, and typing no longer goes into a hidden field.
   - `player/qml/Player.qml`: the shortcut only stands back for a text box that is shown.
-- **Checks:** qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0. Sandbox results: below.
+- **Checks:** qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
+- **Sandbox (Linux build 39420016007, test-only branch `wip/fix-library-escape-linux` = this branch + the Linux build job; screenshots looked at):**
+  - Compact library > Videos, search, type "abc": first Escape closes the search (the list comes back), second Escape closes the library.
+  - No regression: Escape alone closes the library, and so does Escape after a click in it (Music page).
+  - Not checked in the sandbox: the keyboard case (Tab into the library, Enter on a folder, Escape goes back a page), because the sandbox library is empty.
 
 **Retest on Windows** (build of this branch merged with #26, or #26 after this PR merges):
 1. Library open, click in its search, type a few letters. Escape: the search closes and the list shows everything again. Escape: the library closes.
