@@ -410,7 +410,9 @@ T.ProgressBar {
             height: control.barHeight
             visible: Player.hasChapters && !control.thick
 
-            model: Player.chapters
+            // redesign: a Repeater's delegates belong to its parent and ignore its `visible`;
+            // the thick bar draws no chapter segments (Figma "Frame 21"), so it creates none
+            model: control.thick ? 0 : Player.chapters
             Item {
                 Rectangle {
                     id: seekpointsRect

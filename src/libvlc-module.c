@@ -1702,8 +1702,15 @@ vlc_module_begin ()
     add_integer("disable-screensaver", 1, SS_TEXT, SS_LONGTEXT)
         change_integer_list(screensaver_values, screensaver_texts)
 
+    /* redesign (Decision 69): Cone's top bar shows the title, the file name over the video
+     * starts off; the vlc profile keeps VLC's default */
+#ifdef VLC_BRAND_PUBLIC
+    add_bool( "video-title-show", false, VIDEO_TITLE_SHOW_TEXT,
+              VIDEO_TITLE_SHOW_LONGTEXT )
+#else
     add_bool( "video-title-show", true, VIDEO_TITLE_SHOW_TEXT,
               VIDEO_TITLE_SHOW_LONGTEXT )
+#endif
         change_safe()
     add_integer ("video-stereo-mode", VIDEO_STEREO_OUTPUT_AUTO, VIDEO_STEREO_FORMAT_TEXT,
                  VIDEO_STEREO_FORMAT_TEXT_LONGTEXT)

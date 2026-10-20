@@ -40,7 +40,9 @@ Item {
 
     enabled: false
 
-    implicitWidth: Math.min(label.implicitWidth, maximumWidth)
+    // whole pixels: the bars' layouts round a fractional width down, which elided the text by
+    // a fraction of a pixel ("Episode 2" showed as "Episode...")
+    implicitWidth: Math.ceil(Math.min(label.implicitWidth, maximumWidth))
     implicitHeight: VLCStyle.dp(28, VLCStyle.scale)
 
     // the bar lets it shrink (and elide) down to this

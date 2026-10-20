@@ -107,7 +107,8 @@ if get_option('brand') == 'public'
     # the approved logo files the public profile builds with
     foreach f : ['cone-logo.svg', 'cone-logo-16.svg', 'cone-logo-24.svg',
                  'cone-16.png', 'cone-24.png', 'cone-32.png', 'cone-48.png',
-                 'cone-64.png', 'cone-128.png', 'cone-256.png']
+                 'cone-64.png', 'cone-128.png', 'cone-256.png',
+                 'prefs-sample-modern.png', 'prefs-sample-classic.png']
         if not brand_fs.is_file('modules/gui/qt/pixmaps/brand/public' / f)
             error('-Dbrand=public needs the Cone logo file modules/gui/qt/pixmaps/brand/public/' + f
                   + '; build with -Dbrand=vlc until it is added')
@@ -127,6 +128,11 @@ if get_option('brand') == 'public'
     # VLC's update checker downloads VLC releases from videolan.org: never in Cone
     if get_option('update-check').allowed()
         error('-Dbrand=public has no update checker: drop -Dupdate-check')
+    endif
+    # Decision 63: Cone has no skins interface, the design is its only one
+    # (modules/gui/skins2/meson.build leaves the module out)
+    if get_option('skins2').enabled()
+        error('-Dbrand=public has no skins interface: drop -Dskins2=enabled')
     endif
     cdata.set('VLC_BRAND_PUBLIC', 1)
 endif
