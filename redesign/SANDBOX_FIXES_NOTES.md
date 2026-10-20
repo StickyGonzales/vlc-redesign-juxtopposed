@@ -69,3 +69,24 @@ Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music
 8. Quit hang sequence from STATUS.md on the real film.
 9. Play a video from the start: no file name over the video. Settings > Subtitles > "Show filename when a video starts" on: it shows again on the next file.
 10. Settings > All Cone Settings: Cone logos on the seven categories and in both layout previews; the window dark, then Light after switching the theme in Settings > General; the selected category in the accent color; the Hotkeys table and the All / Expert lists readable (no white rows).
+
+## 8. Follow-up: Escape after the library search (branch wip/fix-library-escape, PR into this branch)
+The PC's Windows test of fix 6 failed on one step: type in the library search, Escape closes the search, and **the second Escape does not close the library**.
+
+- **Cause:**
+  1. Escape in the compact library's search field cleared and hid the field, but the keyboard focus stayed on its hidden text box. A hidden Qt Quick item keeps the focus.
+  2. The player's Escape shortcut is off while a text box in the library has the focus, so that the first Escape reaches the search.
+  3. So the second Escape went to the hidden box again, which had nothing left to close.
+- **Fix:**
+  - `medialibrary/qml/RdLibraryHeader.qml`: closing the search moves the focus to the library header when the field had it. The keyboard stays in the library, and typing no longer goes into a hidden field.
+  - `player/qml/Player.qml`: the shortcut only stands back for a text box that is shown.
+- **Checks:** qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
+- **Sandbox (Linux build 39420016007, test-only branch `wip/fix-library-escape-linux` = this branch + the Linux build job; screenshots looked at):**
+  - Compact library > Videos, search, type "abc": first Escape closes the search (the list comes back), second Escape closes the library.
+  - No regression: Escape alone closes the library, and so does Escape after a click in it (Music page).
+  - Not checked in the sandbox: the keyboard case (Tab into the library, Enter on a folder, Escape goes back a page), because the sandbox library is empty.
+
+**Retest on Windows** (build of this branch merged with #26, or #26 after this PR merges):
+1. Library open, click in its search, type a few letters. Escape: the search closes and the list shows everything again. Escape: the library closes.
+2. Library open, search open and typed, then click the search button again (the search closes): Escape closes the library.
+3. The other step-6 checks still pass: Escape alone closes the library, and closes it after a click on a folder. With the keyboard (Tab into the library, arrows, Enter on a folder), Escape goes back a page.
