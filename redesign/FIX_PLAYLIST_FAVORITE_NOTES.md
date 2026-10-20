@@ -11,8 +11,9 @@ There are two playlist "..." menus, both built by `RdLibraryItemMenu.qml` (`_pla
 
 ## 2. Fix
 - `RdLibraryStore.playlistFavorite(id, callback)` (`rdlibrarystore.cpp/.hpp`) reads the playlist's favorite state on the media library thread, like `playlistMedia` does for its items.
-- `RdLibraryItemMenu.qml` reads it when a playlist page opens (`_pageFavorite`; an answer for a page that is no longer shown is dropped). The header menu passes it, so Favorite shows with the heart filled when the playlist is a favorite.
-- After a toggle from the header menu the cached state flips at once, so the next menu shows the new state without waiting for the library. The library's jobs can run on up to 4 threads, so an immediate re-read could still return the old value.
+- `RdLibraryItemMenu.qml`, in the header's menu only (`forPage`), reads it when a playlist page opens (`_pageFavorite`). The header menu passes it, so Favorite shows with the heart filled when the playlist is a favorite.
+- `RdLibraryStore.setFavorite` now sends `favoriteChanged(id, favorite)` once the write is in the library, and the header menu takes the new state from it. That covers a toggle from the header and one from a playlist row just before the page opens.
+- The library's jobs run on up to 4 threads, not in order. A read that started before a write could come back after it with the old state, so such a read is dropped (a count of writes seen), and an answer for a page that is no longer shown is dropped too. (Independent review finding, fixed before the test build.)
 - The menu still opens at once: nothing waits for the library when "..." is clicked.
 
 ## 3. Checks

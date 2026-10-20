@@ -151,6 +151,8 @@ public:
 
 signals:
     void foldersChanged();
+    // a favorite state written by setFavorite is in the media library (UI thread)
+    void favoriteChanged(const MLItemId& id, bool favorite);
     void pinsChanged();
     void streamListsChanged();
     void playlistCoversChanged();

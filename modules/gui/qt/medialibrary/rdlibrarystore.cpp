@@ -1093,6 +1093,9 @@ void RdLibraryStore::setFavorite(const MLItemId& id, const QString& mrl, bool fa
             vlc_ml_media_set_favorite(ml, item.id, favorite);
             break;
         }
+    },
+    [this, item, favorite]() {
+        emit favoriteChanged(item, favorite);
     });
 }
 
