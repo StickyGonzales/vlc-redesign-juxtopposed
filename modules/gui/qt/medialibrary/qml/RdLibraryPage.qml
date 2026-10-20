@@ -523,7 +523,7 @@ FocusScope {
             return { kind: "genre", index: index, id: id, title: model.name ?? "" }
         case "playlistList":
             return { kind: "playlist", index: index, id: id, title: model.name ?? "",
-                     thumbnail: model.thumbnail ?? "" }
+                     thumbnail: model.thumbnail ?? "", isFavorite: model.isFavorite }
         case "url":
             return { kind: "stream", index: index, id: id, title: model.url ?? "", mrl: model.url ?? "",
                      progress: -1, watched: false, isVideo: true }

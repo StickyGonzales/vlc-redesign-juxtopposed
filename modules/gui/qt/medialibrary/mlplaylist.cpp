@@ -34,6 +34,7 @@ MLPlaylist::MLPlaylist(const vlc_ml_playlist_t * data)
     , m_nbAudio(data->i_nb_audio)
     , m_nbVideo(data->i_nb_video)
     , m_nbUnknown(data->i_nb_unknown)
+    , m_favorite(data->b_is_favorite)
 {
     assert(data);
 }
@@ -77,4 +78,9 @@ unsigned int MLPlaylist::getNbVideo() const
 unsigned int MLPlaylist::getNbUnknown() const
 {
     return m_nbUnknown;
+}
+
+bool MLPlaylist::isFavorite() const
+{
+    return m_favorite;
 }
