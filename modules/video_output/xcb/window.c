@@ -908,6 +908,11 @@ static int OpenCommon(vlc_window_t *wnd, char *display, xcb_connection_t *conn,
 
     /* ICCCM */
     /* No cut&paste nor drag&drop, only Window Manager communication. */
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (brand layer, public profile): the window is named after Cone */
+    set_ascii_prop(conn, window, XA_WM_NAME, VOUT_TITLE);
+    set_ascii_prop(conn, window, XA_WM_ICON_NAME, VOUT_TITLE);
+#else
     set_ascii_prop(conn, window, XA_WM_NAME,
     /* xgettext: This is a plain ASCII spelling of "VLC media player"
        for the ICCCM window name. This must be pure ASCII.
@@ -920,6 +925,7 @@ static int OpenCommon(vlc_window_t *wnd, char *display, xcb_connection_t *conn,
     /* xgettext: This is a plain ASCII spelling of "VLC"
        for the ICCCM window name. This must be pure ASCII. */
                    vlc_pgettext("ASCII", "VLC"));
+#endif
 
     set_wm_hints(conn, window);
 #ifdef VLC_BRAND_PUBLIC
@@ -963,11 +969,19 @@ static int OpenCommon(vlc_window_t *wnd, char *display, xcb_connection_t *conn,
         set_string(conn, window, utf8, net_wm_name, title);
         free(title);
     }
+#ifdef VLC_BRAND_PUBLIC
+    else
+        set_string(conn, window, utf8, net_wm_name, VOUT_TITLE);
+
+    xcb_atom_t net_wm_icon_name = get_atom(conn, net_wm_icon_name_ck);
+    set_string(conn, window, utf8, net_wm_icon_name, VOUT_TITLE);
+#else
     else
         set_string(conn, window, utf8, net_wm_name, _("VLC media player"));
 
     xcb_atom_t net_wm_icon_name = get_atom(conn, net_wm_icon_name_ck);
     set_string(conn, window, utf8, net_wm_icon_name, _("VLC"));
+#endif
 
     xcb_atom_t wm_window_role = get_atom(conn, wm_window_role_ck);
     set_ascii_prop(conn, window, wm_window_role, "vlc-video");
