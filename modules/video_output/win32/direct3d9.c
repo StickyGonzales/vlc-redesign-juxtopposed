@@ -1841,7 +1841,7 @@ static int Open(vout_display_t *vd,
     vd->ops = &ops;
 
     /* Change the window title bar text */
-    vlc_window_SetTitle(vd->cfg->window, VOUT_TITLE " (Direct3D9 output)");
+    vlc_window_SetTitle(vd->cfg->window, VOUT_OUTPUT_TITLE("Direct3D9 output"));
 
     return VLC_SUCCESS;
 error:
