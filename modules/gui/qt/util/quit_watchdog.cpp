@@ -118,6 +118,9 @@ void logFired(long long seconds)
         msg_Err(s_intf, "quit watchdog: Cone did not finish quitting within %lld s, ending the "
                         "process (the settings and the resume position were saved when the "
                         "quit started)", seconds);
+    /* the file logger's stream is fully buffered on Windows (_IOLBF acts as _IOFBF): flush it
+     * before the process ends, from this thread, which may block */
+    fflush(nullptr);
 }
 
 [[noreturn]] void endProcess()
