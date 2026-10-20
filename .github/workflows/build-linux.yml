@@ -59,7 +59,7 @@ env:
   # build 8f39b89 of github.com/AppImage/type2-runtime (published only as "continuous"), pinned by
   # its SHA-256; a newer runtime there fails this check until the hash is updated here
   APPIMAGE_RUNTIME_URL: https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
-  APPIMAGE_RUNTIME_SHA256: 156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074
+  APPIMAGE_RUNTIME_SHA256: 617aa77314d57c8b8e4fae9c3f0b35af7b30d5529cb69e98f64f92510ed98a46
 
 jobs:
   linux64:
@@ -193,6 +193,15 @@ jobs:
             "$VLC_IMAGE" .github/scripts/linux-build.sh package
           grep -h "glibc" linux/*/README-LINUX.txt | head -n 1 >> "$GITHUB_STEP_SUMMARY" || true
 
+      # the tarball first: a change of the AppImage runtime (its "continuous" release is replaced
+      # from time to time, so its checksum below goes stale) does not lose the build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-linux-x86_64
+          path: linux/*.tar.xz
+          compression-level: 0
+          retention-days: 14
+
       # the AppImage of the same folder (Decision (Sticky) 2): runtime + SquashFS image
       - name: AppImage
         run: |
@@ -206,15 +215,8 @@ jobs:
           .github/scripts/linux-appimage.sh "$FOLDER" /tmp/appimage-runtime "linux/$APPIMAGE"
           echo "AppImage: $APPIMAGE ($(du -h "linux/$APPIMAGE" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
 
-      # the tarball and the AppImage themselves (an artifact zip drops the files' execute permission:
-      # after unzipping, chmod +x the AppImage)
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cone-linux-x86_64
-          path: linux/*.tar.xz
-          compression-level: 0
-          retention-days: 14
-
+      # the AppImage itself (an artifact zip drops the files' execute permission: after
+      # unzipping, chmod +x the AppImage)
       - uses: actions/upload-artifact@v4
         with:
           name: cone-linux-appimage-x86_64
