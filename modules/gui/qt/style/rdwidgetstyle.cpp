@@ -61,6 +61,17 @@ QWidget {
 QLabel, QCheckBox, QRadioButton {
     background: transparent;
 }
+/* About: the product name, the License / Authors / Credits links and the footer bar */
+QLabel[rdTitle="true"] {
+    color: {fg1};
+}
+QLabel[rdLink="true"] {
+    color: {accentMain};
+}
+QFrame[rdFooter="true"] {
+    border: none;
+    border-top: 1px solid {dividerDim};
+}
 QLabel:disabled, QCheckBox:disabled, QRadioButton:disabled, QGroupBox:disabled {
     color: {fgA4};
 }
@@ -284,6 +295,7 @@ QString makeStyleSheet( const SystemPalette& p )
         { "{btnFocus}", dark ? p.get_rdFg2() : p.get_rdAccentMain() },
         { "{btnDisabledBg}", dark ? btnBg : halfOver( btnBg, bg ) },
         { "{btnDisabledFg}", dark ? p.get_rdFgA4() : halfOver( btnFg, bg ) },
+        { "{fg1}", p.get_rdFg1() },
         { "{fg2}", p.get_rdFg2() },
         { "{fgA1}", p.get_rdFgA1() },
         { "{fgA2}", p.get_rdFgA2() },
@@ -347,4 +359,10 @@ void RdWidgetStyle::setPrimary( QWidget* button )
     /* property selectors are only evaluated when the widget is polished */
     button->style()->unpolish( button );
     button->style()->polish( button );
+}
+
+SystemPalette* RdWidgetStyle::palette( QWidget* widget )
+{
+    assert( widget );
+    return widget->findChild<SystemPalette*>( QString(), Qt::FindDirectChildrenOnly );
 }

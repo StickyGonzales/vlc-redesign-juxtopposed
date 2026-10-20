@@ -379,7 +379,11 @@ T.Popup {
                     anchors.leftMargin: VLCStyle.dp(10)
                     anchors.right: parent.right
                     anchors.rightMargin: VLCStyle.dp(8)
-                    anchors.verticalCenter: parent.verticalCenter
+                    // the box's whole height: a T.TextField has no implicit height of its own
+                    // (the Controls styles give it one), so with Qt 6.10 it was 0 px tall,
+                    // took no clicks and drew no text
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
 
                     padding: 0
                     verticalAlignment: TextInput.AlignVCenter

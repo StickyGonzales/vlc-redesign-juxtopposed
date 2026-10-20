@@ -16,48 +16,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-// Redesign equalizer preset preview (video 8:51-8:56, IA-40 / P4-26): about 24x12, a gray
-// baseline with accent shapes above it for boosted bands and below it for cut bands.
-// Canvas is not available in VLC's Qt build, so each band is a small bar.
+// Redesign equalizer preset icon drawn from the preset's band gains (IA-40 / P4-25 / P4-26): the
+// 24x24 icon box with the FG/A2 baseline and the Accent/Main lobes of the curve, drawn by
+// RdEqCurveItem. Only for a preset without its own icon in Figma's set "name=EQ" (those show the
+// exported SVG, RdEffects.equalizerPresetIcon). Its colours follow the palette, so the accent
+// colour and the light theme apply live.
 import QtQuick
 
-import VLC.MainInterface
 import VLC.Style
+import VLC.Widgets
 
-Item {
-    id: root
+// `bands`: the gains in dB (-20 to +20) of the preset's bands
+RdEqCurveItem {
+    implicitWidth: VLCStyle.icon_normal
+    implicitHeight: VLCStyle.icon_normal
 
-    // gains in dB (-20 to +20) of the preset's bands
-    property var bands: []
-
-    implicitWidth: VLCStyle.dp(24)
-    implicitHeight: VLCStyle.dp(12)
-
-    // Figma "Vector 45" (EQ icon 2372:8560): 22 px at x 1, 2 px stroke FG/A2
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        x: VLCStyle.dp(1)
-        width: parent.width - VLCStyle.dp(2)
-        height: VLCStyle.dp(2)
-        color: VLCStyle.palette.rdFgA2
-    }
-
-    Repeater {
-        model: root.bands
-
-        delegate: Rectangle {
-            required property int index
-            required property var modelData
-
-            readonly property real gain: Number(modelData)
-            readonly property real barHeight: Math.min(1, Math.abs(gain) / 12) * root.height / 2
-
-            visible: barHeight >= 0.5
-            x: index * root.width / Math.max(1, root.bands.length)
-            width: root.width / Math.max(1, root.bands.length)
-            height: barHeight
-            y: gain >= 0 ? root.height / 2 - barHeight : root.height / 2
-            color: VLCStyle.palette.rdAccentMain
-        }
-    }
+    lineColor: VLCStyle.palette.rdFgA2
+    fillColor: VLCStyle.palette.rdAccentMain
 }

@@ -10,6 +10,7 @@
 - Owner: Sticky (GitHub: StickyGonzales; the account was called Pyr0zen until 2026-10-18, so older commits carry that name). Windows 10 PC, PowerShell, a local Windows user.
 
 ## How we work
+- **Division of work (Decision 64, Sticky, 2026-10-19):** the web session codes, fixes, reviews and writes docs; this PC session only checks against the video and transcript, builds and tests Cone on Windows, answers the web session's video questions and does the final merge into `redesign` after a passing test. No features or fixes from the PC session except one-line fixes found during a test. On-PC tests run once each when needed: no rapid open-close loops of test players on Sticky's screen.
 - You run on Sticky's PC (native Windows Claude Code) inside this local clone, so you have the designer's full video locally.
 - You write the code here, commit, and push to the `redesign` branch on GitHub.
 - GitHub Actions compiles the Windows build. Sticky has NO local build environment, never try to compile VLC on this PC.
@@ -161,6 +162,9 @@ General rule for anything not listed (updated by Sticky 2026-10-13): the final U
 32. (2026-10-13) Dialogs open and close instantly, like the Figma prototype and the Settings dialog, so all dialogs behave the same (Open Network Stream, Settings, Keyboard Shortcuts and later ones); the video's dialog fades are editing dissolves. Menus keep the 120 ms fade in measured from her unedited demo (5:08).
 55. (2026-10-16) `redesign` only receives verified code: every batch is built from its own branch with a manual workflow run (`gh workflow run build-windows.yml --ref <branch>`), tested on Sticky's PC and merged into `redesign` only after it passes; failures are fixed on the branch and rebuilt before merging (details: Working rules, "Verified-only redesign"). Decisions 33-54 and 56+ are in redesign/VIDEO_INDEX.md "Decisions (Sticky)".
 58. (2026-10-16) Cone has its own version number: About and the installer show "Cone 0.1.0" with "based on VLC 4.0.0-dev" underneath, the Windows Apps list shows Cone 0.1.0, and the release workflow's version tag sets it.
+63. (2026-10-18) Cone has no skins; the design is the only interface. skins2, the skin option and the skinned shortcut are left out of the public build; nothing can switch Cone to the skins interface; the vlc profile is unchanged.
+64. (2026-10-19) Division of work: the web session does all coding, fixes, code reviews and docs. The PC session only does what needs this PC: checking against her video and transcript, building and testing Cone on Windows, answering the video questions the web session leaves in its notes, and the final merge into `redesign` after a passing test. The PC session writes no features or fixes itself, except a one-line fix found during a test; failures go into STATUS.md as bugs for the web session. wip/linux-build belongs to the web session.
+65. (2026-10-19) Linux results count: rows that passed on the Linux build in redesign/LINUX_VERIFY.md (web session, wip/verify-linux) count as "verified (Linux)". For each of those screens the PC session does one quick Windows look (open it, glance at it next to Figma, no full retest) and marks the rows verified in VIDEO_INDEX when it matches. Verified on Windows in full (every control used, then one screenshot next to Figma): the Windows-only rows, the rows that need her video, and drag and drop with a real mouse (Customize Player, drag to the queue).
 
 ## Report format (use for every progress report to Sticky; plain text, no em dashes)
 PROGRESS REPORT

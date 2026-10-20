@@ -376,6 +376,11 @@ public:
     Q_INVOKABLE virtual bool platformHandlesTitleBarButtonsWithCSD() const { return false; };
     Q_INVOKABLE virtual bool platformHandlesShadowsWithCSD() const { return false; };
 
+    // redesign: a frame the platform keeps around the interface window that Qt doesn't count
+    // (Windows: the resize border outside the client area with client-side decorations); saved
+    // with the window geometry so a restart restores the same size (InterfaceWindowHandler)
+    virtual QMargins nativeFrameMargins(QWindow *) const { return QMargins(); }
+
     void setUsingTouch(bool touch)
     {
         if (m_usingTouch == touch)

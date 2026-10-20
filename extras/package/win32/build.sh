@@ -550,8 +550,14 @@ if [ -n "$DISABLEGUI" ]; then
     CONFIGFLAGS="$CONFIGFLAGS --disable-qt --disable-skins2"
     MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=disabled -Dskins2=disabled"
 else
-    CONFIGFLAGS="$CONFIGFLAGS --enable-qt --enable-skins2"
-    MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=enabled -Dskins2=enabled"
+    # redesign (brand layer, Decision 63): Cone has no skins interface, the design is its only one
+    if [ "$BRAND" = "public" ]; then
+        CONFIGFLAGS="$CONFIGFLAGS --enable-qt --disable-skins2"
+        MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=enabled -Dskins2=disabled"
+    else
+        CONFIGFLAGS="$CONFIGFLAGS --enable-qt --enable-skins2"
+        MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=enabled -Dskins2=enabled"
+    fi
     # redesign (brand layer): VLC's update checker asks videolan.org for VLC releases; the public
     # profile (Cone) has no update checker and no update notice
     if [ "$BRAND" != "public" ]; then

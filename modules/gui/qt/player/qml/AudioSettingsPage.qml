@@ -228,7 +228,16 @@ RdSidePanelPage {
                 text: modelData
                 selected: eqPresets.currentIndex === index
                 highlighted: eqPresets.highlightedIndex === index
-                leading: index > 0 ? curve : null
+                // Figma's own icon of the preset (icon set "name=EQ"), recoloured like every
+                // RdIcon (FG/A2 line, Accent/Main shape); a preset without one draws its curve
+                readonly property string presetIcon: index > 0 ? RdEffects.equalizerPresetIcon(index - 1) : ""
+                leading: index === 0 ? null : (presetIcon !== "" ? figmaIcon : curve)
+
+                readonly property Component figmaIcon: Component {
+                    Widgets.RdIcon {
+                        name: presetIcon
+                    }
+                }
 
                 readonly property Component curve: Component {
                     Widgets.RdEqCurve {
@@ -253,7 +262,7 @@ RdSidePanelPage {
                     valueFontSize: VLCStyle.rd_fontSize_toggle
                     textInset: 0
                     spacing: 0
-                    valueText: root._eqPreamp.toFixed(1) + " " + qsTr("dB")
+                    valueText: (Math.round(root._eqPreamp * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                     from: -20
                     to: 20
                     stepSize: 0.1
@@ -286,7 +295,8 @@ RdSidePanelPage {
                         valueFontSize: VLCStyle.rd_fontSize_toggle
                         textInset: 0
                         spacing: 0
-                        valueText: gain.toFixed(1) + " " + qsTr("dB")
+                        // rounded first: VLC's presets hold values such as -1e-15 dB, never "-0.0 dB"
+                        valueText: (Math.round(gain * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                         from: -20
                         to: 20
                         stepSize: 0.1

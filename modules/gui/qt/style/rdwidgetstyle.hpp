@@ -21,10 +21,11 @@
 #include "qt.hpp"
 
 class QWidget;
+class SystemPalette;
 
 // redesign (W6.4): the Figma dialog look (redesign/reference/figma/styles.txt colors,
 // Inter 14, radius 6 fields and buttons, accent Save-style primary button) for the
-// dialogs that stay Qt widgets (open sources, Open URL, Convert, Stream Output).
+// dialogs that stay Qt widgets (open sources, Open URL, Convert, Stream Output, About).
 // The style sheet is set on the dialog only, never application wide, and follows the
 // color scheme and the accent color live. Without a main interface (dialogs provider
 // mode) the dialog keeps the native look.
@@ -35,6 +36,11 @@ void apply( QWidget* widget, qt_intf_t* p_intf );
 // gives a dialog's main action button the Save style (Figma "Frame 141"); the focus
 // driven QPushButton "default" state is not used, it moves with every clicked button
 void setPrimary( QWidget* button );
+
+// the palette apply() gave the widget, for colors a style sheet cannot set (links in rich
+// text take the label's palette link color, which the style sheet resets); null when the
+// widget keeps the native look
+SystemPalette* palette( QWidget* widget );
 }
 
 #endif // RDWIDGETSTYLE_HPP

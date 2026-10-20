@@ -325,10 +325,16 @@ libqt_plugin_la_SOURCES = \
 	player/rd_effects.hpp \
 	player/rd_seek_thumbnailer.cpp \
 	player/rd_seek_thumbnailer.hpp \
+	player/rd_filter_math.cpp \
+	player/rd_filter_math.hpp \
+	player/rd_filter_preview.cpp \
+	player/rd_filter_preview.hpp \
 	player/rd_waveform.cpp \
 	player/rd_waveform.hpp \
 	player/rd_waveform_item.cpp \
 	player/rd_waveform_item.hpp \
+	player/rd_subtitle_lift.cpp \
+	player/rd_subtitle_lift.hpp \
 	player/rd_waveform_scanner.cpp \
 	player/rd_waveform_scanner.hpp \
 	player/rd_now_playing.cpp \
@@ -427,6 +433,8 @@ libqt_plugin_la_SOURCES = \
 	widgets/native/customwidgets.cpp widgets/native/customwidgets.hpp \
 	widgets/native/csdthemeimage.cpp \
 	widgets/native/csdthemeimage.hpp \
+	widgets/native/rd_eq_curve_item.cpp \
+	widgets/native/rd_eq_curve_item.hpp \
 	widgets/native/interface_widgets.cpp \
 	widgets/native/interface_widgets.hpp \
 	widgets/native/navigation_attached.cpp \
@@ -558,8 +566,10 @@ nodist_libqt_plugin_la_SOURCES = \
 	player/delay_estimator.moc.cpp \
 	player/rd_effects.moc.cpp \
 	player/rd_seek_thumbnailer.moc.cpp \
+	player/rd_filter_preview.moc.cpp \
 	player/rd_waveform.moc.cpp \
 	player/rd_waveform_item.moc.cpp \
+	player/rd_subtitle_lift.moc.cpp \
 	player/rd_now_playing.moc.cpp \
 	dialogs/toolbar/rd_profiles.moc.cpp \
 	player/rd_media_info.moc.cpp \
@@ -608,6 +618,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/pointingtooltipattached.moc.cpp \
 	widgets/native/animators.moc.cpp \
 	widgets/native/csdthemeimage.moc.cpp \
+	widgets/native/rd_eq_curve_item.moc.cpp \
 	widgets/native/customwidgets.moc.cpp \
 	widgets/native/interface_widgets.moc.cpp \
 	widgets/native/navigation_attached.moc.cpp \
@@ -1562,6 +1573,7 @@ libqml_module_player_a_QML = \
 	player/qml/SubtitleSettingsPage.qml \
 	player/qml/RdSliderCommit.qml \
 	player/qml/RdSeekPreview.qml \
+	player/qml/RdFilterPreviewImage.qml \
 	player/qml/TracksPage.qml \
 	player/qml/TracksPageAudio.qml \
 	player/qml/TracksPageSpeed.qml \
