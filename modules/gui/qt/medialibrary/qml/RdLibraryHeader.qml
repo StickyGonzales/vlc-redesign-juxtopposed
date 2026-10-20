@@ -347,6 +347,8 @@ Item {
 
     RdLibraryItemMenu {
         id: pageMenu
+
+        forPage: true
     }
 
     RdLibraryMenu {

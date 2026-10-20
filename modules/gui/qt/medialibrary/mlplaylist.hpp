@@ -44,6 +44,9 @@ public: // Interface
     unsigned int getNbVideo() const;
     unsigned int getNbUnknown() const;
 
+    // redesign: the playlist's favorite state (library "..." menus, Figma "playlist context menu")
+    bool isFavorite() const;
+
 private:
     QString m_name;
 
@@ -53,6 +56,8 @@ private:
     unsigned int m_nbAudio;
     unsigned int m_nbVideo;
     unsigned int m_nbUnknown;
+
+    bool m_favorite;
 };
 
 #endif
