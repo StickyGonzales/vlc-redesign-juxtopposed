@@ -77,6 +77,14 @@ corrected here (the Figma file repeats the dark values there).
 - [ ] Profiles and new Customize controls
 - [ ] Installer and portable zip on GitHub Releases
 
+## Cone extras (not part of Juxtopposed's design)
+
+Features Cone adds beyond Juxtopposed's design (in neither her video nor her Figma file) are listed here, each marked as a Cone extra. They are not part of beta 2 or 1.0: each is built on its own branch and arrives after 1.0, starting with 1.1.
+
+| Cone extra | Status | What it does |
+|---|---|---|
+| Autoplay next episode ("Up Next") | Planned for 1.1 | When an episode of a show folder ends, an "Up next" card counts down to the next episode. Off / Ask for each show / Always in Settings > Playback; single videos, recordings, clips and music are never treated as shows. Plan and designs: [redesign/UP_NEXT_PLAN.md](redesign/UP_NEXT_PLAN.md) |
+
 ## FAQ
 
 **Can I download it?**
