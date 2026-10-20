@@ -56,6 +56,7 @@ struct va_pool_t
 
     atomic_uintptr_t  poolrefs; // 1 ref for the pool creator, 1 ref per surface alive
     vlc_sem_t    available_surfaces;
+    vlc_object_t *diag_obj; /* DIAG (test-only branch) */
 };
 
 static void va_pool_AddRef(va_pool_t *va_pool)
@@ -138,7 +139,18 @@ vlc_va_surface_t *va_pool_Get(va_pool_t *va_pool)
     if (unlikely(va_pool->surface_count == 0))
         return NULL;
 
-    vlc_sem_wait(&va_pool->available_surfaces);
+    if (vlc_sem_trywait(&va_pool->available_surfaces) != 0)
+    {
+        /* DIAG (test-only branch): log waits longer than 500 ms */
+        vlc_tick_t start = vlc_tick_now();
+        while (vlc_sem_timedwait(&va_pool->available_surfaces,
+                                 vlc_tick_now() + VLC_TICK_FROM_MS(500)) != 0)
+            msg_Warn(va_pool->diag_obj, "DIAG: no free surface of %zu for %"PRId64" ms",
+                     va_pool->surface_count, MS_FROM_VLC_TICK(vlc_tick_now() - start));
+        if (vlc_tick_now() - start > VLC_TICK_FROM_MS(500))
+            msg_Warn(va_pool->diag_obj, "DIAG: got a surface after %"PRId64" ms",
+                     MS_FROM_VLC_TICK(vlc_tick_now() - start));
+    }
     surface = GetSurface(va_pool);
     assert(surface != NULL);
     return surface;
@@ -185,6 +197,7 @@ va_pool_t * va_pool_Create(vlc_va_t *va, const struct va_pool_cfg *cbs)
         return NULL;
 
     va_pool->callbacks = *cbs;
+    va_pool->diag_obj = VLC_OBJECT(va);
 
     /* */
     if (cbs->pf_create_device(va)) {

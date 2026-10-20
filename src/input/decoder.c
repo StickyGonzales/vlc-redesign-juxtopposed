@@ -1950,7 +1950,11 @@ static void DecoderThread_Flush( vlc_input_decoder_t *p_owner )
         p_packetizer->pf_flush( p_packetizer );
 
     if ( p_dec->pf_flush != NULL )
+    {
+        msg_Warn( &p_owner->dec, "DIAG: codec flush %s", p_owner->psz_id );
         p_dec->pf_flush( p_dec );
+        msg_Warn( &p_owner->dec, "DIAG: codec flush %s done", p_owner->psz_id );
+    }
 
     p_owner->error = false;
 }
@@ -2827,6 +2831,9 @@ void vlc_input_decoder_Flush( vlc_input_decoder_t *p_owner )
              * frame that is being displayed. */
             vout_FlushAll( p_owner->video.vout );
         }
+        else
+            msg_Warn( &p_owner->dec, "DIAG: flush %s skips the vout (vout %p, started %d, countdown %d)",
+                      p_owner->psz_id, (void *)p_owner->video.vout, p_owner->video.started, p_owner->frames_countdown );
         decoder_prevframe_Flush( &p_owner->video.pf );
     }
     else if( cat == SPU_ES )
@@ -2851,8 +2858,10 @@ void vlc_input_decoder_Flush( vlc_input_decoder_t *p_owner )
          * or after the flush. Waiting here is almost instantaneous since we
          * are sure that the output thread is waiting in DecoderWaitUnblock().
          */
+        msg_Warn( &p_owner->dec, "DIAG: flush %s waits for the output thread", p_owner->psz_id );
         while (p_owner->b_has_data)
             vlc_fifo_WaitCond(p_owner->p_fifo, &p_owner->wait_acknowledge);
+        msg_Warn( &p_owner->dec, "DIAG: flush %s wait done", p_owner->psz_id );
     }
 
     vlc_fifo_Unlock( p_owner->p_fifo );
@@ -2963,6 +2972,9 @@ void vlc_input_decoder_Wait( vlc_input_decoder_t *p_owner )
     assert( p_owner->b_waiting );
 
     vlc_fifo_Lock(p_owner->p_fifo);
+    if( !p_owner->b_has_data )
+        msg_Warn( &p_owner->dec, "DIAG: input waits for decoder %s (idle %d, fifo %zu, flushing %d)",
+                  p_owner->psz_id, p_owner->b_idle, vlc_fifo_GetCount( p_owner->p_fifo ), p_owner->flushing );
     while( !p_owner->b_has_data )
     {
         /* Don't need to lock p_owner->paused since it's only modified by the
@@ -2976,6 +2988,7 @@ void vlc_input_decoder_Wait( vlc_input_decoder_t *p_owner )
         }
         vlc_fifo_WaitCond(p_owner->p_fifo, &p_owner->wait_acknowledge);
     }
+    msg_Warn( &p_owner->dec, "DIAG: input wait for decoder %s done", p_owner->psz_id );
     vlc_fifo_Unlock(p_owner->p_fifo);
 }
 
