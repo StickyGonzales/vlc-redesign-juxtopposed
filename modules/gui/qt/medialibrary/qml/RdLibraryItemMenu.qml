@@ -68,7 +68,7 @@ Item {
         // the Add Subtitles dialog for this file (W6.5)
         entries.push({ text: qsTr("Add Subtitle Tracks"), icon: "subtitles_two-tone-yes",
                        action: () => AddSubtitles.open({ mrl: item.mrl ?? "" }) })
-        entries.push({ text: qsTr("Add Audio Tracks"), icon: "waveform_two-tone-yes",
+        entries.push({ text: qsTr("Add Audio Tracks"), icon: "audio_two-tone-yes",
                        action: () => RdLibraryActions.addTracks(item, false) })
         if (isMl)
             entries.push({ text: qsTr("Properties & Metadata"), icon: "info_two-tone-yes",
@@ -91,7 +91,7 @@ Item {
               action: () => RdLibraryStore.playlistMedia(item.id, (mrls) => AddSubtitles.open({
                   target: "playlist", items: mrls, title: item.title ?? "" })) },
             // audio tracks are added to the file that is playing
-            { text: qsTr("Add Audio Tracks"), icon: "waveform_two-tone-yes", enabled: Player.isStarted,
+            { text: qsTr("Add Audio Tracks"), icon: "audio_two-tone-yes", enabled: Player.isStarted,
               action: () => DialogsProvider.loadAudioFile() },
             { text: qsTr("Properties & Metadata"), icon: "info_two-tone-yes",
               action: () => RdLibraryNav.playlistDialogRequested({ playlist: item }) },
@@ -130,7 +130,7 @@ Item {
             { text: qsTr("Edit Subtitle Tracks"), icon: "subtitles_two-tone-yes", enabled: !!folder || Player.isStarted,
               action: () => AddSubtitles.open(folder ? { target: "folder", folder: folder.mrl ?? "" } : {}) },
             // audio tracks are added to the file that is playing
-            { text: qsTr("Edit Audio Tracks"), icon: "waveform_two-tone-yes", enabled: Player.isStarted,
+            { text: qsTr("Edit Audio Tracks"), icon: "audio_two-tone-yes", enabled: Player.isStarted,
               action: () => DialogsProvider.loadAudioFile() },
             { text: qsTr("Resync"), icon: "refresh_two-tone-yes",
               action: () => RdLibraryStore.reloadFolder(folder ? folder.mrl : "") },
