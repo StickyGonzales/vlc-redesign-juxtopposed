@@ -35,24 +35,50 @@ Item {
     // the page the menu belongs to (RdLibraryNav location)
     property var location: RdLibraryNav.location
 
-    // the favorite state of the playlist shown by the page (its header "...", Figma "playlist
-    // context menu" F-11): the location does not carry it, so it is read when the page opens,
-    // off the UI thread, and the menu still opens at once
+    // the menu of the page itself (header "..."): it keeps the favorite state of the playlist
+    // the page shows
+    property bool forPage: false
+
+    // the favorite state of the playlist shown by the page (Figma "playlist context menu",
+    // F-11): the location does not carry it, so it is read when the page opens, off the UI
+    // thread, and the menu still opens at once
     property var _pageFavorite: undefined
+    // favorite writes seen: a read that started before one of them is out of date (the media
+    // library runs its jobs on several threads, not in order)
+    property int _favoriteWrites: 0
+
+    function _isPagePlaylist(id) {
+        const loc = root.location
+        return !!loc && loc.page === "playlist" && !!loc.id && loc.id.toString() === id.toString()
+    }
 
     function _readPageFavorite() {
         _pageFavorite = undefined
         const loc = root.location
-        if (!loc || loc.page !== "playlist" || !loc.id)
+        if (!forPage || !loc || loc.page !== "playlist" || !loc.id)
             return
+        const writes = _favoriteWrites
         RdLibraryStore.playlistFavorite(loc.id, (favorite) => {
-            if (root.location === loc)
+            if (root.location === loc && root._favoriteWrites === writes)
                 root._pageFavorite = favorite
         })
     }
 
     onLocationChanged: _readPageFavorite()
+    onForPageChanged: _readPageFavorite()
     Component.onCompleted: _readPageFavorite()
+
+    Connections {
+        target: RdLibraryStore
+        enabled: root.forPage
+
+        function onFavoriteChanged(id, favorite) {
+            if (!root._isPagePlaylist(id))
+                return
+            root._favoriteWrites += 1
+            root._pageFavorite = favorite
+        }
+    }
 
     function _fileEntries(item) {
         const isLocal = (item.mrl ?? "").startsWith("file://")
@@ -102,12 +128,7 @@ Item {
             { text: qsTr("Play"), icon: "playback_two-tone-yes", action: () => RdLibraryActions.play(item) },
             // only where the model knows the favorite state, so it can be cleared again
             item.isFavorite !== undefined ? { text: qsTr("Favorite"), icon: "favorite_two-tone-yes", selected: !!item.isFavorite,
-                                              action: () => {
-                                                  RdLibraryActions.toggleFavorite(item)
-                                                  // the page's own state: the next menu shows the new one
-                                                  if (item.isPage)
-                                                      root._pageFavorite = !item.isFavorite
-                                              } } : null,
+                                              action: () => RdLibraryActions.toggleFavorite(item) } : null,
             { text: qsTr("Shuffle"), icon: "shuffle_two-tone-yes_direction-right", action: () => RdLibraryActions.shuffle(item) },
             { text: qsTr("Export Playlist"), icon: "save_two-tone-yes",
               action: () => RdLibraryStore.exportPlaylist(item.id, item.title) },
@@ -220,7 +241,7 @@ Item {
             break
         case "playlist":
             entries = _playlistEntries({ kind: "playlist", id: loc.id, title: loc.title,
-                                         isFavorite: root._pageFavorite, isPage: true })
+                                         isFavorite: root._pageFavorite })
             break
         case "playlists":
             entries = [{ text: qsTr("Create playlist"), icon: "add", action: () => RdLibraryNav.playlistDialogRequested({ items: [] }) }]
