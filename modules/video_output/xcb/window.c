@@ -928,8 +928,16 @@ static int OpenCommon(vlc_window_t *wnd, char *display, xcb_connection_t *conn,
 #endif
 
     set_wm_hints(conn, window);
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (brand layer, public profile): Cone's window class, the one of its interface and
+     * desktop file (cone.desktop, StartupWMClass=cone), so the taskbar shows Cone's icon for the
+     * video and visualizer window and groups it with Cone */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, XA_WM_CLASS,
+                        XA_STRING, 8, 10, "cone\0Cone");
+#else
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, XA_WM_CLASS,
                         XA_STRING, 8, 8, "vlc\0Vlc");
+#endif
     set_hostname_prop(conn, window);
 
     /* EWMH */
