@@ -662,7 +662,7 @@ static int OpenGeneric(vout_display_t *vd,
         goto error;
     }
 
-    vlc_window_SetTitle(vd->cfg->window, VOUT_TITLE " (Direct3D11 output)");
+    vlc_window_SetTitle(vd->cfg->window, VOUT_OUTPUT_TITLE("Direct3D11 output"));
     msg_Dbg(vd, "Direct3D11 display adapter successfully initialized");
 
     if (var_InheritBool(vd, "direct3d11-hw-blending") &&
