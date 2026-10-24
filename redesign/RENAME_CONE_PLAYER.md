@@ -1,6 +1,6 @@
 # Rename plan: Cone → Cone Player
 
-Status: **plan only, no code changed.** Nothing here is applied until StickyGonzales answers the decisions in section 1. The plan was written against `wip/next-test` at f14c4303f4 (2026-10-25).
+Status: **decided, no code changed yet.** StickyGonzales answered R1 to R7 on 2026-10-25 (section 1). The rename ships with **Cone Player 1.0**, the release where Cone leaves beta; nothing of it goes into a 0.x beta. The plan was written against `wip/next-test` at f14c4303f4 (2026-10-25).
 
 Scope: the **public** brand profile only. The vlc profile (VLC's name and cone) stays as it is.
 
@@ -17,16 +17,29 @@ The public name "Cone" comes from four places:
 
 VLC itself uses two names: **"VLC media player"** (`BRAND_NAME`: window title, About, Apps list, installer) and **"VLC"** (`BRAND_SHORT_NAME`: menus and sentences such as "About VLC", "VLC could not ..."). In the public profile both are "Cone" today. That split is the natural place for "Cone Player".
 
-## 1. Decisions for StickyGonzales
+## 1. Decisions (StickyGonzales, 2026-10-25)
+
+| # | Decided |
+|---|---|
+| R1 | **A:** "Cone Player" where VLC shows "VLC media player"; "Cone" stays in menus and sentences where VLC says "VLC" ("About Cone", "Quit Cone", "Cone could not open ..."). No core sentences change |
+| R2 | Package names `ConePlayer-1.0.0-win64.zip`, `coneplayer-1.0.0-win64.exe`, `ConePlayer-1.0.0-x86_64.AppImage`; never a space (a new `BRAND_PACKAGE_NAME`) |
+| R3 | The exe stays `Cone.exe` |
+| R4 | Every identity name in section 2 stays "Cone" (no migration code) |
+| R5 | The images are re-rendered with "Cone Player" (installer header with smaller text or two lines) |
+| R6 | **Changed from the recommendation:** the rename ships with **1.0**, when Cone leaves beta, not as 0.3.0. The 0.x betas keep the name Cone. Decision 68's release title becomes "Cone Player 1.0.0: Juxtopposed's redesign on a real VLC 4 fork, not a skin" from 1.0 on |
+| R7 | The repo name and URLs stay (`vlc-redesign-juxtopposed`) |
+
+The table below is the question as it was asked, kept for the reasons behind each answer.
+
 
 | # | Question | Options | Recommendation |
 |---|---|---|---|
 | R1 | Where does the full name show? | **A:** "Cone Player" where VLC shows "VLC media player" (window and taskbar title, top bar without media, About title, tray tooltip, welcome, Settings > Apps, installer, Start menu, Default apps, Open with, exe details, volume mixer). "Cone" stays in menus and sentences where VLC says "VLC" ("About Cone", "Quit Cone", "Cone could not open ..."). **B:** "Cone Player" everywhere, including the ~40 sentences | **A**. It follows VLC's own pattern, keeps short menu items short, and leaves the core sentences untouched (no core change) |
-| R2 | File names of the packages | `ConePlayer-0.3.0-win64.zip` / `coneplayer-0.3.0-win64.exe` / `ConePlayer-0.3.0-x86_64.AppImage`, or keep `Cone-...` | `ConePlayer-...`. Never a space: the zip name and its folder come from `BRAND_PRODUCT_NAME` today (`package.mak` WINPACKAGE), so a space would put "Cone Player-0.3.0-win64" on disk. A separate `BRAND_PACKAGE_NAME` is needed either way |
+| R2 | File names of the packages | `ConePlayer-1.0.0-win64.zip` / `coneplayer-1.0.0-win64.exe` / `ConePlayer-1.0.0-x86_64.AppImage`, or keep `Cone-...` | `ConePlayer-...`. Never a space: the zip name and its folder come from `BRAND_PRODUCT_NAME` today (`package.mak` WINPACKAGE), so a space would put "Cone Player-1.0.0-win64" on disk. A separate `BRAND_PACKAGE_NAME` is needed either way |
 | R3 | Exe name | Keep `Cone.exe`, or `ConePlayer.exe` | **Keep `Cone.exe`**. Shortcuts, App Paths, `Applications\Cone.exe` and "Open with" choices that people already made point to it. Windows shows the exe's FileDescription ("Cone Player") in Task Manager, the volume mixer and Open with, so the name people see changes anyway |
 | R4 | Identity names (settings folder, registry keys, ProgIDs) | Keep "Cone", or rename with migration code | **Keep "Cone"** (section 2). Renaming them loses every tester's settings (the zip keeps its Qt settings in `portable\Cone\`), or needs migration code for no visible gain |
 | R5 | Logo text in images | Re-render with "Cone Player", or show the logo only | Re-render. The 150 x 57 installer header has 88 px right of the logo: "Cone Player" at today's 20 px semibold is about 115 px wide, so the header needs about 15 px text or two lines. The 164 px welcome image at 26 px is about 140 px: it fits, but tightly |
-| R6 | Version and release title | Ship the rename as 0.3.0; Decision 68's release title becomes "Cone Player <version>: Juxtopposed's redesign on a real VLC 4 fork, not a skin" | Yes, as its own release |
+| R6 | Version and release title | Ship the rename as 0.3.0; Decision 68's release title becomes "Cone Player <version>: Juxtopposed's redesign on a real VLC 4 fork, not a skin" | Yes, as its own release (decided otherwise: with 1.0) |
 | R7 | Repo name and URLs | Keep `vlc-redesign-juxtopposed` (BRAND_WEBSITE links to it) | Keep. Renaming the repo is separate from the app name |
 
 ## 2. Names that stay "Cone" (identity, never shown as the product name)
@@ -121,17 +134,19 @@ Uses today: BRAND_NAME is the tray tooltip, tray menu and notification title (`d
 6. **Translations of the Qt texts:** the public texts are new msgids that show in English in every language (CONE_RELEASE_NOTES "Dialog texts"); changing them makes new msgids again. No translation is lost, because none exists yet.
 7. **The top bar title width** (`BRAND_TITLE` in `MainDisplay.qml` without media) and the About title: "Cone Player" is 2.6 times longer. Check both at the smallest window width.
 
-## 5. Order of work (when R1 to R7 are answered)
+## 5. Order of work (for 1.0)
+
+The work lives on its own branch until 1.0 and is merged only for the 1.0 release (R6): betas before it keep shipping as Cone.
 
 1. **Build values and brand.hpp** (section 3), plus traps 1 to 4 in NSIS. Qt-side and packaging only, no core: one branch, `wip/rename-cone-player`.
-2. **Core texts** (VOUT_TITLE, help.c, and the sentences if R1 is B): a separate branch and build (CLAUDE.md core rule).
+2. **Core texts** (VOUT_TITLE, help.c; no sentences, R1 is A): a separate branch and build (CLAUDE.md core rule).
 3. **Images:** `installer-art.js` and `make_prefs_samples.sh` re-run, the PNG / BMP outputs committed.
 4. **Docs:** README, CREDITS, release workflow title (wip/ci-release), Linux package names (wip/linux-build), CLAUDE.md / VIDEO_INDEX Decision line.
-5. **Checks:** `privacycheck.py`, `buildlists.py`, `qmlcheck.py` (if QML changes), makensis of both profiles (warning count unchanged), the vlc profile's preprocessed NSIS script identical apart from line labels, Wine install / upgrade / uninstall like `redesign/INSTALLER_NOTES.md` section 5, with an upgrade from a Cone 0.2.0 installer.
+5. **Checks:** `privacycheck.py`, `buildlists.py`, `qmlcheck.py` (if QML changes), makensis of both profiles (warning count unchanged), the vlc profile's preprocessed NSIS script identical apart from line labels, Wine install / upgrade / uninstall like `redesign/INSTALLER_NOTES.md` section 5, with an upgrade from the last Cone 0.x installer.
 
 ## 6. Test on Windows (PC session)
 
-- Zip: an existing `portable` folder from 0.2.0 still has its settings after the update (Qt settings in `portable\Cone\`).
+- Zip: an existing `portable` folder from the last 0.x beta still has its settings after the update (Qt settings in `portable\Cone\`).
 - About, tray, top bar without media, window and taskbar title, video window title, exe Properties > Details, volume mixer, Task Manager: "Cone Player".
 - Installer: every page and bitmap; Settings > Apps shows one entry "Cone Player" after an upgrade from a Cone installer (no leftover "Cone"); the Start menu has only the new shortcuts; Open with and Default apps show "Cone Player"; a type already set to Cone still opens in Cone Player.
 - Uninstall: nothing named Cone or Cone Player left (INSTALLER_NOTES.md section 6), and "Delete preferences and cache" removes `%APPDATA%\Cone`.
