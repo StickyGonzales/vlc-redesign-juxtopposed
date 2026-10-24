@@ -1,7 +1,8 @@
 #!/bin/sh
 # redesign (Decision 70): Cone versions of the old preferences' layout previews
 # (pixmaps/prefs/sample_{minimal,complete}.png): the Cone logo for VLC's cone in the video
-# area and the title bar, "Cone" for the window title. Run from modules/gui/qt (ImageMagick 6, DejaVu Sans).
+# area and the title bar, "Cone Player" for the window title (redesign/RENAME_CONE_PLAYER.md R5).
+# Run from modules/gui/qt (ImageMagick 6, DejaVu Sans).
 set -e
 make_one() { # $1 VLC's preview, $2 the Cone one, $3 the cone's centre (y) in the video area
     tmp=$(mktemp -d)
@@ -14,7 +15,7 @@ make_one() { # $1 VLC's preview, $2 the Cone one, $3 the cone's centre (y) in th
         "$tmp/title.png" -geometry +66+0 -composite \
         "$tmp/icon.png" -geometry +2+0 -composite \
         "$tmp/logo-small.png" -geometry +4+1 -composite \
-        -fill white -font DejaVu-Sans-Bold -pointsize 7 -gravity north -annotate +0+1 "Cone" \
+        -fill white -font DejaVu-Sans-Bold -pointsize 7 -gravity north -annotate +0+1 "Cone Player" \
         -gravity northwest -fill 'rgb(0,1,0)' -draw "rectangle 86,$(( $3 - 36 )) 158,$(( $3 + 36 ))" \
         "$tmp/logo.png" -geometry +98+$(( $3 - 24 )) -composite \
         -strip "$2"
