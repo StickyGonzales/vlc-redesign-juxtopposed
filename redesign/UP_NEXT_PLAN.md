@@ -574,8 +574,8 @@ Rendered offscreen with Qt 6.8 Quick (VLC's Qt version), Inter, the redesign's o
 |---|---|
 | `01-card-A-recommended-dark.png` | Variant A over the player, a subtitle on screen: the card sits above the subtitle band (7.1) |
 | `02-card-A-recommended-light.png` | Variant A, light theme, no subtitle: 24 px above the control bar |
-| `03-card-B-dark.png` | Variant B over the player |
-| `04-card-C-dark.png` | Variant C over the player |
+| `03-card-B-dark.png`, `03-card-B-light.png` | Variant B over the player |
+| `04-card-C-dark.png`, `04-card-C-light.png` | Variant C over the player |
 | `05-card-states-dark.png`, `05-card-states-light.png` | all variants side by side + A's states: hover and focus, next season, still watching |
 | `06-mini-player-dark.png`, `-light` | the compact Up Next strip in the mini player |
 | `07-show-prompt-dark.png`, `-light` | the one-time prompt, above the subtitle band |

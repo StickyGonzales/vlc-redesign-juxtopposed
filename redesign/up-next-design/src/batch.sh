@@ -4,7 +4,9 @@ r() { QT_QPA_PLATFORM=offscreen ${PYTHON:-python3} render.py "$U/$1" "$U/out/$2"
 r s_card_a.qml card-A-subtitles-dark.png 1920 1080 dark
 r s_card_a_low.qml card-A-light.png 1920 1080 light
 r s_card_b.qml card-B-dark.png 1920 1080 dark
+r s_card_b.qml card-B-light.png 1920 1080 light
 r s_card_c.qml card-C-dark.png 1920 1080 dark
+r s_card_c.qml card-C-light.png 1920 1080 light
 r s_cards_sheet.qml sheet-dark.png 1420 900 dark
 r s_cards_sheet.qml sheet-light.png 1420 900 light
 r s_prompt.qml prompt-dark.png 1920 1080 dark
