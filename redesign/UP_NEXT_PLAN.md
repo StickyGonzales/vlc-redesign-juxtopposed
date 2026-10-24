@@ -17,9 +17,9 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 | **How it fits her design** | It complements that design and replaces nothing. The compact library, "Unwatched First" (P5-13, 10:45) and the per-show presets (P4-04 / IA-34, 7:53) stay exactly as they are. The library marks the next episode, the queue shows it, and the folder preset follows it. |
 | **Setting** | Settings > Playback > Episodes > "Autoplay next episode": **Off / Ask for each show (default) / Always**. Off = Cone behaves exactly as today. |
 | **Per show** | Remembered per show folder. "Ask" asks once with a small prompt; a No is never asked again. The sidebar Playback tab has an on/off toggle for the show playing (under Sleep Timer). |
-| **Recommended card** | Variant A (panel card, 400 wide), `01`/`02`/`05` images. |
+| **Card** | Variant A (panel card, 400 wide), switching to Variant C's layout when the video area is narrow; decided (Q8). Images `01`/`02`/`05`. |
 | **Core changes** | None expected; everything fits in `modules/gui/qt` (section 6.6). |
-| **Open decisions** | 9 items marked **needs Sticky**, collected in section 10. |
+| **Decisions** | All 9 questions decided by StickyGonzales on 2026-10-24 (section 10). Nothing is built or merged before 1.0 (Decision 71). |
 | **Release** | Cone extra (Decision 71): not in beta 2 or 1.0; built on its own branch, merged after 1.0 is released, for 1.1. |
 
 ---
@@ -52,7 +52,7 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 | Mode | First episode of a show Cone has not seen | A show answered "Yes" | A show answered "No" |
 |---|---|---|---|
 | **Off** | nothing | nothing | nothing |
-| **Ask for each show** (default) | the "Looks like a show" prompt (section 2.3) | autoplay | nothing, never asked again |
+| **Ask for each show** (default in Cone; the vlc profile defaults to Off, Q6) | the "Looks like a show" prompt (section 2.3) | autoplay | nothing, never asked again |
 | **Always** | autoplay, no prompt (stored as "Yes") | autoplay | nothing |
 
 - A per-folder "No" wins over "Always": the sidebar toggle switched off for a show keeps it off under every mode.
@@ -84,7 +84,7 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 - **No answer:**
   - It hides after 20 s, and no answer is stored, so the next episode of that show asks again.
   - Until there is an answer the show behaves as Off: no card, no queue item.
-  - Alternative timing: ask at the Up Next point instead. This is **needs Sticky** (Q2).
+  - Timing decided (Q2): early in the first episode, as above.
 - **Keyboard:** the prompt does not steal keyboard focus (Space must still pause). Tab reaches it.
 
 ### 2.4 "Are you still watching?" (setting on by default, after 3 episodes)
@@ -206,7 +206,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
   | Option | Values | Default |
   |---|---|---|
-  | `qt-autoplay-next` | 0 Off / 1 Ask / 2 Always | 1 |
+  | `qt-autoplay-next` | 0 Off / 1 Ask / 2 Always | 1 in the Cone profile, 0 in the vlc profile (Q6) |
   | `qt-autoplay-countdown` | 5 / 10 / 15 | 10 |
   | `qt-autoplay-card-point` | 0 end / 1 credits | 0 |
   | `qt-autoplay-still-watching` | bool | true |
@@ -312,7 +312,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 | `dialogs/redesign/settings/pages/SettingsPlaybackPage.qml` | "Episodes" section |
 | `medialibrary/qml/RdLibraryPage.qml` / row delegate | "Up next" tag (compares the row MRL with `RdUpNext.nextMrl`) |
 | `player/qml/QueueSidebar.qml` | "Autoplay" label on the autoplay item's row |
-| `qt.cpp`, `settings_catalog.cpp`, `rd_profile_settings.cpp` | the four options; curated list; profiles (Q5) |
+| `qt.cpp`, `settings_catalog.cpp`, `rd_profile_settings.cpp` | the four options; curated list; part of profiles (Q5, decided) |
 | `Makefile.am`, `meson.build` | new files (buildlists check) |
 
 ### 6.2 Signals used
@@ -337,7 +337,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
 ### 6.5 Both profiles
 
-The code is shared by the vlc and Cone profiles. The default per profile is Q6.
+The code is shared by the vlc and Cone profiles. Defaults (Q6, decided): the **vlc** profile defaults to **Off**, so it behaves like stock VLC; the **Cone** profile defaults to **Ask for each show**.
 
 ### 6.6 Core
 
@@ -393,7 +393,7 @@ Subtitles sit right on top of the control bar: Cone lifts them by the bar's heig
 | Shape | panel card 400 wide (the side panel width) | thumbnail first, 320 wide | the resume toast's pill, 60 high |
 | Pros | readable, all parts visible, matches the side panels and the mini player | big picture | smallest, matches the resume toast |
 | Cons | tallest | covers more video | small thumbnail; the episode name can get long |
-| Used for | default | - | compact case (narrow video area) |
+| Used for | **chosen** (Q8) | - | its layout is the compact case (narrow video area) |
 
 ---
 
@@ -431,10 +431,10 @@ Starting rules (from the request):
 | 8 | Preferred video quality / menu language | per file | no | apply per file as today | Smoke test: E02 plays with the same preference. |
 | 9 | Default audio track / Default subtitle track | the next episode gets VLC's default | partial | the language picked in the episode carries (4.5); the show preset wins; otherwise these defaults | Pick Japanese audio + English subs in E01, let E02 start. Expect: Japanese + English. |
 | 10 | Repeat = One (Settings, saved) | VLC repeats the episode | yes | **R2**: autoplay off while repeat one is on (no item, no card, sidebar toggle shown but inactive with "Repeat one is on") | Repeat One, play E01. Expect: no card, E01 starts again. |
-| 11 | Repeat = All | the queue wraps to its first item | partial | the autoplay item is always next, so the show goes on; after the show's last episode the queue wraps to the first item, as VLC does (**needs Sticky**, Q1) | Repeat All, play the last episode of a 2-episode test show. Expect: as decided in Q1. |
+| 11 | Repeat = All | the queue wraps to its first item | partial | the autoplay item is always next, so the show goes on; after the show's last episode the queue wraps to its first item, as VLC does (Q1, decided) | Repeat All, play the last episode of a 2-episode test show. Expect: after the last episode, the queue's first item (the episode first opened) plays. |
 | 12 | Shuffle on | random order | yes | **R2**: autoplay off while shuffle is on; turning shuffle on removes the waiting autoplay item | Shuffle on, play E01 to the end. Expect: no card, behaves as today. |
 | 13 | Stop after each item (`play-and-stop`) | VLC stops after each item | yes | autoplay off (it is the user's explicit "stop after each"); the sidebar row shows "Stop after each item is on" | Turn on (restart), play E01. Expect: no card, stops. |
-| 14 | When playback finishes = Pause on the last frame (`play-and-pause`) | VLC pauses at the end of every item (`input.c:1023-1027`), so the next item never starts | yes | autoplay off while it is on (**needs Sticky**, Q3, option: treat it as "stop at the queue's end" and keep autoplay) | Set, restart, play E01. Expect: per Q3. |
+| 14 | When playback finishes = Pause on the last frame (`play-and-pause`) | VLC pauses at the end of every item (`input.c:1023-1027`), so the next item never starts | yes | autoplay off while it is set (Q3, decided); the sidebar row shows "Pause on the last frame is on" | Set, restart, play E01. Expect: no card, no autoplay item; VLC pauses on the last frame. |
 | 15 | When playback finishes = Quit Cone (`play-and-exit`) | autoplay keeps the queue from ending, so Cone never quits | yes | **R5**: autoplay off while `play-and-exit` is on (saved or command line) | Set, restart, play E01. Expect: no card, Cone quits at the end. |
 | 16 | Seek precisely / thumbnails while scrubbing | | no | - | Seek into the last seconds. Expect: the card shows with the time left. |
 | 17 | Load matching .mkv files from the same folder | segment preloading only | no | - | Smoke test. |
@@ -475,7 +475,7 @@ Starting rules (from the request):
 | 47 | Network: caching, proxy | streams are never shows | no | precondition 1 | Play an HTTP stream named S01E01. Expect: no card. |
 | 48 | Performance: hardware decoding, threads, priority | | no | - | Smoke test. |
 | 49 | Recording: recording at an episode end | the recording is per input and ends with it | no | autoplay proceeds; the next episode is not recorded unless the user starts again | Record in E01 until the end. Expect: one file for E01, E02 plays unrecorded. |
-| 50 | Recording: cast / renderer | casting to a device | partial | the card shows locally, the next item is cast as VLC does (**needs Sticky**, Q7) | Cast E01, reach the card. |
+| 50 | Recording: cast / renderer | casting to a device | partial | the card shows locally, the next item is cast as VLC does (Q7, decided) | Cast E01, reach the card. Expect: the card on the computer, E02 plays on the cast device. |
 | 51 | Extensions | | no | - | - |
 
 ### 8.3 Sidebar tabs
@@ -523,9 +523,9 @@ Starting rules (from the request):
 | 85 | Mini player (library full view) | the player is small | - | compact strip on the picture (`06-…`): Play now, close, countdown line | Open the full library during the card. Expect: the strip in the mini player. |
 | 86 | Mini queue | | - | shows the autoplay item with the label | Open the mini queue. Expect: E02 "Autoplay". |
 | 87 | Fullscreen | | no | the card in fullscreen at the same rules (7.1); no exit to Home between episodes (it's a queue move, not a stop) | As 36. |
-| 88 | Hide UI (Ctrl+\\) | every overlay hidden | yes | **needs Sticky** (Q4): show the card anyway, or autoplay silently | Hide UI, reach the card. Expect: per Q4. |
+| 88 | Hide UI (Ctrl+\\) | every overlay hidden | yes | the card shows even in Hide UI mode (Q4, decided); the rest of the UI stays hidden | Hide UI, reach the card. Expect: only the card appears; Play now and Cancel work; after it, the UI stays hidden. |
 | 89 | Customize Player: Next / Previous / A-B / Bookmark / Chapters buttons | | no | as the matching rows | - |
-| 90 | Profiles (main "..." menu) | switching applies saved settings, except random/loop/repeat | partial | the four new options are part of profiles (**needs Sticky**, Q5); the per-show answers are not (they belong to the folders) | Switch profile with autoplay Off in it. Expect: per Q5. |
+| 90 | Profiles (main "..." menu) | switching applies saved settings, except random/loop/repeat | partial | the four new options are part of profiles (Q5, decided); the per-show answers are not (they belong to the folders) | Switch profile with autoplay Off in it. Expect: autoplay switches to Off with that profile, and back with the other. |
 | 91 | Right-click > Playlist > Shuffle / Repeat | runtime only | yes | as 12 / 10 / 11 | Right-click Repeat One during the card. Expect: the card closes. |
 | 92 | Right-click > Playlist > **Quit at the end of play queue** | EXIT at runtime | yes | autoplay stops adding (removes the waiting item), so the queue ends and Cone quits as asked | Turn it on during E01. Expect: no card, Cone quits after E01. |
 | 93 | Right-click > Playback > Title / Chapter / Program | | no | - | - |
@@ -536,10 +536,10 @@ Starting rules (from the request):
 |---|---|---|---|---|---|
 | 94 | Quit watchdog (PR #34) | closing during the card | no | quit as usual; the current episode's position is saved by the watchdog; nothing autoplay needs saving except `rd-shows.json` (written on answer) | Close Cone at the card. Expect: quits in under 5 s, E01's position saved. |
 | 95 | Command line `--play-and-exit` | | yes | **R5** (row 15) | `cone --play-and-exit E01.mkv`. Expect: quits after E01, no card. |
-| 96 | Command line `--play-and-stop`, `--play-and-pause`, `--random`, `--loop`, `--repeat`, `--start-paused`, `--input-repeat`, `--start-time`, `--stop-time`, `--run-time`, `--no-playlist-autostart` | | yes | **R5**: any of these set (saved or command line) turns autoplay off for the session, except `--no-playlist-autostart` (row 5) and `--loop` (row 11) | Each option once with E01. Expect: no card (`--loop`: per Q1). |
+| 96 | Command line `--play-and-stop`, `--play-and-pause`, `--random`, `--loop`, `--repeat`, `--start-paused`, `--input-repeat`, `--start-time`, `--stop-time`, `--run-time`, `--no-playlist-autostart` | | yes | **R5**: any of these set (saved or command line) turns autoplay off for the session, except `--no-playlist-autostart` (row 5) and `--loop` (row 11) | Each option once with E01. Expect: no card (`--loop`: as row 11). |
 | 97 | Command line: several files | | no | **R1**: user-built | `cone E01.mkv E03.mkv`. Expect: E01, E03, no card. |
 | 98 | Command line / Explorer: one file | | - | eligible (the main case) | Double-click E01 in Explorer. Expect: E02 queued, card at the end. |
-| 99 | vlc profile (non-public build) | | - | same code; default value **needs Sticky** (Q6) | Run the vlc build. Expect: per Q6. |
+| 99 | vlc profile (non-public build) | | - | same code; the vlc profile defaults to **Off** (behaves like stock VLC), the Cone profile to Ask for each show (Q6, decided) | Run the vlc build on a fresh profile. Expect: Settings > Playback > Autoplay next episode = Off, no prompt, no card. |
 | 100 | First run / onboarding (`--qt-privacy-ask`) | | no | the prompt waits until onboarding is closed | First run with E01 on the command line. Expect: onboarding first, prompt after. |
 
 ### 8.6 Detection edge cases (each a test)
@@ -585,21 +585,21 @@ Rendered offscreen with Qt 6.8 Quick (VLC's Qt version), Inter, the redesign's o
 
 ---
 
-## 10. Open decisions (needs Sticky)
+## 10. Decisions (StickyGonzales, 2026-10-24)
 
-| Q | Question | Options | Recommendation |
-|---|---|---|---|
-| Q1 | Repeat All + autoplay, after the show's last episode | a) VLC wraps to the queue's first item (the episode first opened); b) autoplay goes back to the show's first episode; c) stop | a) (VLC's meaning of Repeat All, nothing new) |
-| Q2 | When the "Looks like a show" prompt appears | a) early in the first episode (10 s in); b) at the Up Next point, in place of the card | a) (the answer is known before the end, the end stays calm) |
-| Q3 | "When playback finishes = Pause on the last frame" (pauses after **every** item in VLC) | a) autoplay off while set; b) autoplay on, and the pause only applies at the real end of the queue (needs a core-free workaround) | a) |
-| Q4 | Hide UI (Ctrl+\\) at the card point | a) show the card anyway; b) no card, autoplay silently after the countdown | a) (the user should know something will change) |
-| Q5 | The four new options in profiles | a) yes, like other playback options; b) no | a) |
-| Q6 | Default in the vlc profile | a) Ask, as in Cone; b) Off | a) |
-| Q7 | Casting (renderer) at the card point | a) card locally, VLC casts the next item; b) autoplay off while casting | a) |
-| Q8 | Variant | A / B / C | A, with C's layout as the compact fallback |
-| Q9 | "Still watching?" behaviour | a) next episode loaded paused at 0 under the card (keeps the player view); b) stop at the end and go Home | a) |
+All questions are decided. Nothing of this feature is built or merged before 1.0 (Decision 71: a Cone extra, for 1.1).
 
----
+| Q | Question | Decision |
+|---|---|---|
+| Q1 | Repeat All + autoplay, after the show's last episode | VLC wraps to the queue's first item (the episode first opened), VLC's meaning of Repeat All (rows 11, 96) |
+| Q2 | When the "Looks like a show" prompt appears | early in the first episode (10 s in, after the resume toast) (section 2.3) |
+| Q3 | "When playback finishes = Pause on the last frame" (pauses after every item in VLC) | autoplay off while it is set (row 14) |
+| Q4 | Hide UI (Ctrl+\\) at the card point | the card shows even in Hide UI mode (row 88) |
+| Q5 | The four new options in profiles | saved in profiles, like other playback options; the per-show answers are not (rows 90, 6.1) |
+| Q6 | Default per profile | vlc profile: **Off** (behaves like stock VLC); Cone profile: **Ask for each show** (row 99, 6.5) |
+| Q7 | Casting (renderer) at the card point | the card shows locally; the next episode is cast as VLC does (row 50) |
+| Q8 | Card variant | **Variant A**, switching to Variant C's layout when the video area is narrow (7.1, 7.3) |
+| Q9 | "Still watching?" behaviour | the next episode is loaded paused at its start under the card, keeping the player view (2.4) |
 
 ## 11. Found on the way (not part of this feature)
 
