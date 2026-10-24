@@ -98,8 +98,9 @@
 /* The default video output window title */
 #ifdef VLC_BRAND_PUBLIC
 /* redesign (brand layer, public profile): the video windows of their own (an audio visualizer
- * next to the video, a video without the interface) are named after Cone */
-# define VOUT_TITLE                     "Cone"
+ * next to the video, a video without the interface) carry the app's full name
+ * (redesign/RENAME_CONE_PLAYER.md R1) */
+# define VOUT_TITLE                     "Cone Player"
 /* the title a video output gives its own window: only the name, without the output's */
 # define VOUT_OUTPUT_TITLE(output)      VOUT_TITLE
 #else

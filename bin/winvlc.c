@@ -50,9 +50,11 @@
 #ifdef VLC_BRAND_PUBLIC
 # define LANG_REGISTRY_KEY "Software\\Cone\\"
 # define CRASHDUMP_DIR L"\\Cone\\crashdump"
-# define USER_AGENT_NAME "Cone"
+/* the full name where VLC shows its own (RENAME_CONE_PLAYER.md R1); the key and the folder keep
+ * the identity name "Cone" (R4) */
+# define USER_AGENT_NAME "Cone Player"
 # define START_ERROR_TEXT "Cone could not start.\n"
-# define START_ERROR_TITLE "Cone"
+# define START_ERROR_TITLE "Cone Player"
 #else
 # define LANG_REGISTRY_KEY "Software\\VideoLAN\\VLC\\"
 # define CRASHDUMP_DIR L"\\vlc\\crashdump"
