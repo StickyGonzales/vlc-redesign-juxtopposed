@@ -26,8 +26,10 @@
  * extras/package/win32/build.sh -B, the build-windows workflow's "brand" input). The "public"
  * profile defines VLC_BRAND_PUBLIC in config.h.
  * - vlc (default): VLC's name and cone, exactly what the interface showed before this layer.
- * - public: "Cone" with StickyGonzales' logo (pixmaps/brand/public). Layout, colors, fonts, the accent
- *   and the cone-shaped volume slider are the same in both profiles.
+ * - public: "Cone Player" with StickyGonzales' logo (pixmaps/brand/public). Layout, colors, fonts, the
+ *   accent and the cone-shaped volume slider are the same in both profiles. Like VLC ("VLC media
+ *   player" / "VLC"), it has a full name and a short one: "Cone Player" where VLC shows its full
+ *   name, "Cone" in menus and sentences (redesign/RENAME_CONE_PLAYER.md, R1).
  *
  * The texts are macros so qtr() keeps looking up VLC's exact source strings, and so their VLC
  * translations, in the vlc profile. The packaging side (exe name, version info, installer) is
@@ -40,31 +42,31 @@
 
 #ifdef VLC_BRAND_PUBLIC
 
-# define BRAND_NAME             "Cone"
+# define BRAND_NAME             "Cone Player"
 # define BRAND_SHORT_NAME       "Cone"
 /* top bar title without media (MainDisplay.qml) */
-# define BRAND_TITLE            "Cone"
-# define BRAND_TRAY_HIDE        "&Hide Cone in taskbar"
-# define BRAND_TRAY_SHOW        "Sho&w Cone"
+# define BRAND_TITLE            "Cone Player"
+# define BRAND_TRAY_HIDE        "&Hide Cone Player in taskbar"
+# define BRAND_TRAY_SHOW        "Sho&w Cone Player"
 # define BRAND_MENU_ABOUT       "About Cone"
 # define BRAND_MENU_QUIT        "Quit Cone"
 /* settings catalog group of the core options that have no category */
-# define BRAND_CORE_GROUP       "Cone"
-# define BRAND_WELCOME_TITLE    "Welcome to Cone!"
-# define BRAND_WELCOME_TEXT     "Cone is a free and open source media player based on VLC. It plays most " \
+# define BRAND_CORE_GROUP       "Cone Player"
+# define BRAND_WELCOME_TITLE    "Welcome to Cone Player!"
+# define BRAND_WELCOME_TEXT     "Cone Player is a free and open source media player based on VLC. It plays most " \
                                 "video and audio files as well as DVDs, Audio CDs, VCDs and various " \
                                 "streaming protocols."
 /* About dialog (help.cpp closes the last paragraph); the links take the accent color
  * (style/rdwidgetstyle.cpp) */
-# define BRAND_ABOUT_TEXT       "<p>Cone, based on <a href=\"https://www.videolan.org/vlc/\"><span style=\" text-decoration: underline;\">VLC media player</span></a> by VideoLAN. " \
+# define BRAND_ABOUT_TEXT       "<p>Cone Player, based on <a href=\"https://www.videolan.org/vlc/\"><span style=\" text-decoration: underline;\">VLC media player</span></a> by VideoLAN. " \
                                 "Design by <a href=\"https://www.figma.com/community/file/1691465999134370980/vlc-redesign\"><span style=\" text-decoration: underline;\">Juxtopposed</span></a> " \
                                 "(<a href=\"https://creativecommons.org/licenses/by/4.0/\"><span style=\" text-decoration: underline;\">CC BY 4.0</span></a>). " \
-                                "Built by StickyGonzales.</p><p>Cone is not affiliated with VideoLAN or Juxtopposed."
+                                "Built by StickyGonzales.</p><p>Cone Player is not affiliated with VideoLAN or Juxtopposed."
 /* VLC's seasonal cones (Christmas, April fools) are VLC logos: none in Cone */
 # define BRAND_SEASONAL_LOGOS   0
-/* About dialog: "Cone 0.1.0" as the title, "based on VLC <version>" under it (Decision 58;
+/* About dialog: "Cone Player 1.0.0" as the title, "based on VLC <version>" under it (Decision 58;
  * BRAND_VERSION comes from configure --with-brand-version / meson -Dbrand-version) */
-# define BRAND_ABOUT_TITLE      "Cone " BRAND_VERSION
+# define BRAND_ABOUT_TITLE      "Cone Player " BRAND_VERSION
 # define BRAND_VERSION_TEXT     "based on VLC " VERSION
 
 /* logo for the redesign's icon path (widgets/qml/RdIcon.qml loads qrc:///rd/<name>.svg): one
@@ -76,7 +78,8 @@
 # define BRAND_LOGO_ICON_LARGE  "cone-logo"
 # define BRAND_LOGO_SVG         "qrc:///rd/cone-logo.svg"
 
-/* where the app keeps its settings, apart from an installed VLC's: the folder in %APPDATA%
+/* where the app keeps its settings, apart from an installed VLC's (the identity name "Cone", kept
+ * by the rename so no setting is lost, redesign/RENAME_CONE_PLAYER.md R4): the folder in %APPDATA%
  * (src/win32/dirs.c APP_DIR_NAME), the Qt settings' organization (vlc-qt-interface.ini in it)
  * and the registry key of the interface language (bin/winvlc.c reads it at startup) */
 # define BRAND_CONFIG_DIR       "Cone"
@@ -139,9 +142,9 @@ QPixmap aboutLogo(qt_intf_t* intf);
 /* extension without an icon of its own (dialogs/plugins) */
 QPixmap extensionFallbackIcon();
 /* a text of the engine (option, choice, plugin and hotkey texts, already translated) as the
- * redesign's Settings show it: in the public profile the app's name replaces VLC's ("VLC media
- * player" and "VLC", but not "VLC" before a version number such as "VLC 3.0"), so the text keeps
- * its translation; the vlc profile returns the text unchanged */
+ * redesign's Settings show it: in the public profile the app's names replace VLC's ("VLC media
+ * player" becomes the full name, "VLC" the short one, but not "VLC" before a version number such
+ * as "VLC 3.0"), so the text keeps its translation; the vlc profile returns the text unchanged */
 QString engineText(const QString& text);
 }
 
