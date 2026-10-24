@@ -1010,7 +1010,11 @@ static void Flush( decoder_t *p_dec )
 
     /* do not flush buffers if codec hasn't been opened (theora/vorbis/VC1) */
     if( avcodec_is_open( p_context ) )
+    {
+        msg_Warn( p_dec, "DIAG: avcodec flush (hw %d)", p_sys->p_va != NULL );
         avcodec_flush_buffers( p_context );
+        msg_Warn( p_dec, "DIAG: avcodec flush done" );
+    }
 
     date_Set(&p_sys->pts, VLC_TICK_INVALID); /* To make sure we recover properly */
 }

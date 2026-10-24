@@ -132,6 +132,16 @@ static vlc_va_surface_t *GetSurface(va_pool_t *va_pool)
     return NULL;
 }
 
+/* DIAG (test-only branch): surfaces in use (refcount > 1) */
+static size_t DiagInUse(va_pool_t *va_pool)
+{
+    size_t n = 0;
+    for (size_t i = 0; i < va_pool->surface_count; i++)
+        if (atomic_load(&va_pool->surface[i].refcount) > 1)
+            n++;
+    return n;
+}
+
 vlc_va_surface_t *va_pool_Get(va_pool_t *va_pool)
 {
     vlc_va_surface_t *surface;
@@ -139,6 +149,12 @@ vlc_va_surface_t *va_pool_Get(va_pool_t *va_pool)
     if (unlikely(va_pool->surface_count == 0))
         return NULL;
 
+    {
+        static unsigned diag_calls;
+        size_t used = DiagInUse(va_pool);
+        if (++diag_calls % 30 == 0 || used + 3 >= va_pool->surface_count)
+            msg_Warn(va_pool->diag_obj, "DIAG: get #%u: %zu of %zu surfaces in use", diag_calls, used, va_pool->surface_count);
+    }
     if (vlc_sem_trywait(&va_pool->available_surfaces) != 0)
     {
         /* DIAG (test-only branch): log waits longer than 500 ms */
