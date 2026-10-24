@@ -361,7 +361,11 @@ const directx_va_mode_t *directx_va_Setup(vlc_va_t *va, const directx_sys_t *dx_
             surface_alignment = 16;
         else
             surface_alignment = 128;
-        surface_count += 16;
+        /* 2 more for the pictures the display keeps, as for H264: after a
+         * flush with frame threads, the frames in flight plus the references
+         * could take every surface before the first picture is output, and
+         * decoding then waited for good */
+        surface_count += 16 + 2;
         break;
     case AV_CODEC_ID_H264:
         surface_count += 16 + 2;
