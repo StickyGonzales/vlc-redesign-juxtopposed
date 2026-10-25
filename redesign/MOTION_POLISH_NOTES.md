@@ -74,3 +74,5 @@ Use a build of this branch merged with wip/next-test, a video, and the settings 
 5. **Animation effects off** (Windows Settings > Accessibility > Visual effects > Animation effects: off, while Cone runs). The tab switch is instant: no fade, the new page and underline appear in one frame. Turn it back on: the fades return without restarting Cone.
 6. **Performance:** with `QSG_RENDER_TIMING=1` (or the usual 60 fps recording), switch tabs 10 times: no frame over 16.7 ms caused by the switch.
 7. **Queue sidebar:** Queue → Bookmarks → Chapters fades the same way.
+
+**2026-10-25 (StickyGonzales):** the tab crossfade is 220 ms, linear (`VLCStyle.rd_tabSwitchDuration`, `Easing.Linear`), to match her video: the 8:40, 8:56 and 9:07 switches measured at 60 fps are 200-250 ms, roughly linear crossfades (not an edit dissolve).

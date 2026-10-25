@@ -53,7 +53,7 @@ Loader {
 
         NumberAnimation {
             duration: VLCStyle.rd_tabSwitchDuration
-            easing.type: Easing.OutQuad
+            easing.type: Easing.Linear
         }
     }
 
