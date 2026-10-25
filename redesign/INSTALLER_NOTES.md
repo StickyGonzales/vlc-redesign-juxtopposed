@@ -35,6 +35,7 @@ Base: VLC's own NSIS installer, `extras/package/win32/NSIS/vlc.win32.nsi.in`, wi
 | 6 | `EstimatedSize` in `Uninstall\Cone` | Settings > Apps shows a size | `vlc.win32.nsi.in` (Section -Post) |
 | 7 | Component description for "File type associations": "Lists Cone in Open with and Default apps for these file types; your default app stays." (English in every language) | VLC's text says it makes VLC the default player | `vlc.win32.nsi.in` |
 | 8 | "Delete preferences and cache" also removes `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone` | VLC's only removes `%APPDATA%\vlc`; Cone also keeps Qt's cache and its interface language | `NSIS/helpers/utils.nsh` (delprefs) |
+| 9a | `Applications\Cone.exe\SupportedTypes` is deleted and written anew on every install | An upgrade from an installer before item 3 kept that installer's one stray value (found with the real Cone 0.2.0 beta installer, wip/test-installer-1.0) | `vlc.win32.nsi.in` |
 | 9 | The CI installer step can fail the run (no more `continue-on-error`) | The installer is a real package now. The zip is uploaded before it, so a failing installer still leaves the zip | `.github/workflows/build-windows.yml` |
 
 Not changed: the **MSI** (`extras/package/win32/msi/`). CI does not build it, and it still holds Decision 56's read of `Software\VideoLAN\VLC` and sets the default of each type. If it ever ships, it needs the same rework as items 1, 2 and 4.
