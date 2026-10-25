@@ -89,6 +89,9 @@ public:
 public:
     bool getDisableVolumeKeys() const;
 
+    // redesign: reads Windows' "Animation effects" setting into systemAnimations
+    void updateSystemAnimations();
+
     Q_INVOKABLE bool platformHandlesShadowsWithCSD() const override { return (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8); };
     Q_INVOKABLE bool platformHandlesResizeWithCSD() const override { return (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8); };
 
