@@ -25,6 +25,7 @@
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QFile>
 #include <QFileInfo>
@@ -67,6 +68,9 @@ namespace {
 // the prompt: this long into the first episode of a show, then this long on screen
 constexpr int kPromptDelayMs = 10000;
 constexpr int kPromptShownMs = 20000;
+// the resume toast shows from the start of a file for 10 s at most (ResumeDialog.qml); the
+// prompt comes after it (Player.qml also waits while the toast is visible)
+constexpr int kResumeToastMs = 10500;
 // the next episode's picture: at this part of the file, this wide
 constexpr double kThumbnailPosition = 0.15;
 constexpr int kThumbnailWidth = 320;
@@ -269,10 +273,11 @@ RdUpNext::~RdUpNext()
 
 bool RdUpNext::readSettings()
 {
-    const int mode = std::clamp(int(config_GetInt("qt-autoplay-next")), int(ModeOff), int(ModeAlways));
-    const int countdown = int(config_GetInt("qt-autoplay-countdown"));
-    const int cardPoint = int(config_GetInt("qt-autoplay-card-point"));
-    const bool still = config_GetInt("qt-autoplay-still-watching") != 0;
+    // inherited: an option on the command line wins for the session, else the saved one
+    const int mode = std::clamp(int(var_InheritInteger(m_intf, "qt-autoplay-next")), int(ModeOff), int(ModeAlways));
+    const int countdown = int(var_InheritInteger(m_intf, "qt-autoplay-countdown"));
+    const int cardPoint = int(var_InheritInteger(m_intf, "qt-autoplay-card-point"));
+    const bool still = var_InheritBool(m_intf, "qt-autoplay-still-watching");
     const int clampedCountdown = (countdown == 5 || countdown == 15) ? countdown : 10;
     if (mode == m_mode && clampedCountdown == m_countdown && cardPoint == m_cardPoint && still == m_stillWatching)
         return false;
@@ -429,6 +434,7 @@ void RdUpNext::onInputChanged(bool hasInput)
         setCard(false, CardNext);
     m_stillPending = false;
 
+    m_inputClock.start();
     m_url = hasInput ? m_player->getUrl() : QUrl();
     m_path = localPath(m_url);
     startDetection();
@@ -602,7 +608,9 @@ void RdUpNext::updateCard()
             && started)
     {
         const VLCTime time = m_player->getTime();
-        if (time.valid() && time.toMilliseconds() >= kPromptDelayMs && !m_player->canRestorePlayback())
+        // not canRestorePlayback: a toast that times out leaves it set
+        if (time.valid() && time.toMilliseconds() >= kPromptDelayMs
+                && m_inputClock.isValid() && m_inputClock.elapsed() >= kResumeToastMs)
         {
             m_promptDone = true;
             setPromptVisible(true);
@@ -875,7 +883,7 @@ QStringList RdUpNext::itemOptions(bool startPaused) const
 {
     QStringList options;
     // the next episode resumes at its saved spot without the prompt; "Never" is kept
-    if (config_GetInt("restore-playback-pos") != 0)
+    if (var_InheritInteger(m_intf, "restore-playback-pos") != 0)
         options << QStringLiteral(":restore-playback-pos=2");
     // the languages picked in the episode carry over (a show preset can still change them)
     vlc_player_t* player = m_player->getPlayer();

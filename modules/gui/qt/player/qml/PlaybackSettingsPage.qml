@@ -141,7 +141,8 @@ RdSidePanelPage {
         // Cone extra (Decision 71, UP_NEXT_PLAN.md 5.2): "Autoplay this show", only while a
         // detected show plays and autoplay is not Off. The 62 px row of the design: the label,
         // the show name with the tv icon under it (Inter 12 FG/A4), the 68x32 toggle. A guard
-        // that keeps autoplay away (repeat one, shuffle ...) dims it and names the reason.
+        // that keeps autoplay away (repeat one, shuffle ...) dims the label and the toggle and
+        // names the reason under them, readable (FG/A3).
         Item {
             id: autoplayRow
 
@@ -152,7 +153,6 @@ RdSidePanelPage {
             Layout.preferredHeight: visible ? VLCStyle.dp(62) : 0
             Layout.topMargin: visible ? -VLCStyle.dp(10) : 0
             Layout.bottomMargin: visible ? VLCStyle.dp(10) : 0
-            opacity: _blocked ? VLCStyle.rd_disabledRowOpacity : 1
 
             Column {
                 anchors.left: parent.left
@@ -164,6 +164,7 @@ RdSidePanelPage {
 
                 Text {
                     width: parent.width
+                    opacity: autoplayRow._blocked ? VLCStyle.rd_disabledRowOpacity : 1
                     text: qsTr("Autoplay this show")
                     elide: Text.ElideRight
                     font.family: VLCStyle.rd_fontFamily
@@ -191,7 +192,7 @@ RdSidePanelPage {
                         elide: Text.ElideRight
                         font.family: VLCStyle.rd_fontFamily
                         font.pixelSize: VLCStyle.rd_fontSize_toggle
-                        color: VLCStyle.palette.rdFgA4
+                        color: autoplayRow._blocked ? VLCStyle.palette.rdFgA3 : VLCStyle.palette.rdFgA4
                     }
                 }
             }
@@ -201,6 +202,7 @@ RdSidePanelPage {
 
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                opacity: autoplayRow._blocked ? VLCStyle.rd_disabledRowOpacity : 1
                 checked: RdUpNext.showEnabled
                 Accessible.name: qsTr("Autoplay this show")
                 Accessible.description: autoplayRow._blocked ? RdUpNext.blockedReason : RdUpNext.showName

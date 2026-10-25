@@ -19,6 +19,7 @@
 #ifndef RD_UP_NEXT_HPP
 #define RD_UP_NEXT_HPP
 
+#include <QElapsedTimer>
 #include <QHash>
 #include <QObject>
 #include <QString>
@@ -294,6 +295,8 @@ private:
     // the prompt
     bool m_promptVisible = false;
     bool m_promptDone = false;
+    // since the media started (the resume toast comes first)
+    QElapsedTimer m_inputClock;
     QTimer m_promptTimer;
 
     // remembered answers, keyed by the show root folder

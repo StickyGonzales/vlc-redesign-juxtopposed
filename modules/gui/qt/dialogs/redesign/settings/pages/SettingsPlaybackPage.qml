@@ -219,6 +219,8 @@ SettingsPage {
                 spacing: VLCStyle.dp(16)
 
                 Text {
+                    // the row dims its label only; this text is part of the control
+                    opacity: root._autoplayOn ? 1.0 : VLCStyle.rd_disabledRowOpacity
                     anchors.verticalCenter: parent.verticalCenter
                     readonly property int total: RdUpNext.rememberedYes + RdUpNext.rememberedNo
                     text: total === 0 ? qsTr("No shows yet")
