@@ -142,33 +142,31 @@ The work lives on its own branch until 1.0 and is merged only for the 1.0 releas
 2. **Core texts** (VOUT_TITLE, help.c; no sentences, R1 is A): a separate branch and build (CLAUDE.md core rule).
 3. **Images:** `installer-art.js` and `make_prefs_samples.sh` re-run, the PNG / BMP outputs committed.
 4. **Docs:** README, CREDITS, release workflow title (wip/ci-release), Linux package names (wip/linux-build), CLAUDE.md / VIDEO_INDEX Decision line.
-5. **Checks:** `privacycheck.py`, `buildlists.py`, `qmlcheck.py` (if QML changes), makensis of both profiles (warning count unchanged), the vlc profile's preprocessed NSIS script identical apart from line labels, Wine install / upgrade / uninstall like `redesign/INSTALLER_NOTES.md` section 5, with an upgrade from the last Cone 0.x installer.
+5. **Checks:** `privacycheck.py`, `buildlists.py`, `qmlcheck.py` (if QML changes), makensis of both profiles (warning count unchanged), the vlc profile's preprocessed NSIS script identical apart from line labels, Wine install / uninstall like `redesign/INSTALLER_NOTES.md` section 5.
 
 ## 6. Test on Windows (PC session)
 
-Needs a Windows build of `wip/cone-player` (Actions, build-windows, Run workflow, branch `wip/cone-player`, brand public; the core commit is part of it, so it is a core build) and, for the upgrade, a Cone 0.2.0-style installer: the same workflow on `wip/next-test` (its `cone-installer-win64` artifact, `cone-0.1.0-win64.exe`), and the 0.2.0 beta zip for the portable part. The new installer is the `cone-installer-win64` artifact, now named `coneplayer-0.1.0-win64.exe`; the zip is `ConePlayer-0.1.0-win64.zip`. A manual run takes the default version 0.1.0 (only a vX.Y.Z tag sets it), so both installers have the same version (step 8). Use a throwaway Windows (Windows Sandbox or a VM), as in `redesign/INSTALLER_NOTES.md` section 6.
+Needs a Windows build of `wip/cone-player` (Actions, build-windows, Run workflow, branch `wip/cone-player`, brand public; the core commit is part of it, so it is a core build): the installer `coneplayer-<version>-win64.exe` (artifact `cone-installer-win64`) and the zip `ConePlayer-<version>-win64.zip`. Use a throwaway Windows (Windows Sandbox or a VM), as in `redesign/INSTALLER_NOTES.md` section 6. No beta-to-1.0 transition is tested (Decision of StickyGonzales, 2026-10-25: no transition work); the installer's upgrade code stays as it is.
 
-**A. Portable zip (an existing beta folder)**
-1. Copy a 0.2.0 beta folder that has a `portable` folder with settings (a changed hotkey, a preset, the library) into the Sandbox and run it once.
-2. Unzip `ConePlayer-0.1.0-win64.zip`; its top folder is `ConePlayer-0.1.0`. Copy its contents over the beta folder (keep `portable`), start `Cone.exe`: the settings, presets and library are still there (Qt settings in `portable\Cone\vlc-qt-interface.ini`).
+**A. Portable zip**
+1. Unzip `ConePlayer-<version>-win64.zip`: its top folder is `ConePlayer-<version>`. Start `Cone.exe`, change a setting, close and start it again: the setting is kept in the `portable` folder (Qt settings in `portable\Cone\vlc-qt-interface.ini`).
 
 **B. Names in the app**
-3. The top bar without media, the window and taskbar title, About (title "Cone Player <version>", "based on VLC <version>" under it, the About text), the welcome / onboarding title, the tray tooltip and its "Hide Cone Player in taskbar" / "Show Cone Player" items: "Cone Player". The "..." menu still says "About Cone" and "Quit Cone", and error dialogs say "Cone could not ..." (R1).
-4. Smallest window width: the top bar title without media and the About title fit (trap 7).
-5. Settings: a setting whose VLC text says "VLC media player" shows "Cone Player"; one that says "VLC" shows "Cone".
-6. Audio visualizer (or `--no-embedded-video`): the separate video window's title is "Cone Player". `Cone.exe --version` in a console: "Cone Player <version>, based on VLC ...". Task Manager, the volume mixer and `Cone.exe` Properties > Details (Product name, File description): "Cone Player".
+2. The top bar without media, the window and taskbar title, About (title "Cone Player <version>", "based on VLC <version>" under it, the About text), the welcome / onboarding title, the tray tooltip and its "Hide Cone Player in taskbar" / "Show Cone Player" items: "Cone Player". The "..." menu still says "About Cone" and "Quit Cone", and error dialogs say "Cone could not ..." (R1).
+3. Smallest window width: the top bar title without media and the About title fit (trap 7).
+4. Settings: a setting whose VLC text says "VLC media player" shows "Cone Player"; one that says "VLC" shows "Cone".
+5. Audio visualizer (or `--no-embedded-video`): the separate video window's title is "Cone Player". `Cone.exe --version` in a console: "Cone Player <version>, based on VLC ...". Task Manager, the volume mixer and `Cone.exe` Properties > Details (Product name, File description): "Cone Player".
 
-**C. Upgrade from a Cone beta (installer)**
-7. Install VLC from videolan.org, then `cone-0.1.0-win64.exe` (the wip/next-test build, still named Cone) with the desktop shortcut ticked. Start Cone, change a setting, close it.
-8. Run `coneplayer-0.1.0-win64.exe`. Every page shows "Cone Player" and the new images (welcome side image "Cone Player / based on VLC", header logo with "Cone Player"). With two 0.1.0 builds the second page says Cone Player of this version is already installed: pick "Add/Remove/Reinstall components", Next, keep the components, finish. (With a newer version, as 1.0.0 over a 0.x beta, it says "An older version of Cone Player is installed" with the upgrade selected; checked under Wine, section 8. The reinstall choice does not clear the old file list, like the silent install tested there, and the old shortcuts go either way.)
-9. Settings > Apps: **one** entry, "Cone Player", version <version>, publisher StickyGonzales; no "Cone" entry. VLC media player is still listed.
-10. Start menu, StickyGonzales folder: "Cone Player", "Cone Player Website", "Cone Player - reset preferences and cache files", Documentation, Release Notes; **no** "Cone", "Cone Website" or "Cone - reset ...". Desktop: "Cone Player" only, no "Cone". `C:\Program Files\Cone` still holds `Cone.exe` and has "Cone Player Website.url", no "Cone Website.url".
-11. Start Cone Player: the setting from step 7 is still there (`%APPDATA%\Cone`).
-12. Open with on an `.mp4`: "Cone Player" with its logo; Settings > Apps > Default apps lists "Cone Player"; a type that was set to Cone before opens in Cone Player. Right click a folder: "Play with Cone Player", "Add to Cone Player's Playlist".
-13. VLC still opens its files with its own settings; `C:\Program Files\VideoLAN\VLC` untouched.
+**C. Install next to VLC**
+6. Install VLC from videolan.org, then run `coneplayer-<version>-win64.exe` with the desktop shortcut ticked. Every page shows "Cone Player" and the new images (welcome side image "Cone Player / based on VLC", header logo with "Cone Player").
+7. Settings > Apps: one entry, "Cone Player", version <version>, publisher StickyGonzales. VLC media player is still listed.
+8. Start menu, StickyGonzales folder: "Cone Player", "Cone Player Website", "Cone Player - reset preferences and cache files", Documentation, Release Notes. Desktop: "Cone Player". `C:\Program Files\Cone` holds `Cone.exe` and "Cone Player Website.url".
+9. Start Cone Player, change a setting, close and start it again: the setting is kept (`%APPDATA%\Cone`).
+10. Open with on an `.mp4`: "Cone Player" with its logo; Settings > Apps > Default apps lists "Cone Player". Right click a folder: "Play with Cone Player", "Add to Cone Player's Playlist".
+11. VLC still opens its files with its own settings; `C:\Program Files\VideoLAN\VLC` untouched.
 
 **D. Uninstall**
-14. Settings > Apps > Cone Player > Uninstall, tick "Delete preferences and cache": `C:\Program Files\Cone`, the StickyGonzales Start menu folder, the desktop shortcut and every Cone / Cone Player entry in Apps, Default apps and Open with are gone; `%APPDATA%\Cone` is gone (with PR #33 merged also `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone`); regedit finds no `Cone` key under HKLM. VLC still works with its settings.
+12. Settings > Apps > Cone Player > Uninstall, tick "Delete preferences and cache": `C:\Program Files\Cone`, the StickyGonzales Start menu folder, the desktop shortcut and every Cone / Cone Player entry in Apps, Default apps and Open with are gone; `%APPDATA%\Cone` is gone (with PR #33 merged also `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone`); regedit finds no `Cone` key under HKLM. VLC still works with its settings.
 
 ## 7. Implementation (wip/cone-player, 2026-10-25)
 
