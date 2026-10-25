@@ -48,6 +48,7 @@ SettingsPage {
     readonly property bool _repeat: _option("repeat") === true
     readonly property bool _exit: _option("play-and-exit") === true
     readonly property bool _pause: _option("play-and-pause") === true
+    readonly property bool _autoplayOn: Number(_option("qt-autoplay-next")) !== 0
 
     SettingsSection {
         title: qsTr("Startup")
@@ -170,6 +171,69 @@ SettingsPage {
                 onActivated: (index) => {
                     RdEffects.setOption("play-and-pause", index === 1)
                     RdEffects.setOption("play-and-exit", index === 2)
+                }
+            }
+        }
+    }
+
+    // Cone extra (Decision 71, UP_NEXT_PLAN.md 5.1): autoplay of the next episode of a show
+    // folder; the rows under the mode wait at 30 % while it is Off
+    SettingsSection {
+        title: qsTr("Episodes")
+
+        SettingsOption {
+            option: "qt-autoplay-next"
+            text: qsTr("Autoplay next episode")
+            keywords: "autoplay next episode binge up next show series"
+        }
+
+        SettingsOption {
+            option: "qt-autoplay-countdown"
+            text: qsTr("Countdown")
+            keywords: "autoplay up next countdown"
+            available: root._autoplayOn
+        }
+
+        SettingsOption {
+            option: "qt-autoplay-card-point"
+            text: qsTr("Show Up Next")
+            keywords: "autoplay up next credits chapter"
+            available: root._autoplayOn
+        }
+
+        SettingsOption {
+            option: "qt-autoplay-still-watching"
+            text: qsTr("Ask if I'm still watching after 3 episodes")
+            keywords: "autoplay still watching binge"
+            available: root._autoplayOn
+        }
+
+        // the answers given per show folder (rd-shows.json); they do not follow the profiles
+        SettingsRow {
+            text: qsTr("Remembered shows")
+            description: qsTr("The shows you answered the \"Looks like a show\" question for, or turned autoplay on or off for in the Playback tab. Forget all asks again for each show.")
+            keywords: "autoplay show remembered forget"
+            available: root._autoplayOn
+
+            Row {
+                spacing: VLCStyle.dp(16)
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    readonly property int total: RdUpNext.rememberedYes + RdUpNext.rememberedNo
+                    text: total === 0 ? qsTr("No shows yet")
+                                      : qsTr("%1 shows: %2 autoplay, %3 never", "", total)
+                                            .arg(total).arg(RdUpNext.rememberedYes).arg(RdUpNext.rememberedNo)
+                    font.family: VLCStyle.rd_fontFamily
+                    font.pixelSize: VLCStyle.rd_fontSize_label
+                    color: VLCStyle.palette.rdFgA3
+                }
+
+                Widgets.RdButton {
+                    style: Widgets.RdButton.Style.Plain
+                    text: qsTr("Forget all")
+                    enabled: RdUpNext.rememberedYes + RdUpNext.rememberedNo > 0
+                    onClicked: RdUpNext.forgetAll()
                 }
             }
         }

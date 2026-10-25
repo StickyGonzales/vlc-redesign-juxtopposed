@@ -19,8 +19,9 @@
 // redesign: settings sidebar, Playback tab (video 9:06-9:19 final version; Figma "playback"
 // 5187:24308). Final order (Decision 13: the video's rows plus Figma's Show Statistics):
 // Show Subtitle Timeline on Seekbar, Show Waveform on Seekbar, Show Metadata, Show Statistics,
-// Reverse, Sleep Timer, Audio Visualizer, Speed. The subtitle timeline and waveform toggles come
-// with their seek bar modes (P3-16, P6-06), Reverse is postponed (Decision 29).
+// Sleep Timer, Audio Visualizer, Speed. The subtitle timeline and waveform toggles come with
+// their seek bar modes (P3-16, P6-06); Reverse is postponed (Decision 29) and has no row. The
+// Cone extra "Autoplay this show" (Decision 71) sits under Sleep Timer while a show plays.
 import QtQuick
 import QtQuick.Layouts
 
@@ -134,6 +135,76 @@ RdSidePanelPage {
                              : currentText
                 Accessible.name: qsTr("Sleep Timer")
                 onActivated: (index) => RdSleepTimer.set(index)
+            }
+        }
+
+        // Cone extra (Decision 71, UP_NEXT_PLAN.md 5.2): "Autoplay this show", only while a
+        // detected show plays and autoplay is not Off. The 62 px row of the design: the label,
+        // the show name with the tv icon under it (Inter 12 FG/A4), the 68x32 toggle. A guard
+        // that keeps autoplay away (repeat one, shuffle ...) dims it and names the reason.
+        Item {
+            id: autoplayRow
+
+            readonly property bool _blocked: RdUpNext.blockedReason !== ""
+
+            visible: RdUpNext.showActive
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? VLCStyle.dp(62) : 0
+            Layout.topMargin: visible ? -VLCStyle.dp(10) : 0
+            Layout.bottomMargin: visible ? VLCStyle.dp(10) : 0
+            opacity: _blocked ? VLCStyle.rd_disabledRowOpacity : 1
+
+            Column {
+                anchors.left: parent.left
+                anchors.leftMargin: VLCStyle.dp(4)
+                anchors.right: autoplayToggle.left
+                anchors.rightMargin: VLCStyle.dp(10)
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: VLCStyle.dp(3)
+
+                Text {
+                    width: parent.width
+                    text: qsTr("Autoplay this show")
+                    elide: Text.ElideRight
+                    font.family: VLCStyle.rd_fontFamily
+                    font.pixelSize: VLCStyle.rd_fontSize_label
+                    color: VLCStyle.palette.rdFgA3
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: VLCStyle.dp(6)
+
+                    Widgets.RdIcon {
+                        id: showIcon
+
+                        visible: !autoplayRow._blocked
+                        name: "tv"
+                        size: VLCStyle.dp(16)
+                        color: VLCStyle.palette.rdFgA4
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - (showIcon.visible ? showIcon.width + parent.spacing : 0)
+                        text: autoplayRow._blocked ? RdUpNext.blockedReason : RdUpNext.showName
+                        elide: Text.ElideRight
+                        font.family: VLCStyle.rd_fontFamily
+                        font.pixelSize: VLCStyle.rd_fontSize_toggle
+                        color: VLCStyle.palette.rdFgA4
+                    }
+                }
+            }
+
+            Widgets.RdToggle {
+                id: autoplayToggle
+
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                checked: RdUpNext.showEnabled
+                Accessible.name: qsTr("Autoplay this show")
+                Accessible.description: autoplayRow._blocked ? RdUpNext.blockedReason : RdUpNext.showName
+                onToggled: RdUpNext.setShowEnabled(checked)
             }
         }
 

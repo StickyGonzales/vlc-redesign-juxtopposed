@@ -39,6 +39,9 @@ T.AbstractButton {
     property real progress: -1
     property bool watched: false
     property bool playing: false
+    // Cone extra (Decision 71): the next episode autoplay will play, an "Up next" tag after the
+    // title (UP_NEXT_PLAN.md 4.8)
+    property bool upNext: false
     // folders, categories, action rows ("+ Add") and Home rows use the secondary text color
     // (Figma FG/A3)
     property bool secondary: false
@@ -56,7 +59,7 @@ T.AbstractButton {
     hoverEnabled: true
 
     Accessible.role: Accessible.ListItem
-    Accessible.name: title
+    Accessible.name: upNext ? qsTr("%1, up next").arg(title) : title
 
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => {
@@ -101,9 +104,13 @@ T.AbstractButton {
             }
 
             Text {
+                id: titleText
+
                 anchors.verticalCenter: parent.verticalCenter
-                width: content.width - thumb.width - content.spacing
-                       - (moreButton.visible ? moreButton.width + content.spacing : 0)
+                width: Math.min(implicitWidth,
+                                content.width - thumb.width - content.spacing
+                                - (upNextTag.visible ? upNextTag.width + content.spacing : 0)
+                                - (moreButton.visible ? moreButton.width + content.spacing : 0))
                 text: row.title
                 elide: Text.ElideRight
                 font.family: VLCStyle.rd_fontFamily
@@ -113,6 +120,29 @@ T.AbstractButton {
                      : row.watched ? VLCStyle.palette.rdFgA3
                      : row.secondary ? VLCStyle.palette.rdFgA3
                      : VLCStyle.palette.rdFgA1
+            }
+
+            // BG/Accent Bright pill, Inter 600 12 in the accent, radius 4
+            Rectangle {
+                id: upNextTag
+
+                anchors.verticalCenter: parent.verticalCenter
+                visible: row.upNext
+                width: upNextLabel.implicitWidth + VLCStyle.dp(12)
+                height: VLCStyle.dp(20)
+                radius: VLCStyle.rd_radius_small
+                color: VLCStyle.palette.rdBgAccentBright
+
+                Text {
+                    id: upNextLabel
+
+                    anchors.centerIn: parent
+                    text: qsTr("Up next")
+                    font.family: VLCStyle.rd_fontFamily
+                    font.pixelSize: VLCStyle.rd_fontSize_toggle
+                    font.weight: Font.DemiBold
+                    color: VLCStyle.palette.rdAccentMain
+                }
             }
         }
 

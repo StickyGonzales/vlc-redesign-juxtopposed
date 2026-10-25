@@ -357,6 +357,124 @@ Item {
                         onClicked: MainPlaylistController.next()
                     }
                 }
+
+                // Cone extra (Decision 71, UP_NEXT_PLAN.md matrix row 85): the compact Up Next
+                // strip on the picture's foot, over the hover controls: the next episode, Play
+                // now, close (= Cancel) and the 2 px countdown line
+                Rectangle {
+                    id: upNextStrip
+
+                    readonly property bool _still: RdUpNext.cardMode === RdUpNext.CardStillWatching
+
+                    x: VLCStyle.dp(8)
+                    width: parent.width - VLCStyle.dp(16)
+                    height: VLCStyle.dp(52)
+                    y: parent.height - height - VLCStyle.dp(8)
+                    radius: VLCStyle.dp(8)
+                    color: VLCStyle.palette.rdBgA3
+                    opacity: RdUpNext.cardVisible ? 1 : 0
+                    visible: opacity > 0
+                    enabled: RdUpNext.cardVisible
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                    }
+
+                    // no press, hover or wheel turn reaches the picture under it
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.AllButtons
+                        hoverEnabled: true
+                        onWheel: (wheel) => { wheel.accepted = true }
+                    }
+
+                    Rectangle {
+                        id: stripThumb
+
+                        x: VLCStyle.dp(8)
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: VLCStyle.dp(64)
+                        height: VLCStyle.dp(36)
+                        visible: !upNextStrip._still
+                        radius: VLCStyle.rd_radius_small
+                        color: "black"
+                        clip: true
+
+                        Image {
+                            anchors.fill: parent
+                            source: RdUpNext.nextThumbnail
+                            asynchronous: true
+                            cache: false
+                            fillMode: Image.PreserveAspectCrop
+                            visible: status === Image.Ready
+                        }
+                    }
+
+                    Column {
+                        x: upNextStrip._still ? VLCStyle.dp(12) : stripThumb.x + stripThumb.width + VLCStyle.dp(10)
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: stripButtons.x - x - VLCStyle.dp(10)
+                        spacing: VLCStyle.dp(1)
+
+                        T.Label {
+                            width: parent.width
+                            text: upNextStrip._still ? qsTr("Still watching?")
+                                                     : qsTr("Up next in %1 s").arg(RdUpNext.secondsLeft)
+                            elide: Text.ElideRight
+                            color: VLCStyle.palette.rdAccentMain
+                            font.family: VLCStyle.rd_fontFamily
+                            font.pixelSize: VLCStyle.rd_fontSize_toggle
+                            font.weight: Font.DemiBold
+                        }
+
+                        T.Label {
+                            width: parent.width
+                            text: RdUpNext.nextLine
+                            elide: Text.ElideRight
+                            color: VLCStyle.palette.rdFg2
+                            font.family: VLCStyle.rd_fontFamily
+                            font.pixelSize: VLCStyle.dp(13)
+                        }
+                    }
+
+                    Row {
+                        id: stripButtons
+
+                        x: parent.width - width - VLCStyle.dp(8)
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: VLCStyle.dp(10)
+
+                        StripButton {
+                            primary: true
+                            iconName: "play"
+                            description: upNextStrip._still ? qsTr("Keep watching") : qsTr("Play now")
+                            onClicked: upNextStrip._still ? RdUpNext.keepWatching() : RdUpNext.playNow()
+                        }
+
+                        StripButton {
+                            iconName: "close"
+                            description: upNextStrip._still ? qsTr("Stop") : qsTr("Cancel")
+                            onClicked: upNextStrip._still ? RdUpNext.stopWatching() : RdUpNext.cancel()
+                        }
+                    }
+
+                    Rectangle {
+                        x: VLCStyle.dp(8)
+                        width: parent.width - VLCStyle.dp(16)
+                        y: parent.height - VLCStyle.dp(4)
+                        height: VLCStyle.dp(2)
+                        radius: height / 2
+                        visible: !upNextStrip._still
+                        color: VLCStyle.palette.rdBgB2
+
+                        Rectangle {
+                            width: parent.width * RdUpNext.countdownProgress
+                            height: parent.height
+                            radius: height / 2
+                            color: VLCStyle.palette.rdAccentMain
+                        }
+                    }
+                }
             }
 
             // seek bar (Figma 375x16, fill 12 px, accent playhead pill)
@@ -563,6 +681,42 @@ Item {
                 font.family: VLCStyle.rd_fontFamily
                 font.pixelSize: VLCStyle.rd_fontSize_header
                 color: chip.hovered && chip.enabled ? VLCStyle.palette.rdFg2 : VLCStyle.palette.rdFgA1
+            }
+        }
+    }
+
+    // the Up Next strip's 32x32 buttons: accent with the play icon, BG/A1 with close
+    component StripButton: T.Button {
+        id: stripButton
+
+        property bool primary: false
+        property string iconName: ""
+        property string description: ""
+
+        HoverHandler {
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        implicitWidth: VLCStyle.dp(32)
+        implicitHeight: VLCStyle.dp(32)
+        focusPolicy: Qt.StrongFocus
+
+        Accessible.name: description
+
+        background: Rectangle {
+            radius: VLCStyle.rd_radius_normal
+            color: stripButton.primary ? (stripButton.hovered ? VLCStyle.palette.rdAccentBright : VLCStyle.palette.rdAccentMain)
+                                       : (stripButton.hovered ? VLCStyle.palette.rdBgA2 : VLCStyle.palette.rdBgA1)
+            border.width: stripButton.visualFocus ? VLCStyle.dp(1) : 0
+            border.color: VLCStyle.palette.rdFg2
+        }
+
+        contentItem: Item {
+            Widgets.RdIcon {
+                anchors.centerIn: parent
+                name: stripButton.iconName
+                size: VLCStyle.dp(20)
+                color: stripButton.primary ? VLCStyle.palette.rdFgB1 : VLCStyle.palette.rdFgA2
             }
         }
     }

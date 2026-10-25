@@ -2288,6 +2288,72 @@ FocusScope {
         onVisibleChanged: rootPlayer.lockUnlockAutoHide(visible)
     }
 
+    // Cone extra (Decision 71, UP_NEXT_PLAN.md 7.1): the Up Next card and the "Looks like a show"
+    // prompt never cover the subtitles. With a subtitle track on they sit 16 px above the subtitle
+    // band (the lift over the control bar + sub-margin + two lines at the current size, whether a
+    // line shows or not, so they do not jump); without, 24 px above the control bar, or above
+    // the bottom edge while the bars are hidden. They show in Hide UI too (Q4).
+    readonly property real _upNextBottom: {
+        const dpr = MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0
+        const barRoom = Math.max(0, height - controlBar.y) * (controlBar.visible ? controlBar.opacity : 0)
+        const minimum = barRoom + VLCStyle.dp(24, VLCStyle.scale)
+        if (!RdUpNext.subtitlesOn)
+            return minimum
+        const margin = Number(RdEffects.values[RdEffects.videoKey("sub-margin")]) || 0
+        const scaleValue = Number(RdEffects.values.subtitleTextScale) || 100
+        // VLC's text size: 6.25 % of the video height at 100 % (STYLE_DEFAULT_REL_FONT_SIZE),
+        // a line about 1.25 of it
+        const line = playerSpecializationLoader.height * 0.0625 * (scaleValue / 100) * 1.25
+        const band = (RdSubtitleLift.lift + margin) / dpr + 2 * line
+        return Math.max(minimum, band + VLCStyle.dp(16, VLCStyle.scale))
+    }
+    // the video area beside the compact library and an open panel
+    readonly property real _upNextRoom: width - _videoInset - _toastRightInset - 2 * VLCStyle.dp(24, VLCStyle.scale)
+
+    RdUpNextCard {
+        id: upNextCard
+
+        anchors.right: parent.right
+        // 24 px from the video area's right edge, left of an open panel like the resume toast
+        anchors.rightMargin: rootPlayer._toastRightInset > 0 ? rootPlayer._toastRightInset
+                                                             : VLCStyle.dp(24, VLCStyle.scale)
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: rootPlayer._upNextBottom
+        width: Math.min(implicitWidth, rootPlayer._upNextRoom)
+        height: implicitHeight
+        z: 3
+
+        // Variant C's pill under 900 px of video width (Q8)
+        compact: (rootPlayer.width - rootPlayer._videoInset - rootPlayer._toastRightInset) < VLCStyle.dp(900, VLCStyle.scale)
+        // too small for the pill: hidden, the countdown runs on (the queue shows what is next)
+        shown: RdUpNext.cardVisible && rootPlayer._upNextRoom >= minimumWidth
+
+        Navigation.parentItem: rootPlayer
+
+        // the bars wait while a button of the card has the focus (like the resume toast)
+        onActiveFocusChanged: rootPlayer.lockUnlockAutoHide(activeFocus)
+    }
+
+    RdShowPrompt {
+        id: showPrompt
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenterOffset: (rootPlayer._videoInset - rootPlayer._toastRightInset) / 2
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: rootPlayer._upNextBottom
+        width: Math.min(implicitWidth, rootPlayer._toastRoom)
+        height: implicitHeight
+        z: 3
+
+        maxWidth: rootPlayer._toastRoom
+        // it waits for the resume toast (RdUpNext asks only once the toast is gone)
+        shown: RdUpNext.promptVisible && !resumeToast.visible && rootPlayer._toastRoom >= minimumWidth
+
+        Navigation.parentItem: rootPlayer
+
+        onActiveFocusChanged: rootPlayer.lockUnlockAutoHide(activeFocus)
+    }
+
     // redesign: right-click menu and Hide UI (W4.10); the video's right click arrives through
     // DialogsProvider, the audio view's here
     RdPlayerMenu {

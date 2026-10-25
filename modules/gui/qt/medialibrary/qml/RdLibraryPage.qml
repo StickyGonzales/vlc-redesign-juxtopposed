@@ -188,6 +188,13 @@ FocusScope {
     // compared as RdLibraryNav.mrlKey (decoded safely, drive letters as on disk)
     readonly property string playingMrl: Player.url.toString() !== "" ? RdLibraryNav.mrlKey(Player.url.toString()) : ""
 
+    // Cone extra (Decision 71): the autoplay item waiting in the queue
+    readonly property string upNextMrl: RdUpNext.queuedUrl.toString() !== "" ? RdLibraryNav.mrlKey(RdUpNext.queuedUrl.toString()) : ""
+
+    function isUpNext(mrl) {
+        return upNextMrl !== "" && !!mrl && RdLibraryNav.mrlKey(mrl) === upNextMrl
+    }
+
     function isPlaying(mrl) {
         return playingMrl !== "" && !!mrl && RdLibraryNav.mrlKey(mrl) === playingMrl
     }
@@ -796,6 +803,7 @@ FocusScope {
                     progress: cell.item.progress ?? -1
                     watched: cell.item.watched ?? false
                     playing: page.isPlaying(cell.item.mrl)
+                    upNext: cell.item.kind === "media" && page.isUpNext(cell.item.mrl)
                     // Figma: playlist rows are FG/A1 like media, folders and categories FG/A3
                     secondary: cell.item.kind !== "media" && cell.item.kind !== "stream"
                                && cell.item.kind !== "playlist"
