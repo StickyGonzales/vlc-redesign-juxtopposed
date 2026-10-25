@@ -113,6 +113,8 @@ typedef struct
     vlc_sem_t init_passed;
     vlc_mutex_t lock;
     vlc_cond_t ready;
+    bool stream_wait; /**< MMThread waits on the stream's event, unlocked */
+    vlc_cond_t stream_wait_done; /**< Signaled when MMThread leaves that wait */
     vlc_thread_t thread; /**< Thread for audio session control */
 } aout_sys_t;
 
@@ -870,9 +872,15 @@ static void MMSessionMainloop(audio_output_t *aout, ISimpleAudioVolume *volume)
                 events[ev_count++] = sys->stream->buffer_ready_event;
         }
 
+        sys->stream_wait = ev_count > 1;
         vlc_mutex_unlock(&sys->lock);
         WaitForMultipleObjects(ev_count, events, FALSE, wait_ms);
         vlc_mutex_lock(&sys->lock);
+        if (sys->stream_wait)
+        {
+            sys->stream_wait = false;
+            vlc_cond_signal(&sys->stream_wait_done);
+        }
 
         if (sys->stream != NULL)
         {
@@ -1331,14 +1339,27 @@ static void Stop(audio_output_t *aout)
 {
     aout_sys_t *sys = aout->sys;
 
-    assert(sys->stream != NULL);
+    /* MMThread plays the stream under the lock (PlayAll): stopping it unlocked released the
+     * audio client while the thread still used it (crash in AUDIOSES.DLL) */
+    vlc_mutex_lock(&sys->lock);
+    struct aout_stream_owner *stream = sys->stream;
+    assert(stream != NULL);
+    sys->stream = NULL;
 
     EnterMTA();
-    aout_stream_owner_Stop(sys->stream);
+    aout_stream_owner_Stop(stream);
     LeaveMTA();
 
-    aout_stream_owner_Delete(sys->stream);
-    sys->stream = NULL;
+    /* MMThread may still wait on the stream's event: closing a handle that is
+     * being waited on is undefined, so wake it up and let it leave the wait */
+    while (sys->stream_wait)
+    {
+        SetEvent(sys->work_event);
+        vlc_cond_wait(&sys->stream_wait_done, &sys->lock);
+    }
+    vlc_mutex_unlock(&sys->lock);
+
+    aout_stream_owner_Delete(stream);
 }
 
 static void Close(vlc_object_t *);
@@ -1375,6 +1396,8 @@ static int Open(vlc_object_t *obj)
     vlc_sem_init(&sys->init_passed, 0);
     vlc_mutex_init(&sys->lock);
     vlc_cond_init(&sys->ready);
+    sys->stream_wait = false;
+    vlc_cond_init(&sys->stream_wait_done);
 
     sys->work_event = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (unlikely(sys->work_event == NULL))
