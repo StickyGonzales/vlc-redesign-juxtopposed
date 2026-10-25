@@ -30,6 +30,12 @@ on:
         description: 'Package name suffix (public profile, e.g. -beta)'
         type: string
         default: ''
+      brand-version:
+        # test only (wip/test-installer-1.0, never merged): the public profile's version without a
+        # tag, so an installer test can upgrade over a 0.x beta
+        description: 'Public profile version X.Y.Z (test builds; empty: default, a vX.Y.Z tag wins)'
+        type: string
+        default: ''
   workflow_call:
     inputs:
       brand:
@@ -176,6 +182,7 @@ jobs:
       - name: Build in VideoLAN's image
         env:
           PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
+          BRAND_VERSION_INPUT: ${{ inputs.brand-version }}
         run: |
           # run as the runner's user so the checkout, caches and build output have one owner
           mkdir -p .ccache
@@ -186,6 +193,7 @@ jobs:
           BRAND_VERSION=""
           BRAND_PACKAGE_SUFFIX="$PACKAGE_SUFFIX_INPUT"
           case "$GITHUB_REF" in refs/tags/v*) BRAND_VERSION="${GITHUB_REF_NAME#v}" ;; esac
+          [ -n "$BRAND_VERSION" ] || BRAND_VERSION="$BRAND_VERSION_INPUT"
           if echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-[A-Za-z0-9.]+$'; then
             BRAND_PACKAGE_SUFFIX="-${BRAND_VERSION#*-}"
             BRAND_VERSION="${BRAND_VERSION%%-*}"
