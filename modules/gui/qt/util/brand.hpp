@@ -51,7 +51,7 @@
 # define BRAND_MENU_ABOUT       "About Cone"
 # define BRAND_MENU_QUIT        "Quit Cone"
 /* settings catalog group of the core options that have no category */
-# define BRAND_CORE_GROUP       "Cone Player"
+# define BRAND_CORE_GROUP       "Cone"
 # define BRAND_WELCOME_TITLE    "Welcome to Cone Player!"
 # define BRAND_WELCOME_TEXT     "Cone Player is a free and open source media player based on VLC. It plays most " \
                                 "video and audio files as well as DVDs, Audio CDs, VCDs and various " \

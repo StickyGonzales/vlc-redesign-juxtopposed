@@ -112,7 +112,8 @@ if BUILD_LUA
 if BRAND_PUBLIC
 # redesign: brand layer, the web interface's titles and pictures name and show the app
 	$(SHELL) "$(srcdir)/extras/package/win32/brand/public/brand-webintf.sh" "$(win32_destdir)/lua/http" \
-		"$(BRAND_PRODUCT_NAME)" "$(srcdir)/modules/gui/qt/pixmaps/brand/public" "$(srcdir)/$(BRAND_ICON_SRC)"
+		"$(BRAND_PRODUCT_NAME)" "$(srcdir)/modules/gui/qt/pixmaps/brand/public" "$(srcdir)/$(BRAND_ICON_SRC)" \
+		"$(BRAND_PROGID)"
 endif
 endif
 
