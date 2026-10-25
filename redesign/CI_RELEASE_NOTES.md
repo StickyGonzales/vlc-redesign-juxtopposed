@@ -65,14 +65,14 @@ New branches therefore start warm from redesign.
 - **Version:** must look like `v0.1.0` or `v0.2.0-beta.1`.
 - When the guard fails, nothing is built and nothing is published.
 
-**Build:** the normal `build-windows.yml` with brand `public`. In a release build the installer must succeed. The run starts from redesign's compiler cache and doesn't save one. Both packages go to the release job exactly as built.
+**Build:** the normal `build-windows.yml` with brand `public` and the release's tag as its `version` input, so the app's version and the package names come from the tag on a manual run too (`v1.0.0-rc1`: version 1.0.0, packages `ConePlayer-1.0.0-rc1-win64.zip` and `coneplayer-1.0.0-win64.exe`). In a release build the installer must succeed. The run starts from redesign's compiler cache and doesn't save one. Both packages go to the release job exactly as built; they need the Cone Player names (`wip/cone-player`, redesign/RENAME_CONE_PLAYER.md), or the build's release-files step fails.
 
-**Release** (`gh release create` with the repository's own token, `contents: write` for this job only). Published as a **pre-release** by default; a pushed tag is always a pre-release, a manual run can untick it. Files:
+**Release** titled "Cone Player <version>: Juxtopposed's redesign on a real VLC 4 fork, not a skin" (Decision 68, Cone Player name: Decision 73; `<version>` without the `v`) (`gh release create` with the repository's own token, `contents: write` for this job only). Published as a **pre-release** by default; a pushed tag is always a pre-release, a manual run can untick it. Files:
 
 | File | What |
 |---|---|
-| `cone-<version>-win64.zip` | the build's zip, contents unchanged, top folder renamed from `vlc-<vlc version>` to `cone-<version>` |
-| `cone-<version>-win64-setup.exe` | the build's installer, renamed |
+| `ConePlayer-<version>-win64.zip` | the build's zip as built (top folder `ConePlayer-<version>`); `release-package.sh` checks its name and folder |
+| `coneplayer-<version>-win64.exe` | the build's installer; renamed only for a suffixed tag (the build names it `coneplayer-1.0.0-win64.exe` for `v1.0.0-rc1`) |
 | `SHA256SUMS.txt` | SHA-256 of both |
 
 **Notes** come from `.github/release/release-notes.md`, filled in by the workflow. They cover:

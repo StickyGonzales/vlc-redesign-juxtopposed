@@ -1,46 +1,44 @@
 #!/bin/bash
 # release.yml: turns the build's packages into the release files.
 #   release-package.sh <built dir> <out dir> <version tag>
-# <built dir> holds the build's vlc-<vlc version>-win64.zip and cone-<vlc version>-win64.exe.
-# The zip's content is kept as built; only its top folder and the file names carry Cone's
-# version: cone-<version>-win64.zip (folder cone-<version>) and cone-<version>-win64-setup.exe,
-# with SHA256SUMS.txt. Writes zip, exe, their SHA-256 and vlc_version to GITHUB_OUTPUT when set.
+# <built dir> holds the build's two packages, already named for the version tag by the build
+# (build-windows.yml's version input; redesign/RENAME_CONE_PLAYER.md): for v1.0.0-rc1,
+# ConePlayer-1.0.0-rc1-win64.zip (top folder ConePlayer-1.0.0-rc1) and coneplayer-1.0.0-win64.exe
+# (the installer's name has no suffix). The release files are the zip as built and the installer
+# as coneplayer-<version>-win64.exe, with SHA256SUMS.txt. Writes version, zip, exe, their SHA-256
+# and vlc_version (configure.ac's) to GITHUB_OUTPUT when set.
 set -euo pipefail
 
 BUILT=$1
 OUT=$2
 VER=${3#v}
 
-shopt -s nullglob
-ZIPS=("$BUILT"/vlc-*-win64.zip)
-EXES=("$BUILT"/cone-*-win64.exe)
-[ ${#ZIPS[@]} -eq 1 ] || { echo "::error::expected one vlc-*-win64.zip in $BUILT, found ${#ZIPS[@]}"; exit 1; }
-[ ${#EXES[@]} -eq 1 ] || { echo "::error::expected one cone-*-win64.exe in $BUILT, found ${#EXES[@]}"; exit 1; }
+BUILT_ZIP=ConePlayer-$VER-win64.zip
+BUILT_EXE=coneplayer-${VER%%-*}-win64.exe
+ZIP=$BUILT_ZIP
+EXE=coneplayer-$VER-win64.exe
 
-VLC_VERSION=$(basename "${ZIPS[0]}" -win64.zip)
-VLC_VERSION=${VLC_VERSION#vlc-}
-ZIP=cone-$VER-win64.zip
-EXE=cone-$VER-win64-setup.exe
+for f in "$BUILT_ZIP" "$BUILT_EXE"; do
+    [ -f "$BUILT/$f" ] || { echo "::error::$f is not in the build's packages: $(cd "$BUILT" && echo *)"; exit 1; }
+done
+
+TOP=$(unzip -Z1 "$BUILT/$BUILT_ZIP" | cut -d/ -f1 | sort -u)
+[ "$TOP" = "ConePlayer-$VER" ] \
+    || { echo "::error::$BUILT_ZIP must hold the one top folder ConePlayer-$VER, it holds: $TOP"; exit 1; }
+
+VLC_VERSION=$(sed -n 's/^AC_INIT(\[vlc\], *\[\([^]]*\)\].*/\1/p' configure.ac)
+[ -n "$VLC_VERSION" ] || { echo "::error::no VLC version in configure.ac's AC_INIT"; exit 1; }
 
 mkdir -p "$OUT"
-OUT=$(cd "$OUT" && pwd)
-WORK=$(mktemp -d)
-unzip -q "${ZIPS[0]}" -d "$WORK"
-TOP=("$WORK"/*)
-if [ ${#TOP[@]} -ne 1 ] || [ ! -d "${TOP[0]}" ]; then
-    echo "::error::the zip does not hold exactly one top folder"
-    exit 1
-fi
-mv "${TOP[0]}" "$WORK/cone-$VER"
-(cd "$WORK" && zip -q -r -9 -X "$OUT/$ZIP" "cone-$VER")
-rm -rf "$WORK"
-cp "${EXES[0]}" "$OUT/$EXE"
+cp "$BUILT/$BUILT_ZIP" "$OUT/$ZIP"
+cp "$BUILT/$BUILT_EXE" "$OUT/$EXE"
 
 (cd "$OUT" && sha256sum "$ZIP" "$EXE" > SHA256SUMS.txt)
 cat "$OUT/SHA256SUMS.txt"
 
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
     {
+        echo "version=$VER"
         echo "zip=$ZIP"
         echo "exe=$EXE"
         echo "zip_sha256=$(sha256sum "$OUT/$ZIP" | cut -d' ' -f1)"

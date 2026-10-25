@@ -1,4 +1,4 @@
-# Cone release: builds the "public" profile and publishes a GitHub Release (pre-release by default)
+# Cone Player release: builds the "public" profile and publishes a GitHub Release (pre-release by default)
 # with the portable zip, the installer, their SHA-256 checksums and notes from
 # .github/release/release-notes.md (redesign/CI_RELEASE_NOTES.md).
 #
@@ -62,6 +62,9 @@ jobs:
       release: true
       # a tag has no branch: start from redesign's compiler cache, the code it was checked against
       cache-branch: redesign
+      # the version and package names come from the tag, also on a manual run (which builds the
+      # redesign branch, the tag is only created when publishing)
+      version: ${{ needs.guard.outputs.version }}
 
   release:
     needs: [guard, build]
@@ -85,7 +88,7 @@ jobs:
 
       - name: Release notes
         env:
-          RN_VERSION: ${{ needs.guard.outputs.version }}
+          RN_VERSION: ${{ steps.package.outputs.version }}
           RN_COMMIT: ${{ github.sha }}
           RN_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           RN_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -104,7 +107,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           EVENT: ${{ github.event_name }}
         run: |
-          ARGS=(--title "Cone $VERSION: Juxtopposed's redesign on a real VLC 4 fork, not a skin" --notes-file out/release-notes.md)
+          ARGS=(--title "Cone Player ${VERSION#v}: Juxtopposed's redesign on a real VLC 4 fork, not a skin" --notes-file out/release-notes.md)
           if [ "$EVENT" = push ]; then
             ARGS+=(--verify-tag)
           else
