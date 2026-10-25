@@ -298,6 +298,7 @@ RequestExecutionLevel admin
 ; Macro and Functions ;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
+!include helpers\registry.nsh
 !include helpers\extensions.nsh
 !include helpers\install.nsh
 !include helpers\utils.nsh
@@ -410,30 +411,39 @@ skip_uninstall32_cleanup:
 
   !insertmacro CloseUninstallLog
 
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the record of the registry keys and values the installer adds, which
+  ; the uninstaller removes (helpers/registry.nsh, INSTALLER_NOTES.md section 7)
+  !insertmacro ConeRegOpenRecord
+!endif
+
   ; Add VLC to "recommended programs" for the following extensions
-  WriteRegStr HKCR Applications\${PRODUCT_EXE} "" ""
-  WriteRegStr HKCR Applications\${PRODUCT_EXE} "FriendlyAppName" "${PRODUCT_NAME}"
-  WriteRegStr HKCR Applications\${PRODUCT_EXE}\shell\Open "" "$(ContextMenuEntry_PlayWith)"
-  WriteRegStr HKCR Applications\${PRODUCT_EXE}\shell\Open\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
+  !insertmacro RegClassesOwnStr "Applications\${PRODUCT_EXE}" "" "" ""
+  !insertmacro RegClassesOwnStr "Applications\${PRODUCT_EXE}" "" "FriendlyAppName" "${PRODUCT_NAME}"
+  !insertmacro RegClassesOwnStr "Applications\${PRODUCT_EXE}" "shell\Open" "" "$(ContextMenuEntry_PlayWith)"
+  !insertmacro RegClassesOwnStr "Applications\${PRODUCT_EXE}" "shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
 !if "${PRODUCT_PROGID}" != "VLC"
   ; redesign: brand layer, the list is written anew: an earlier installer of this app wrote one
-  ; stray value there (VLC's $0, see RegisterExtension), which an upgrade would keep
-  DeleteRegKey HKCR "Applications\${PRODUCT_EXE}\SupportedTypes"
+  ; stray value there (VLC's $0, see RegisterExtension), which an upgrade would keep; only when
+  ; an earlier install made it (its own key, in the record)
+  ${If} $ConeRegAdopt == 1
+    DeleteRegKey HKLM "Software\Classes\Applications\${PRODUCT_EXE}\SupportedTypes"
+  ${EndIf}
 !endif
   !insertmacro MacroAllExtensions RegisterExtensionMacro
 @BUILD_SKINS_TRUE@   !insertmacro MacroSkinExtensions RegisterSkinExtensionMacro
 
   ; Add VLC to "App Paths" to run VLC from ShellExecute/ShellExecuteEx/run dialog without giving a full path
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\${PRODUCT_EXE}" "" "$INSTDIR\${PRODUCT_EXE}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\${PRODUCT_EXE}" "Path" "$INSTDIR"
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\App Paths\${PRODUCT_EXE}" "" "" "$INSTDIR\${PRODUCT_EXE}"
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\App Paths\${PRODUCT_EXE}" "" "Path" "$INSTDIR"
 
   ; Windows default programs Registration
   ; Vista and above detection
   ${If} ${AtLeastWinVista}
-    WriteRegStr HKLM "Software\RegisteredApplications" "${PRODUCT_PROGID}" "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities"
-    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities" "ApplicationName" "${PRODUCT_NAME}"
-    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities" "ApplicationDescription" "${PRODUCT_DESCRIPTION}"
-    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}" "" "${PRODUCT_NAME}"
+    !insertmacro RegSharedStr "Software\RegisteredApplications" "${PRODUCT_PROGID}" "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities"
+    !insertmacro RegOwnStr "Software\Clients\Media\${PRODUCT_PROGID}" "Capabilities" "ApplicationName" "${PRODUCT_NAME}"
+    !insertmacro RegOwnStr "Software\Clients\Media\${PRODUCT_PROGID}" "Capabilities" "ApplicationDescription" "${PRODUCT_DESCRIPTION}"
+    !insertmacro RegOwnStr "Software\Clients\Media\${PRODUCT_PROGID}" "" "" "${PRODUCT_NAME}"
 !if "${PRODUCT_PROGID}" == "VLC"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "HideIconsCommand" "$\"$INSTDIR\spad-setup.exe$\" /HideIcons /S"
     WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\InstallInfo" "ShowIconsCommand" "$\"$INSTDIR\spad-setup.exe$\" /ShowIcons /S"
@@ -489,106 +499,50 @@ SectionGroupEnd
 !endif
 
 
+; redesign: brand layer, one AutoPlay handler: this app's value in the shared event key EVENT and
+; its own handler key (registry.nsh)
+!macro AutoplayHandler EVENT HANDLER ACTION PROGID
+  !insertmacro RegSharedStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\${EVENT}" "${PRODUCT_PROGID}${HANDLER}" ""
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "Action" "${ACTION}"
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "InvokeProgID" "${PRODUCT_PROGID}.${PROGID}"
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "InvokeVerb" "Open"
+  !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
+!macroend
+
+; redesign: brand layer, one AutoPlay ProgID (its own class key); ARGS: the command line after the exe
+!macro AutoplayProgID PROGID DESCRIPTION ARGS
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}.${PROGID}" "" "" "${PRODUCT_PROGID} ${DESCRIPTION}"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}.${PROGID}" "shell" "" "Open"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}.${PROGID}" "shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" ${ARGS}'
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}.${PROGID}" "DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+!macroend
+
 ${MementoSection} "$(Name_Section05)" SEC05
   SectionIn 1 2 3
-  WriteRegStr HKCR "AudioCD\shell\PlayWith${PRODUCT_PROGID}" "" "$(ContextMenuEntry_PlayWith)"
-  WriteRegStr HKCR "AudioCD\shell\PlayWith${PRODUCT_PROGID}\command" "" \
+  ; the verb is an own key under the shared AudioCD\shell and DVD\shell
+  !insertmacro RegClassesOwnStr "AudioCD\shell\PlayWith${PRODUCT_PROGID}" "" "" "$(ContextMenuEntry_PlayWith)"
+  !insertmacro RegClassesOwnStr "AudioCD\shell\PlayWith${PRODUCT_PROGID}" "command" "" \
     '"$INSTDIR\${PRODUCT_EXE}" --started-from-file cdda:///%1'
-  WriteRegStr HKCR "DVD\shell\PlayWith${PRODUCT_PROGID}" "" "$(ContextMenuEntry_PlayWith)"
-  WriteRegStr HKCR "DVD\shell\PlayWith${PRODUCT_PROGID}\command" "" \
+  !insertmacro RegClassesOwnStr "DVD\shell\PlayWith${PRODUCT_PROGID}" "" "" "$(ContextMenuEntry_PlayWith)"
+  !insertmacro RegClassesOwnStr "DVD\shell\PlayWith${PRODUCT_PROGID}" "command" "" \
     '"$INSTDIR\${PRODUCT_EXE}" --started-from-file dvd:///%1'
 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayDVDMovieOnArrival" "${PRODUCT_PROGID}PlayDVDMovieOnArrival" ""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDMovieOnArrival" "Action" "$(Action_OnArrivalDVD)"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDMovieOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDMovieOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.DVDMovie"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDMovieOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDMovieOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
+  !insertmacro AutoplayHandler PlayDVDMovieOnArrival PlayDVDMovieOnArrival "$(Action_OnArrivalDVD)" DVDMovie
+  !insertmacro AutoplayHandler PlayCDAudioOnArrival PlayCDAudioOnArrival "$(Action_OnArrivalAudioCD)" CDAudio
+  !insertmacro AutoplayHandler PlayVideoCDMovieOnArrival PlayVCDMovieOnArrival "$(Action_OnArrivalVCDMovie)" VCDMovie
+  !insertmacro AutoplayHandler PlaySuperVideoCDMovieOnArrival PlaySVCDMovieOnArrival "$(Action_OnArrivalSVCDMovie)" SVCDMovie
+  !insertmacro AutoplayHandler PlayDVDAudioOnArrival PlayDVDAudioOnArrival "$(Action_OnArrivalDVDAudio)" OPENFolder
+  !insertmacro AutoplayHandler PlayVideoFilesOnArrival PlayVideoFilesOnArrival "$(Action_OnArrivalVideoFiles)" OPENFolder
+  !insertmacro AutoplayHandler PlayMusicFilesOnArrival PlayMusicFilesOnArrival "$(Action_OnArrivalMusicFiles)" OPENFolder
+  !insertmacro AutoplayHandler PlayBlurayOnArrival PlayBlurayOnArrival "$(Action_OnArrivalBluray)" Bluray
 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayCDAudioOnArrival" "${PRODUCT_PROGID}PlayCDAudioOnArrival" ""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayCDAudioOnArrival" "Action" "$(Action_OnArrivalAudioCD)"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayCDAudioOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayCDAudioOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.CDAudio"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayCDAudioOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayCDAudioOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayVideoCDMovieOnArrival" "${PRODUCT_PROGID}PlayVCDMovieOnArrival" ""
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVCDMovieOnArrival" "Action" "$(Action_OnArrivalVCDMovie)"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVCDMovieOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVCDMovieOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.VCDMovie"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVCDMovieOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVCDMovieOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlaySuperVideoCDMovieOnArrival" "${PRODUCT_PROGID}PlaySVCDMovieOnArrival" ""
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlaySVCDMovieOnArrival" "Action" "$(Action_OnArrivalSVCDMovie)"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlaySVCDMovieOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlaySVCDMovieOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.SVCDMovie"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlaySVCDMovieOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlaySVCDMovieOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayDVDAudioOnArrival" "${PRODUCT_PROGID}PlayDVDAudioOnArrival" ""
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDAudioOnArrival" "Action" "$(Action_OnArrivalDVDAudio)"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDAudioOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDAudioOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.OPENFolder"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDAudioOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDAudioOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayVideoFilesOnArrival" "${PRODUCT_PROGID}PlayVideoFilesOnArrival" ""
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival" "Action" "$(Action_OnArrivalVideoFiles)"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.OPENFolder"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayMusicFilesOnArrival" "${PRODUCT_PROGID}PlayMusicFilesOnArrival" ""
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival" "Action" "$(Action_OnArrivalMusicFiles)"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.OPENFolder"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayBlurayOnArrival" "${PRODUCT_PROGID}PlayBlurayOnArrival" ""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival" "Action" "$(Action_OnArrivalBluray)"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival" "DefaultIcon" '"$INSTDIR\${PRODUCT_EXE}",0'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival" "InvokeProgID" "${PRODUCT_PROGID}.Bluray"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival" "InvokeVerb" "Open"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
-
-  WriteRegStr HKCR "${PRODUCT_PROGID}.DVDMovie" "" "${PRODUCT_PROGID} DVD Movie"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.DVDMovie\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.DVDMovie\shell\Open\command" "" \
-    '"$INSTDIR\${PRODUCT_EXE}" --started-from-file dvd:///%1'
-  WriteRegStr HKCR "${PRODUCT_PROGID}.DVDMovie\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
-
-  WriteRegStr HKCR "${PRODUCT_PROGID}.CDAudio" "" "${PRODUCT_PROGID} CD Audio"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.CDAudio\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.CDAudio\shell\Open\command" "" \
-    '"$INSTDIR\${PRODUCT_EXE}" --started-from-file cdda:///%1'
-  WriteRegStr HKCR "${PRODUCT_PROGID}.CDAudio\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
-
-  WriteRegStr HKCR "${PRODUCT_PROGID}.VCDMovie" "" "${PRODUCT_PROGID} VCD Movie"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.VCDMovie\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.VCDMovie\shell\Open\command" "" \
-     '"$INSTDIR\${PRODUCT_EXE}" --started-from-file vcd:///%1'
-  WriteRegStr HKCR "${PRODUCT_PROGID}.VCDMovie\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
-
-  WriteRegStr HKCR "${PRODUCT_PROGID}.SVCDMovie" "" "${PRODUCT_PROGID} SVCD Movie"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.SVCDMovie\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.SVCDMovie\shell\Open\command" "" \
-     '"$INSTDIR\${PRODUCT_EXE}" --started-from-file vcd:///%1'
-  WriteRegStr HKCR "${PRODUCT_PROGID}.SVCDMovie\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
-
-  WriteRegStr HKCR "${PRODUCT_PROGID}.OPENFolder" "" "${PRODUCT_PROGID} Play content"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.OPENFolder\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.OPENFolder\shell\Open\command" "" \
-     '"$INSTDIR\${PRODUCT_EXE}" %1'
-  WriteRegStr HKCR "${PRODUCT_PROGID}.OPENFolder\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
-
-  WriteRegStr HKCR "${PRODUCT_PROGID}.Bluray" "" "${PRODUCT_PROGID} Bluray"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.Bluray\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}.Bluray\shell\Open\command" "" \
-    '"$INSTDIR\${PRODUCT_EXE}" --started-from-file bluray:///%1'
-  WriteRegStr HKCR "${PRODUCT_PROGID}.Bluray\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+  !insertmacro AutoplayProgID DVDMovie "DVD Movie" "--started-from-file dvd:///%1"
+  !insertmacro AutoplayProgID CDAudio "CD Audio" "--started-from-file cdda:///%1"
+  !insertmacro AutoplayProgID VCDMovie "VCD Movie" "--started-from-file vcd:///%1"
+  !insertmacro AutoplayProgID SVCDMovie "SVCD Movie" "--started-from-file vcd:///%1"
+  !insertmacro AutoplayProgID OPENFolder "Play content" "%1"
+  !insertmacro AutoplayProgID Bluray "Bluray" "--started-from-file bluray:///%1"
 
 ${MementoSectionEnd}
 
@@ -612,7 +566,11 @@ SectionGroupEnd
 ${MementoSection} "$(Name_Section07)" SEC07
   SectionIn 1 3
   !insertmacro MacroAllExtensions AddContextMenu
+!if "${PRODUCT_PROGID}" != "VLC"
+  !insertmacro ConeAddDirectoryContextMenu
+!else
   !insertmacro AddContextMenuExt "Directory"
+!endif
 ${MementoSectionEnd}
 
 ${MementoUnselectedSection} "$(Name_Section08)" SEC08
@@ -865,32 +823,27 @@ FunctionEnd
 ;; End function
 Section -Post
   WriteUninstaller "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallDir" $INSTDIR
-  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "Version" "${VERSION}"
-  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\${PRODUCT_EXE}"
+  !insertmacro RegOwnStr "${PRODUCT_DIR_REGKEY}" "" "InstallDir" "$INSTDIR"
+  !insertmacro RegOwnStr "${PRODUCT_DIR_REGKEY}" "" "Version" "${VERSION}"
+  !insertmacro RegOwnStr "${PRODUCT_DIR_REGKEY}" "" "" "$INSTDIR\${PRODUCT_EXE}"
 
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "DisplayName" "${PRODUCT_DISPLAY_NAME}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "InstallLocation" "$INSTDIR"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "DisplayIcon" "$INSTDIR\${PRODUCT_EXE}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "DisplayVersion" "${PRODUCT_VERSION}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "URLInfoAbout" "${PRODUCT_WEB_SITE}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "Publisher" "${PRODUCT_PUBLISHER}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "VersionMajor"  "@BRAND_VERSION_MAJOR@"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "VersionMinor" "@BRAND_VERSION_MINOR@"
+  ; the uninstall key is ${PRODUCT_UNINST_ROOT_KEY} (HKLM)
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "DisplayName" "${PRODUCT_DISPLAY_NAME}"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "InstallLocation" "$INSTDIR"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "DisplayIcon" "$INSTDIR\${PRODUCT_EXE}"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "DisplayVersion" "${PRODUCT_VERSION}"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "Publisher" "${PRODUCT_PUBLISHER}"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "VersionMajor" "@BRAND_VERSION_MAJOR@"
+  !insertmacro RegOwnStr "${PRODUCT_UNINST_KEY}" "" "VersionMinor" "@BRAND_VERSION_MINOR@"
 !if "${PRODUCT_PROGID}" != "VLC"
   ; redesign: brand layer, the size Settings > Apps shows (KB)
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-  WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "EstimatedSize" $0
+  !insertmacro RegOwnDWORD "${PRODUCT_UNINST_KEY}" "" "EstimatedSize" $0
+  ; the last recorded write (the language and Memento's choices that follow go into the own keys
+  ; ${PRODUCT_DIR_REGKEY} and the uninstall key, which the record removes whole)
+  !insertmacro ConeRegCloseRecord
 !endif
 SectionEnd
 
@@ -902,10 +855,19 @@ Section "un.$(Name_Section91)" SEC91
   SectionIn 1 2 3 RO
   SetShellVarContext all
 
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, exactly the registry keys and values the installer recorded
+  ; (helpers/registry.nsh, INSTALLER_NOTES.md section 7); no key is removed by name
+  Call un.ConeRegRemove
+  ; then the values older Cone installers left without a record (never a key)
+  !insertmacro MacroAllExtensions UnRegisterExtensionSection
+  !insertmacro MacroSkinExtensions UnRegisterExtensionSection
+!else
   !insertmacro MacroAllExtensions DeleteContextMenu
   !insertmacro MacroAllExtensions UnRegisterExtensionSection
   !insertmacro MacroSkinExtensions UnRegisterExtensionSection
   !insertmacro DeleteContextMenuExt "Directory"
+!endif
 
 !ifdef INSTALL_ACTIVEX
   ;remove activex plugin
@@ -970,6 +932,8 @@ Section "un.$(Name_Section91)" SEC91
   DeleteRegKey HKLM Software\VideoLAN
 !endif
 
+  ; redesign: brand layer, the public profile's keys and values went with its record above
+!if "${PRODUCT_PROGID}" == "VLC"
   DeleteRegKey HKCR Applications\${PRODUCT_EXE}
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\${PRODUCT_EXE}"
   DeleteRegKey HKCR AudioCD\shell\PlayWith${PRODUCT_PROGID}
@@ -988,11 +952,6 @@ Section "un.$(Name_Section91)" SEC91
   DeleteRegKey HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival
   DeleteRegValue HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayMusicFilesOnArrival" "${PRODUCT_PROGID}PlayMusicFilesOnArrival"
   DeleteRegKey HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival
-!if "${PRODUCT_PROGID}" != "VLC"
-  ; redesign: brand layer, the Blu-ray handler the installer adds (VLC's uninstaller leaves it)
-  DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\PlayBlurayOnArrival" "${PRODUCT_PROGID}PlayBlurayOnArrival"
-  DeleteRegKey HKLM Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival
-!endif
 
   DeleteRegKey HKLM Software\Clients\Media\${PRODUCT_PROGID}
   DeleteRegValue HKLM "Software\RegisteredApplications" "${PRODUCT_PROGID}"
@@ -1005,13 +964,12 @@ Section "un.$(Name_Section91)" SEC91
   DeleteRegKey HKCR "${PRODUCT_PROGID}.Bluray"
 
 
-!if "${PRODUCT_PROGID}" == "VLC"
   DeleteRegKey HKLM \
     "SOFTWARE\MozillaPlugins\@videolan.org/vlc,version=${VLC_VERSION}"
-!endif
 
   DeleteRegKey HKLM \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!endif
 
   Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
 !if "${PRODUCT_PROGID}" != "VLC"
@@ -1021,8 +979,10 @@ Section "un.$(Name_Section91)" SEC91
 !endif
 !endif
 
+!if "${PRODUCT_PROGID}" == "VLC"
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+!endif
   SetAutoClose true
 SectionEnd
 
