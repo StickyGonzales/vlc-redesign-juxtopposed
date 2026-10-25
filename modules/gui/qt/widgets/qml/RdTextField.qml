@@ -29,8 +29,25 @@ T.TextField {
 
     readonly property SystemPalette rdPalette: VLCStyle.palette
 
+    // the value the field stands for, when it has one (a setting): a text that differs from it
+    // and was written while the field is not being typed in comes from an accessibility tool (UI
+    // Automation's Value pattern sets `text` directly, without focus, so the edit never
+    // finishes); it ends the edit (editingFinished()) as leaving the field does. Checked once the
+    // bindings have settled, so the value's own updates of `text` never count
+    property var committedText: undefined
+
     readonly property bool _keyboardFocus: activeFocus && (focusReason === Qt.TabFocusReason
                                                            || focusReason === Qt.BacktabFocusReason)
+
+    function _takeOutsideText() {
+        if (!activeFocus && !readOnly && committedText !== undefined && text !== String(committedText))
+            editingFinished()
+    }
+
+    onTextChanged: {
+        if (!activeFocus && committedText !== undefined)
+            Qt.callLater(_takeOutsideText)
+    }
 
     implicitWidth: VLCStyle.dp(240)
     implicitHeight: VLCStyle.dp(37)
