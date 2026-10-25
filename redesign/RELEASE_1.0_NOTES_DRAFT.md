@@ -16,7 +16,7 @@ RENAME_CONE_PLAYER.md R6) is:
 - [ ] Known issues below rechecked on that build: drop any that are fixed (the background error after closing Settings is carried over from 0.2.0 unchecked), add any new ones.
 - [ ] Settings from a beta zip, checked on Windows:
   - **zip to zip** (copy the `portable` folder): keeps everything, as in 0.2.0;
-  - **beta zip to installer:** the installed app uses `%APPDATA%\Cone`, not the zip's `portable` folder, so it starts fresh. The text below says so. If a "copy your portable folder to `%APPDATA%\Cone`" step is wanted instead, test it first.
+  - **beta zip to installer:** the installed app uses `%APPDATA%\Cone`, not the zip's `portable` folder, so it starts fresh. The text below says so (a settings import from the beta zip was cancelled by StickyGonzales, 2026-10-25).
 - [ ] README from `wip/readme-1.0` merged (download links point to the `v1.0.0` release).
 - [ ] Not a pre-release this time (it leaves beta); the commit in the license line filled in.
 
