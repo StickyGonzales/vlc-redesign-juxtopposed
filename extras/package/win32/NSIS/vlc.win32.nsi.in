@@ -415,6 +415,7 @@ skip_uninstall32_cleanup:
   ; redesign: brand layer, the record of the registry keys and values the installer adds, which
   ; the uninstaller removes (helpers/registry.nsh, INSTALLER_NOTES.md section 7)
   !insertmacro ConeRegOpenRecord
+  Call ConeRegAdoptOwnKeys
 !endif
 
   ; Add VLC to "recommended programs" for the following extensions
@@ -508,6 +509,11 @@ SectionGroupEnd
   !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "InvokeProgID" "${PRODUCT_PROGID}.${PROGID}"
   !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "InvokeVerb" "Open"
   !insertmacro RegOwnStr "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}${HANDLER}" "" "Provider" "${PRODUCT_PUBLISHER} ${PRODUCT_NAME}"
+!macroend
+
+; redesign: brand layer, uninstall: this app's value in the shared event key EVENT (a value only)
+!macro ConeUnAutoplayEventValue EVENT HANDLER
+  DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\EventHandlers\${EVENT}" "${PRODUCT_PROGID}${HANDLER}"
 !macroend
 
 ; redesign: brand layer, one AutoPlay ProgID (its own class key); ARGS: the command line after the exe
@@ -751,6 +757,15 @@ Function PageLeaveReinstall
 
     ${If} $PreviousVersionState == "same"
 
+!if "${PRODUCT_PROGID}" != "VLC"
+      ; redesign: brand layer, an install without a registry record was made by an older
+      ; installer, whose uninstaller removes keys that are not its own (INSTALLER_NOTES.md
+      ; section 7): reinstall first, so this version's uninstaller does it
+      ${IfNot} ${FileExists} "$INSTDIR\${CONE_REG_RECORD}"
+        MessageBox MB_OK|MB_ICONINFORMATION "This ${PRODUCT_NAME} was installed by an older installer. Choose $\"$(Reinstall_OptionComponents)$\" first; then uninstall ${PRODUCT_NAME} from Settings > Apps." /SD IDOK
+        Abort
+      ${EndIf}
+!endif
       Call RunUninstaller
       Quit
 
@@ -859,9 +874,19 @@ Section "un.$(Name_Section91)" SEC91
   ; redesign: brand layer, exactly the registry keys and values the installer recorded
   ; (helpers/registry.nsh, INSTALLER_NOTES.md section 7); no key is removed by name
   Call un.ConeRegRemove
-  ; then the values older Cone installers left without a record (never a key)
+  ; then the values older Cone installers left without a record (never a key): Open with, the
+  ; AutoPlay events and Default apps
   !insertmacro MacroAllExtensions UnRegisterExtensionSection
   !insertmacro MacroSkinExtensions UnRegisterExtensionSection
+  !insertmacro ConeUnAutoplayEventValue PlayDVDMovieOnArrival PlayDVDMovieOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlayCDAudioOnArrival PlayCDAudioOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlayVideoCDMovieOnArrival PlayVCDMovieOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlaySuperVideoCDMovieOnArrival PlaySVCDMovieOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlayDVDAudioOnArrival PlayDVDAudioOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlayVideoFilesOnArrival PlayVideoFilesOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlayMusicFilesOnArrival PlayMusicFilesOnArrival
+  !insertmacro ConeUnAutoplayEventValue PlayBlurayOnArrival PlayBlurayOnArrival
+  DeleteRegValue HKLM "Software\RegisteredApplications" "${PRODUCT_PROGID}"
 !else
   !insertmacro MacroAllExtensions DeleteContextMenu
   !insertmacro MacroAllExtensions UnRegisterExtensionSection
