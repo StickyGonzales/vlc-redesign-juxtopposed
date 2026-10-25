@@ -104,6 +104,18 @@ QString normalizedPath(const QString& path)
 #endif
 }
 
+// the MRL VLC and the media library give a local file (vlc_path2uri encodes the sub-delims
+// "( ) ' ! & , ; =" that QUrl leaves as they are), so the library finds the episode
+QString episodeMrl(const QString& path)
+{
+    char* uri = vlc_path2uri(qtu(QDir::toNativeSeparators(path)), "file");
+    if (!uri)
+        return {};
+    const QString mrl = QString::fromUtf8(uri);
+    free(uri);
+    return mrl;
+}
+
 QString localPath(const QUrl& url)
 {
     if (!url.isLocalFile())
@@ -182,14 +194,9 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
             // between two episodes the player stops for a moment too: only a stop that lasts counts
             QTimer::singleShot(300, this, &RdUpNext::onStopped);
         }
-        // the previous episode had no subtitles: neither has the next one
-        if (m_carrySpuOff && m_player->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING)
-        {
-            m_carrySpuOff = false;
-            vlc_player_t* player = m_player->getPlayer();
-            vlc_player_locker lock{ player };
-            vlc_player_UnselectTrackCategory(player, SPU_ES);
-        }
+        // the episode loaded paused under "Still watching?" plays (Space, the play button)
+        if (m_stillOnPaused && m_player->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING)
+            leaveStillWatching();
         updateCard();
     });
     connect(m_player, &PlayerController::ABLoopStateChanged, this, &RdUpNext::evaluate);
@@ -233,6 +240,10 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
                 self->loadStore(*data);
         }, Qt::QueuedConnection);
     });
+
+    // a media already playing when the interface starts
+    if (m_player->hasInput())
+        onInputChanged(true);
 }
 
 RdUpNext::~RdUpNext()
@@ -240,13 +251,17 @@ RdUpNext::~RdUpNext()
     qApp->removeEventFilter(this);
     m_scanPool.waitForDone();
     m_storePool.waitForDone();
+    // ends the thumbnailer thread; the callback of a request in flight runs before this
+    // returns, and its result (queued to this object) is dropped with it
     if (m_preparser)
         vlc_preparser_Delete(m_preparser);
+    if (m_thumbReq)
+        vlc_preparser_req_Release(m_thumbReq);
 }
 
 // ------------------------------------------------------------------------------- settings
 
-void RdUpNext::readSettings()
+bool RdUpNext::readSettings()
 {
     const int mode = int(config_GetInt("qt-autoplay-next"));
     const int countdown = int(config_GetInt("qt-autoplay-countdown"));
@@ -254,18 +269,22 @@ void RdUpNext::readSettings()
     const bool still = config_GetInt("qt-autoplay-still-watching") != 0;
     const int clampedCountdown = (countdown == 5 || countdown == 15) ? countdown : 10;
     if (mode == m_mode && clampedCountdown == m_countdown && cardPoint == m_cardPoint && still == m_stillWatching)
-        return;
+        return false;
     m_mode = std::clamp(mode, int(ModeOff), int(ModeAlways));
     m_countdown = clampedCountdown;
     m_cardPoint = cardPoint;
     m_stillWatching = still;
     emit settingsChanged();
+    return true;
 }
 
 void RdUpNext::reloadSettings()
 {
+    // RdEffects::changed comes with every effect applied (a slider drag): only a change of
+    // these options does something
     const int mode = m_mode;
-    readSettings();
+    if (!readSettings())
+        return;
     if (mode != m_mode)
         startDetection();
     else
@@ -291,7 +310,8 @@ bool RdUpNext::showEnabled() const
     const auto it = m_answers.constFind(showKey());
     if (it != m_answers.cend())
         return it->yes;
-    return m_mode == ModeAlways;
+    // Always: on, once the stored answers are known (a stored "no" wins)
+    return m_mode == ModeAlways && m_storeLoaded;
 }
 
 QString RdUpNext::nextCode() const
@@ -326,7 +346,12 @@ QUrl RdUpNext::nextUrl() const
 {
     if (m_nextIndex < 0)
         return {};
-    return QUrl::fromLocalFile(m_show.episodes.at(m_nextIndex).path);
+    return QUrl(episodeMrl(m_show.episodes.at(m_nextIndex).path));
+}
+
+QString RdUpNext::cardLine() const
+{
+    return (m_cardVisible && m_cardMode == CardStillWatching && !m_stillLine.isEmpty()) ? m_stillLine : nextLine();
 }
 
 bool RdUpNext::nextIsNewSeason() const
@@ -370,20 +395,18 @@ void RdUpNext::onInputChanged(bool hasInput)
         // the queue moved on to the autoplay item: it is the episode playing now
         m_currentIsAutoplay = true;
         ++m_autoStreak;
-        m_carrySpuOff = m_queuedSpuOff;
         clearQueued();
     }
     else
     {
         m_currentIsAutoplay = false;
-        m_carrySpuOff = false;
         // a file the user opened on its own (added alone and played at once): a fresh queue
-        if (input && input == m_lastSingleAdd)
+        if (input && input == m_lastSingleAdd.get())
             m_userQueue = false;
         m_autoStreak = 0;
         m_stillPending = false;
     }
-    m_lastSingleAdd = nullptr;
+    m_lastSingleAdd = SharedInputItem();
     m_cancelled = false;
     m_promptDone = false;
     setPromptVisible(false);
@@ -392,7 +415,8 @@ void RdUpNext::onInputChanged(bool hasInput)
     m_creditsStartMs = -1;
 
     // "Still watching?" stays on the next episode, which starts paused under it
-    if (m_stillPending && fromAutoplay)
+    m_stillOnPaused = m_stillPending && fromAutoplay;
+    if (m_stillOnPaused)
         setCard(true, CardStillWatching);
     else
         setCard(false, CardNext);
@@ -409,12 +433,12 @@ void RdUpNext::startDetection()
     m_showKnown = false;
     m_show = rdepisode::Show();
     m_nextIndex = -1;
+    emit stateChanged();
+    emit nextChanged();
 
     if (m_mode == ModeOff || m_path.isEmpty())
     {
         evaluate();
-        emit stateChanged();
-        emit nextChanged();
         return;
     }
 
@@ -498,8 +522,8 @@ bool RdUpNext::queueIsCones() const
     const size_t count = vlc_playlist_Count(playlist);
     for (size_t i = size_t(current) + 1; i < count; ++i)
     {
-        vlc_playlist_item_t* item = vlc_playlist_Get(playlist, i);
-        if (vlc_playlist_item_GetMedia(item) != m_queuedInput)
+        // Cone's items only (the waiting one, or one queued before and gone back to with Previous)
+        if (!isOwn(vlc_playlist_item_GetMedia(vlc_playlist_Get(playlist, i))))
             return false;
     }
     return true;
@@ -521,7 +545,8 @@ void RdUpNext::evaluate()
             active = false;
     }
 
-    if (active && m_mode == ModeAlways && !hasAnswer())
+    // Always remembers "yes" for a new show, once the stored answers are known (a stored "no" wins)
+    if (active && m_mode == ModeAlways && m_storeLoaded && !hasAnswer())
         setAnswer(true);
 
     const bool enabled = active && showEnabled();
@@ -533,7 +558,7 @@ void RdUpNext::evaluate()
     const bool wantItem = next >= 0 && m_blockedReason.isEmpty() && !m_cancelled;
     if (wantItem)
     {
-        const QUrl url = QUrl::fromLocalFile(m_show.episodes.at(next).path);
+        const QUrl url = nextUrl();
         if (!queuedPresent() || m_queuedUrl != url)
         {
             removeQueued();
@@ -576,7 +601,19 @@ void RdUpNext::updateCard()
     }
 
     if (m_cardMode == CardStillWatching && m_cardVisible)
+    {
+        // over the paused episode it waits for an answer (or for playback, above)
+        if (m_stillOnPaused)
+            return;
+        // in the episode before it: a seek back out of the end means the user is there
+        const VLCDuration length = m_player->getLength();
+        const VLCTime time = m_player->getTime();
+        const qint64 limit = (m_cardPoint == 1 && m_creditsStartMs > 0)
+                ? m_creditsStartMs : (length.valid() ? length.toMilliseconds() - qint64(m_countdown) * 1000 : 0);
+        if (time.valid() && time.toMilliseconds() < limit - 1000)
+            leaveStillWatching();
         return;
+    }
 
     const bool armed = m_nextIndex >= 0 && m_blockedReason.isEmpty() && !m_cancelled && queuedPresent();
     if (!armed || !started)
@@ -692,9 +729,32 @@ void RdUpNext::setCard(bool visible, int mode)
         refreshQueued();
     if (visible == m_cardVisible && mode == m_cardMode)
         return;
+    // "Still watching?" keeps naming the episode it holds back, also once that one is loaded
+    if (visible && mode == CardStillWatching && !(m_cardVisible && m_cardMode == CardStillWatching))
+        m_stillLine = nextLine();
+    if (!visible || mode != CardStillWatching)
+    {
+        m_stillLine.clear();
+        m_stillOnPaused = false;
+    }
     m_cardVisible = visible;
     m_cardMode = mode;
     emit cardChanged();
+    emit nextChanged();
+}
+
+void RdUpNext::leaveStillWatching()
+{
+    m_autoStreak = 0;
+    m_stillPending = false;
+    m_stillOnPaused = false;
+    setCard(false, CardNext);
+    if (m_queuedPaused)
+    {
+        removeQueued();
+        queueNext(false);
+    }
+    evaluate();
 }
 
 void RdUpNext::setSecondsLeft(int seconds)
@@ -742,13 +802,10 @@ void RdUpNext::cancel()
 
 void RdUpNext::keepWatching()
 {
-    m_autoStreak = 0;
-    m_stillPending = false;
-    setCard(false, CardNext);
-    if (m_player->getPlayingState() == PlayerController::PLAYING_STATE_PAUSED)
+    const bool onPaused = m_stillOnPaused;
+    leaveStillWatching();
+    if (onPaused && m_player->getPlayingState() == PlayerController::PLAYING_STATE_PAUSED)
         m_playlist->togglePlayPause();
-    else
-        evaluate();
 }
 
 void RdUpNext::stopWatching()
@@ -804,9 +861,13 @@ QStringList RdUpNext::itemOptions(bool startPaused) const
     const QString audio = selectedLanguage(player, AUDIO_ES, nullptr);
     if (!audio.isEmpty())
         options << QStringLiteral(":audio-language=") + audio;
-    const QString sub = selectedLanguage(player, SPU_ES, nullptr);
+    bool subSelected = false;
+    const QString sub = selectedLanguage(player, SPU_ES, &subSelected);
     if (!sub.isEmpty())
         options << QStringLiteral(":sub-language=") + sub;
+    // subtitles turned off in an episode that has some: the next one starts without them
+    else if (!subSelected && m_player->getSubtitleTracks()->getCount() > 0)
+        options << QStringLiteral(":sub-language=none");
     if (startPaused)
         options << QStringLiteral(":start-paused");
     return options;
@@ -817,50 +878,96 @@ void RdUpNext::queueNext(bool startPaused)
     if (m_nextIndex < 0)
         return;
     const rdepisode::Episode& next = m_show.episodes.at(m_nextIndex);
-    const QUrl url = QUrl::fromLocalFile(next.path);
+    const QString mrl = episodeMrl(next.path);
+    if (mrl.isEmpty())
+        return;
+    const QByteArray mrl8 = mrl.toUtf8();
 
     vlc_playlist_t* playlist = m_playlist->getPlaylist().m_playlist;
     ssize_t current;
     {
         vlc_playlist_locker lock{ playlist };
         current = vlc_playlist_GetCurrentIndex(playlist);
+        if (current < 0)
+            return;
+        // Previous inside an autoplay run: the episode Cone queued before is still next, it is
+        // taken again instead of a second row
+        if (!startPaused && size_t(current) + 1 < vlc_playlist_Count(playlist))
+        {
+            input_item_t* after = vlc_playlist_item_GetMedia(vlc_playlist_Get(playlist, size_t(current) + 1));
+            if (isOwn(after) && after->psz_uri && mrl8 == after->psz_uri)
+            {
+                m_queued = SharedInputItem(after);
+                m_queuedInput = after;
+                m_queuedUrl = QUrl(mrl);
+                m_queuedPaused = false;
+                m_queuedOptions.clear();
+                emit queuedChanged();
+                return;
+            }
+        }
     }
-    if (current < 0)
-        return;
 
     m_queuedOptions = itemOptions(startPaused);
+    Media media;
     try
     {
-        m_queued = Media(url.toString(QUrl::FullyEncoded), next.fileName, m_queuedOptions);
+        media = Media(mrl, next.fileName, m_queuedOptions);
     }
     catch (const std::bad_alloc&)
     {
         return;
     }
-    m_queuedInput = m_queued.raw();
-    m_queuedUrl = url;
+    m_queued = SharedInputItem(media.raw());
+    m_queuedInput = media.raw();
+    m_queuedUrl = QUrl(mrl);
     m_queuedPaused = startPaused;
+    m_ownItems.append(m_queued);
     emit queuedChanged();
-
-    // the episode had no subtitles on: the next one starts without them too
-    bool spuSelected = false;
-    selectedLanguage(m_player->getPlayer(), SPU_ES, &spuSelected);
-    m_queuedSpuOff = !spuSelected;
 
     try
     {
-        m_playlist->insert(size_t(current) + 1, QVector<Media>{ m_queued }, false);
+        m_playlist->insert(size_t(current) + 1, QVector<Media>{ media }, false);
     }
     catch (const std::bad_alloc&)
     {
+        m_ownItems.removeLast();
         clearQueued();
     }
+}
+
+// forgets the inserted items that left the queue
+void RdUpNext::pruneOwnItems()
+{
+    if (m_ownItems.isEmpty())
+        return;
+    QVector<input_item_t*> present;
+    {
+        vlc_playlist_t* playlist = m_playlist->getPlaylist().m_playlist;
+        vlc_playlist_locker lock{ playlist };
+        const size_t count = vlc_playlist_Count(playlist);
+        for (size_t i = 0; i < count; ++i)
+            present.append(vlc_playlist_item_GetMedia(vlc_playlist_Get(playlist, i)));
+    }
+    m_ownItems.erase(std::remove_if(m_ownItems.begin(), m_ownItems.end(), [&present](const SharedInputItem& item) {
+        return !present.contains(item.get());
+    }), m_ownItems.end());
+}
+
+bool RdUpNext::isOwn(input_item_t* input) const
+{
+    if (!input)
+        return false;
+    for (const SharedInputItem& item : m_ownItems)
+        if (item.get() == input)
+            return true;
+    return false;
 }
 
 void RdUpNext::clearQueued()
 {
     const bool had = !m_queuedUrl.isEmpty();
-    m_queued = Media();
+    m_queued = SharedInputItem();
     m_queuedInput = nullptr;
     m_queuedUrl.clear();
     m_queuedPaused = false;
@@ -938,7 +1045,7 @@ void RdUpNext::onItemsAdded(size_t, const QVector<PlaylistItem>& items)
 {
     QVector<input_item_t*> foreign;
     for (const PlaylistItem& item : items)
-        if (item.inputItem() != m_queuedInput)
+        if (!isOwn(item.inputItem()))
             foreign.append(item.inputItem());
     if (foreign.isEmpty())
         return;
@@ -946,12 +1053,13 @@ void RdUpNext::onItemsAdded(size_t, const QVector<PlaylistItem>& items)
     if (foreign.size() > 1)
         m_userQueue = true;
     else
-        m_lastSingleAdd = foreign.first();
+        m_lastSingleAdd = SharedInputItem(foreign.first());
     evaluate();
 }
 
 void RdUpNext::onItemsRemoved(size_t, size_t)
 {
+    pruneOwnItems();
     if (m_ownRemovals > 0)
     {
         --m_ownRemovals;
@@ -977,6 +1085,7 @@ void RdUpNext::onItemsMovedOrReset()
     {
         // the queue was cleared: a new start
         m_userQueue = false;
+        m_ownItems.clear();
         clearQueued();
         return;
     }
@@ -1005,9 +1114,10 @@ void RdUpNext::markWatched(const QUrl& url)
 void RdUpNext::requestThumbnail()
 {
     ++m_thumbGeneration;
-    if (m_thumbReq && m_preparser)
+    if (m_thumbReq)
     {
         vlc_preparser_Cancel(m_preparser, m_thumbReq);
+        vlc_preparser_req_Release(m_thumbReq);
         m_thumbReq = nullptr;
     }
     if (!m_thumbnail.isEmpty())
@@ -1046,7 +1156,7 @@ void RdUpNext::requestThumbnail()
             return;
     }
 
-    const QByteArray mrl = QUrl::fromLocalFile(file.absoluteFilePath()).toString(QUrl::FullyEncoded).toUtf8();
+    const QByteArray mrl = episodeMrl(file.absoluteFilePath()).toUtf8();
     input_item_t* item = input_item_New(mrl.constData(), nullptr);
     if (!item)
         return;
@@ -1115,7 +1225,11 @@ void RdUpNext::onThumbnailDone(int generation, const QString& path)
 {
     if (generation != m_thumbGeneration)
         return;
-    m_thumbReq = nullptr;
+    if (m_thumbReq)
+    {
+        vlc_preparser_req_Release(m_thumbReq);
+        m_thumbReq = nullptr;
+    }
     if (path.isEmpty())
         return;
     m_thumbnail = QUrl::fromLocalFile(path);
@@ -1157,7 +1271,7 @@ void RdUpNext::loadStore(const QJsonObject& data)
         const QString choice = entry.value(QStringLiteral("choice")).toString();
         if (choice != QLatin1String("yes") && choice != QLatin1String("no"))
             continue;
-        // an answer given while the file was read wins
+        // an answer the user gave while the file was read wins
         if (m_answers.contains(it.key()))
             continue;
         Answer answer;
@@ -1166,12 +1280,23 @@ void RdUpNext::loadStore(const QJsonObject& data)
         answer.updated = entry.value(QStringLiteral("updated")).toString();
         m_answers.insert(it.key(), answer);
     }
+    m_storeLoaded = true;
+    // answers given before the file was read are written now, with the stored ones
+    if (m_storeDirty)
+        saveStore();
     emit storeChanged();
     evaluate();
 }
 
 void RdUpNext::saveStore()
 {
+    // writing before the file is read would lose the other shows
+    if (!m_storeLoaded)
+    {
+        m_storeDirty = true;
+        return;
+    }
+    m_storeDirty = false;
     QJsonObject shows;
     for (auto it = m_answers.cbegin(); it != m_answers.cend(); ++it)
     {

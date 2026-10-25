@@ -429,7 +429,7 @@ Item {
 
                         T.Label {
                             width: parent.width
-                            text: RdUpNext.nextLine
+                            text: RdUpNext.cardLine
                             elide: Text.ElideRight
                             color: VLCStyle.palette.rdFg2
                             font.family: VLCStyle.rd_fontFamily
