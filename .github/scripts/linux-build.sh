@@ -114,9 +114,11 @@ build()
     if [ "$VLC_BRAND" = public ] && [ -n "$BRAND_VERSION" ]; then
         brand+=(--with-brand-version="$BRAND_VERSION")
     fi
+    # a release build without run-time assertions, as the Windows build (extras/package/win32/
+    # build.sh -r): VLC's configure keeps them on by default, and a failed one ends the player
+    local extra=(--disable-debug)
     # public: no skins interface (Cone has only the redesign); the update checker is off on
     # Linux anyway (configure's default)
-    local extra=()
     if [ "$VLC_BRAND" = public ]; then extra+=(--disable-skins2); fi
 
     ./bootstrap
