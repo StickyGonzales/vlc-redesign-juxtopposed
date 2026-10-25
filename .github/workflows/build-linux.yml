@@ -74,13 +74,19 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      # the media library and libpostproc from VLC's contrib, kept while their recipes and the image
-      # stay the same
+      # the media library from VLC's contrib, kept while its recipe and the image stay the same
       - name: Cache the media library
         uses: actions/cache@v4
         with:
           path: contrib/linux-ml
-          key: contrib-linux-ml-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/medialibrary/*', 'contrib/src/sqlite/*', 'contrib/src/postproc/*', 'contrib/src/main.mak', 'contrib/bootstrap') }}
+          key: contrib-linux-ml-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/medialibrary/*', 'contrib/src/sqlite/*', 'contrib/src/main.mak', 'contrib/bootstrap') }}
+
+      # libpostproc from contrib's recipe (linux-build.sh build_postproc), kept the same way
+      - name: Cache libpostproc
+        uses: actions/cache@v4
+        with:
+          path: contrib/linux-pp
+          key: contrib-linux-pp-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/postproc/*', '.github/scripts/linux-build.sh') }}
 
       # Compiler cache, one per branch, as the Windows build's ("ccache-linux-public:<branch>:<commit>");
       # a branch without one starts from redesign's
