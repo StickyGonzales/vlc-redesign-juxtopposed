@@ -179,15 +179,8 @@ vlc_module_begin ()
     add_rgb("freetype-outline-color", 0x00000000, OUTLINE_COLOR_TEXT, NULL)
         change_integer_list( pi_color_values, ppsz_color_descriptions )
         change_safe()
-    /* redesign (Q8, 2026-10-25): Cone's subtitles are smaller (subsdec.c), and her 6:30 edge
-     * is about 6% of the font size: VLC's "Thick" (Decision 28: VLC's own sizes) */
-#ifdef VLC_BRAND_PUBLIC
-    add_integer_with_range( "freetype-outline-thickness", 6, 0, 50, OUTLINE_THICKNESS_TEXT,
-             NULL )
-#else
     add_integer_with_range( "freetype-outline-thickness", 4, 0, 50, OUTLINE_THICKNESS_TEXT,
              NULL )
-#endif
         change_integer_list( pi_outline_thickness, ppsz_outline_thickness )
         change_safe()
 
