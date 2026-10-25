@@ -15,6 +15,7 @@ NCPU=$(getconf _NPROCESSORS_ONLN)
 PREFIX=/usr
 STAGE=/build/stage
 CONTRIB_PREFIX=/build/contrib/linux-ml
+POSTPROC_PREFIX=/build/contrib/linux-pp
 
 ccache_setup()
 {
@@ -66,20 +67,40 @@ build_medialibrary()
 }
 
 # libpostproc for the "postproc" video filter (Settings > Performance > Video post-processing,
-# P8-16): the image's FFmpeg no longer ships it (FFmpeg 8 dropped libpostproc), VLC's contrib
-# builds the standalone one against the image's FFmpeg (static, inside the plugin)
+# P8-16): the image's FFmpeg no longer ships it (FFmpeg 8 dropped libpostproc). Built straight from
+# contrib's recipe (the standalone libpostproc at its pinned commit, with contrib's patches and
+# configure options) against the image's libavutil, static so it ends up inside the plugin; not
+# through contrib's make, which would also build all of FFmpeg's contrib dependencies
 build_postproc()
 {
-    if [ -f "$CONTRIB_PREFIX/lib/pkgconfig/libpostproc.pc" ]; then
-        echo "postproc: already built in $CONTRIB_PREFIX"
+    if [ -f "$POSTPROC_PREFIX/lib/pkgconfig/libpostproc.pc" ]; then
+        echo "postproc: already built in $POSTPROC_PREFIX"
         return
     fi
-    mkdir -p contrib/linux-ml-build
+    local url version
+    url=https://github.com/michaelni/libpostproc
+    version=$(sed -n 's/^POSTPROC_GITVERSION:=//p' contrib/src/postproc/rules.mak)
+    rm -rf contrib/linux-pp-build
+    mkdir -p contrib/linux-pp-build
     (
-        cd contrib/linux-ml-build
-        [ -f config.mak ] || ../bootstrap --prefix="$CONTRIB_PREFIX"
-        make -j"$NCPU" .postproc
+        cd contrib/linux-pp-build
+        git init -q
+        git fetch -q --depth 1 "$url" "$version"
+        git checkout -q FETCH_HEAD
+        patch -p1 < ../src/postproc/0001-force-using-external-libavutil.patch
+        patch -p1 < ../src/postproc/0002-add-missing-libavcodec-headers.patch
+        ./configure --prefix="$POSTPROC_PREFIX" --enable-static --disable-shared \
+            --cc="${CC:-gcc}" --disable-doc --disable-debug --disable-programs \
+            --disable-devices --disable-bsfs --disable-nvenc --disable-linux-perf \
+            --disable-network --disable-encoders --disable-muxers \
+            --target-os=linux --enable-pic --enable-pthreads --disable-autodetect \
+            --disable-avutil --enable-postproc \
+            $(command -v nasm > /dev/null || echo --disable-x86asm) \
+            || { tail -n 40 ffbuild/config.log; exit 1; }
+        make -j"$NCPU"
+        make install-libs install-headers
     )
+    rm -rf contrib/linux-pp-build
 }
 
 build()
@@ -101,6 +122,7 @@ build()
     ./bootstrap
     mkdir -p build-linux
     cd build-linux
+    PKG_CONFIG_PATH="$POSTPROC_PREFIX/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" \
     ../configure --prefix="$PREFIX" --with-contrib="$CONTRIB_PREFIX" \
         "${brand[@]}" "${extra[@]}" \
         || { tail -n 80 config.log; exit 1; }
