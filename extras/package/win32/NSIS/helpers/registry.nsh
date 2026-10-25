@@ -48,6 +48,11 @@ Var ConeRegTree3
     ${AndIf} ${FileExists} "$0\${CONE_REG_RECORD}"
       CopyFiles /SILENT "$0\${CONE_REG_RECORD}" "$INSTDIR\${CONE_REG_RECORD}"
     ${EndIf}
+  ${ElseIf} ${FileExists} "$INSTDIR\${CONE_REG_RECORD}"
+    ; no Cone install is registered: a record left in the folder (e.g. by an older uninstaller
+    ; that did not know it) describes keys that are gone, so it starts anew
+    SetFileAttributes "$INSTDIR\${CONE_REG_RECORD}" NORMAL
+    Delete "$INSTDIR\${CONE_REG_RECORD}"
   ${EndIf}
   FileOpen $ConeRegLog "$INSTDIR\${CONE_REG_RECORD}" a
   FileSeek $ConeRegLog 0 END
@@ -136,6 +141,54 @@ Function ConeRegOwnKey
   StrCpy $ConeRegTree2 $ConeRegTree1
   StrCpy $ConeRegTree1 $R9
   Pop $0
+FunctionEnd
+
+;; An earlier install of this app is present: its own keys are recorded (T lines) whether or not
+;; this install writes them again (fewer components, an older layout), so they all go on
+;; uninstall. Cone.<ext> ProgIDs are rewritten for every type by every install
+!macro _ConeRegAdoptKey KEY
+  StrCpy $R9 "${KEY}"
+  ClearErrors
+  EnumRegKey $0 HKLM "$R9" 0
+  ${IfNot} ${Errors}
+    FileWrite $ConeRegLog "T$\t$R9$\r$\n"
+  ${EndIf}
+!macroend
+
+Function ConeRegAdoptOwnKeys
+  ${If} $ConeRegAdopt != 1
+    Return
+  ${EndIf}
+  Push $R9
+  Push $0
+  !insertmacro _ConeRegAdoptKey "${PRODUCT_DIR_REGKEY}"
+  !insertmacro _ConeRegAdoptKey "${PRODUCT_UNINST_KEY}"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\App Paths\${PRODUCT_EXE}"
+  !insertmacro _ConeRegAdoptKey "Software\Clients\Media\${PRODUCT_PROGID}"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\Applications\${PRODUCT_EXE}"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\Directory\shell\PlayWith${PRODUCT_PROGID}"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\Directory\shell\AddToPlaylist${PRODUCT_PROGID}"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\AudioCD\shell\PlayWith${PRODUCT_PROGID}"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\DVD\shell\PlayWith${PRODUCT_PROGID}"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.DVDMovie"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.CDAudio"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.VCDMovie"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.SVCDMovie"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.OPENFolder"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.Bluray"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.MediaFile"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.vlt"
+  !insertmacro _ConeRegAdoptKey "Software\Classes\${PRODUCT_PROGID}.wsz"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDMovieOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayCDAudioOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVCDMovieOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlaySVCDMovieOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayDVDAudioOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayVideoFilesOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayMusicFilesOnArrival"
+  !insertmacro _ConeRegAdoptKey "Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\${PRODUCT_PROGID}PlayBlurayOnArrival"
+  Pop $0
+  Pop $R9
 FunctionEnd
 
 !macro _ConeRegOwnKey TREE SUBKEY

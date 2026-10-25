@@ -107,6 +107,8 @@ Function un.RegisterExtension
   ; 1.0: HKCR's merged view put the Open with value into the user's own .<ext>\OpenWithProgids
   ; when that key existed
   DeleteRegValue HKCU "Software\Classes\$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0"
+  ; and the HKLM one of a type an older install had ticked and this one did not
+  DeleteRegValue HKLM "Software\Classes\$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0"
   !insertmacro ConeUnRestoreDefault HKLM
   !insertmacro ConeUnRestoreDefault HKCU
   Pop $2
