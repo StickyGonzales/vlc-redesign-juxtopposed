@@ -627,3 +627,37 @@ All questions are decided. Nothing of this feature is built or merged before 1.0
 Then the independent review, qmlcheck and buildlists, one Linux sandbox run (every test in section 8 that Linux can do), and the Windows test of every row of section 8.
 
 **Branch and release (Decision 71):** all of U1 to U6 live on one feature branch of their own (`wip/up-next`), not merged into `wip/next-test` or `redesign` before 1.0 is released. After 1.0 the branch is brought up to date with `redesign`, built and tested on its own, and merged for 1.1. The 1.1 release notes and the README list it under "Cone extras (not part of Juxtopposed's design)".
+
+---
+
+## 13. Build notes (step 2, branch `wip/up-next`)
+
+**Status:** U1 to U6 are built. Two independent reviews ran and their findings are fixed. The Windows test steps for every matrix row are in `redesign/UP_NEXT_TEST.md`, with the Linux sandbox results next to them. The PlaybackSettingsPage header comment (section 11, last item) is fixed in the same commit as the sidebar row.
+
+**Files:**
+- `player/rd_up_next.{hpp,cpp}`: the controller.
+- `player/rd_episode_parser.{hpp,cpp}` and `tests/test_rd_episode_parser.cpp`: the parser and its test (470 checks).
+- `player/qml/RdUpNextCard.qml` and `RdShowPrompt.qml`: the card and the prompt.
+- `Player.qml`, `RdMiniPlayer.qml`, `QueueSidebar.qml`, `RdMiniQueue.qml`, `PlaybackSettingsPage.qml`, `RdLibraryRow.qml`, `RdLibraryPage.qml`, `SettingsPlaybackPage.qml`: the hookups.
+- `RdButton.qml`: a new `Toast` style, BG/A1 on a BG/A3 card, for Cancel and No.
+- `qt.cpp`, `rd_profile_settings.cpp`, `settings_catalog.cpp`, `mainui.cpp`: the options, profiles and registration.
+
+### Decisions (Claude)
+
+| | Decision |
+|---|---|
+| C1 | The autoplay item's MRL is built with `vlc_path2uri`, as VLC and the media library build it, so the library finds the episode (resume, watched, Continue Watching) in folders whose names hold `( ) ' ! & , ; =`. |
+| C2 | Languages carry as item options. An episode whose subtitles were turned off gives the next one `:sub-language=none`, but only when the episode has subtitle tracks, so a file without any does not turn the user's default off. These options are refreshed when the card appears, so a track changed during the episode counts. |
+| C3 | A "user-built queue" is anything after the current item that Cone did not insert. Cone remembers every item it inserted (held), so Previous inside an autoplay run takes the episode it queued before again instead of saying "You built the queue". |
+| C4 | Nothing is answered or written before `rd-shows.json` is read. Always only remembers "yes" for a new show once the stored answers are known, so a stored "no" wins. |
+| C5 | "Still watching?" counts a key press, a click or a wheel turn as "the user is there". After 3 episodes in a row without one, the card asks. A seek back out of the end, Keep watching, or Space on the paused episode closes it. The card keeps naming the episode it holds back. |
+| C6 | The Stop button and the end of the queue are told apart from the short stop between two episodes by a 300 ms check. A stop that lasts removes the waiting item, like Cancel (row 76). |
+| C7 | The card's place with subtitles on: VLC's text size is 6.25 % of the video height at 100 % (`STYLE_DEFAULT_REL_FONT_SIZE`), and a line is about 1.25 of it. The band is two such lines plus `sub-margin` plus the lift. |
+| C8 | The Up Next card fades in 150 ms. `MainCtx` has no Windows "Animation effects" flag on this branch, so the fade always runs (plan 7.2 asked it to follow that setting). |
+| C9 | The library "Up next" tag follows the item waiting in the queue (`RdUpNext.queuedUrl`). It is not shown while a guard blocks autoplay or after Cancel, because then nothing is up next. |
+
+### Known limits
+
+- **The "every episode within 50 to 200 % of the median length" rule (3.3) is not built.** The lengths of the other files are not known without parsing each one. The current file's own minimum (2 min, or 10 min for plain numbers) is checked.
+- **Demuxer default tracks:** `:sub-language=none` stops VLC's language and priority choice, but a subtitle track that the file marks as default (mp4, some mkv) is still picked by the core.
+- **Recording words:** the parser's recording words ("Recording", "Capture") also exclude a real show with such a word in its title (for example "The Capture S01E01"). This is the strict side of plan 3.3.
