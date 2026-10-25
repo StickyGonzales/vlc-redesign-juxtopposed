@@ -18,10 +18,10 @@
 
 // redesign (W6.4, video 13:07-13:20, Figma "Open network stream" 6216:13614):
 // modal dialog over the window (no dim, Decision 41). "Network URL" takes one link per line;
-// "Playlist Name (optional)" saves links to playlists (m3u, pls ...) as stream lists
-// under the library's Network and shows them there (RdStreamListSaver, P6-14), and the
-// other links as a media library playlist, instead of playing them (shown only when the
-// media library is available).
+// "Playlist Name (optional)" fills in from a playlist link's file name; links to playlists
+// (m3u, pls ...) are always saved as stream lists under the library's Network and shown there
+// (RdStreamListSaver, P6-14); with a typed name the other links are saved as a media library
+// playlist instead of playing them (shown only when the media library is available).
 // Opened by DialogsProvider.openNetDialog() through showOpenNetworkStreamDialog().
 import QtQuick
 import QtQuick.Templates as T
@@ -50,6 +50,9 @@ T.Popup {
     // item to give the keyboard focus back to when the dialog closes
     property Item _restoreFocusItem: null
 
+    // the Playlist Name holds a name the user typed (not the one filled in from the link)
+    property bool _nameTyped: false
+
     function openDialog() {
         const window = MainCtx.intfMainWindow
         if (window) {
@@ -63,6 +66,7 @@ T.Popup {
             return
         }
 
+        _nameTyped = false
         urlArea.clear()
         nameField.clear()
 
@@ -80,24 +84,42 @@ T.Popup {
         open()
     }
 
+    function _links() {
+        return urlArea.text.split("\n").map((u) => u.trim()).filter((u) => u !== "")
+    }
+
+    // the Playlist Name fills in from the first playlist link (13:17: ".../index.m3u" gives
+    // "Index") until the user types a name of their own; clearing it lets it follow the links again
+    function _updateAutoName() {
+        const saver = _streamListSaver.item
+        if (_nameTyped || !saver)
+            return
+        const list = _links().find((u) => saver.isPlaylistUrl(u))
+        nameField.text = list ? saver.autoName(list) : ""
+    }
+
     function save() {
         if (!_canSave)
             return
 
-        // with a Playlist Name, links to playlists become stream lists under Network, shown in
-        // the library (video 13:17-13:20, P6-14); the other links are saved as a media library
-        // playlist; without a name they play
-        const name = _showPlaylistName ? nameField.text.trim() : ""
+        // links to playlists always become stream lists under Network, shown in the library
+        // (video 13:17-13:20, P6-14): under the typed Playlist Name, otherwise each under the
+        // name from its link. The other links are saved as a media library playlist under a
+        // typed name and play otherwise (a single stream link plays, as Open URL does).
+        const typedName = (_showPlaylistName && _nameTyped) ? nameField.text.trim() : ""
         const saver = _streamListSaver.item
-        if (name !== "" && saver) {
-            const links = urlArea.text.split("\n").map((u) => u.trim()).filter((u) => u !== "")
+        if (saver) {
+            const links = _links()
             const lists = links.filter((u) => saver.isPlaylistUrl(u))
             const others = links.filter((u) => !saver.isPlaylistUrl(u))
             if (others.length > 0)
-                DialogsProvider.openNetworkStreams(others.join("\n"), name)
-            saver.save(name, lists)
+                DialogsProvider.openNetworkStreams(others.join("\n"), typedName)
+            if (typedName !== "")
+                saver.save(typedName, lists)
+            else
+                saver.saveWithDefaultNames(lists)
         } else {
-            DialogsProvider.openNetworkStreams(urlArea.text, name)
+            DialogsProvider.openNetworkStreams(urlArea.text, typedName)
         }
         close()
     }
@@ -108,6 +130,8 @@ T.Popup {
         // loaded while the dialog shows
         active: root._showPlaylistName && root.visible
         source: "qrc:///qt/qml/VLC/MediaLibrary/RdStreamListSaver.qml"
+
+        onLoaded: root._updateAutoName()
     }
 
     parent: T.Overlay.overlay
@@ -361,6 +385,8 @@ T.Popup {
 
                         Accessible.name: qsTr("Network URL")
 
+                        onTextChanged: root._updateAutoName()
+
                         // QtQuick.Templates draw no placeholder
                         Text {
                             x: urlArea.leftPadding
@@ -445,6 +471,8 @@ T.Popup {
                 KeyNavigation.tab: cancelButton
                 KeyNavigation.backtab: urlArea
 
+                // only the user's own edits (the auto name is set from code)
+                onTextEdited: root._nameTyped = (text.trim() !== "")
                 onAccepted: root.save()
             }
 
