@@ -28,7 +28,7 @@ Base: VLC's own NSIS installer, `extras/package/win32/NSIS/vlc.win32.nsi.in`, wi
 | # | Change | Why | File |
 |---|---|---|---|
 | 1 | Ticked file types add `HKCR\.<ext>\OpenWithProgids\Cone.<ext>` instead of setting `HKCR\.<ext>` (default) to `Cone.<ext>` with a `Cone.backup` value | This is how Windows wants an app to offer a type: Cone shows in Open with and Default apps, the user's current default stays. Since Windows 8 an installer can not set the default anyway; writing the default only confused Explorer next to VLC | `NSIS/helpers/extensions.nsh` (AssociateExtension) |
-| 2 | Uninstall removes that value, then `OpenWithProgids` and `.<ext>` only when they are empty (no value, no subkey, empty default) | Leaves other apps' entries alone (`DeleteRegKey /ifempty` ignores values, so a small helper `un.DeleteClassesKeyIfEmpty` does it). The old restore code for a `Cone.backup` value stays, for an install that an older Cone build made | `extensions.nsh` (un.RegisterExtension) |
+| 2 | (replaced by item 10) Uninstall removed that value, then `OpenWithProgids` and `.<ext>` when they were empty | It also deleted empty keys that were there before Cone (13 of the user's own HKCU extension keys on the PC test of the 1.0 installer): item 10 removes a key only when the installer recorded creating it | `extensions.nsh` (un.RegisterExtension) |
 | 3 | `Applications\Cone.exe\SupportedTypes` lists every extension | VLC's script writes `$0` (one stray value) instead of the extension, so Open with did not know Cone's types | `extensions.nsh` (RegisterExtension) |
 | 4 | The "VLC is installed" check (Decision 56) is removed | It read VLC's install key, uninstall key and App Paths entry, and the new rule is "never reads VLC's keys". With item 1 it is not needed: ticked types no longer take anything away from VLC, so they start ticked like in VLC's installer | `vlc.win32.nsi.in` |
 | 5 | No `Clients\Media\Cone\InstallInfo` | Those commands point at `spad-setup.exe`, which the installer does not install (same in VLC's) | `vlc.win32.nsi.in` |
@@ -37,6 +37,7 @@ Base: VLC's own NSIS installer, `extras/package/win32/NSIS/vlc.win32.nsi.in`, wi
 | 8 | "Delete preferences and cache" also removes `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone` | VLC's only removes `%APPDATA%\vlc`; Cone also keeps Qt's cache and its interface language | `NSIS/helpers/utils.nsh` (delprefs) |
 | 9a | `Applications\Cone.exe\SupportedTypes` is deleted and written anew on every install | An upgrade from an installer before item 3 kept that installer's one stray value (found with the real Cone 0.2.0 beta installer, wip/test-installer-1.0) | `vlc.win32.nsi.in` |
 | 9 | The CI installer step can fail the run (no more `continue-on-error`) | The installer is a real package now. The zip is uploaded before it, so a failing installer still leaves the zip | `.github/workflows/build-windows.yml` |
+| 10 | The installer writes only `HKLM` (`Software\Classes\...` instead of `HKCR`) and keeps a record of every key it creates and every value it writes, `uninstall-registry.log`; the uninstaller removes exactly what the record lists (section 7) | Through `HKCR`'s merged view a value went into the user's own `HKCU\Software\Classes\.<ext>\OpenWithProgids` when that key existed, and the uninstaller then deleted those keys because they were empty (PC test of the 1.0 installer, build 40214644177: `.f4v .flv .mxf .qt .rm .rmvb` and `.vob\OpenWithProgids`); it also left the empty shared keys it had created (`AudioCD\shell`, `DVD\shell`, `Clients\Media`, five `EventHandlers\Play*OnArrival`) | `NSIS/helpers/registry.nsh` (new), `extensions.nsh`, `vlc.win32.nsi.in` |
 
 Not changed: the **MSI** (`extras/package/win32/msi/`). CI does not build it, and it still holds Decision 56's read of `Software\VideoLAN\VLC` and sets the default of each type. If it ever ships, it needs the same rework as items 1, 2 and 4.
 
@@ -81,7 +82,7 @@ All under `HKLM` (all-users install), 64-bit view. `<ext>` = each file type (134
 | `...\Explorer\AutoplayHandlers\Handlers\ConePlay{DVDMovie,CDAudio,VCDMovie,SVCDMovie,DVDAudio,VideoFiles,MusicFiles,Bluray}OnArrival` | AutoPlay handlers |
 | `...\Explorer\AutoplayHandlers\EventHandlers\Play*OnArrival` | one value `ConePlay*OnArrival` each, next to VLC's `VLCPlay*OnArrival` |
 
-Wine also shows copies of `Clients\Media\Cone`, `App Paths\Cone.exe` and the AutoPlay values under `Wow6432Node`: Windows shares those keys between the 64-bit and 32-bit views. They go with the uninstall like the rest.
+Wine also shows copies of `Clients\Media\Cone`, `App Paths\Cone.exe` and the AutoPlay values under `Wow6432Node`: Windows shares those keys between the 64-bit and 32-bit views (one key seen twice). They go with the uninstall like the rest, through the record (section 7). Class keys are written to `HKLM\Software\Classes` explicitly, never through `HKCR`, so nothing lands in the user's `HKCU\Software\Classes`.
 
 **Per user, written by Cone itself (not the installer)**: `HKCU\Software\Cone` (`Lang`). Removed only when "Delete preferences and cache" is ticked.
 
@@ -89,7 +90,7 @@ Wine also shows copies of `Clients\Media\Cone`, `App Paths\Cone.exe` and the Aut
 
 | Where | What |
 |---|---|
-| `C:\Program Files\Cone\` | `Cone.exe`, `vlc-cache-gen.exe`, `vlc-preparser.exe`, `libvlc.dll`, `libvlccore.dll` and the other DLLs, `plugins\` (+ `plugins.dat` made by the cache generator at install), `locale\` (only when the build has translations: the CI build has none, so the real installer writes no `locale\`), `hrtfs\`, `lua\`, `COPYING.txt`, `NEWS.txt`, `README.txt` and the other text files, `Cone Website.url`, `Documentation.url`, `uninstall.exe`, `uninstall.log` (hidden; the list the uninstaller removes) |
+| `C:\Program Files\Cone\` | `Cone.exe`, `vlc-cache-gen.exe`, `vlc-preparser.exe`, `libvlc.dll`, `libvlccore.dll` and the other DLLs, `plugins\` (+ `plugins.dat` made by the cache generator at install), `locale\` (only when the build has translations: the CI build has none, so the real installer writes no `locale\`), `hrtfs\`, `lua\`, `COPYING.txt`, `NEWS.txt`, `README.txt` and the other text files, `Cone Website.url`, `Documentation.url`, `uninstall.exe`, `uninstall.log` (hidden; the list of files the uninstaller removes), `uninstall-registry.log` (hidden; the registry record, section 7) |
 | `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StickyGonzales\` | `Cone.lnk`, `Cone - reset preferences and cache files.lnk`, `Cone Website.lnk`, `Documentation.lnk`, `Release Notes.lnk` |
 | `%PUBLIC%\Desktop\Cone.lnk` | only with "Desktop Shortcut" |
 
@@ -153,3 +154,21 @@ Use **Windows Sandbox** (Windows 10/11 Pro: Control Panel > Programs > Turn Wind
 19. Double click the `.mp4`: Windows opens VLC (or asks which app, if Cone was the default: pick VLC). VLC plays it with its own settings; its Start menu entry, Default apps entry and context menus are all still there.
 
 Report any step that differs, with a screenshot of the Sandbox window.
+
+## 7. Registry record: the uninstaller removes only what the installer added
+
+Code: `NSIS/helpers/registry.nsh` (public profile; in the vlc profile its macros are VLC's plain `WriteRegStr`). Every registry write of the installer goes through `RegOwnStr` / `RegClassesOwnStr` (a key only Cone uses) or `RegSharedStr` / `RegClassesSharedStr` (Cone's value in a key other apps share). All writes go to `HKLM`, 64-bit view (`SetRegView 64` in `.onInit` and `un.onInit`); class keys to `HKLM\Software\Classes\...`, never `HKCR`, so the user's own `HKCU\Software\Classes` keys are never written.
+
+**The record**: `C:\Program Files\Cone\uninstall-registry.log` (hidden, next to `uninstall.log`, text, one line per entry, tab separated):
+
+| Line | Written when | Uninstall |
+|---|---|---|
+| `T  <key>` | an own key (its name carries "Cone": `Cone.<ext>`, `Applications\Cone.exe`, `PlayWithCone`, `ConePlay*OnArrival`, `Clients\Media\Cone`, `App Paths\Cone.exe`, `Software\Cone`, `Uninstall\Cone`) did not exist before the installer wrote into it, or an earlier Cone install is present (`HKLM\Software\Cone` exists: an upgrade adopts the keys an older Cone installer made) | removed with everything in it, after checking that its name carries "Cone" |
+| `K  <depth>  <key>` | a shared key did not exist before the installer's write (each missing level: `.<ext>`, `.<ext>\OpenWithProgids`, `AudioCD\shell`, `DVD\shell`, `Software\Clients\Media`, `EventHandlers\Play*OnArrival`, ...) | removed deepest first, only when it has no value (not even a default) and no subkey |
+| `V  <key>  <name>` | Cone's value in a shared key (`.<ext>\OpenWithProgids` `Cone.<ext>`, `EventHandlers\Play*OnArrival` `ConePlay*OnArrival`, `RegisteredApplications` `Cone`) | that value only, after checking that its name carries "Cone" |
+
+A shared key that existed before the install is never recorded, so it is never removed, empty or not. An own key that exists without an earlier Cone install (not made by Cone's installer) is not recorded either and stays. Why a file and not a registry list: it sits with the install it describes (admin-only folder, like `uninstall.log`), the uninstaller reads it before it removes the folder, and it adds no registry key of its own that would need cleaning up. A reinstall or upgrade appends to it (an earlier install in another folder: its record is copied first), so keys an earlier install created stay recorded.
+
+**Older installs without a record** (Cone 1.0 and the betas): installing this version over them adopts every Cone-named key that exists (`T` lines, also those of components not picked this time) and rewrites Cone's shared values (`V` lines). A record left in the folder while no Cone install is registered is stale and is deleted before a new one starts. Shared keys an older installer created can not be told apart from keys that were there before, so they stay (empty) after uninstall. The uninstaller also removes, by name and only as values: `.<ext>\OpenWithProgids` `Cone.<ext>` in `HKCU\Software\Classes` (where 1.0's merged-view writes landed) and `HKLM\Software\Classes`, `ConePlay*OnArrival` in the AutoPlay `EventHandlers` keys, `Cone` in `RegisteredApplications`, and the 0.1 betas' `Cone.<ext>` default of `.<ext>` (given back to the `Cone.backup` handler while its ProgID exists) and `Cone.backup`, in `HKLM` and `HKCU`. It never removes a key without a record. An old installer's own `uninstall.exe` is still the old code (it deletes the empty keys): uninstall only after this version is installed over it. The installer's maintenance page (same version installed) refuses "Uninstall" for an install without a record and asks for "Add/Remove/Reinstall components" first. Not removed after an upgrade from 1.0: Cone-named keys 1.0 put into `HKCU\Software\Classes` (e.g. `Directory\shell\PlayWithCone` when the user already had `HKCU\Software\Classes\Directory\shell`), because no record shows they are Cone's.
+
+**Not changed**: "Delete preferences and cache" (`delprefs`) still removes `%APPDATA%\Cone`, `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone` of each logged-on user.
