@@ -75,9 +75,11 @@ Widgets.RdListView {
         required property var model
 
         width: root.contentWidth
+        // Figma "bookmarks" (Frame 39): the name starts at the row's left edge
+        titleInset: 0
 
         title: model.name ?? ""
-        detail: model.time ?? ""
+        detail: model.preciseTime ?? ""
         selected: root.selectedIndex === index
 
         Navigation.upAction: function() { root.focusRow(index - 1) }

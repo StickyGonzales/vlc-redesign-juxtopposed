@@ -843,6 +843,14 @@ static const char* const ppsz_restore_playback_desc[] = {
     "VLC can display messages on the video. This is called OSD (On Screen " \
     "Display).")
 
+#ifdef VLC_BRAND_PUBLIC
+/* redesign: Settings > Subtitles > On-Screen Messages, "Show feedback for" (src/video_output) */
+#define OSD_DURATION_TEXT N_("On screen message duration")
+#define OSD_DURATION_LONGTEXT N_( \
+    "How long a message on the video stays, in milliseconds, for example " \
+    "the new volume after a shortcut.")
+#endif
+
 #define TEXTRENDERER_TEXT N_("Text rendering module")
 #define TEXTRENDERER_LONGTEXT N_( \
     "VLC normally uses Freetype for rendering, but this allows you to use svg for instance.")
@@ -1119,6 +1127,19 @@ static const char* const ppsz_restore_playback_desc[] = {
 #define TRACER_TEXT N_("Tracer module")
 #define TRACER_LONGTEXT N_( \
     "This allow to select which tracer module you want to use." )
+
+#ifdef VLC_BRAND_PUBLIC
+/* redesign: Settings > General > Advanced Options (src/libvlc.c, libvlc_LoadExtraOptions) */
+#define EXTRA_OPTIONS_TEXT N_("Additional command line options")
+#define EXTRA_OPTIONS_LONGTEXT N_( \
+    "Options applied at every start, as if they were typed after the program " \
+    "name on the command line, for example --no-video-title-show. Options on " \
+    "the real command line win when both set the same one, and the options " \
+    "here win over the same settings made elsewhere. File names are ignored, " \
+    "and so are the options that change the interface (--intf, -I, " \
+    "--extraintf, skins). The options read before the settings (plugins " \
+    "cache, high priority, clock source) cannot be set here.")
+#endif
 
 #define VLM_CONF_TEXT N_("VLM configuration file")
 #define VLM_CONF_LONGTEXT N_( \
@@ -1702,8 +1723,15 @@ vlc_module_begin ()
     add_integer("disable-screensaver", 1, SS_TEXT, SS_LONGTEXT)
         change_integer_list(screensaver_values, screensaver_texts)
 
+    /* redesign (Decision 69): Cone's top bar shows the title, the file name over the video
+     * starts off; the vlc profile keeps VLC's default */
+#ifdef VLC_BRAND_PUBLIC
+    add_bool( "video-title-show", false, VIDEO_TITLE_SHOW_TEXT,
+              VIDEO_TITLE_SHOW_LONGTEXT )
+#else
     add_bool( "video-title-show", true, VIDEO_TITLE_SHOW_TEXT,
               VIDEO_TITLE_SHOW_LONGTEXT )
+#endif
         change_safe()
     add_integer ("video-stereo-mode", VIDEO_STEREO_OUTPUT_AUTO, VIDEO_STEREO_FORMAT_TEXT,
                  VIDEO_STEREO_FORMAT_TEXT_LONGTEXT)
@@ -1806,6 +1834,11 @@ vlc_module_begin ()
     add_bool( "spu-fill", true, SPU_FULL_TEXT, SPU_FULL_LONGTEXT )
         change_safe ()
     add_bool( "osd", true, OSD_TEXT, OSD_LONGTEXT )
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: 2.75 s, the slider's position in the video (18:12) and in Figma */
+    add_integer_with_range( "osd-duration", 2750, 500, 5000,
+                            OSD_DURATION_TEXT, OSD_DURATION_LONGTEXT )
+#endif
     add_module("text-renderer", "text renderer", "any",
                TEXTRENDERER_TEXT, TEXTRENDERER_LONGTEXT)
 
@@ -2107,6 +2140,10 @@ vlc_module_begin ()
     add_obsolete_string("vod-server") /* since 4.0.0 */
     add_module("tracer", "tracer", "none",
                TRACER_TEXT, TRACER_LONGTEXT)
+#ifdef VLC_BRAND_PUBLIC
+    add_string( "extra-options", NULL, EXTRA_OPTIONS_TEXT,
+                EXTRA_OPTIONS_LONGTEXT )
+#endif
 
     set_section( N_("Plugins" ), NULL )
 #ifdef HAVE_DYNAMIC_PLUGINS

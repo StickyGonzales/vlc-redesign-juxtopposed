@@ -1,0 +1,230 @@
+diff --git a/modules/gui/qt/Makefile.am b/modules/gui/qt/Makefile.am
+index 7c832d5e66..58d0504a49 100644
+--- a/modules/gui/qt/Makefile.am
++++ b/modules/gui/qt/Makefile.am
+@@ -325,6 +325,10 @@ libqt_plugin_la_SOURCES = \
+ 	player/rd_effects.hpp \
+ 	player/rd_seek_thumbnailer.cpp \
+ 	player/rd_seek_thumbnailer.hpp \
++	player/rd_filter_math.cpp \
++	player/rd_filter_math.hpp \
++	player/rd_filter_preview.cpp \
++	player/rd_filter_preview.hpp \
+ 	player/rd_waveform.cpp \
+ 	player/rd_waveform.hpp \
+ 	player/rd_waveform_item.cpp \
+@@ -427,6 +431,8 @@ libqt_plugin_la_SOURCES = \
+ 	widgets/native/customwidgets.cpp widgets/native/customwidgets.hpp \
+ 	widgets/native/csdthemeimage.cpp \
+ 	widgets/native/csdthemeimage.hpp \
++	widgets/native/rd_eq_curve_item.cpp \
++	widgets/native/rd_eq_curve_item.hpp \
+ 	widgets/native/interface_widgets.cpp \
+ 	widgets/native/interface_widgets.hpp \
+ 	widgets/native/navigation_attached.cpp \
+@@ -558,6 +564,7 @@ nodist_libqt_plugin_la_SOURCES = \
+ 	player/delay_estimator.moc.cpp \
+ 	player/rd_effects.moc.cpp \
+ 	player/rd_seek_thumbnailer.moc.cpp \
++	player/rd_filter_preview.moc.cpp \
+ 	player/rd_waveform.moc.cpp \
+ 	player/rd_waveform_item.moc.cpp \
+ 	player/rd_now_playing.moc.cpp \
+@@ -608,6 +615,7 @@ nodist_libqt_plugin_la_SOURCES = \
+ 	util/pointingtooltipattached.moc.cpp \
+ 	widgets/native/animators.moc.cpp \
+ 	widgets/native/csdthemeimage.moc.cpp \
++	widgets/native/rd_eq_curve_item.moc.cpp \
+ 	widgets/native/customwidgets.moc.cpp \
+ 	widgets/native/interface_widgets.moc.cpp \
+ 	widgets/native/navigation_attached.moc.cpp \
+@@ -1561,6 +1569,7 @@ libqml_module_player_a_QML = \
+ 	player/qml/SubtitleSettingsPage.qml \
+ 	player/qml/RdSliderCommit.qml \
+ 	player/qml/RdSeekPreview.qml \
++	player/qml/RdFilterPreviewImage.qml \
+ 	player/qml/TracksPage.qml \
+ 	player/qml/TracksPageAudio.qml \
+ 	player/qml/TracksPageSpeed.qml \
+diff --git a/modules/gui/qt/maininterface/mainui.cpp b/modules/gui/qt/maininterface/mainui.cpp
+index 4ed1702e0f..3745f39bf8 100644
+--- a/modules/gui/qt/maininterface/mainui.cpp
++++ b/modules/gui/qt/maininterface/mainui.cpp
+@@ -36,6 +36,7 @@
+ #include "player/rd_effects.hpp"
+ #include "player/rd_presets.hpp"
+ #include "player/rd_seek_thumbnailer.hpp"
++#include "player/rd_filter_preview.hpp"
+ #include "player/rd_waveform.hpp"
+ #include "player/rd_waveform_item.hpp"
+ #include "player/rd_now_playing.hpp"
+@@ -95,6 +96,7 @@
+ #include "widgets/native/csdthemeimage.hpp"
+ #include "widgets/native/navigation_attached.hpp"
+ #include "widgets/native/viewblockingrectangle.hpp"
++#include "widgets/native/rd_eq_curve_item.hpp"
+ #if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+ #include "widgets/native/doubleclickignoringitem.hpp"
+ #else
+@@ -183,6 +185,8 @@ bool MainUI::setup(QQmlEngine* engine)
+     engine->addImageProvider(QStringLiteral("vlcaccess"), new VLCAccessImageProvider());
+     if (m_seekThumbnailer)
+         engine->addImageProvider(QLatin1String(RdSeekThumbnailer::providerId), m_seekThumbnailer->createImageProvider());
++    if (m_filterPreview)
++        engine->addImageProvider(QLatin1String(RdFilterPreview::providerId), m_filterPreview->createImageProvider());
+ 
+     m_component  = new QQmlComponent(engine, QStringLiteral("qrc:/qt/qml/VLC/MainInterface/MainInterface.qml"), QQmlComponent::PreferSynchronous, engine);
+     if (m_component->isLoading())
+@@ -359,6 +363,10 @@ void MainUI::registerQMLTypes()
+         m_seekThumbnailer = new RdSeekThumbnailer(m_intf, m_intf->p_mainPlayerController, this);
+         qmlRegisterSingletonInstance<RdSeekThumbnailer>(uri, versionMajor, versionMinor, "RdSeekThumbnailer",
+                                                         m_seekThumbnailer);
++        // redesign: video filter preset previews (VIDEO_INDEX row 139)
++        m_filterPreview = new RdFilterPreview(m_intf, m_intf->p_mainPlayerController, this);
++        qmlRegisterSingletonInstance<RdFilterPreview>(uri, versionMajor, versionMinor, "RdFilterPreview",
++                                                      m_filterPreview);
+         // redesign: waveform seek bar (P6-06): the playing file's waveform, and its bars
+         qmlRegisterSingletonInstance<RdWaveform>(uri, versionMajor, versionMinor, "RdWaveform",
+                                                  new RdWaveform(m_intf, m_intf->p_mainPlayerController, this));
+@@ -508,6 +516,8 @@ void MainUI::registerQMLTypes()
+         // @uri VLC.Widgets
+         qmlRegisterType<CSDThemeImage>(uri, versionMajor, versionMinor, "CSDThemeImage");
+         qmlRegisterType<ViewBlockingRectangle>( uri, versionMajor, versionMinor, "ViewBlockingRectangle" );
++        // redesign: EQ preset curve icons (VIDEO_INDEX rows 132-134)
++        qmlRegisterType<RdEqCurveItem>( uri, versionMajor, versionMinor, "RdEqCurveItem" );
+         qmlRegisterTypesAndRevisions<PointingToolTipAttached>( uri, versionMajor );
+ 
+         qmlRegisterModule(uri, versionMajor, versionMinor);
+diff --git a/modules/gui/qt/maininterface/mainui.hpp b/modules/gui/qt/maininterface/mainui.hpp
+index becf5ae101..777c2adb4e 100644
+--- a/modules/gui/qt/maininterface/mainui.hpp
++++ b/modules/gui/qt/maininterface/mainui.hpp
+@@ -22,6 +22,7 @@
+ 
+ class VLCVarChoiceModel;
+ class RdSeekThumbnailer;
++class RdFilterPreview;
+ 
+ class MainUI : public QObject
+ {
+@@ -53,6 +54,8 @@ private:
+ 
+     // redesign: seek bar preview frames (P2-04), shared with the "rdseekthumb" image provider
+     RdSeekThumbnailer* m_seekThumbnailer = nullptr;
++    // redesign: video filter preset previews, shared with the "rdfilterpreview" image provider
++    RdFilterPreview* m_filterPreview = nullptr;
+ };
+ 
+ namespace vlc {
+diff --git a/modules/gui/qt/meson.build b/modules/gui/qt/meson.build
+index e415ba7b6c..49160b6ebd 100644
+--- a/modules/gui/qt/meson.build
++++ b/modules/gui/qt/meson.build
+@@ -133,6 +133,7 @@ moc_headers = files(
+     'player/delay_estimator.hpp',
+     'player/rd_effects.hpp',
+     'player/rd_seek_thumbnailer.hpp',
++    'player/rd_filter_preview.hpp',
+     'player/rd_waveform.hpp',
+     'player/rd_waveform_item.hpp',
+     'player/rd_now_playing.hpp',
+@@ -182,6 +183,7 @@ moc_headers = files(
+     'util/pointingtooltipattached.hpp',
+     'widgets/native/animators.hpp',
+     'widgets/native/csdthemeimage.hpp',
++    'widgets/native/rd_eq_curve_item.hpp',
+     'widgets/native/customwidgets.hpp',
+     'widgets/native/interface_widgets.hpp',
+     'widgets/native/navigation_attached.hpp',
+@@ -471,6 +473,10 @@ qt_plugin_sources = files(
+     'player/rd_effects.hpp',
+     'player/rd_seek_thumbnailer.cpp',
+     'player/rd_seek_thumbnailer.hpp',
++    'player/rd_filter_math.cpp',
++    'player/rd_filter_math.hpp',
++    'player/rd_filter_preview.cpp',
++    'player/rd_filter_preview.hpp',
+     'player/rd_waveform.cpp',
+     'player/rd_waveform.hpp',
+     'player/rd_waveform_item.cpp',
+@@ -602,6 +608,8 @@ qt_plugin_sources = files(
+     'widgets/native/customwidgets.hpp',
+     'widgets/native/csdthemeimage.cpp',
+     'widgets/native/csdthemeimage.hpp',
++    'widgets/native/rd_eq_curve_item.cpp',
++    'widgets/native/rd_eq_curve_item.hpp',
+     'widgets/native/interface_widgets.cpp',
+     'widgets/native/interface_widgets.hpp',
+     'widgets/native/navigation_attached.cpp',
+@@ -922,6 +930,7 @@ qml_modules += {
+        'player/qml/SubtitleSettingsPage.qml',
+        'player/qml/RdSliderCommit.qml',
+        'player/qml/RdSeekPreview.qml',
++       'player/qml/RdFilterPreviewImage.qml',
+        'player/qml/TracksPage.qml',
+        'player/qml/TracksPageAudio.qml',
+        'player/qml/TracksPageSpeed.qml',
+diff --git a/modules/gui/qt/widgets/qml/RdEqCurve.qml b/modules/gui/qt/widgets/qml/RdEqCurve.qml
+index 805d70c584..869c662848 100644
+--- a/modules/gui/qt/widgets/qml/RdEqCurve.qml
++++ b/modules/gui/qt/widgets/qml/RdEqCurve.qml
+@@ -16,48 +16,20 @@
+  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
+  *****************************************************************************/
+ 
+-// Redesign equalizer preset preview (video 8:51-8:56, IA-40 / P4-26): about 24x12, a gray
+-// baseline with accent shapes above it for boosted bands and below it for cut bands.
+-// Canvas is not available in VLC's Qt build, so each band is a small bar.
++// Redesign equalizer preset icon (IA-40 / P4-25 / P4-26, Figma icon set "name=EQ"): the 24x24
++// icon box with the FG/A2 baseline and the Accent/Main lobes of the preset's curve, drawn by
++// RdEqCurveItem from the preset's real band gains. Its colours follow the palette, so the accent
++// colour and the light theme apply live.
+ import QtQuick
+ 
+-import VLC.MainInterface
+ import VLC.Style
++import VLC.Widgets
+ 
+-Item {
+-    id: root
++// `bands`: the gains in dB (-20 to +20) of the preset's bands
++RdEqCurveItem {
++    implicitWidth: VLCStyle.icon_normal
++    implicitHeight: VLCStyle.icon_normal
+ 
+-    // gains in dB (-20 to +20) of the preset's bands
+-    property var bands: []
+-
+-    implicitWidth: VLCStyle.dp(24)
+-    implicitHeight: VLCStyle.dp(12)
+-
+-    // Figma "Vector 45" (EQ icon 2372:8560): 22 px at x 1, 2 px stroke FG/A2
+-    Rectangle {
+-        anchors.verticalCenter: parent.verticalCenter
+-        x: VLCStyle.dp(1)
+-        width: parent.width - VLCStyle.dp(2)
+-        height: VLCStyle.dp(2)
+-        color: VLCStyle.palette.rdFgA2
+-    }
+-
+-    Repeater {
+-        model: root.bands
+-
+-        delegate: Rectangle {
+-            required property int index
+-            required property var modelData
+-
+-            readonly property real gain: Number(modelData)
+-            readonly property real barHeight: Math.min(1, Math.abs(gain) / 12) * root.height / 2
+-
+-            visible: barHeight >= 0.5
+-            x: index * root.width / Math.max(1, root.bands.length)
+-            width: root.width / Math.max(1, root.bands.length)
+-            height: barHeight
+-            y: gain >= 0 ? root.height / 2 - barHeight : root.height / 2
+-            color: VLCStyle.palette.rdAccentMain
+-        }
+-    }
++    lineColor: VLCStyle.palette.rdFgA2
++    fillColor: VLCStyle.palette.rdAccentMain
+ }

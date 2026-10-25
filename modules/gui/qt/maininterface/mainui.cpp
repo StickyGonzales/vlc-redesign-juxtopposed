@@ -36,8 +36,12 @@
 #include "player/rd_effects.hpp"
 #include "player/rd_presets.hpp"
 #include "player/rd_seek_thumbnailer.hpp"
+#include "player/rd_filter_preview.hpp"
 #include "player/rd_waveform.hpp"
 #include "player/rd_waveform_item.hpp"
+#include "player/rd_subtitle_lift.hpp"
+#include "player/rd_subtitle_timeline.hpp"
+#include "player/rd_subtitle_timeline_item.hpp"
 #include "player/rd_now_playing.hpp"
 #include "dialogs/toolbar/rd_profiles.hpp"
 #include "player/rd_media_info.hpp"
@@ -95,6 +99,7 @@
 #include "widgets/native/csdthemeimage.hpp"
 #include "widgets/native/navigation_attached.hpp"
 #include "widgets/native/viewblockingrectangle.hpp"
+#include "widgets/native/rd_eq_curve_item.hpp"
 #if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
 #include "widgets/native/doubleclickignoringitem.hpp"
 #else
@@ -109,6 +114,45 @@
 #include "mainctx_win32.hpp"
 #endif
 #include "mainctx_submodels.hpp"
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
+#include <QQuickRenderControl>
+#include <QQuickWindow>
+
+// Qt Quick's context matcher of QML shortcuts, exported for QtQuick.Templates (qquickshortcut.cpp)
+typedef bool (*ShortcutContextMatcher)(QObject *, Qt::ShortcutContext);
+ShortcutContextMatcher qt_quick_shortcut_context_matcher();
+void qt_quick_set_shortcut_context_matcher(ShortcutContextMatcher matcher);
+
+namespace {
+
+ShortcutContextMatcher g_qtShortcutContextMatcher = nullptr;
+
+/* redesign: from Qt 6.9, an application-wide QML shortcut only matches inside a visible window.
+ * The X11 compositor draws the interface in an offscreen QQuickWindow (QQuickRenderControl) that
+ * is never visible, so VLC's global shortcuts (ShortcutExt: Ctrl+P Settings, Ctrl+E, Ctrl+I,
+ * Ctrl+L, F11 ...) never fired there. Such a shortcut matches when the window showing its
+ * offscreen window is visible, as in Qt 6.8 (redesign/WEB_FIXES_1_NOTES.md) */
+bool shortcutContextMatcher(QObject* object, Qt::ShortcutContext context)
+{
+    if (g_qtShortcutContextMatcher(object, context))
+        return true;
+    if (context != Qt::ApplicationShortcut)
+        return false;
+    for (QObject* parent = object; parent; parent = parent->parent())
+    {
+        if (const auto item = qobject_cast<QQuickItem*>(parent))
+        {
+            QWindow* shown = item->window() ? QQuickRenderControl::renderWindowFor(item->window())
+                                            : nullptr;
+            return shown && shown->isVisible();
+        }
+    }
+    return false;
+}
+
+} // namespace
+#endif
 
 static bool g_qmlTypesAreRegistered = false;
 
@@ -183,6 +227,8 @@ bool MainUI::setup(QQmlEngine* engine)
     engine->addImageProvider(QStringLiteral("vlcaccess"), new VLCAccessImageProvider());
     if (m_seekThumbnailer)
         engine->addImageProvider(QLatin1String(RdSeekThumbnailer::providerId), m_seekThumbnailer->createImageProvider());
+    if (m_filterPreview)
+        engine->addImageProvider(QLatin1String(RdFilterPreview::providerId), m_filterPreview->createImageProvider());
 
     m_component  = new QQmlComponent(engine, QStringLiteral("qrc:/qt/qml/VLC/MainInterface/MainInterface.qml"), QQmlComponent::PreferSynchronous, engine);
     if (m_component->isLoading())
@@ -201,6 +247,16 @@ bool MainUI::setup(QQmlEngine* engine)
 #endif
         return false;
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
+    // after the QML modules are loaded (QtQuick.Templates installs its own matcher), before the
+    // interface creates its shortcuts
+    if (qt_quick_shortcut_context_matcher() != &shortcutContextMatcher)
+    {
+        g_qtShortcutContextMatcher = qt_quick_shortcut_context_matcher();
+        qt_quick_set_shortcut_context_matcher(&shortcutContextMatcher);
+    }
+#endif
     return true;
 }
 
@@ -359,10 +415,22 @@ void MainUI::registerQMLTypes()
         m_seekThumbnailer = new RdSeekThumbnailer(m_intf, m_intf->p_mainPlayerController, this);
         qmlRegisterSingletonInstance<RdSeekThumbnailer>(uri, versionMajor, versionMinor, "RdSeekThumbnailer",
                                                         m_seekThumbnailer);
+        // redesign: video filter preset previews (VIDEO_INDEX row 139)
+        m_filterPreview = new RdFilterPreview(m_intf, m_intf->p_mainPlayerController, this);
+        qmlRegisterSingletonInstance<RdFilterPreview>(uri, versionMajor, versionMinor, "RdFilterPreview",
+                                                      m_filterPreview);
         // redesign: waveform seek bar (P6-06): the playing file's waveform, and its bars
         qmlRegisterSingletonInstance<RdWaveform>(uri, versionMajor, versionMinor, "RdWaveform",
                                                  new RdWaveform(m_intf, m_intf->p_mainPlayerController, this));
+        // redesign: subtitles above the control bar while it covers the picture (beta)
+        qmlRegisterSingletonInstance<RdSubtitleLift>(uri, versionMajor, versionMinor, "RdSubtitleLift",
+                                                     new RdSubtitleLift(m_intf->p_mainPlayerController, this));
         qmlRegisterType<RdWaveformItem>(uri, versionMajor, versionMinor, "RdWaveformItem");
+        // redesign: subtitle timeline seek bar (P3-16): the selected external subtitle file's
+        // cue times, and their blocks
+        qmlRegisterSingletonInstance<RdSubtitleTimeline>(uri, versionMajor, versionMinor, "RdSubtitleTimeline",
+                                                         new RdSubtitleTimeline(m_intf, m_intf->p_mainPlayerController, this));
+        qmlRegisterType<RdSubtitleTimelineItem>(uri, versionMajor, versionMinor, "RdSubtitleTimelineItem");
         // redesign (W8.1b / W8.2): what the Customize Player items show about the playing
         // media, and the profiles (top bar layout, settings)
         qmlRegisterSingletonInstance<RdNowPlaying>(uri, versionMajor, versionMinor, "RdNowPlaying",
@@ -508,6 +576,8 @@ void MainUI::registerQMLTypes()
         // @uri VLC.Widgets
         qmlRegisterType<CSDThemeImage>(uri, versionMajor, versionMinor, "CSDThemeImage");
         qmlRegisterType<ViewBlockingRectangle>( uri, versionMajor, versionMinor, "ViewBlockingRectangle" );
+        // redesign: EQ preset curve icons (VIDEO_INDEX rows 132-134)
+        qmlRegisterType<RdEqCurveItem>( uri, versionMajor, versionMinor, "RdEqCurveItem" );
         qmlRegisterTypesAndRevisions<PointingToolTipAttached>( uri, versionMajor );
 
         qmlRegisterModule(uri, versionMajor, versionMinor);

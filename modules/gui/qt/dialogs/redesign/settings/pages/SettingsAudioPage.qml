@@ -230,6 +230,9 @@ SettingsPage {
         // Figma "Values" (stacked): remember the last volume, or always start at a level
         SettingsRow {
             text: qsTr("Startup volume")
+            // the start volume is a setting of the Windows outputs (mmdevice, waveout); other
+            // outputs (PulseAudio, ALSA...) keep their own, so the row is not offered there
+            shown: SettingsCatalog.exists(root._volumeOption)
             rowPadding: VLCStyle.dp(10)
             description: RdEffects.optionDescription("volume-save")
             keywords: "volume-save " + root._volumeOption
@@ -505,6 +508,8 @@ SettingsPage {
         SettingsLanguageOption {
             option: "audio-language"
             text: qsTr("Preferred audio language")
+            // the note the sidebar's Audio Defaults had
+            note: qsTr("Applies from the next file.")
         }
 
         SettingsOption {

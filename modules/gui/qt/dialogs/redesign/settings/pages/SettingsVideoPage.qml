@@ -148,6 +148,8 @@ SettingsPage {
         SettingsOption {
             option: "deinterlace-mode"
             text: qsTr("Method")
+            // VLC names its "auto" method "Auto"; Figma "Settings - video": "Automatic", like the row above
+            choices: RdEffects.optionChoices(option).map((c) => c.value === "auto" ? { value: c.value, text: qsTr("Automatic") } : c)
             available: Number(root._option("deinterlace")) !== 0
         }
     }

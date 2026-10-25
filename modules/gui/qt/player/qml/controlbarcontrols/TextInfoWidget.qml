@@ -40,7 +40,10 @@ Item {
 
     enabled: false
 
-    implicitWidth: Math.min(label.implicitWidth, maximumWidth)
+    // measured on the whole text, not on the label: an eliding Text's implicit width kept its
+    // elided width (Qt 6.10), so once the bar squeezed the item to its minimum (a media change,
+    // P2-06, or the bar rebuilt by a Customize Player save) it never grew back ("Bet...")
+    implicitWidth: Math.min(Math.ceil(metrics.advanceWidth), maximumWidth)
     implicitHeight: VLCStyle.dp(28, VLCStyle.scale)
 
     // the bar lets it shrink (and elide) down to this
@@ -48,6 +51,13 @@ Item {
 
     Accessible.role: Accessible.StaticText
     Accessible.name: text
+
+    TextMetrics {
+        id: metrics
+
+        text: label.text
+        font: label.font
+    }
 
     Text {
         id: label

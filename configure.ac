@@ -4606,6 +4606,13 @@ dnl Skins2 module
 dnl
 AC_ARG_ENABLE([skins2],
   AS_HELP_STRING([--enable-skins2], [skins interface module (default auto)]))
+dnl redesign: brand layer (Decision 63), Cone has no skins interface: the design is its only one
+AS_IF([test "${with_brand}" = "public"], [
+  AS_IF([test "${enable_skins2}" = "yes"], [
+    AC_MSG_ERROR([--with-brand=public has no skins interface: drop --enable-skins2])
+  ])
+  enable_skins2="no"
+])
 AS_IF([test "${enable_skins2}" != "no"], [
   have_skins_deps="yes"
 
@@ -5292,6 +5299,8 @@ AS_CASE(["${with_brand}"],
         modules/gui/qt/pixmaps/brand/public/cone-64.png \
         modules/gui/qt/pixmaps/brand/public/cone-128.png \
         modules/gui/qt/pixmaps/brand/public/cone-256.png \
+        modules/gui/qt/pixmaps/brand/public/prefs-sample-modern.png \
+        modules/gui/qt/pixmaps/brand/public/prefs-sample-classic.png \
         extras/package/win32/brand/public/cone.ico; do
       AS_IF([test -f "${srcdir}/${brand_file}"],, [
         AC_MSG_ERROR([--with-brand=public needs the Cone logo file ${brand_file}; build with --with-brand=vlc until it is added])

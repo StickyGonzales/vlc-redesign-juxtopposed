@@ -95,9 +95,12 @@ FocusScope{
     // Children
 
     // Figma "topbar": BG/A3 in the dark Player frames, BG/A3 Transparent in "Player - Light"
+    // made opaque like the control bar (its 75 % assumes a background blur: over the video or the
+    // library it showed as off-palette greys, #A0A0A0 over black, #DADADA over BG/B1)
     Rectangle {
         anchors.fill: parent
-        color: VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3 : VLCStyle.palette.rdBgA3Transparent
+        color: VLCStyle.palette.isDark ? VLCStyle.palette.rdBgA3
+                                       : Qt.alpha(VLCStyle.palette.rdBgA3Transparent, 1.0)
     }
 
     // the wheel over the top bar, its empty parts included, never reaches the video (volume /
@@ -259,15 +262,18 @@ FocusScope{
                                                                      root.width))
 
             anchors.centerIn: parent
-            width: Math.min(implicitWidth, _maxWidth)
+            // the whole free width, centred text: a width bound to implicitWidth kept the elided
+            // width of an intermediate title after the media changed (Qt 6.10)
+            width: _maxWidth
 
-            visible: !root._editable && width > 0
+            visible: !root._editable && width > 0 && text !== ""
 
             text: root.title
             color: VLCStyle.palette.rdFgA2
             font.family: VLCStyle.rd_fontFamily
             font.pixelSize: VLCStyle.rd_fontSize_label
             elide: Text.ElideRight
+            horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
 

@@ -183,7 +183,7 @@ InterfaceWindowHandler::~InterfaceWindowHandler()
     /* Save this size (redesign, S2-02: unless the Settings turned it off; read here because
      * the option can change while VLC runs) */
     if (var_InheritBool( p_intf, "qt-remember-window" ))
-        QVLCTools::saveWindowPosition(getSettings(), m_window);
+        QVLCTools::saveWindowPosition(getSettings(), m_window, m_mainCtx->nativeFrameMargins(m_window));
     else
         getSettings()->remove( "geometry" );
     assert(qApp);

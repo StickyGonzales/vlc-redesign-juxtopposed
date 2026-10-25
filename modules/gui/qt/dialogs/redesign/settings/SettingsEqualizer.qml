@@ -276,7 +276,7 @@ Rectangle {
                 implicitHeight: VLCStyle.dp(32)
                 leftPadding: VLCStyle.dp(6)
                 rightPadding: VLCStyle.dp(6)
-                text: band.value.toFixed(1) + " " + qsTr("dB")
+                text: (Math.round(band.value * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                 Accessible.name: band.text
                 onEdited: (text) => {
                     const v = parseFloat(String(text).replace(",", ".").replace(/[^0-9.+-]/g, ""))

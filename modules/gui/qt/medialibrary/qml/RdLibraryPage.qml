@@ -523,14 +523,15 @@ FocusScope {
             return { kind: "genre", index: index, id: id, title: model.name ?? "" }
         case "playlistList":
             return { kind: "playlist", index: index, id: id, title: model.name ?? "",
-                     thumbnail: model.thumbnail ?? "" }
+                     thumbnail: model.thumbnail ?? "", isFavorite: model.isFavorite }
         case "url":
             return { kind: "stream", index: index, id: id, title: model.url ?? "", mrl: model.url ?? "",
                      progress: -1, watched: false, isVideo: true }
         case "collection":
-            return { kind: model.kind, index: index, id: id, title: model.title, subtitle: model.subtitle,
-                     mrl: model.mrl, thumbnail: model.thumbnail, progress: model.progress, watched: model.watched,
-                     isVideo: model.isVideo, isFavorite: model.isFavorite }
+            return { kind: model.kind, index: index, id: id, title: model.title ?? "", subtitle: model.subtitle ?? "",
+                     mrl: model.mrl ?? "", thumbnail: model.thumbnail ?? "", progress: model.progress ?? -1,
+                     watched: model.watched ?? false, isVideo: model.isVideo ?? false,
+                     isFavorite: model.isFavorite ?? false }
         case "network":
         case "service": {
             const container = model.type === NetworkMediaModel.TYPE_DIRECTORY

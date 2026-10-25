@@ -54,10 +54,11 @@
 # define BRAND_WELCOME_TEXT     "Cone is a free and open source media player based on VLC. It plays most " \
                                 "video and audio files as well as DVDs, Audio CDs, VCDs and various " \
                                 "streaming protocols."
-/* About dialog (help.cpp closes the last paragraph) */
-# define BRAND_ABOUT_TEXT       "<p>Cone, based on <a href=\"https://www.videolan.org/vlc/\"><span style=\" text-decoration: underline; color:#0057ae;\">VLC media player</span></a> by VideoLAN. " \
-                                "Design by <a href=\"https://www.figma.com/community/file/1691465999134370980/vlc-redesign\"><span style=\" text-decoration: underline; color:#0057ae;\">Juxtopposed</span></a> " \
-                                "(<a href=\"https://creativecommons.org/licenses/by/4.0/\"><span style=\" text-decoration: underline; color:#0057ae;\">CC BY 4.0</span></a>). " \
+/* About dialog (help.cpp closes the last paragraph); the links take the accent color
+ * (style/rdwidgetstyle.cpp) */
+# define BRAND_ABOUT_TEXT       "<p>Cone, based on <a href=\"https://www.videolan.org/vlc/\"><span style=\" text-decoration: underline;\">VLC media player</span></a> by VideoLAN. " \
+                                "Design by <a href=\"https://www.figma.com/community/file/1691465999134370980/vlc-redesign\"><span style=\" text-decoration: underline;\">Juxtopposed</span></a> " \
+                                "(<a href=\"https://creativecommons.org/licenses/by/4.0/\"><span style=\" text-decoration: underline;\">CC BY 4.0</span></a>). " \
                                 "Built by StickyGonzales.</p><p>Cone is not affiliated with VideoLAN or Juxtopposed."
 /* VLC's seasonal cones (Christmas, April fools) are VLC logos: none in Cone */
 # define BRAND_SEASONAL_LOGOS   0
