@@ -104,7 +104,7 @@ const QSet<QString>& curatedOptions()
         "freetype-outline-color", "freetype-shadow-opacity", "freetype-shadow-color",
         "freetype-shadow-distance", "freetype-background-opacity", "freetype-background-color",
         "sub-margin", "sub-delay", "osd", "osd-duration", "video-title-show", "video-title-timeout",
-        "sub-autodetect-path", "freetype-shadow-angle", "freetype-text-direction",
+        "sub-autodetect-path", "ssa-ignore-styling", "freetype-shadow-angle", "freetype-text-direction",
         "freetype-monofont", "sub-text-scale",
         // Library
         "one-instance", "one-instance-when-started-from-file", "playlist-enqueue", "recursive",
