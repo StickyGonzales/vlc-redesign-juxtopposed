@@ -171,6 +171,14 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
+    // an item Cone inserted: the options it was queued with, queued paused or not
+    struct OwnItem
+    {
+        SharedInputItem item;
+        QStringList options;
+        bool paused = false;
+    };
+
     struct Answer
     {
         bool yes = false;
@@ -200,6 +208,7 @@ private:
     void clearQueued();
     // an item Cone put in the queue (the waiting one or one already played)
     bool isOwn(input_item_t* input) const;
+    const OwnItem* ownItem(input_item_t* input) const;
     void pruneOwnItems();
     // the user is there after all: "Still watching?" goes, the next episode is queued playing
     void leaveStillWatching();
@@ -250,7 +259,7 @@ private:
     bool m_queuedPaused = false;
     int m_ownRemovals = 0;
     // every item Cone inserted that may still be in the queue (held, so no address is reused)
-    QVector<SharedInputItem> m_ownItems;
+    QVector<OwnItem> m_ownItems;
     // the media playing came from the autoplay item, and how many in a row without the user
     bool m_currentIsAutoplay = false;
     int m_autoStreak = 0;
@@ -264,6 +273,8 @@ private:
     bool m_stillPending = false;
     // "Still watching?" shows over the next episode, loaded paused
     bool m_stillOnPaused = false;
+    // that paused episode has reported PAUSED (its start may report PLAYING first)
+    bool m_stillSeenPaused = false;
     // the episode "Still watching?" names (the next one once it is loaded)
     QString m_stillLine;
     // the options the autoplay item was queued with (refreshed at the card point)
@@ -290,6 +301,8 @@ private:
     // rd-shows.json is read; until then nothing is written and Always answers nothing
     bool m_storeLoaded = false;
     bool m_storeDirty = false;
+    // Forget all before the file was read: its answers are not merged
+    bool m_forgotten = false;
     QThreadPool m_storePool;
 
     // the next episode's picture (one-shot thumbnailer request)
