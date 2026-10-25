@@ -138,7 +138,13 @@ vlc_module_begin ()
     set_subcategory( SUBCAT_VIDEO_SUBPIC )
 
 #ifdef HAVE_GET_FONT_BY_FAMILY_NAME
+    /* redesign (Q8, 2026-10-25): Cone's Settings say "System, sans-serif" (Figma): no family
+     * set means the system font, DEFAULT_FAMILY (Segoe UI on Windows, platform_fonts.h) */
+#ifdef VLC_BRAND_PUBLIC
+    add_font("freetype-font", NULL, FONT_TEXT, FAMILY_LONGTEXT)
+#else
     add_font("freetype-font", DEFAULT_FAMILY, FONT_TEXT, FAMILY_LONGTEXT)
+#endif
     add_font("freetype-monofont", DEFAULT_MONOSPACE_FAMILY,
              MONOSPACE_FONT_TEXT, FAMILY_LONGTEXT)
 #else
@@ -173,8 +179,15 @@ vlc_module_begin ()
     add_rgb("freetype-outline-color", 0x00000000, OUTLINE_COLOR_TEXT, NULL)
         change_integer_list( pi_color_values, ppsz_color_descriptions )
         change_safe()
+    /* redesign (Q8, 2026-10-25): Cone's subtitles are smaller (subsdec.c), and her 6:30 edge
+     * is about 6% of the font size: VLC's "Thick" (Decision 28: VLC's own sizes) */
+#ifdef VLC_BRAND_PUBLIC
+    add_integer_with_range( "freetype-outline-thickness", 6, 0, 50, OUTLINE_THICKNESS_TEXT,
+             NULL )
+#else
     add_integer_with_range( "freetype-outline-thickness", 4, 0, 50, OUTLINE_THICKNESS_TEXT,
              NULL )
+#endif
         change_integer_list( pi_outline_thickness, ppsz_outline_thickness )
         change_safe()
 
@@ -187,8 +200,15 @@ vlc_module_begin ()
     add_float_with_range( "freetype-shadow-angle", -45, -360, 360,
                           SHADOW_ANGLE_TEXT, NULL )
         change_safe()
+    /* redesign (Q8, 2026-10-25): the shadow stays on (Figma) but light, as at 6:30: the
+     * Settings' "Small" distance */
+#ifdef VLC_BRAND_PUBLIC
+    add_float_with_range( "freetype-shadow-distance", 0.04, 0.0, 1.0,
+                          SHADOW_DISTANCE_TEXT, NULL )
+#else
     add_float_with_range( "freetype-shadow-distance", 0.06, 0.0, 1.0,
                           SHADOW_DISTANCE_TEXT, NULL )
+#endif
         change_safe()
 
     add_integer_with_range( "freetype-cache-size", 200, 25, (UINT32_MAX >> 10),
