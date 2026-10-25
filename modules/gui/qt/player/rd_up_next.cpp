@@ -194,9 +194,15 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
             // between two episodes the player stops for a moment too: only a stop that lasts counts
             QTimer::singleShot(300, this, &RdUpNext::onStopped);
         }
-        // the episode loaded paused under "Still watching?" plays (Space, the play button)
-        if (m_stillOnPaused && m_player->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING)
-            leaveStillWatching();
+        // the episode loaded paused under "Still watching?" plays (Space, the play button); only
+        // once it has been paused, as it may report STARTED and PLAYING before it pauses
+        if (m_stillOnPaused)
+        {
+            if (m_player->getPlayingState() == PlayerController::PLAYING_STATE_PAUSED)
+                m_stillSeenPaused = true;
+            else if (m_stillSeenPaused && m_player->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING)
+                leaveStillWatching();
+        }
         updateCard();
     });
     connect(m_player, &PlayerController::ABLoopStateChanged, this, &RdUpNext::evaluate);
@@ -263,14 +269,14 @@ RdUpNext::~RdUpNext()
 
 bool RdUpNext::readSettings()
 {
-    const int mode = int(config_GetInt("qt-autoplay-next"));
+    const int mode = std::clamp(int(config_GetInt("qt-autoplay-next")), int(ModeOff), int(ModeAlways));
     const int countdown = int(config_GetInt("qt-autoplay-countdown"));
     const int cardPoint = int(config_GetInt("qt-autoplay-card-point"));
     const bool still = config_GetInt("qt-autoplay-still-watching") != 0;
     const int clampedCountdown = (countdown == 5 || countdown == 15) ? countdown : 10;
     if (mode == m_mode && clampedCountdown == m_countdown && cardPoint == m_cardPoint && still == m_stillWatching)
         return false;
-    m_mode = std::clamp(mode, int(ModeOff), int(ModeAlways));
+    m_mode = mode;
     m_countdown = clampedCountdown;
     m_cardPoint = cardPoint;
     m_stillWatching = still;
@@ -416,6 +422,7 @@ void RdUpNext::onInputChanged(bool hasInput)
 
     // "Still watching?" stays on the next episode, which starts paused under it
     m_stillOnPaused = m_stillPending && fromAutoplay;
+    m_stillSeenPaused = m_stillOnPaused && m_player->getPlayingState() == PlayerController::PLAYING_STATE_PAUSED;
     if (m_stillOnPaused)
         setCard(true, CardStillWatching);
     else
@@ -433,6 +440,8 @@ void RdUpNext::startDetection()
     m_showKnown = false;
     m_show = rdepisode::Show();
     m_nextIndex = -1;
+    // the old next episode's picture goes, and a request still running for it is dropped
+    requestThumbnail();
     emit stateChanged();
     emit nextChanged();
 
@@ -589,7 +598,8 @@ void RdUpNext::updateCard()
     const bool started = m_player->isStarted();
 
     // the prompt, early in the first episode of an unanswered show and after the resume toast
-    if (showActive() && m_mode == ModeAsk && !hasAnswer() && !m_promptDone && !m_promptVisible && started)
+    if (showActive() && m_mode == ModeAsk && m_storeLoaded && !hasAnswer() && !m_promptDone && !m_promptVisible
+            && started)
     {
         const VLCTime time = m_player->getTime();
         if (time.valid() && time.toMilliseconds() >= kPromptDelayMs && !m_player->canRestorePlayback())
@@ -605,12 +615,18 @@ void RdUpNext::updateCard()
         // over the paused episode it waits for an answer (or for playback, above)
         if (m_stillOnPaused)
             return;
-        // in the episode before it: a seek back out of the end means the user is there
+        // in the episode before it: a seek back out of the end means the user is there (the
+        // same point the card opens at, in real seconds at any speed)
         const VLCDuration length = m_player->getLength();
         const VLCTime time = m_player->getTime();
-        const qint64 limit = (m_cardPoint == 1 && m_creditsStartMs > 0)
-                ? m_creditsStartMs : (length.valid() ? length.toMilliseconds() - qint64(m_countdown) * 1000 : 0);
-        if (time.valid() && time.toMilliseconds() < limit - 1000)
+        if (!length.valid() || !time.valid())
+            return;
+        const double rate = std::max(0.01f, m_player->getRate());
+        const qint64 timeMs = time.toMilliseconds();
+        const bool before = (m_cardPoint == 1 && m_creditsStartMs > 0)
+                ? timeMs < m_creditsStartMs - 1000
+                : std::ceil(double(length.toMilliseconds() - timeMs) / 1000.0 / rate) > m_countdown + 1;
+        if (before)
             leaveStillWatching();
         return;
     }
@@ -736,6 +752,7 @@ void RdUpNext::setCard(bool visible, int mode)
     {
         m_stillLine.clear();
         m_stillOnPaused = false;
+        m_stillSeenPaused = false;
     }
     m_cardVisible = visible;
     m_cardMode = mode;
@@ -748,6 +765,7 @@ void RdUpNext::leaveStillWatching()
     m_autoStreak = 0;
     m_stillPending = false;
     m_stillOnPaused = false;
+    m_stillSeenPaused = false;
     setCard(false, CardNext);
     if (m_queuedPaused)
     {
@@ -840,7 +858,10 @@ void RdUpNext::setShowEnabled(bool enabled)
 
 void RdUpNext::forgetAll()
 {
-    if (m_answers.isEmpty())
+    // before the file is read: its answers are dropped when they arrive
+    if (!m_storeLoaded)
+        m_forgotten = true;
+    if (m_answers.isEmpty() && m_storeLoaded)
         return;
     m_answers.clear();
     saveStore();
@@ -885,27 +906,33 @@ void RdUpNext::queueNext(bool startPaused)
 
     vlc_playlist_t* playlist = m_playlist->getPlaylist().m_playlist;
     ssize_t current;
+    SharedInputItem after;
+    QByteArray afterUri;
     {
         vlc_playlist_locker lock{ playlist };
         current = vlc_playlist_GetCurrentIndex(playlist);
         if (current < 0)
             return;
-        // Previous inside an autoplay run: the episode Cone queued before is still next, it is
-        // taken again instead of a second row
-        if (!startPaused && size_t(current) + 1 < vlc_playlist_Count(playlist))
+        if (size_t(current) + 1 < vlc_playlist_Count(playlist))
         {
-            input_item_t* after = vlc_playlist_item_GetMedia(vlc_playlist_Get(playlist, size_t(current) + 1));
-            if (isOwn(after) && after->psz_uri && mrl8 == after->psz_uri)
-            {
-                m_queued = SharedInputItem(after);
-                m_queuedInput = after;
-                m_queuedUrl = QUrl(mrl);
-                m_queuedPaused = false;
-                m_queuedOptions.clear();
-                emit queuedChanged();
-                return;
-            }
+            after = SharedInputItem(vlc_playlist_item_GetMedia(vlc_playlist_Get(playlist, size_t(current) + 1)));
+            char* uri = input_item_GetURI(after.get());
+            afterUri = uri;
+            free(uri);
         }
+    }
+    // Previous inside an autoplay run: the episode Cone queued before is still next, it is taken
+    // again instead of a second row (not one queued paused for "Still watching?")
+    const OwnItem* own = after ? ownItem(after.get()) : nullptr;
+    if (!startPaused && own && !own->paused && afterUri == mrl8)
+    {
+        m_queued = after;
+        m_queuedInput = after.get();
+        m_queuedUrl = QUrl(mrl);
+        m_queuedPaused = false;
+        m_queuedOptions = own->options;
+        emit queuedChanged();
+        return;
     }
 
     m_queuedOptions = itemOptions(startPaused);
@@ -922,7 +949,7 @@ void RdUpNext::queueNext(bool startPaused)
     m_queuedInput = media.raw();
     m_queuedUrl = QUrl(mrl);
     m_queuedPaused = startPaused;
-    m_ownItems.append(m_queued);
+    m_ownItems.append(OwnItem{ m_queued, m_queuedOptions, startPaused });
     emit queuedChanged();
 
     try
@@ -949,8 +976,8 @@ void RdUpNext::pruneOwnItems()
         for (size_t i = 0; i < count; ++i)
             present.append(vlc_playlist_item_GetMedia(vlc_playlist_Get(playlist, i)));
     }
-    m_ownItems.erase(std::remove_if(m_ownItems.begin(), m_ownItems.end(), [&present](const SharedInputItem& item) {
-        return !present.contains(item.get());
+    m_ownItems.erase(std::remove_if(m_ownItems.begin(), m_ownItems.end(), [&present](const OwnItem& own) {
+        return !present.contains(own.item.get());
     }), m_ownItems.end());
 }
 
@@ -958,10 +985,17 @@ bool RdUpNext::isOwn(input_item_t* input) const
 {
     if (!input)
         return false;
-    for (const SharedInputItem& item : m_ownItems)
-        if (item.get() == input)
-            return true;
-    return false;
+    return ownItem(input) != nullptr;
+}
+
+const RdUpNext::OwnItem* RdUpNext::ownItem(input_item_t* input) const
+{
+    if (!input)
+        return nullptr;
+    for (const OwnItem& own : m_ownItems)
+        if (own.item.get() == input)
+            return &own;
+    return nullptr;
 }
 
 void RdUpNext::clearQueued()
@@ -1089,6 +1123,7 @@ void RdUpNext::onItemsMovedOrReset()
         clearQueued();
         return;
     }
+    pruneOwnItems();
     // a move, a sort, a shuffle, or the queue Cone found when it started with several items
     if (m_playlist->count() > 1)
         m_userQueue = true;
@@ -1264,7 +1299,7 @@ void RdUpNext::setAnswer(bool yes)
 
 void RdUpNext::loadStore(const QJsonObject& data)
 {
-    const QJsonObject shows = data.value(QStringLiteral("shows")).toObject();
+    const QJsonObject shows = m_forgotten ? QJsonObject() : data.value(QStringLiteral("shows")).toObject();
     for (auto it = shows.begin(); it != shows.end(); ++it)
     {
         const QJsonObject entry = it.value().toObject();
