@@ -14,9 +14,6 @@ RENAME_CONE_PLAYER.md R6) is:
 - [ ] wip/ci-release updated for the new names (release title, `coneplayer-*` / `ConePlayer-*` patterns in `release-package.sh`; RENAME_CONE_PLAYER.md section 7) and merged, so the release workflow attaches both files and their checksums.
 - [ ] Smoke, screens and quit checks on the build from the `v1.0.0` tag.
 - [ ] Known issues below rechecked on that build: drop any that are fixed (the background error after closing Settings is carried over from 0.2.0 unchecked), add any new ones.
-- [ ] Settings from a beta zip, checked on Windows:
-  - **zip to zip** (copy the `portable` folder): keeps everything, as in 0.2.0;
-  - **beta zip to installer:** the installed app uses `%APPDATA%\Cone`, not the zip's `portable` folder, so it starts fresh. The text below says so (a settings import from the beta zip was cancelled by StickyGonzales, 2026-10-25).
 - [ ] README from `wip/readme-1.0` merged (download links point to the `v1.0.0` release).
 - [ ] Not a pre-release this time (it leaves beta); the commit in the license line filled in.
 
@@ -44,14 +41,6 @@ Uninstall it from Settings > Apps like any app. It asks before deleting your set
 **Portable zip: `ConePlayer-1.0.0-win64.zip`**
 1. Unzip it anywhere and run `Cone.exe` in the `ConePlayer-1.0.0` folder. Nothing gets installed.
 2. Settings stay in the `portable` folder next to `Cone.exe`. SmartScreen may warn the same way: **More info**, **Run anyway**.
-
-## Coming from the beta
-
-- **Your settings are kept.**
-  - **Zip:** coming from the 0.1.0 or 0.2.0 beta zip, copy the old `portable` folder next to the new `Cone.exe`. Your settings, presets and profiles come along.
-  - **Installer:** a later Cone Player installer updates this one in place and keeps your settings (`%APPDATA%\Cone`).
-- **Moving from the zip to the installer:** the installed app keeps its settings in `%APPDATA%\Cone`, not in the zip's `portable` folder, so it starts with fresh settings. The zip folder and its settings stay where they are.
-- **The exe is still `Cone.exe`,** so shortcuts and "Open with" choices you made for the beta keep working.
 
 ## New since 0.2.0 beta
 

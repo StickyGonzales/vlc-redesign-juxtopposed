@@ -15,7 +15,7 @@
 
 The files are not code-signed yet, so Windows SmartScreen may warn the first time: choose **More info**, then **Run anyway**.
 
-**Coming from a beta zip?** Copy its `portable` folder next to the new `Cone.exe` to keep your settings. The installed app keeps its own settings in `%APPDATA%\Cone`, so moving from the zip to the installer starts fresh. Your installed VLC isn't touched either way, and both run side by side.
+Your installed VLC isn't touched, and both run side by side.
 
 Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues). **Linux:** a build follows as its own release.
 
