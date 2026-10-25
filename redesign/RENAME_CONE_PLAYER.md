@@ -1,6 +1,6 @@
 # Rename plan: Cone → Cone Player
 
-Status: **built on `wip/cone-player`, tested under Wine only, not merged** (section 7). StickyGonzales answered R1 to R7 on 2026-10-25 (section 1, Decision 72). The rename ships with **Cone Player 1.0**, the release where Cone leaves beta; nothing of it goes into a 0.x beta, so the branch waits for 1.0. The plan was written against `wip/next-test` at f14c4303f4 (2026-10-25).
+Status: **built on `wip/cone-player`, tested under Wine only, not merged** (section 7). StickyGonzales answered R1 to R7 on 2026-10-25 (section 1, Decision 73). The rename ships with **Cone Player 1.0**, the release where Cone leaves beta; nothing of it goes into a 0.x beta, so the branch waits for 1.0. The plan was written against `wip/next-test` at f14c4303f4 (2026-10-25).
 
 Scope: the **public** brand profile only. The vlc profile (VLC's name and cone) stays as it is.
 
