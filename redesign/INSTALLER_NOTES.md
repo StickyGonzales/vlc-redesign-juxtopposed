@@ -89,7 +89,7 @@ Wine also shows copies of `Clients\Media\Cone`, `App Paths\Cone.exe` and the Aut
 
 | Where | What |
 |---|---|
-| `C:\Program Files\Cone\` | `Cone.exe`, `vlc-cache-gen.exe`, `vlc-preparser.exe`, `libvlc.dll`, `libvlccore.dll` and the other DLLs, `plugins\` (+ `plugins.dat` made by the cache generator at install), `locale\`, `hrtfs\`, `lua\`, `COPYING.txt`, `NEWS.txt`, `README.txt` and the other text files, `Cone Website.url`, `Documentation.url`, `uninstall.exe`, `uninstall.log` (hidden; the list the uninstaller removes) |
+| `C:\Program Files\Cone\` | `Cone.exe`, `vlc-cache-gen.exe`, `vlc-preparser.exe`, `libvlc.dll`, `libvlccore.dll` and the other DLLs, `plugins\` (+ `plugins.dat` made by the cache generator at install), `locale\` (only when the build has translations: the CI build has none, so the real installer writes no `locale\`), `hrtfs\`, `lua\`, `COPYING.txt`, `NEWS.txt`, `README.txt` and the other text files, `Cone Website.url`, `Documentation.url`, `uninstall.exe`, `uninstall.log` (hidden; the list the uninstaller removes) |
 | `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StickyGonzales\` | `Cone.lnk`, `Cone - reset preferences and cache files.lnk`, `Cone Website.lnk`, `Documentation.lnk`, `Release Notes.lnk` |
 | `%PUBLIC%\Desktop\Cone.lnk` | only with "Desktop Shortcut" |
 
