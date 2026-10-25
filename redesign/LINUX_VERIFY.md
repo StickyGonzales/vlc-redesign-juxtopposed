@@ -14,6 +14,7 @@ Two runs:
 | build-linux #33 | 40211192797 | `wip/linux-build` (6c3dbb6bba) | `wip/next-test` merged into the Linux branch (0.2.0, the HEVC surface fix, the Spectrometer fix, everything since) |
 | build-linux #35 | 40213274248 | `wip/linux-fixes-linux` (ef74cd8212) | #33 + the three Linux fix branches (language, audio device, postproc); test only, never merged |
 | build-linux #36 | 40214838893 | `wip/linux-fixes-linux` (663b7c0e81) | #35 + the sub-ui-margin core fix (assertions still on, so the fix is proven) |
+| build-linux #38 | 40216428165 | `wip/linux-fixes-linux` (e319e04663) | #36 + the release build without assertions (smoke test) |
 
 Same sandbox as the first run, apart from:
 - Xvfb 1600x1000 with the window at 1440x900; openbox; llvmpipe; PulseAudio null sink; a fresh test profile.
@@ -70,7 +71,7 @@ Same sandbox as the first run, apart from:
 
 ### New findings
 1. **Spectrometer aborted Cone on Linux (fixed, core).** With no video output (a song, or a visualizer whose output is not open yet), `vlc_player_vout_HoldAll` hands out the input's dummy output. The subtitle lift set `sub-ui-margin` on it, and that variable's callback was added in `vout_CreateVars`, which the dummy runs too. The callback calls `vout_ChangeSpuChannelMargin`, which asserts the output is not the dummy. Windows release builds have no assertions, and the dummy has no subpicture unit, so nothing visible happened there. Fix: the callback is added in `vout_IntfInit`, like `sub-margin`'s. Branch `wip/fix-sub-ui-margin-dummy`, draft PR #51 into wip/next-test; tested on #36. Core change: its own Windows build.
-2. **The Linux build kept VLC's run-time assertions (fixed, CI).** VLC's configure keeps assertions on unless `--disable-debug`; the Windows build passes it (`build.sh -r`). So a check that is harmless on Windows ended Cone on Linux. The release build now matches Windows: branch `wip/fix-linux-release-build`, draft PR into wip/linux-build. Test builds of the fix branches keep assertions on, so they still catch this kind of bug. (build of this branch: pending)
+2. **The Linux build kept VLC's run-time assertions (fixed, CI).** VLC's configure keeps assertions on unless `--disable-debug`; the Windows build passes it (`build.sh -r`). So a check that is harmless on Windows ended Cone on Linux. The release build now matches Windows: branch `wip/fix-linux-release-build`, draft PR #53 into wip/linux-build. Built and smoke-tested on #38 (run 40216428165, all Linux fix branches together): no assertion strings left in libvlccore; an episode plays and seeks, Spectrometer draws on a song, Settings opens, quit with the visualizer on 2.6 s (exit 0).
 3. After the quit watchdog ends Cone, the next start asks "Do you want to restore the playlist model from …?" in an unstyled message box. That is VLC's crash recovery. STATUS.md already lists the "closed abruptly" prompt after forced closes as not a bug, so it is only noted here (shared with Windows).
 4. Small: the Audio Visualizer list's Linux-only entry "3D OpenGL spectrum" is elided ("3D OpenGL spectru…") in the sidebar dropdown. It has no Figma counterpart and is not changed here.
 

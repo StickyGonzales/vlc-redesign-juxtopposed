@@ -71,7 +71,8 @@ Linux specifics:
 | Audio Output device on Linux (P8-11) | `wip/fix-linux-audio-device` (PR #49) | `wip/next-test` | QML (shared code, Linux path) |
 | sub-ui-margin on the dummy output (Spectrometer abort) | `wip/fix-sub-ui-margin-dummy` (PR #51) | `wip/next-test` | core: its own Windows build and test |
 | libpostproc in the Linux build (P8-16) | `wip/fix-linux-postproc` (PR #50) | `wip/linux-build` | CI script (exists only there) |
-| Release build without assertions, as Windows | `wip/fix-linux-release-build` | `wip/linux-build` | CI script (exists only there) |
+| Release build without assertions, as Windows | `wip/fix-linux-release-build` (PR #53) | `wip/linux-build` | CI script (exists only there) |
 
 - `build-linux.yml` and the Linux scripts reach `redesign` with `wip/linux-build`; until then a Linux release cannot be built from `redesign`.
 - Verification state: redesign/LINUX_VERIFY.md (sandbox rerun of 2026-10-25).
+- Tested together on build-linux #38 (run 40216428165, test-only branch `wip/linux-fixes-linux`): the AppImage of that build is what this beta would ship once the branches are merged.
