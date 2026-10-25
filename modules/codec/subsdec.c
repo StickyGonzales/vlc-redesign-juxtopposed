@@ -42,6 +42,14 @@
 
 #include "substext.h"
 
+#ifdef VLC_BRAND_PUBLIC
+/* redesign (Q8, 2026-10-25): Cone's default subtitle size, in percent of the picture height,
+ * as in her video at 6:30 (text 2.5% of the picture high to the top of an "l", 37 px at
+ * 1080). VLC's is STYLE_DEFAULT_REL_FONT_SIZE (6.25). The subtitle text scale still applies
+ * on top, so "Automatic" (100%) is this size; on-screen messages keep VLC's size. */
+# define SUBSDEC_DEFAULT_REL_FONT_SIZE 3.45f
+#endif
+
 /*****************************************************************************
  * Module descriptor.
  *****************************************************************************/
@@ -457,6 +465,10 @@ static subpicture_t *ParseText( decoder_t *p_dec, block_t *p_block )
     p_spu->b_ephemer  = (p_block->i_length == 0);
 
     subtext_updater_sys_t *p_spu_sys = p_spu->updater.sys;
+#ifdef VLC_BRAND_PUBLIC
+    /* the size of every line without a size of its own */
+    p_spu_sys->p_default_style->f_font_relsize = SUBSDEC_DEFAULT_REL_FONT_SIZE;
+#endif
 
     int i_inline_align = -1;
     p_spu_sys->region.p_segments = ParseSubtitles( &i_inline_align, psz_subtitle );

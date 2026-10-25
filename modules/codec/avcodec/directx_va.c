@@ -361,7 +361,8 @@ const directx_va_mode_t *directx_va_Setup(vlc_va_t *va, const directx_sys_t *dx_
             surface_alignment = 16;
         else
             surface_alignment = 128;
-        surface_count += 16;
+        /* 2 more, as for H264: headroom for the decoder after a flush */
+        surface_count += 16 + 2;
         break;
     case AV_CODEC_ID_H264:
         surface_count += 16 + 2;
@@ -377,8 +378,14 @@ const directx_va_mode_t *directx_va_Setup(vlc_va_t *va, const directx_sys_t *dx_
         surface_count += 2;
     }
 
+    /* with frame threads, each thread can hold a frame in flight and its own
+     * copy of the references until its next packet: count the threads twice,
+     * as the decoder does for its picture pool (video.c), or after a flush the
+     * decoder can take every surface before it outputs its first picture */
     if ( avctx->active_thread_type & FF_THREAD_FRAME )
-        surface_count += avctx->thread_count;
+        surface_count += 2 * avctx->thread_count;
+    if ( surface_count > MAX_SURFACE_COUNT )
+        surface_count = MAX_SURFACE_COUNT;
 
     if (avctx->coded_width <= 0 || avctx->coded_height <= 0)
         return NULL;
