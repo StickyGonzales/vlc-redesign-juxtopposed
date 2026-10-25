@@ -146,7 +146,7 @@ This file turns every row of the plan's conflict matrix (section 8, rows 1 to 11
 | 81 | Frame step / Trickplay reverse | No step of its own. | As the rule: Reverse is postponed (Decision 29) | not run |
 | 82 | Subtitle timeline (P3-16 / P4-35) | Timeline on, E02 starts. | E02's cues. | not run |
 | 83 | On-screen messages | Press N at the card. | no overlap. | not run |
-| 84 | The resume toast | Open E01 with a saved spot (Ask). | toast first, prompt after. | fail on build 30, fixed for build 32: a toast that timed out kept the prompt away |
+| 84 | The resume toast | Open E01 with a saved spot (Ask). | toast first, prompt after. | pass on build 32 (fixed after build 30: a toast that timed out kept the prompt away) |
 | 85 | Mini player (library full view) | Open the full library during the card. | the strip in the mini player. | pass (`sandbox/07-mini.png`) |
 | 86 | Mini queue | Open the mini queue. | E02 "Autoplay". | not run |
 | 87 | Fullscreen | As 36. | As the rule: the card in fullscreen at the same rules (7.1); no exit to Home between episodes (it's a queue move, not a stop) | not run |
@@ -163,7 +163,7 @@ This file turns every row of the plan's conflict matrix (section 8, rows 1 to 11
 |---|---|---|---|---|
 | 94 | Quit watchdog (PR #34) | Close Cone at the card. | quits in under 5 s, E01's position saved. | not run |
 | 95 | Command line `--play-and-exit` | `cone --play-and-exit E01.mkv`. | quits after E01, no card. | not run |
-| 96 | Command line `--play-and-stop`, `--play-and-pause`, `--random`, `--loop`, `--repeat`, `--start-paused`, `--input-repeat`, `--start-time`, `--stop-time`, `--run-time`, `--no-playlist-autostart` | Each option once with E01. | no card (`--loop`: as row 11). | fail on build 30, fixed for build 32: `--qt-autoplay-next` on the command line was ignored |
+| 96 | Command line `--play-and-stop`, `--play-and-pause`, `--random`, `--loop`, `--repeat`, `--start-paused`, `--input-repeat`, `--start-time`, `--stop-time`, `--run-time`, `--no-playlist-autostart` | Each option once with E01. | no card (`--loop`: as row 11). | pass on build 32 (fixed after build 30: `--qt-autoplay-next` on the command line was ignored) |
 | 97 | Command line: several files | `cone E01.mkv E03.mkv`. | E01, E03, no card. | not run |
 | 98 | Command line / Explorer: one file | Double-click E01 in Explorer. | E02 queued, card at the end. | not run |
 | 99 | vlc profile (non-public build) | Run the vlc build on a fresh profile. | Settings > Playback > Autoplay next episode = Off, no prompt, no card. | not run: the sandbox only has the Cone (public) build |
@@ -193,7 +193,7 @@ This file turns every row of the plan's conflict matrix (section 8, rows 1 to 11
 
 ## Linux sandbox run (build 30, then 32)
 
-**Builds:** Linux build 30 of `wip/up-next-linux` (test-only branch, never merged), run in the sandbox (Xvfb, openbox) with the generated media and a fresh Cone profile. Seeks and queue commands went through VLC's rc interface (`--extraintf=rc`), clicks and keys through xdotool. Build 32 adds the fixes found here and is re-checked for them (rows 84, 96, the sidebar reason, the tag position).
+**Builds:** Linux build 30 of `wip/up-next-linux` (test-only branch, never merged), run in the sandbox (Xvfb, openbox) with the generated media and a fresh Cone profile. Seeks and queue commands went through VLC's rc interface (`--extraintf=rc`), clicks and keys through xdotool. Build 32 adds the fixes found here; all four were re-checked on it and pass (rows 84 and 96, the sidebar reason, the tag position).
 
 **Side-by-side images** (`redesign/up-next-design/sandbox/`, our build next to the design renders):
 
