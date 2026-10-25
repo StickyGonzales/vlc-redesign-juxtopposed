@@ -67,10 +67,10 @@ Linux specifics:
 
 | Fix | Branch | Into | Kind |
 |---|---|---|---|
-| Interface language on Linux (P8-03) | `wip/fix-linux-language` | `wip/next-test` | Qt (shared code, Linux path) |
-| Audio Output device on Linux (P8-11) | `wip/fix-linux-audio-device` | `wip/next-test` | QML (shared code, Linux path) |
-| sub-ui-margin on the dummy output (Spectrometer abort) | `wip/fix-sub-ui-margin-dummy` | `wip/next-test` | core: its own Windows build and test |
-| libpostproc in the Linux build (P8-16) | `wip/fix-linux-postproc` | `wip/linux-build` | CI script (exists only there) |
+| Interface language on Linux (P8-03) | `wip/fix-linux-language` (PR #48) | `wip/next-test` | Qt (shared code, Linux path) |
+| Audio Output device on Linux (P8-11) | `wip/fix-linux-audio-device` (PR #49) | `wip/next-test` | QML (shared code, Linux path) |
+| sub-ui-margin on the dummy output (Spectrometer abort) | `wip/fix-sub-ui-margin-dummy` (PR #51) | `wip/next-test` | core: its own Windows build and test |
+| libpostproc in the Linux build (P8-16) | `wip/fix-linux-postproc` (PR #50) | `wip/linux-build` | CI script (exists only there) |
 | Release build without assertions, as Windows | `wip/fix-linux-release-build` | `wip/linux-build` | CI script (exists only there) |
 
 - `build-linux.yml` and the Linux scripts reach `redesign` with `wip/linux-build`; until then a Linux release cannot be built from `redesign`.
