@@ -42,7 +42,12 @@ SettingsPage {
     readonly property string _aout: String(_option("aout") ?? "")
     // the device and start volume options of the output in use (VLC's preferences do the same;
     // VLC 4 has no DirectSound output any more)
-    readonly property string _deviceOption: _aout === "waveout" ? "waveout-audio-device" : "mmdevice-audio-device"
+    // (Linux: ALSA keeps its device in "alsa-audio-device"; PulseAudio has no option, it
+    // remembers the device of each app itself, so the choice only switches the output: P8-11)
+    readonly property string _deviceOption: _aout === "waveout" ? "waveout-audio-device"
+                                          : _aout === "alsa" ? "alsa-audio-device"
+                                          : SettingsCatalog.exists("mmdevice-audio-device") ? "mmdevice-audio-device"
+                                          : ""
     readonly property string _volumeOption: _aout === "waveout" ? "waveout-volume" : "mmdevice-volume"
     readonly property bool _rememberVolume: _option("volume-save") === true
     // the effects this build of VLC has (a toggle without its filter would stay on doing nothing)
@@ -150,27 +155,39 @@ SettingsPage {
             // bumped when the output's device list changes
             property int _revision: 0
 
-            // the id of the output's default device: "" (mmdevice), "wavemapper" (waveout)
+            // the id of the output's default device: "" (mmdevice), "wavemapper" (waveout),
+            // "default" (ALSA)
             function _isDefault(id) {
                 return id === "" || (root._aout === "waveout" && id === "wavemapper")
+                       || (root._aout === "alsa" && id === "default")
             }
+
+            // the output's id for "System default"; PulseAudio has none (its devices only)
+            readonly property bool _hasDefault: root._deviceOption !== ""
+            readonly property string _defaultId: root._aout === "waveout" ? "wavemapper"
+                                               : root._aout === "alsa" ? "default" : ""
 
             readonly property string current: deviceRow._isDefault(Player.audioDevices.current) ? "" : Player.audioDevices.current
 
             readonly property var devices: {
                 void _revision
                 const list = Player.audioDevices.devices().filter((d) => !deviceRow._isDefault(d.value))
-                list.unshift({ value: "", text: qsTr("System default") })
+                if (deviceRow._hasDefault)
+                    list.unshift({ value: "", text: qsTr("System default") })
                 // a device in use that the output does not list (any more) keeps its id
-                if (!list.some((d) => d.value === deviceRow.current))
+                if (deviceRow.current !== "" && !list.some((d) => d.value === deviceRow.current))
                     list.push({ value: deviceRow.current, text: deviceRow.current })
                 return list
             }
 
             text: qsTr("Output device")
-            description: RdEffects.optionDescription(root._deviceOption)
+            description: root._deviceOption !== ""
+                         ? RdEffects.optionDescription(root._deviceOption)
+                         : qsTr("The speakers or headphones %1 plays on. The sound server keeps the choice for %1.").arg(Brand.shortName)
             keywords: "audio-device speakers headphones " + root._deviceOption
-            shown: SettingsCatalog.exists(root._deviceOption)
+            // the Windows outputs and ALSA have an option; PulseAudio (Linux) its device list
+            shown: root._deviceOption !== "" ? SettingsCatalog.exists(root._deviceOption)
+                                             : (Qt.platform.os !== 'windows' && Qt.platform.os !== 'osx')
 
             Connections {
                 target: Player.audioDevices
@@ -192,8 +209,9 @@ SettingsPage {
                 // back to the device in use: AudioDeviceModel signals `current`)
                 onActivated: (index) => {
                     const id = deviceRow.devices[index].value
-                    if (Player.audioDevices.select(id))
-                        RdEffects.setOption(root._deviceOption, id)
+                    const outputId = id === "" ? deviceRow._defaultId : id
+                    if (Player.audioDevices.select(outputId) && root._deviceOption !== "")
+                        RdEffects.setOption(root._deviceOption, outputId)
                 }
 
                 // devices plugged in since the list was read
