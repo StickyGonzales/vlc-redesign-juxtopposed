@@ -65,10 +65,28 @@ build_medialibrary()
     )
 }
 
+# libpostproc for the "postproc" video filter (Settings > Performance > Video post-processing,
+# P8-16): the image's FFmpeg no longer ships it (FFmpeg 8 dropped libpostproc), VLC's contrib
+# builds the standalone one against the image's FFmpeg (static, inside the plugin)
+build_postproc()
+{
+    if [ -f "$CONTRIB_PREFIX/lib/pkgconfig/libpostproc.pc" ]; then
+        echo "postproc: already built in $CONTRIB_PREFIX"
+        return
+    fi
+    mkdir -p contrib/linux-ml-build
+    (
+        cd contrib/linux-ml-build
+        [ -f config.mak ] || ../bootstrap --prefix="$CONTRIB_PREFIX"
+        make -j"$NCPU" .postproc
+    )
+}
+
 build()
 {
     ccache_setup
     build_medialibrary
+    build_postproc
 
     local brand=()
     if [ -n "$VLC_BRAND" ]; then brand+=(--with-brand="$VLC_BRAND"); fi
