@@ -102,7 +102,7 @@ Item {
         entries.push({ text: qsTr("Add to Queue"), icon: "queue_two-tone-yes", action: () => RdLibraryActions.addToQueue(item) })
         if (isMl)
             entries.push({ text: qsTr("Add to Playlist"), icon: "playlist_two-tone-yes", submenu: true, chevron: false,
-                           action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.openBeside(row) } })
+                           action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.mediaNames = [item.title ?? ""]; playlistMenu.openBeside(row) } })
         if (isLocal) {
             entries.push({ text: qsTr("Show in File Explorer"), icon: "folder_two-tone-yes",
                            action: () => RdLibraryActions.showInFileExplorer(item) })
@@ -159,7 +159,7 @@ Item {
             { text: qsTr("Shuffle"), icon: "shuffle_two-tone-yes_direction-right", action: () => RdLibraryActions.shuffle(item) },
             { text: qsTr("Add to Queue"), icon: "queue_two-tone-yes", action: () => RdLibraryActions.addToQueue(item) },
             { text: qsTr("Add to Playlist"), icon: "playlist_two-tone-yes", submenu: true, chevron: false,
-              action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.openBeside(row) } }
+              action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.mediaNames = [item.title ?? ""]; playlistMenu.openBeside(row) } }
         ].filter((entry) => !!entry)
     }
 

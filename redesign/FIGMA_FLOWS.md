@@ -87,7 +87,7 @@ Typography (all Inter): body/labels 400 14 px / line 16.9; time labels 400 15 px
 | Dialog header controls | 200x34 dropdowns / 610-820x34 fields | pad 5,8,5,12 | 6 | `Dark/BG/A5=#151515`, text `Dark/FG/A1` |
 | Cancel / Save | 100x32 | pad 4,8 | 6 | Cancel `Dark/BG/A3` + `Dark/FG/A2`; Save `Dark/BG/Accent Bright` + `Dark/Accent/Main` (disabled = 50% opacity) |
 | Keyboard Shortcuts rows | 1008x33, gap 14 | label 290 wide `Dark/FG/2`; two key fields 270x33 r6 `Dark/BG/B2` pad 4,20 | 6 | group titles 400 16 / 28 `Dark/FG/A1` |
-| Settings dialog | 1048x865 | header 50 (`Dark/BG/B2`, search 200x34, title, close); nav column 216 (inner 200, gap 8, pad 6, r6 `Dark/BG/A3 Transparent`); content 832 (pad 20,24,100,24, gap 20); Advanced Options bar 784x38 r2 | 14 | `Dark/BG/B1 Transparent`, "bg blur + shadow" |
+| Settings dialog | 1048x865 | header 50 (`Dark/BG/B2`, search 200x34, title, close); nav column 216 (inner 200, gap 8, pad 6, r6 `Dark/BG/A3 Transparent`); content 832 (pad 20,24,40,24, gap 20; 100 under it only in the collapsed "Settings - global"); Advanced Options bar 784x38 r2 | 14 | `Dark/BG/B1 Transparent`, "bg blur + shadow" |
 | Settings category row | 188x40 | gap 8, pad 4, 32 px icon cell | 2 | selected `Dark/BG/A1=#222222`, icon filled `Dark/Accent/Main`, text `Dark/FG/1` |
 | Toggle | 68x32 | knob 26x26 r3 + 33x26 track r3 + label | 6 | ON: knob `Dark/Accent/DIm`, track `Dark/BG/Accent Bright`, "ON" `Dark/Accent/Main`; OFF: knob `Dark/FG/A4`, track `Dark/BG/A4`, "OFF" `Dark/FG/A3`; base `Dark/BG/B2` |
 | Dropdown | 364x48 closed (option 360x44 r4 `Dark/BG/A4`); open list 364 wide, gap 2 pad 2, drop shadow 13.8 | | 6 | `Dark/BG/B2`; selected option `Dark/BG/A2` |

@@ -343,9 +343,10 @@ void vout_CreateVars( vout_thread_t *p_vout )
                 VLC_VAR_INTEGER | VLC_VAR_DOINHERIT | VLC_VAR_ISCOMMAND );
 
     /* redesign: margin the interface adds to sub-margin while its controls cover the bottom of
-     * the picture (pixels of the display); not an option and no on-screen message */
+     * the picture (pixels of the display); not an option and no on-screen message. Its callback
+     * is added in vout_IntfInit, as sub-margin's: the input's dummy output has the variable but
+     * no subpicture channels */
     var_Create( p_vout, "sub-ui-margin", VLC_VAR_INTEGER );
-    var_AddCallback( p_vout, "sub-ui-margin", SubUiMarginCallback, NULL );
 
     /* Add secondary-sub-margin variable (dual subtitles) */
     var_Create( p_vout, "secondary-sub-margin",
@@ -392,6 +393,7 @@ void vout_IntfInit( vout_thread_t *p_vout )
     var_AddCallback( p_vout, "sub-source", SubSourceCallback, NULL );
     var_AddCallback( p_vout, "sub-filter", SubFilterCallback, NULL );
     var_AddCallback( p_vout, "sub-margin", SubMarginCallback, NULL );
+    var_AddCallback( p_vout, "sub-ui-margin", SubUiMarginCallback, NULL );
     var_AddCallback( p_vout, "viewpoint", ViewpointCallback, NULL );
     var_AddCallback( p_vout, "override-projection", OverrideProjectionCallback, NULL );
     var_AddCallback( p_vout, "projection-mode", ChangeProjectionCallback, NULL );

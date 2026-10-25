@@ -60,6 +60,18 @@ T.ComboBox {
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => Navigation.defaultKeyAction(event)
 
+    // accessibility tools (UI Automation's Invoke pattern) open the list as a click does; T.ComboBox
+    // has no action of its own. Its rows (RdOptionRow) are invoked like a click, which picks one
+    // (activated())
+    Accessible.onPressAction: {
+        if (!control.enabled)
+            return
+        if (control.popup.visible)
+            control.popup.close()
+        else
+            control.popup.open()
+    }
+
     background: Rectangle {
         radius: VLCStyle.rd_radius_normal
         color: control.frameless ? (control.hovered ? control.rdPalette.rdBgA4 : control.rdPalette.rdBgB1)

@@ -32,6 +32,7 @@
 #include <QFileInfo>
 #include <QPointer>
 #include <QProcess>
+#include <QSettings>
 #include <QTemporaryFile>
 
 #include <algorithm>
@@ -104,7 +105,7 @@ const QSet<QString>& curatedOptions()
         "freetype-outline-color", "freetype-shadow-opacity", "freetype-shadow-color",
         "freetype-shadow-distance", "freetype-background-opacity", "freetype-background-color",
         "sub-margin", "sub-delay", "osd", "osd-duration", "video-title-show", "video-title-timeout",
-        "sub-autodetect-path", "freetype-shadow-angle", "freetype-text-direction",
+        "sub-autodetect-path", "ssa-ignore-styling", "freetype-shadow-angle", "freetype-text-direction",
         "freetype-monofont", "sub-text-scale",
         // Library
         "one-instance", "one-instance-when-started-from-file", "playlist-enqueue", "recursive",
@@ -642,10 +643,12 @@ bool SettingsCatalog::clearHistory()
 
 bool SettingsCatalog::languageSupported() const
 {
-#ifdef _WIN32
-    return true;
-#else
+    // Windows: VLC's registry key; Linux and the other Unix systems: Cone's interface settings,
+    // applied at the next start (qt.cpp, LANGUAGE for gettext); macOS keeps the system language
+#ifdef __APPLE__
     return false;
+#else
+    return true;
 #endif
 }
 
@@ -690,6 +693,10 @@ QString SettingsCatalog::language() const
     char* lang = registry.ReadRegistry(BRAND_REGISTRY_KEY, "Lang", "auto");
     const QString result = lang ? qfu(lang) : QString();
     free(lang);
+    return result.isEmpty() ? QStringLiteral("auto") : result;
+#elif !defined(__APPLE__)
+    const QString result = p_intf->mainSettings
+            ? p_intf->mainSettings->value(QStringLiteral("Interface/language")).toString() : QString();
     return result.isEmpty() ? QStringLiteral("auto") : result;
 #else
     return QStringLiteral("auto");
@@ -865,6 +872,14 @@ void SettingsCatalog::setLanguage(const QString& iso)
     {
         registry.WriteRegistry(BRAND_REGISTRY_KEY, "Lang", qtu(iso));
     }
+#elif !defined(__APPLE__)
+    // read by the interface when it starts (qt.cpp)
+    if (!p_intf->mainSettings)
+        return;
+    if (iso.isEmpty() || iso == QLatin1String("auto"))
+        p_intf->mainSettings->remove(QStringLiteral("Interface/language"));
+    else
+        p_intf->mainSettings->setValue(QStringLiteral("Interface/language"), iso);
 #else
     Q_UNUSED(iso);
 #endif

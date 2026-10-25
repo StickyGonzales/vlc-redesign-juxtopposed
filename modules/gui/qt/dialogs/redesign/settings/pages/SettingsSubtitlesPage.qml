@@ -390,6 +390,13 @@ SettingsPage {
                 available: root._autodetect
             }
 
+            // the libass decoder's option (modules/codec/libass.c, row S2-11): the dialogue of
+            // ASS/SSA subtitles takes the Appearance style above, from the next file or track
+            SettingsOption {
+                option: "ssa-ignore-styling"
+                text: qsTr("Ignore styling in ASS and SSA subtitles")
+            }
+
             SettingsOption {
                 option: "freetype-shadow-angle"
                 minimumLineHeight: VLCStyle.dp(38)

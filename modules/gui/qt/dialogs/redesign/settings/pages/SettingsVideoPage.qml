@@ -100,16 +100,18 @@ SettingsPage {
                 description: RdEffects.optionDescription(modelData.name)
                 keywords: modelData.name + " adjust picture"
 
-                Widgets.RdSlider {
+                // RdEndlessSlider with its limits at the range is a plain RdSlider that also
+                // takes a value an accessibility tool writes (UI Automation's RangeValue SetValue)
+                Widgets.RdEndlessSlider {
                     implicitWidth: VLCStyle.dp(320)
-                    from: pictureRow.range.min ?? 0
-                    to: pictureRow.range.max ?? 1
+                    rangeFrom: pictureRow.range.min ?? 0
+                    rangeTo: pictureRow.range.max ?? 1
                     // a hundred steps (the keyboard moves by one); hue in whole degrees
-                    stepSize: pictureRow.modelData.name === "hue" ? 1 : (to - from) / 100
-                    value: Number(RdEffects.values[RdEffects.videoKey(pictureRow.modelData.name)] ?? 0)
+                    step: pictureRow.modelData.name === "hue" ? 1 : (rangeTo - rangeFrom) / 100
+                    current: Number(RdEffects.values[RdEffects.videoKey(pictureRow.modelData.name)] ?? 0)
                     Accessible.name: pictureRow.text
-                    onMoved: {
-                        RdEffects.setVideoValue(pictureRow.modelData.name, value)
+                    onValueMoved: (v) => {
+                        RdEffects.setVideoValue(pictureRow.modelData.name, v)
                         if (!RdEffects.videoFilterEnabled("adjust"))
                             RdEffects.setVideoFilterEnabled("adjust", true)
                     }

@@ -66,6 +66,10 @@ jobs:
   win64:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+    # contents: write for the test builds' draft pre-release (.github/scripts/test-build-assets.sh);
+    # a calling workflow (release.yml) must grant it to its build job
+    permissions:
+      contents: write
     steps:
       - name: Free disk space
         run: |
@@ -230,11 +234,15 @@ jobs:
           unzip -q "$(ls win64/*-win64.zip | head -n 1)" -d dist
           ls dist dist/*
 
+      # Actions artifact storage is small (500 MB for the account): every artifact lives one day,
+      # and a full storage (a failed upload) does not fail the build; test builds are also attached
+      # to the "test-builds" draft pre-release below (redesign/TEST_BUILDS.md)
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: ${{ env.VLC_BRAND == 'public' && 'vlc-redesign-win64-public' || 'vlc-redesign-win64' }}
           path: dist/
-          retention-days: 14
+          retention-days: 1
 
       # brand layer: Cone's NSIS installer, built so its screens and texts can be checked
       # (redesign/CONE_RELEASE_NOTES.md); not published with the beta (Decision 61: portable zip
@@ -249,7 +257,20 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         if: env.VLC_BRAND == 'public' && hashFiles('win64/cone-*-win64.exe') != ''
+        continue-on-error: true
         with:
           name: cone-installer-win64
           path: win64/cone-*-win64.exe
-          retention-days: 14
+          retention-days: 1
+
+      # test builds only (a run of this workflow itself, not a release workflow calling it): the
+      # zip and the installer on the "test-builds" draft pre-release, replacing this branch's
+      # previous ones; also after a failed installer step, with the zip alone
+      - name: Attach to the test-builds draft pre-release
+        if: ${{ !cancelled() && github.workflow == 'build-windows' && !inputs.release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/test-build-assets.sh \
+            "win64-$VLC_BRAND.zip=$(ls win64/*-win64.zip 2>/dev/null | head -n 1)" \
+            "win64-installer.exe=$(ls win64/*-win64.exe 2>/dev/null | head -n 1)"

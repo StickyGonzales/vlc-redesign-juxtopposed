@@ -270,19 +270,21 @@ SettingsPage {
                 shown: SettingsCatalog.exists("qt-fs-sensitivity")
                 available: fsControllerRow.value !== false
 
-                Widgets.RdSlider {
+                // RdEndlessSlider with its limits at the range is a plain RdSlider that also
+                // takes a value an accessibility tool writes (UI Automation's RangeValue SetValue)
+                Widgets.RdEndlessSlider {
                     // distance from the edge, in dp (Player.qml); Medium is the default
                     readonly property var distances: [16, 40, 96]
 
                     implicitWidth: VLCStyle.dp(320)
                     trackTop: VLCStyle.dp(4)
                     labelSpacing: VLCStyle.dp(8)
-                    from: 0
-                    to: distances.length - 1
-                    stepSize: 1
+                    rangeFrom: 0
+                    rangeTo: distances.length - 1
+                    step: 1
                     labels: [qsTr("Low"), qsTr("Medium"), qsTr("High")]
                     // a value set elsewhere shows as the nearest choice
-                    value: {
+                    current: {
                         const v = MainCtx.fsSensitivity
                         let best = 0
                         for (let i = 1; i < distances.length; ++i) {
@@ -292,7 +294,7 @@ SettingsPage {
                         return best
                     }
                     Accessible.name: qsTr("Fullscreen controls sensitivity")
-                    onMoved: MainCtx.fsSensitivity = distances[Math.round(value)]
+                    onValueMoved: (v) => MainCtx.fsSensitivity = distances[Math.round(v)]
                 }
             }
         },
