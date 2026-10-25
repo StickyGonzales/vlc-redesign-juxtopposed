@@ -206,6 +206,8 @@ RdEffects::RdEffects(qt_intf_t* intf, PlayerController* player, QObject* parent)
 
     readKeys({ equalizerPresetKey(), equalizerBandsKey(), subtitleTextScaleKey(),
                subtitleDurationFactorKey() });
+
+    resetSubtitleDurationFactor();
 }
 
 RdEffects::~RdEffects()
@@ -1032,6 +1034,19 @@ void RdEffects::setSubtitleTextScale(int percent)
         }
         putConfig("sub-text-scale", scale);
     });
+}
+
+// the Subtitle Duration Factor is hidden for 1.0 (StickyGonzales, 2026-10-25,
+// redesign/SUBSDELAY_FACTOR_NOTES.md): in VLC 4 the "subsdelay" filter hides ASS / SSA
+// subtitles and lengthens no other, so a factor saved before turns it off at start
+void RdEffects::resetSubtitleDurationFactor()
+{
+    const bool inChain = splitChain(readConfigString("sub-filter")).contains(QStringLiteral("subsdelay"));
+    const bool saved = config_FindConfig("subsdelay-factor") && config_GetFloat("subsdelay-factor") != 0.f;
+    if (!inChain && !saved)
+        return;
+    setSubtitleDurationFactor(0.);
+    setVideoFilterEnabled(QStringLiteral("subsdelay"), false);
 }
 
 double RdEffects::subtitleDurationFactor()

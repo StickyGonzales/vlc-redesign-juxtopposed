@@ -194,6 +194,11 @@ RdSidePanelPage {
         Widgets.RdParamSlider {
             id: durationSlider
 
+            // hidden for 1.0 (StickyGonzales, 2026-10-25, redesign/SUBSDELAY_FACTOR_NOTES.md): in
+            // VLC 4 the "subsdelay" filter hides ASS / SSA subtitles and lengthens no other;
+            // RdEffects resets a saved factor to 0 at start
+            visible: false
+
             text: qsTr("Subtitle Duration Factor")
             valueBox: true
             valueText: root._duration.shown.toFixed(3)

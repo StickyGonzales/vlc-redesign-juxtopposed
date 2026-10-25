@@ -211,6 +211,21 @@ void putValue(const Option& option, const QVariant& value)
     }
 }
 
+// the Subtitle Duration Factor is hidden for 1.0 (RdEffects::resetSubtitleDurationFactor): a
+// profile saved with it does not turn the "subsdelay" filter on again
+QVariant withoutSubtitleDuration(const Option& option, const QVariant& value)
+{
+    if (option.name == "subsdelay-factor")
+        return QVariant(0.);
+    if (option.name == "sub-filter")
+    {
+        QStringList chain = value.toString().split(QLatin1Char(':'), Qt::SkipEmptyParts);
+        chain.removeAll(QStringLiteral("subsdelay"));
+        return QVariant(chain.join(QLatin1Char(':')));
+    }
+    return value;
+}
+
 } // namespace
 
 // the options that differ from VLC's defaults, as VLC has them now
@@ -233,7 +248,8 @@ RdProfileSettings::ApplyResult RdProfileSettings::write(libvlc_int_t* libvlc, co
     for (const Option& option : catalog())
     {
         const QString key = QString::fromLatin1(option.name);
-        const QVariant wanted = target.contains(key) ? typed(option, target.value(key)) : option.fallback;
+        const QVariant wanted = withoutSubtitleDuration(option,
+            target.contains(key) ? typed(option, target.value(key)) : option.fallback);
         if (currentValue(option) == wanted)
             continue;
         putValue(option, wanted);

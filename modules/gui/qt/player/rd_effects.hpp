@@ -165,6 +165,7 @@ private:
     void applyPending();
     void putConfig(const char* name, const QVariant& value);
     void applyVideoFilter(const QString& module, const QString& type, bool enabled);
+    void resetSubtitleDurationFactor();
 
     // configuration file, written on a worker thread
     void save();
