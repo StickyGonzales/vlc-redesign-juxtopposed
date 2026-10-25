@@ -104,7 +104,9 @@ Item {
             entries.push({ text: qsTr("Add to Playlist"), icon: "playlist_two-tone-yes", submenu: true, chevron: false,
                            action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.openBeside(row) } })
         if (isLocal) {
-            entries.push({ text: qsTr("Show in File Explorer"), icon: "folder_two-tone-yes",
+            // Windows' file manager by its name, the others' (Linux) in general
+            entries.push({ text: Qt.platform.os === "windows" ? qsTr("Show in File Explorer") : qsTr("Show in File Manager"),
+                           icon: "folder_two-tone-yes",
                            action: () => RdLibraryActions.showInFileExplorer(item) })
             if (root.location.page !== "folder")
                 entries.push({ text: qsTr("Go to Source"), icon: "arrow_two-tone-yes_direction-right",
