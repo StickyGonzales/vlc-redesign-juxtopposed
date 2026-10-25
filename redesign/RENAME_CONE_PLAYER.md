@@ -176,7 +176,7 @@ Branch from `wip/next-test` (82bde58b00) with this plan (PR #45) merged in. Not 
 
 | Commit | What | Build |
 |---|---|---|
-| 3370583821 | Build values (`BRAND_PRODUCT_NAME` "Cone Player", new `BRAND_INSTALLER_NAME` coneplayer and `BRAND_PACKAGE_NAME` ConePlayer, in configure.ac and meson), brand.hpp (full name, short name, tray, welcome, About), `engineText()` (VLC's full name → the full name, "VLC" → "Cone"), the zip's README.txt, the CI installer artifact path | non-core |
+| 3370583821 | Build values (`BRAND_PRODUCT_NAME` "Cone Player", new `BRAND_INSTALLER_NAME` coneplayer and `BRAND_PACKAGE_NAME` ConePlayer in configure.ac; meson has `installer_name` only, it builds no zip), brand.hpp (full name, short name, tray, welcome, About), `engineText()` (VLC's full name → the full name, "VLC" → "Cone"), the zip's README.txt, the CI installer artifact path | non-core |
 | fc1c8ea281 | NSIS upgrade path: `Uninstall\Cone` key kept, `PRODUCT_APPDATA_DIR` pinned to "Cone", the beta's shortcuts and website link removed on install, a leftover desktop shortcut removed on uninstall | non-core |
 | 14e5c149a8 | Installer images and the old preferences' layout previews re-rendered | non-core |
 | 480528344e | VOUT_TITLE, `--version` and help console title, start error box title and audio session name (`bin/winvlc.c`), web interface page title | **core: its own build** |
@@ -185,13 +185,20 @@ Differences from section 3, decided while building:
 - `engineText()` also changed (section 3 only listed brand.hpp): it maps "VLC media player" to the full name, like the installer's `brand-languages.sh` already did, and "VLC" to the short name.
 - The side images' second line was "Media player", which repeats the new name; it reads "based on VLC" now. The header and MSI banner moved the logo 12 px left and use 16 px text, because "Cone Player" at 20 px does not fit the 150 px header (R5).
 - The zip's `README.txt` names Cone Player (it is the first thing a zip user reads).
-- `BRAND_INTERNAL_NAME` stays "cone" (the exe's InternalName); the installer files take the new `BRAND_INSTALLER_NAME`. The CI artifact keeps its name `cone-installer-win64`, so wip/ci-release's release workflow still finds it.
+- `BRAND_INTERNAL_NAME` stays "cone" (the exe's InternalName); the installer files take the new `BRAND_INSTALLER_NAME`. The CI artifact keeps its name `cone-installer-win64`, but the files inside it are named `coneplayer-*`: wip/ci-release's patterns need the update listed below.
 
 Left for the 1.0 release work (other branches, not on this one):
-- wip/ci-release `release.yml`: the release title (Decision 68 → "Cone Player <version>: ...") and any asset glob on `Cone-*` / `cone-*` names.
+- wip/ci-release: `release.yml`'s release title (Decision 68 → "Cone Player <version>: ..."), `.github/scripts/release-package.sh` (`cone-*-win64.exe` → `coneplayer-*-win64.exe`, and its zip pattern) and its `build-windows.yml` `cone-release-files` paths, which will also conflict with this branch's artifact path line.
 - wip/linux-build: `linux-package.sh` package names (`ConePlayer-<version>-linux-x86_64`, AppImage), the desktop file's `Name=` and README-LINUX title; `cone.desktop`, `StartupWMClass=cone` and `~/.config/Cone` stay (R4).
 - README.md and CREDITS.md: written with the 1.0 download links.
+- Linux: `bin/vlc.c` sets VLC's user agent name, so the PulseAudio / PipeWire mixer shows VLC's name for Cone on Linux (before and after the rename; Windows uses `bin/winvlc.c`, changed here).
 - PR #33 (installer) merges cleanly with this branch (checked: only `redesign/VIDEO_INDEX.md` conflicts, between #33 and wip/next-test); together they were tested (section 8).
+
+Independent review (fresh agent, no HIGH findings), fixed on this branch:
+- MED: `redesign/tools/test-latest.bat` looks for the zip folder `ConePlayer-*` first, then `Cone-*`.
+- MED: the MSI (not built by CI) keeps the identity name: `NsisUninstallName` "Cone" for its search for an NSIS install (it looked for `Uninstall\Cone Player`), and `ShortProductName` "Cone" (its folder `StickyGonzales\Cone`, Start menu folder and RegisteredApplications value, like the NSIS installer).
+- LOW: the web interface's "VLC can ..." sentence takes the short name (`brand-webintf.sh` gets it as a fifth argument); `BRAND_CORE_GROUP` (the Settings group of the core options) is "Cone", as VLC uses "VLC" there; the X11 / Wayland comments name VOUT_TITLE.
+- Left as is (LOW): the uninstaller's `DeleteRegKey ... Uninstall\${PRODUCT_NAME}` now aims at a key that never exists (harmless, the real key is deleted right after); X11's WM_ICON_NAME is the full name (VLC uses "VLC" there; it is rarely shown).
 
 ## 8. Wine test (done here)
 
