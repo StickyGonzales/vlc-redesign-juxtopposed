@@ -433,6 +433,12 @@ QtObject {
     readonly property int rd_settingsHeaderHeight: MainCtx.dp(50, scale)
     readonly property int rd_settingsNavWidth: MainCtx.dp(216, scale)
     readonly property int rd_settingsCategoryHeight: MainCtx.dp(40, scale)
+    // the pages' scrolling column (Figma "Frame 123" of "Settings - subtitles", "Settings - global-1"
+    // and the other pages: padding 20, 24, 40, 24; only the collapsed "Settings - global" has 100
+    // under it): the last element ends 40 above the dialog's edge once scrolled to the end
+    readonly property int rd_settingsPageTopPadding: MainCtx.dp(20, scale)
+    readonly property int rd_settingsPageSidePadding: MainCtx.dp(24, scale)
+    readonly property int rd_settingsPageBottomPadding: MainCtx.dp(40, scale)
     readonly property real rd_disabledRowOpacity: 0.3                    // Figma "Settings - library" dependent rows
     readonly property real rd_blurRadius: 50                              // effect "bg blur"
     // dialogs (Figma "Keyboard Shortcuts", "Add Subtitles"): 1048x800, header 96 (title + controls), footer 72
