@@ -29,7 +29,8 @@ Now: 298 verified, 61 context, 1 postponed, 1 dropped. Every buildable row is ve
 | 1 | Installer (PR #33, `wip/installer`): merge into `wip/next-test` | PC session | not done | Tested on this PC 2026-10-25: install and uninstall next to VLC 3.0.21 pass (build 40214644177); uninstaller only removes its own keys: passed the before / after comparison (build 40230455256), merged into `wip/installer` (a05689aeff); known limits accepted for 1.0 (INSTALLER_NOTES.md, 0946594714) |
 | 2 | Cone Player rename (PR #46, `wip/cone-player`, Decision 73) and its plan (PR #45): merge into `wip/next-test` | PC session | not done | Conflict with `wip/next-test` resolved 2026-10-25 (4ebdbc9259); merges cleanly with #33 (RENAME_CONE_PLAYER.md section 7) |
 | 3 | Installer + rename retest on Windows, on the merged code | PC session | not done | INSTALLER_NOTES.md section 6 and RENAME_CONE_PLAYER.md section 6 (portable zip, names in the app, install next to VLC, uninstall); the earlier pass was the test branch `wip/test-installer-1.0`, not the merged code |
-| 4 | Issue #52 fix (PR #55, `wip/fix-pause-rate`, core): its own Windows build and retest, then merge into `wip/next-test` | PC session | not done | FIX_PAUSE_RATE_NOTES.md "Retest on Windows"; reproduced on this PC 2026-10-25 (STATUS.md 22:20); whether it ships in 1.0: section 2b |
+| 4 | Issue #52 fix (PR #55, `wip/fix-pause-rate`, core): its own Windows build and retest, then merge into `wip/next-test` | PC session | not done | FIX_PAUSE_RATE_NOTES.md "Retest on Windows"; reproduced on this PC 2026-10-25 (STATUS.md 22:20); in 1.0 if its Windows test passes (StickyGonzales, 2026-10-25) |
+| 4a | Subtitle Duration Factor: Windows check of the sandbox finding (ASS / SSA disappear at every factor above 0, SRT never lengthened), then the chosen option (line 18) built and tested | PC session | not done | SUBSDELAY_FACTOR_NOTES.md "Windows check"; no slider cap helps (same notes); with option B, the retest is: the row is gone from the Subtitles tab, ASS and SRT show with the old preset's factor |
 | 5 | Final `wip/next-test` check: one build of the merged state, smoke + screens (dark, light) + quit recipe | PC session | not done | Last run 40218059072: smoke and screens pass, quit recipe stopped by the start-up hang, since fixed and merged (20 of 20 starts) |
 | 6 | Merge `wip/next-test` into `redesign` | PC session | not done | On hold since 2026-10-25 20:05 until the uninstaller bug and the start-up hang were understood; both are fixed now |
 | 7 | Release workflow (PR #8, `wip/ci-release`): merge into `redesign` | PC session | not done | 1.0 file names and the "Cone Player <version>: ..." title done 2026-10-25 (d8fa02d1d0); needs #2 in `redesign` first, or its build step stops on the old names (CI_RELEASE_NOTES.md) |
@@ -46,17 +47,20 @@ Now: 298 verified, 61 context, 1 postponed, 1 dropped. Every buildable row is ve
 | 13 | OpenSubtitles with your own API key | StickyGonzales | not done | Add Subtitles dialog, From OpenSubtitles |
 | 14 | Display scaling 150 % (and back to 100 %) | StickyGonzales | not done | Every screen readable, nothing cut or overlapping |
 | 15 | Touchpad: feel of the wheel scrolling | StickyGonzales | not done | Volume over the video and the volume control, lists (Decision 54) |
-| 16 | The other lines of that STATUS list: Cone tray icon in the hidden icons, Rescan plugins from Program Files (admin prompt, needs the installer), firewall prompts for the new exe path | StickyGonzales | not done | Keep or drop each for 1.0; the installer test saw the firewall alert (its Cancel left 2 Allow rules, STATUS.md 19:45) |
+| 16 | Cone tray icon in the Windows hidden icons | StickyGonzales | not done | STATUS.md "Checks only Sticky can do" |
+| 16a | Firewall prompt for the new exe path | PC session | done | Seen during the installer test 2026-10-25 (STATUS.md 19:45: the alert's Cancel left 2 Allow rules named "Cone Player") |
+
+Dropped (StickyGonzales, 2026-10-25): Rescan plugins from Program Files.
 
 ### 2b. Decisions for StickyGonzales before 1.0
 
 | # | Question | Owner | State | Notes |
 |---|---|---|---|---|
-| 17 | Issue #52 fix (PR #55) in 1.0? | StickyGonzales | open | A user-reported HIGH; core change, own build (Decision 55) |
-| 18 | Subtitle Duration Factor at 10 shows no subtitle at all (STATUS.md 22:20, found in the quit recipe's preset): fix for 1.0 or a known issue? | StickyGonzales | open | No fix branch yet |
-| 19 | The LOWs with no fix: Brightness slider reports a 0 to 0 range to screen readers; M (mute) shows no "Pressed M" line | StickyGonzales | open | 1.0 or later |
-| 20 | Waiting from CLAUDE.md: pixel subtitle size / live style (core); message position clear of the top bar (#22, MUSTHAVES_2_NOTES.md section 9.5) | StickyGonzales | open | |
-| 21 | Decision 54 follow-up: the speaker button's wheel sets the volume and the speed button no longer reacts to the wheel: keep or revert? | StickyGonzales | open | STATUS.md "Checks only Sticky can do" |
+| 17 | Issue #52 fix (PR #55) in 1.0? | StickyGonzales | decided | Yes, if its Windows test passes (line 4) |
+| 18 | Subtitle Duration Factor: no value works (ASS / SSA hidden at every value above 0, SRT never lengthened; an upstream VLC 4 filter bug, so a slider cap does not help): A fix the filter (core), B hide the slider until A, or C keep it with a known issue | StickyGonzales | open | SUBSDELAY_FACTOR_NOTES.md; recommended: B for 1.0, A after 1.0 |
+| 19 | The LOWs with no fix: Brightness slider reports a 0 to 0 range to screen readers; M (mute) shows no "Pressed M" line | StickyGonzales | open | Recommended: both after 1.0 (mouse and keyboard work; no user reported either) |
+| 20 | Waiting from CLAUDE.md: pixel subtitle size / live style (core); message position clear of the top bar (#22, MUSTHAVES_2_NOTES.md section 9.5) | StickyGonzales | open | Recommended: both after 1.0 (both are core changes to VLC's text renderer and message layout) |
+| 21 | Decision 54 follow-up: the speaker button's wheel sets the volume and the speed button no longer reacts to the wheel: keep or revert? | StickyGonzales | open | Recommended: keep (Decision 54: the wheel works over the video and the volume control only) |
 
 ## 3. Not part of 1.0 (listed so nothing is lost)
 
