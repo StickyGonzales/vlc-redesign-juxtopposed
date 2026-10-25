@@ -35,7 +35,8 @@ SettingsPage {
     SettingsSection {
         title: qsTr("Appearance")
 
-        // VLC reads the language from the registry when it starts (Windows only)
+        // read when Cone starts: VLC's registry key on Windows, Cone's interface settings on
+        // Linux (qt.cpp); macOS keeps the system language
         SettingsRow {
             text: qsTr("Interface language")
             description: qsTr("The language of %1's menus, windows and messages. %1 uses it the next time it starts.").arg(Brand.shortName)
