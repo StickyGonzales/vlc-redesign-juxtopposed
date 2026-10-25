@@ -415,6 +415,11 @@ skip_uninstall32_cleanup:
   WriteRegStr HKCR Applications\${PRODUCT_EXE} "FriendlyAppName" "${PRODUCT_NAME}"
   WriteRegStr HKCR Applications\${PRODUCT_EXE}\shell\Open "" "$(ContextMenuEntry_PlayWith)"
   WriteRegStr HKCR Applications\${PRODUCT_EXE}\shell\Open\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the list is written anew: an earlier installer of this app wrote one
+  ; stray value there (VLC's $0, see RegisterExtension), which an upgrade would keep
+  DeleteRegKey HKCR "Applications\${PRODUCT_EXE}\SupportedTypes"
+!endif
   !insertmacro MacroAllExtensions RegisterExtensionMacro
 @BUILD_SKINS_TRUE@   !insertmacro MacroSkinExtensions RegisterSkinExtensionMacro
 
