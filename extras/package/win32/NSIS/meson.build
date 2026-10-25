@@ -25,7 +25,7 @@ nsi_conf.set('BRAND_INSTALL_DIR', brand['install_dir'])
 nsi_conf.set('BRAND_PRODUCT_ID', brand['product_id'])
 nsi_conf.set('BRAND_NSIS_BITMAP_TRUE', brand['nsis_bitmap_true'])
 nsi_conf.set('BRAND_PROGID', brand['progid'])
-nsi_conf.set('BRAND_INTERNAL_NAME', brand['internal_name'])
+nsi_conf.set('BRAND_INSTALLER_NAME', brand['installer_name'])
 nsi_conf.set('BRAND_VERSION', brand_version)
 nsi_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
 nsi_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
@@ -119,7 +119,7 @@ if makensis.found()
     vlc_nsis = custom_target(
         command: [makensis, nsi_script_dir / 'vlc.win32.nsi'],
         input: vlc_nsi,
-        output: brand['internal_name'] + '-' + vlc_version + '-' + winstaller_suffix + '.exe', # real name but root build folder
+        output: brand['installer_name'] + '-' + vlc_version + '-' + winstaller_suffix + '.exe', # real name but root build folder
         build_by_default: false,
         console: true,
         depends: nsProcess)

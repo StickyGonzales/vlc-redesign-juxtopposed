@@ -92,8 +92,9 @@ exit /b 0
 rem finds the downloaded player: sets VLCDIR, EXE and CURRENT (the fixed folder for that exe)
 :find
 set "VLCDIR="
-rem public builds since the beta branding: the zip's top folder is Cone-<version>[-suffix]
-for /d %%D in ("%DEST%\vlc-redesign-win64-public\Cone-*") do (
+rem public builds since the beta branding: the zip's top folder is Cone-<version>[-suffix],
+rem ConePlayer-<version>[-suffix] from the Cone Player rename (redesign/RENAME_CONE_PLAYER.md)
+for /d %%D in ("%DEST%\vlc-redesign-win64-public\ConePlayer-*" "%DEST%\vlc-redesign-win64-public\Cone-*") do (
     if exist "%%D\Cone.exe" (
         set "VLCDIR=%%D"
         set "EXE=Cone.exe"

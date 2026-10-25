@@ -25,12 +25,12 @@ WINARCH=win32
 endif
 endif
 # redesign: brand layer, the portable package's name and its top folder: VLC's in the vlc
-# profile, "Cone-<version><suffix>" in the public profile (the app's own version, Decision 58;
+# profile, "ConePlayer-<version><suffix>" in the public profile (the app's own version, Decision 58;
 # BRAND_PACKAGE_SUFFIX, e.g. "-beta", only goes into the package names, never into the app's
 # version: make package-win32-zip BRAND_PACKAGE_SUFFIX=-beta)
 BRAND_PACKAGE_SUFFIX=
 if BRAND_PUBLIC
-WINPACKAGE=$(BRAND_PRODUCT_NAME)-$(BRAND_VERSION)$(BRAND_PACKAGE_SUFFIX)
+WINPACKAGE=$(BRAND_PACKAGE_NAME)-$(BRAND_VERSION)$(BRAND_PACKAGE_SUFFIX)
 else
 WINPACKAGE=vlc-$(VERSION)
 endif
@@ -112,7 +112,8 @@ if BUILD_LUA
 if BRAND_PUBLIC
 # redesign: brand layer, the web interface's titles and pictures name and show the app
 	$(SHELL) "$(srcdir)/extras/package/win32/brand/public/brand-webintf.sh" "$(win32_destdir)/lua/http" \
-		"$(BRAND_PRODUCT_NAME)" "$(srcdir)/modules/gui/qt/pixmaps/brand/public" "$(srcdir)/$(BRAND_ICON_SRC)"
+		"$(BRAND_PRODUCT_NAME)" "$(srcdir)/modules/gui/qt/pixmaps/brand/public" "$(srcdir)/$(BRAND_ICON_SRC)" \
+		"$(BRAND_PROGID)"
 endif
 endif
 
