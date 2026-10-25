@@ -107,10 +107,10 @@ T.AbstractButton {
                 id: titleText
 
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.min(implicitWidth,
-                                content.width - thumb.width - content.spacing
-                                - (upNextTag.visible ? upNextTag.width + content.spacing : 0)
-                                - (moreButton.visible ? moreButton.width + content.spacing : 0))
+                // the "Up next" tag sits at the row's right end (design 08)
+                width: content.width - thumb.width - content.spacing
+                       - (upNextTag.visible ? upNextTag.width + content.spacing : 0)
+                       - (moreButton.visible ? moreButton.width + content.spacing : 0)
                 text: row.title
                 elide: Text.ElideRight
                 font.family: VLCStyle.rd_fontFamily
