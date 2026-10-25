@@ -77,7 +77,13 @@ static const char no_password_body[] = N_(
 "Interface → Main interfaces → Lua → Lua HTTP → Password.</p>"
 );
 
+/* redesign: brand layer, the title of the web interface's "no password" page names the public
+ * profile's app; the vlc profile keeps VLC's text */
+#ifdef VLC_BRAND_PUBLIC
+static const char no_password_title[] = N_("Cone");
+#else
 static const char no_password_title[] = N_("VLC media player");
+#endif
 
 static int vlclua_httpd_tls_host_new( lua_State *L )
 {

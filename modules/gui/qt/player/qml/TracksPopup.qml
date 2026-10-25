@@ -40,8 +40,11 @@ Item {
     readonly property string tab: RdPanels.tracksOpen ? RdPanels.current : "subtitles"
     readonly property SystemPalette rdPalette: VLCStyle.palette
 
-    // room available above the control bar; the Figma height (524) shrinks to fit small windows
-    property real maximumHeight: VLCStyle.dp(524, VLCStyle.scale)
+    // room between the top bar and the 20 px margin above the control bar (Player.qml); the
+    // popup keeps 20 px below the top bar like the sidebars, so the Figma height (524) shrinks
+    // to fit small windows
+    property real maximumHeight: VLCStyle.dp(524, VLCStyle.scale) + _topGap
+    readonly property real _topGap: VLCStyle.dp(20, VLCStyle.scale)
 
     readonly property real _headerHeight: VLCStyle.rd_sidePanelTabHeight + VLCStyle.dp(1, VLCStyle.scale)
 
@@ -49,7 +52,7 @@ Item {
     // the Figma height (524 with the tabs) whatever the number of tracks or devices: each list
     // scrolls inside its Figma frame (TrackListFrame) and Show Preferences stays pinned at the
     // bottom; in a window too small for 524 the popup shrinks and its sections scroll
-    implicitHeight: Math.min(VLCStyle.dp(524, VLCStyle.scale), maximumHeight)
+    implicitHeight: Math.max(0, Math.min(VLCStyle.dp(524, VLCStyle.scale), maximumHeight - _topGap))
 
     // scrolls the lists holding `item` so that it shows (keyboard focus on a row)
     function _ensureVisible(item) {
@@ -251,6 +254,8 @@ Item {
                     model: root.tab === "audio" ? Player.audioTracks
                          : root.tab === "video" ? Player.videoTracks
                          : Player.subtitleTracks
+                    // subtitles: the files added next to the video are listed under External Tracks
+                    filter: root.tab === "subtitles" ? "embedded" : "all"
                 }
 
                 // subtitles: external tracks; the pencil and + both open the Add Subtitles dialog
@@ -264,6 +269,15 @@ Item {
                         { icon: "add", description: qsTr("Add subtitle file") }
                     ]
                     onActionTriggered: (index) => AddSubtitles.open()
+                }
+
+                // Figma "Frame 67": the subtitle files, one row each with the file name (no "None":
+                // the one above Embedded Tracks turns every subtitle off)
+                TrackListFrame {
+                    visible: root.tab === "subtitles"
+                    model: Player.subtitleTracks
+                    filter: "external"
+                    showNone: false
                 }
 
                 // audio: output device (refresh re-reads the device list)
@@ -434,6 +448,8 @@ Item {
 
         property alias model: frameList.model
         property alias tracks: frameList.tracks
+        property alias filter: frameList.filter
+        property alias showNone: frameList.showNone
 
         Layout.fillWidth: true
         Layout.preferredHeight: VLCStyle.dp(138.5, VLCStyle.scale)
@@ -468,6 +484,10 @@ Item {
 
         property var model
         property bool tracks: true
+        // which tracks show: "all", "embedded" or "external" (TrackListModel's "external" role);
+        // the hidden rows still count for "None", so it turns off a track of either list
+        property string filter: "all"
+        property bool showNone: true
 
         // bumped when a row is created, removed or (un)selected: the rows can be created after
         // the count changed (asynchronous creation of a prewarmed panel), so a binding over
@@ -492,7 +512,7 @@ Item {
         spacing: VLCStyle.dp(12, VLCStyle.scale)
 
         TrackRow {
-            visible: list.tracks
+            visible: list.tracks && list.showNone
             label: qsTr("None")
             selected: !list._anySelected
 
@@ -517,6 +537,7 @@ Item {
                 required property var model
                 required property int index
 
+                visible: list.filter === "all" || (!!model.external === (list.filter === "external"))
                 selected: !!model.checked
                 onSelectedChanged: list._selectionRevision += 1
                 label: list.tracks ? String(model.display).replace(/ - \[(.*)\]$/, " - $1") : model.display

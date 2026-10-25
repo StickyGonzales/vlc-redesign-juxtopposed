@@ -1,0 +1,575 @@
+{
+ "format": 1,
+ "node": "6259:14954",
+ "name": "new playlist",
+ "png": "new playlist.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  713,
+  589
+ ],
+ "theme": "dark",
+ "rows": [
+  225,
+  228,
+  229
+ ],
+ "background": [
+  {
+   "token": "BG/A3 Transparent",
+   "dark": "#191919",
+   "light": "#D5D5D5",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "6259:14955",
+   "name": "Frame 120",
+   "type": "frame",
+   "path": "Frame 120",
+   "bounds": [
+    0,
+    0,
+    713,
+    50
+   ],
+   "radius": [
+    14,
+    14,
+    0,
+    0
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "6259:14957",
+   "name": "New Playlist",
+   "type": "text",
+   "path": "New Playlist",
+   "bounds": [
+    19,
+    16.5,
+    81,
+    17
+   ],
+   "text": {
+    "content": "New Playlist",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    225,
+    228,
+    229
+   ]
+  },
+  {
+   "id": "6259:14958",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Icon Wrapper",
+   "bounds": [
+    672,
+    9,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I6259:14958;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon Wrapper / Icon:close",
+   "bounds": [
+    676,
+    13,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close"
+  },
+  {
+   "id": "6259:14963",
+   "name": "Playlist Details",
+   "type": "text",
+   "path": "Playlist Details",
+   "bounds": [
+    20,
+    72,
+    541,
+    28
+   ],
+   "text": {
+    "content": "Playlist Details",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 28,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   },
+   "rows": [
+    225,
+    228,
+    229
+   ]
+  },
+  {
+   "id": "6259:14964",
+   "name": "The playlist will be saved and displayed with this title and thumbnail.",
+   "type": "text",
+   "path": "The playlist will be saved and displayed with this title and thumbnail.",
+   "bounds": [
+    20,
+    105,
+    541,
+    25
+   ],
+   "text": {
+    "content": "The playlist will be saved and displayed with this title and thumbnail.",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 24.5,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    229
+   ]
+  },
+  {
+   "id": "6259:14966",
+   "name": "Frame 86",
+   "type": "frame",
+   "path": "Frame 86",
+   "bounds": [
+    20,
+    152,
+    541,
+    37
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6259:14967",
+   "name": "e.g., Favorite Videos",
+   "type": "text",
+   "path": "e.g., Favorite Videos",
+   "bounds": [
+    34,
+    162,
+    135,
+    17
+   ],
+   "text": {
+    "content": "e.g., Favorite Videos",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "6259:14969",
+   "name": "Frame 86",
+   "type": "frame",
+   "path": "Frame 86",
+   "bounds": [
+    581,
+    79,
+    112,
+    112
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6259:14970",
+   "name": "Frame 327",
+   "type": "frame",
+   "path": "Frame 327",
+   "bounds": [
+    622,
+    120,
+    30,
+    30
+   ],
+   "radius": 5,
+   "fills": [
+    {
+     "token": "FG/B1",
+     "dark": "#161616",
+     "light": "#161616"
+    }
+   ]
+  },
+  {
+   "id": "6259:14971",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:add",
+   "bounds": [
+    625,
+    123,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "add",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "add"
+  },
+  {
+   "id": "6259:14972",
+   "name": "Vector",
+   "type": "vector",
+   "path": "Vector",
+   "bounds": [
+    20,
+    211,
+    673,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Dim",
+     "dark": "#222222",
+     "light": "#ACACAC"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "6259:14974",
+   "name": "Select Files",
+   "type": "text",
+   "path": "Select Files",
+   "bounds": [
+    20,
+    231,
+    673,
+    28
+   ],
+   "text": {
+    "content": "Select Files",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 28,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/2",
+     "dark": "#C6C6C6",
+     "light": "#222222"
+    }
+   }
+  },
+  {
+   "id": "6259:14975",
+   "name": "These files will be added to the playlist.",
+   "type": "text",
+   "path": "These files will be added to the playlist.",
+   "bounds": [
+    20,
+    264,
+    673,
+    25
+   ],
+   "text": {
+    "content": "These files will be added to the playlist.",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 24.5,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    225,
+    228,
+    229
+   ]
+  },
+  {
+   "id": "6259:14977",
+   "name": "Frame 86",
+   "type": "frame",
+   "path": "Frame 86",
+   "bounds": [
+    20,
+    309,
+    673,
+    186
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "strokes": [
+    {
+     "color": "#2D2D2D"
+    }
+   ],
+   "stroke_weight": 2,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6259:14978",
+   "name": "Drag files into the box or click here to select files.",
+   "type": "text",
+   "path": "Drag files into the box or click here to select files.",
+   "bounds": [
+    190,
+    368.5,
+    327,
+    17
+   ],
+   "text": {
+    "content": "Drag files into the box or click here to select files.",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "6259:14979",
+   "name": "Frame 327",
+   "type": "frame",
+   "path": "Frame 327",
+   "bounds": [
+    311.5,
+    405.5,
+    84,
+    30
+   ],
+   "radius": 5,
+   "fills": [
+    {
+     "token": "FG/B1",
+     "dark": "#161616",
+     "light": "#161616"
+    }
+   ]
+  },
+  {
+   "id": "6259:14980",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:add",
+   "bounds": [
+    341.5,
+    408.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "add",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "add"
+  },
+  {
+   "id": "6259:14982",
+   "name": "Frame 140",
+   "type": "frame",
+   "path": "Frame 140",
+   "bounds": [
+    20,
+    537,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ]
+  },
+  {
+   "id": "6259:14983",
+   "name": "Cancel",
+   "type": "text",
+   "path": "Cancel",
+   "bounds": [
+    46,
+    544.5,
+    48,
+    17
+   ],
+   "text": {
+    "content": "Cancel",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6259:14984",
+   "name": "Frame 141",
+   "type": "frame",
+   "path": "Frame 141",
+   "bounds": [
+    593,
+    537,
+    100,
+    32
+   ],
+   "radius": 6,
+   "opacity": 0.5,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "6259:14985",
+   "name": "Save",
+   "type": "text",
+   "path": "Save",
+   "bounds": [
+    626.5,
+    544.5,
+    33,
+    17
+   ],
+   "text": {
+    "content": "Save",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   }
+  }
+ ]
+}

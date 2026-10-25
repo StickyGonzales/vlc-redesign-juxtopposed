@@ -124,6 +124,9 @@ class MainCtx : public QObject
     Q_PROPERTY(bool canShowVideoPIP READ canShowVideoPIP CONSTANT FINAL)
     Q_PROPERTY(bool pinVideoControls READ pinVideoControls WRITE setPinVideoControls NOTIFY pinVideoControlsChanged FINAL)
     Q_PROPERTY(float pinOpacity READ pinOpacity WRITE setPinOpacity NOTIFY pinOpacityChanged FINAL)
+    // redesign: false when the system asks for no animations (Windows: Settings > Accessibility >
+    // Visual effects > Animation effects); the redesign's transitions are then instant
+    Q_PROPERTY(bool systemAnimations READ systemAnimations NOTIFY systemAnimationsChanged FINAL)
     Q_PROPERTY(ControlbarProfileModel* controlbarProfileModel READ controlbarProfileModel CONSTANT FINAL)
     Q_PROPERTY(bool hasAcrylicSurface READ hasAcrylicSurface NOTIFY hasAcrylicSurfaceChanged FINAL)
     Q_PROPERTY(bool smoothScroll READ smoothScroll NOTIFY smoothScrollChanged FINAL)
@@ -256,6 +259,7 @@ public:
 
     inline bool pinVideoControls() const { return m_pinVideoControls; }
     inline float pinOpacity() const { return m_pinOpacity; }
+    inline bool systemAnimations() const { return m_systemAnimations; }
 
     inline ControlbarProfileModel* controlbarProfileModel() const { return m_controlbarProfileModel; }
     inline QUrl getDialogFilePath() const { return m_dialogFilepath; }
@@ -376,6 +380,11 @@ public:
     Q_INVOKABLE virtual bool platformHandlesTitleBarButtonsWithCSD() const { return false; };
     Q_INVOKABLE virtual bool platformHandlesShadowsWithCSD() const { return false; };
 
+    // redesign: a frame the platform keeps around the interface window that Qt doesn't count
+    // (Windows: the resize border outside the client area with client-side decorations); saved
+    // with the window geometry so a restart restores the same size (InterfaceWindowHandler)
+    virtual QMargins nativeFrameMargins(QWindow *) const { return QMargins(); }
+
     void setUsingTouch(bool touch)
     {
         if (m_usingTouch == touch)
@@ -388,6 +397,9 @@ public:
      * @brief ask for the application to terminate
      */
     void onWindowClose(QWindow* );
+    /* redesign: writes the interface state the destructor saves (and the window geometry
+     * when asked), so a quit that never reaches the destructor keeps it */
+    void saveSettings(bool withGeometry);
 
     bool acrylicActive() const;
     void setAcrylicActive(bool newAcrylicActive);
@@ -473,6 +485,9 @@ protected:
     bool                 m_pinVideoControls = false;
     float                m_pinOpacity       = 1.0f;
 
+    bool                 m_systemAnimations = true;
+    void setSystemAnimations(bool enabled);
+
     bool                 m_useGlobalShortcuts = true;
     QUrl                 m_dialogFilepath; /* Last path used in dialogs */
 
@@ -509,6 +524,9 @@ protected:
     QTimer* m_configSaveTimer = nullptr;
     void scheduleConfigSave();
     QColor m_accentColor;
+    // redesign: the option as written ("default", "system" or a color): "system" and "default"
+    // both give an invalid color but a different palette
+    QByteArray m_accentOption;
 
     float m_safeArea = 0.0;
 
@@ -595,6 +613,12 @@ signals:
     // redesign (S2-03): the track-change popup near the system tray (VLCSystray), drawn by
     // TrayPopup.qml in `area` (the primary screen's free area) for `duration` ms
     void trackPopupRequested(const QString& name, const QUrl& artwork, const QRect& area, int duration);
+    // redesign: a mouse move without a pressed button over the interface window, in scene
+    // (window) coordinates, seen by InterfaceWindowHandler before Qt Quick delivers it; the
+    // player's bars wake up from it (Player.qml, Decision 30)
+    void intfMouseMoved(QPointF scenePos);
+    // redesign: the mouse left the interface window
+    void intfMouseLeft();
 
     void playerPlaylistWidthChanged(double);
     void interfaceAlwaysOnTopChanged(bool);
@@ -621,6 +645,7 @@ signals:
 
     void pinVideoControlsChanged();
     void pinOpacityChanged();
+    void systemAnimationsChanged();
 
     void hasAcrylicSurfaceChanged(bool);
 

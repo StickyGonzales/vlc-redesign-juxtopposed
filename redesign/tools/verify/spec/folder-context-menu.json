@@ -1,0 +1,554 @@
+{
+ "format": 1,
+ "node": "2139:8935",
+ "name": "folder context menu",
+ "png": "folder context menu.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  265,
+  296
+ ],
+ "theme": "dark",
+ "rows": [
+  171,
+  172
+ ],
+ "background": [
+  {
+   "token": "BG/A3 Transparent",
+   "dark": "#191919",
+   "light": "#D5D5D5",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "2139:8936",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    4,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2139:8936;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:add",
+   "bounds": [
+    18,
+    16,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "add",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "add"
+  },
+  {
+   "id": "I2139:8936;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    19.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Add File",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "I2139:8936;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    16,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  },
+  {
+   "id": "2139:8937",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    52,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2139:8937;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:new folder",
+   "bounds": [
+    18,
+    64,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "new folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "new folder"
+  },
+  {
+   "id": "I2139:8937;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    67.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Add Folder",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "I2139:8937;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    64,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  },
+  {
+   "id": "2139:8996",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    100,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2139:8996;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:subtitles",
+   "bounds": [
+    18,
+    112,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitles",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "subtitles"
+  },
+  {
+   "id": "I2139:8996;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    115.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Edit Subtitle Tracks",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "I2139:8996;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    112,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  },
+  {
+   "id": "2139:9007",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    148,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2139:9007;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:audio",
+   "bounds": [
+    18,
+    160,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "audio",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "audio",
+   "rows": [
+    54,
+    132,
+    344
+   ]
+  },
+  {
+   "id": "I2139:9007;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    163.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Edit Audio Tracks",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "I2139:9007;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    160,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  },
+  {
+   "id": "2139:8938",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    196,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2139:8938;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:refresh",
+   "bounds": [
+    18,
+    208,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "refresh",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "refresh"
+  },
+  {
+   "id": "I2139:8938;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    211.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Resync",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "I2139:8938;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    208,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  },
+  {
+   "id": "2139:8939",
+   "name": "option",
+   "type": "instance",
+   "path": "option",
+   "bounds": [
+    4,
+    244,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6
+  },
+  {
+   "id": "I2139:8939;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:info",
+   "bounds": [
+    18,
+    256,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "info"
+  },
+  {
+   "id": "I2139:8939;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "option / Option",
+   "bounds": [
+    52,
+    259.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Info",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "I2139:8939;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "option / Icon:check",
+   "bounds": [
+    223,
+    256,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check"
+  }
+ ]
+}

@@ -33,6 +33,8 @@
 #include "menus/custom_menus.hpp"
 #include "maininterface/mainctx.hpp"
 #include "dialogs/dialogs_provider.hpp"
+#include "dialogs/toolbar/controlbar_profile.hpp"
+#include "dialogs/toolbar/controlbar_profile_model.hpp"
 #include "player/player_controller.hpp"
 #include "playlist/playlist_controller.hpp"
 #include "medialibrary/medialib.hpp"
@@ -493,14 +495,16 @@ QMenu* addSubmenu(QMenu* menu, const QString& title, const char* icon)
 
 /*
  * Main "..." menu, Figma "menu" (Decision 2): the open entries, Convert, Open Recent, then
- * Keyboard Shortcuts, Customize Player, Settings and About. The Figma "Profile" entry comes
- * with profiles (Step 2, W8.2). The shortcuts are the ones GlobalShortcuts.qml handles.
+ * Profile (name), Keyboard Shortcuts, Customize Player, Settings and About. The shortcuts are
+ * the ones GlobalShortcuts.qml handles.
  */
 void RdMenuModel::buildMainMenu(QMenu* menu)
 {
     buildOpenMenu(menu, true);
 
     menu->addSeparator();
+
+    buildProfileMenu(menu);
 
     addRequest(menu, qtr("Keyboard Shortcuts"), "hotkeys_two-tone-yes",
                QStringLiteral("keyboardShortcuts"));
@@ -512,6 +516,43 @@ void RdMenuModel::buildMainMenu(QMenu* menu)
     addEntry(menu, qtr(BRAND_MENU_ABOUT), "info_two-tone-yes",
              shortcutText(QKeySequence(QStringLiteral("Shift+F1"))),
              []() { THEDP->aboutDialog(); });
+}
+
+/*
+ * "Profile (Movies)" (W8.2, video 19:29-19:36, Figma "Profiles"): the profiles, the selected one
+ * checked, a divider and "+ New" (Decision 25: a name, then a copy of the current settings);
+ * then Rename and Delete for the selected profile (Decision 21: Figma's submenu has no place to
+ * rename or delete one). The QML menu (RdMainMenu.qml) runs them through RdProfiles: "profile:N",
+ * "newProfile", "renameProfile", "deleteProfile".
+ */
+void RdMenuModel::buildProfileMenu(QMenu* menu)
+{
+    ControlbarProfileModel* profiles = m_ctx->controlbarProfileModel();
+    if (!profiles)
+        return;
+
+    const ControlbarProfile* current = profiles->currentModel();
+    const QString currentName = current ? current->name() : QString();
+    QMenu* submenu = addSubmenu(menu, qtr("Profile (%1)").arg(currentName), "profile_two-tone-yes");
+
+    const int count = profiles->rowCount();
+    for (int i = 0; i < count; ++i)
+    {
+        const ControlbarProfile* profile = profiles->getProfile(i);
+        if (!profile)
+            continue;
+        QAction* action = addRequest(submenu, profile->name(), nullptr,
+                                     QStringLiteral("profile:%1").arg(i));
+        action->setCheckable(true);
+        action->setChecked(i == profiles->selectedProfile());
+    }
+
+    submenu->addSeparator();
+
+    addRequest(submenu, qtr("New"), "add", QStringLiteral("newProfile"));
+    addRequest(submenu, qtr("Rename Profile"), "edit", QStringLiteral("renameProfile"));
+    QAction* remove = addRequest(submenu, qtr("Delete Profile"), "remove", QStringLiteral("deleteProfile"));
+    remove->setEnabled(count > 1);
 }
 
 /*

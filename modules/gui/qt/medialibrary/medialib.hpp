@@ -178,6 +178,9 @@ signals:
     void discoveryEntryPointChanged( QString entryPoint );
     void discoveryPendingChanged( bool state );
     void idleChanged();
+    // redesign: a bookmark was added at once (Ctrl+B, the Bookmarks tab "+"), named `name`;
+    // UINotifier confirms it on screen
+    void bookmarkAdded( const QString& name );
 
 private:
     static void onMediaLibraryEvent( void* data, const vlc_ml_event_t* event );

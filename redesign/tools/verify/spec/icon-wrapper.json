@@ -1,0 +1,110 @@
+{
+ "format": 1,
+ "node": "177:98",
+ "name": "Icon Wrapper",
+ "png": "Icon Wrapper.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  72,
+  122
+ ],
+ "theme": "dark",
+ "rows": [
+  10,
+  331
+ ],
+ "variants": [
+  {
+   "node": "177:97",
+   "name": "Property 1=Default",
+   "props": {
+    "Property 1": "Default"
+   },
+   "bounds": [
+    21,
+    21,
+    30,
+    32
+   ],
+   "fills": [],
+   "radius": 4,
+   "elements": [
+    {
+     "id": "177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:settings",
+     "bounds": [
+      3,
+      4,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "settings",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "settings",
+     "rows": [
+      26,
+      269
+     ]
+    }
+   ]
+  },
+  {
+   "node": "177:99",
+   "name": "Property 1=hover",
+   "props": {
+    "Property 1": "hover"
+   },
+   "bounds": [
+    21,
+    69,
+    30,
+    32
+   ],
+   "fills": [
+    {
+     "color": "#FFFFFF",
+     "alpha": 0.06
+    }
+   ],
+   "radius": 4,
+   "elements": [
+    {
+     "id": "177:100",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:settings",
+     "bounds": [
+      3,
+      4,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "settings",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "settings",
+     "rows": [
+      26,
+      269
+     ]
+    }
+   ]
+  }
+ ]
+}

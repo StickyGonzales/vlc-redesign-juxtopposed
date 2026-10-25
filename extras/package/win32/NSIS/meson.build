@@ -26,6 +26,9 @@ nsi_conf.set('BRAND_PRODUCT_ID', brand['product_id'])
 nsi_conf.set('BRAND_NSIS_BITMAP_TRUE', brand['nsis_bitmap_true'])
 nsi_conf.set('BRAND_PROGID', brand['progid'])
 nsi_conf.set('BRAND_INTERNAL_NAME', brand['internal_name'])
+nsi_conf.set('BRAND_VERSION', brand_version)
+nsi_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
+nsi_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
 
 nsProcess_cargs = ['-D_UNICODE=1', '-DUNICODE=1']
 if not have_win64

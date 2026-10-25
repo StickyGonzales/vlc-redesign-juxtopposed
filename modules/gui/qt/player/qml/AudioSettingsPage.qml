@@ -23,6 +23,7 @@
 // are VLC's (dialogs/extended/extended_panels.cpp).
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Templates as T
 
 import VLC.MainInterface
 import VLC.Style
@@ -43,6 +44,25 @@ RdSidePanelPage {
     Component.onCompleted: {
         if (active)
             RdEffects.refresh()
+        _countModes()
+    }
+
+    // VLC offers mix modes (Original, Stereo, Binaural, 5.1...) for a multichannel track and
+    // stereo modes (Mono, Left, Right...) for a stereo one; a multichannel track mixed down to
+    // stereo has both, and its mix modes must stay reachable (back to Original). The dropdown
+    // lists the mix modes when there are some, else the stereo modes, like VLC's Audio menu
+    property int _mixModeCount: 0
+
+    function _countModes() {
+        _mixModeCount = Player.audioMixMode.rowCount()
+    }
+
+    Connections {
+        target: Player.audioMixMode
+
+        function onModelReset() { root._countModes() }
+        function onRowsInserted() { root._countModes() }
+        function onRowsRemoved() { root._countModes() }
     }
 
     // a binding reading RdEffects.values[key] follows only that value
@@ -78,7 +98,6 @@ RdSidePanelPage {
     Widgets.RdSettingsSection {
         title: qsTr("Defaults")
         showDivider: false
-        note: qsTr("Track and language apply from the next file")
 
         Widgets.RdSettingRow {
             text: qsTr("Audio Track")
@@ -107,17 +126,25 @@ RdSidePanelPage {
             }
         }
 
-        // Figma "Frame 102" (1052:2920): 10 px under the rows above, a 52 px label row, 10 px,
-        // then the dropdown
+        // Figma "Frame 102" (1052:2920): 10 px under the rows above, a 52 px label row with the
+        // "Test" button (2250:9842), 10 px, then the dropdown
         Widgets.RdSettingRow {
             text: qsTr("Stereo Mode")
             Layout.topMargin: VLCStyle.dp(5)
             rowHeight: VLCStyle.dp(52)
             spacing: VLCStyle.dp(10)
 
+            TestButton {
+                text: qsTr("Test")
+                Accessible.description: qsTr("Plays a tone on the left speaker, then on the right one")
+                onClicked: Player.audioDevices.playStereoTest()
+            }
+
             below: Widgets.RdChoiceDropdown {
                 width: parent.width
-                choices: Player.audioStereoMode
+                choices: root._mixModeCount > 0 ? Player.audioMixMode : Player.audioStereoMode
+                // nothing playing: VLC has no modes to offer, the sound stays as it is
+                placeholderText: qsTr("Original")
                 Accessible.name: qsTr("Stereo Mode")
             }
         }
@@ -200,7 +227,16 @@ RdSidePanelPage {
                 text: modelData
                 selected: eqPresets.currentIndex === index
                 highlighted: eqPresets.highlightedIndex === index
-                leading: index > 0 ? curve : null
+                // Figma's own icon of the preset (icon set "name=EQ"), recoloured like every
+                // RdIcon (FG/A2 line, Accent/Main shape); a preset without one draws its curve
+                readonly property string presetIcon: index > 0 ? RdEffects.equalizerPresetIcon(index - 1) : ""
+                leading: index === 0 ? null : (presetIcon !== "" ? figmaIcon : curve)
+
+                readonly property Component figmaIcon: Component {
+                    Widgets.RdIcon {
+                        name: presetIcon
+                    }
+                }
 
                 readonly property Component curve: Component {
                     Widgets.RdEqCurve {
@@ -225,7 +261,7 @@ RdSidePanelPage {
                     valueFontSize: VLCStyle.rd_fontSize_toggle
                     textInset: 0
                     spacing: 0
-                    valueText: root._eqPreamp.toFixed(1) + " " + qsTr("dB")
+                    valueText: (Math.round(root._eqPreamp * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                     from: -20
                     to: 20
                     stepSize: 0.1
@@ -258,7 +294,8 @@ RdSidePanelPage {
                         valueFontSize: VLCStyle.rd_fontSize_toggle
                         textInset: 0
                         spacing: 0
-                        valueText: gain.toFixed(1) + " " + qsTr("dB")
+                        // rounded first: VLC's presets hold values such as -1e-15 dB, never "-0.0 dB"
+                        valueText: (Math.round(gain * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
                         from: -20
                         to: 20
                         stepSize: 0.1
@@ -423,6 +460,49 @@ RdSidePanelPage {
                     }
                 }
             }
+        }
+    }
+
+    // Figma "Button" (2250:9842): 68x32, padding 4,16, radius 4, BG/Accent Dark, label Inter 14
+    // Accent/DIm; hover and press: BG/Accent Bright and Accent/Main (the video's 8:41 look)
+    component TestButton: T.AbstractButton {
+        id: testButton
+
+        // the pointing hand over the clickable controls
+        HoverHandler {
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        // Figma: fixed 68 wide
+        implicitWidth: Math.max(VLCStyle.dp(68), implicitContentWidth + leftPadding + rightPadding)
+        implicitHeight: VLCStyle.dp(32)
+        leftPadding: VLCStyle.dp(16)
+        rightPadding: VLCStyle.dp(16)
+
+        focusPolicy: Qt.StrongFocus
+        hoverEnabled: true
+        Accessible.role: Accessible.Button
+        Accessible.name: text
+
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+
+        background: Rectangle {
+            radius: VLCStyle.rd_radius_small
+            color: (testButton.hovered || testButton.down) ? VLCStyle.palette.rdBgAccentBright
+                                                           : VLCStyle.palette.rdBgAccentDark
+            border.width: testButton.visualFocus ? VLCStyle.dp(1) : 0
+            border.color: VLCStyle.palette.rdFgA3
+        }
+
+        contentItem: Text {
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            text: testButton.text
+            font.family: VLCStyle.rd_fontFamily
+            font.pixelSize: VLCStyle.rd_fontSize_label
+            color: (testButton.hovered || testButton.down) ? VLCStyle.palette.rdAccentMain
+                                                           : VLCStyle.palette.rdAccentDim
         }
     }
 }

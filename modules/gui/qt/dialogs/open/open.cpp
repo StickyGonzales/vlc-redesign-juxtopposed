@@ -46,6 +46,10 @@ OpenDialog::OpenDialog(qt_intf_t *_p_intf, QWindow* parent )
 {
     /* Basic Creation of the Window */
     ui.setupUi( this );
+#ifdef VLC_BRAND_PUBLIC
+    /* brand layer: the .ui tooltip names VLC */
+    ui.advancedLineInput->setToolTip( qtr( "Complete MRL for Cone internal" ) );
+#endif
     setWindowTitle( qtr( "Open Media" ) );
     setWindowRole( "vlc-open-media" );
     setWindowModality( Qt::WindowModal );

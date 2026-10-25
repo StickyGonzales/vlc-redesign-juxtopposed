@@ -51,6 +51,11 @@ T.Popup {
     modal: false
     focus: true
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent
+    // while the menu is open the wheel outside it does nothing, as with RdCascadeMenu: it never
+    // reaches the player or a list behind (Decision 54); a click outside still goes through. The
+    // "dim" layer is only that wheel catcher, it draws nothing
+    dim: true
+    T.Overlay.modeless: RdWheelSink { }
     // kept inside the window
     margins: VLCStyle.margin_xsmall
 

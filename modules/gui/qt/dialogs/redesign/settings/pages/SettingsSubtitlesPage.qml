@@ -40,6 +40,7 @@ SettingsPage {
     readonly property bool _shadow: Number(_option("freetype-shadow-opacity") ?? 0) > 0
     readonly property bool _background: Number(_option("freetype-background-opacity") ?? 0) > 0
     readonly property bool _title: _option("video-title-show") === true
+    readonly property bool _osd: _option("osd") !== false
 
     // the size in words (percent of VLC's default size)
     readonly property var _sizes: [
@@ -66,11 +67,20 @@ SettingsPage {
         SettingsLanguageOption {
             option: "sub-language"
             text: qsTr("Preferred language")
+            // Figma reads "System language"; VLC's empty value does not follow the system
+            // language, so it stays "Automatic" (Decisions (Claude), WEB_FIXES_1_NOTES.md)
+            note: qsTr("Automatic picks the subtitle track the file marks as its default. Applies from the next file.")
         }
 
+        // VLC's empty value ("Default (Windows-1252)") reads the encoding a file declares, then
+        // detects UTF-8, and only then falls back to the language's usual code page: Figma's
+        // "Automatic" (SHEET_CONFIRMATIONS, P8-12)
         SettingsOption {
             option: "subsdec-encoding"
             text: qsTr("Text encoding")
+            choices: RdEffects.optionChoices(option).map((c) =>
+                c.value === "" ? { value: c.value, text: qsTr("Automatic") } : c)
+            note: qsTr("Automatic uses the encoding a subtitle file declares, recognizes UTF-8, and otherwise reads the file in the usual encoding of the interface language.")
         }
     }
 
@@ -99,9 +109,6 @@ SettingsPage {
             ]
         }
     }
-
-    // the OpenSubtitles account of the Add Subtitles dialog (W6.5)
-    SettingsOpenSubtitlesSection { }
 
     SettingsSection {
         title: qsTr("Appearance")
@@ -322,9 +329,29 @@ SettingsPage {
     SettingsSection {
         title: qsTr("On-Screen Messages")
 
+        // VLC's on-screen messages; in the Cone build a message caused by a shortcut also names
+        // the key ("Pressed C", modules/control/hotkeys.c, video 15:23-15:28)
         SettingsOption {
             option: "osd"
             text: qsTr("Show feedback for shortcuts")
+        }
+
+        // Figma "Frame 146": 0.5 s to 5 s, ten ticks; the messages' time on the video (a core
+        // option of the Cone build, src/video_output/video_text.c)
+        SettingsOption {
+            option: "osd-duration"
+            text: qsTr("Show feedback for")
+            kind: "slider"
+            valueScale: 1000
+            from: 0.5
+            to: 5
+            step: 0.1
+            decimals: 1
+            tickStep: 0.5
+            labelStep: 4.5
+            labelAnchor: 0.5
+            labelText: (v) => qsTr("%1 s").arg(Math.round(v * 10) / 10)
+            available: root._osd
         }
 
         SettingsOption {
@@ -350,6 +377,10 @@ SettingsPage {
         }
     }
 
+    // the OpenSubtitles account of the Add Subtitles dialog (W6.5): not in Figma's page, so after
+    // her sections
+    SettingsOpenSubtitlesSection { }
+
     advanced: [
         SettingsSection {
             SettingsOption {
@@ -357,6 +388,13 @@ SettingsPage {
                 minimumLineHeight: VLCStyle.dp(38)
                 text: qsTr("Load subtitles from these folders")
                 available: root._autodetect
+            }
+
+            // the libass decoder's option (modules/codec/libass.c, row S2-11): the dialogue of
+            // ASS/SSA subtitles takes the Appearance style above, from the next file or track
+            SettingsOption {
+                option: "ssa-ignore-styling"
+                text: qsTr("Ignore styling in ASS and SSA subtitles")
             }
 
             SettingsOption {

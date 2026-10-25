@@ -325,12 +325,28 @@ libqt_plugin_la_SOURCES = \
 	player/rd_effects.hpp \
 	player/rd_seek_thumbnailer.cpp \
 	player/rd_seek_thumbnailer.hpp \
+	player/rd_filter_math.cpp \
+	player/rd_filter_math.hpp \
+	player/rd_filter_preview.cpp \
+	player/rd_filter_preview.hpp \
 	player/rd_waveform.cpp \
 	player/rd_waveform.hpp \
 	player/rd_waveform_item.cpp \
 	player/rd_waveform_item.hpp \
+	player/rd_subtitle_lift.cpp \
+	player/rd_subtitle_lift.hpp \
+	player/rd_subtitle_timeline.cpp \
+	player/rd_subtitle_timeline.hpp \
+	player/rd_subtitle_timeline_item.cpp \
+	player/rd_subtitle_timeline_item.hpp \
 	player/rd_waveform_scanner.cpp \
 	player/rd_waveform_scanner.hpp \
+	player/rd_now_playing.cpp \
+	player/rd_now_playing.hpp \
+	dialogs/toolbar/rd_profiles.cpp \
+	dialogs/toolbar/rd_profiles.hpp \
+	dialogs/toolbar/rd_profile_settings.cpp \
+	dialogs/toolbar/rd_profile_settings.hpp \
 	player/rd_media_info.cpp \
 	player/rd_media_info.hpp \
 	player/rd_presets.cpp \
@@ -354,6 +370,8 @@ libqt_plugin_la_SOURCES = \
 	util/accessible_compat_attached.cpp util/accessible_compat_attached.hpp \
 	util/audio_device_model.cpp  \
 	util/audio_device_model.hpp \
+	util/rd_stereo_test.cpp \
+	util/rd_stereo_test.hpp \
 	util/workerthreadset.hpp util/workerthreadset.cpp \
 	util/base_model.hpp util/base_model_p.hpp util/base_model.cpp \
 	util/color_scheme_model.cpp util/color_scheme_model.hpp \
@@ -388,6 +406,8 @@ libqt_plugin_la_SOURCES = \
 	util/varchoicemodel.cpp  util/varchoicemodel.hpp \
 	util/variables.cpp util/variables.hpp \
 	util/vlchotkeyconverter.cpp util/vlchotkeyconverter.hpp \
+	util/quit_watchdog.cpp \
+	util/quit_watchdog.hpp \
 	util/vlctick.cpp \
 	util/vlctick.hpp \
 	util/shared_input_item.hpp \
@@ -419,6 +439,8 @@ libqt_plugin_la_SOURCES = \
 	widgets/native/customwidgets.cpp widgets/native/customwidgets.hpp \
 	widgets/native/csdthemeimage.cpp \
 	widgets/native/csdthemeimage.hpp \
+	widgets/native/rd_eq_curve_item.cpp \
+	widgets/native/rd_eq_curve_item.hpp \
 	widgets/native/interface_widgets.cpp \
 	widgets/native/interface_widgets.hpp \
 	widgets/native/navigation_attached.cpp \
@@ -550,8 +572,14 @@ nodist_libqt_plugin_la_SOURCES = \
 	player/delay_estimator.moc.cpp \
 	player/rd_effects.moc.cpp \
 	player/rd_seek_thumbnailer.moc.cpp \
+	player/rd_filter_preview.moc.cpp \
 	player/rd_waveform.moc.cpp \
 	player/rd_waveform_item.moc.cpp \
+	player/rd_subtitle_lift.moc.cpp \
+	player/rd_subtitle_timeline.moc.cpp \
+	player/rd_subtitle_timeline_item.moc.cpp \
+	player/rd_now_playing.moc.cpp \
+	dialogs/toolbar/rd_profiles.moc.cpp \
 	player/rd_media_info.moc.cpp \
 	player/rd_presets.moc.cpp \
 	player/input_models.moc.cpp \
@@ -598,6 +626,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/pointingtooltipattached.moc.cpp \
 	widgets/native/animators.moc.cpp \
 	widgets/native/csdthemeimage.moc.cpp \
+	widgets/native/rd_eq_curve_item.moc.cpp \
 	widgets/native/customwidgets.moc.cpp \
 	widgets/native/interface_widgets.moc.cpp \
 	widgets/native/navigation_attached.moc.cpp \
@@ -643,7 +672,8 @@ libqt_plugin_la_SOURCES += \
 	maininterface/win32windoweffects_module.cpp \
 	maininterface/win32windoweffects_module.hpp \
 	util/csdmenu_win32.c \
-	util/csdmenu_win32.h
+	util/csdmenu_win32.h \
+	util/rd_thread_exit_win32.cpp
 
 nodist_libqt_plugin_la_SOURCES += maininterface/mainctx_win32.moc.cpp \
 	maininterface/compositor_win7.moc.cpp
@@ -1342,9 +1372,11 @@ libqml_module_dialogs_a_QML = \
 	dialogs/toolbar/qml/CustomizePalette.qml \
 	dialogs/toolbar/qml/CustomizePaletteTile.qml \
 	dialogs/toolbar/qml/CustomizeBar.qml \
+	dialogs/toolbar/qml/CustomizeTopBar.qml \
 	dialogs/toolbar/qml/CustomizeZone.qml \
 	dialogs/toolbar/qml/CustomizeZoneItem.qml \
 	dialogs/toolbar/qml/CustomizeNamePrompt.qml \
+	dialogs/toolbar/qml/RdProfileNotice.qml \
 	dialogs/redesign/settings/SettingsAdvancedBar.qml \
 	dialogs/redesign/settings/SettingsCategoryButton.qml \
 	dialogs/redesign/settings/SettingsDialog.qml \
@@ -1534,6 +1566,7 @@ libqml_module_player_a_QML = \
 	player/qml/ResumeDialog.qml \
 	player/qml/SliderBar.qml \
 	player/qml/TopBar.qml \
+	player/qml/RdTopBarZone.qml \
 	player/qml/TracksMenu.qml \
 	player/qml/TracksPopup.qml \
 	player/qml/RdSidePanel.qml \
@@ -1548,6 +1581,8 @@ libqml_module_player_a_QML = \
 	player/qml/SubtitleSettingsPage.qml \
 	player/qml/RdSliderCommit.qml \
 	player/qml/RdSeekPreview.qml \
+	player/qml/RdFilterPreviewImage.qml \
+	player/qml/SubtitleTimelineButtons.qml \
 	player/qml/TracksPage.qml \
 	player/qml/TracksPageAudio.qml \
 	player/qml/TracksPageSpeed.qml \
@@ -1620,6 +1655,30 @@ libqml_module_playercontrols_a_QML = \
 	player/qml/controlbarcontrols/TeletextColorButton.qml \
 	player/qml/controlbarcontrols/TeletextWidget.qml \
 	player/qml/controlbarcontrols/VolumeWidget.qml \
+	player/qml/controlbarcontrols/AddBookmarkButton.qml \
+	player/qml/controlbarcontrols/ArtistNameWidget.qml \
+	player/qml/controlbarcontrols/ChaptersButton.qml \
+	player/qml/controlbarcontrols/ChoiceMenuButton.qml \
+	player/qml/controlbarcontrols/DividerWidget.qml \
+	player/qml/controlbarcontrols/FavoriteButton.qml \
+	player/qml/controlbarcontrols/FileNameWidget.qml \
+	player/qml/controlbarcontrols/FolderChipWidget.qml \
+	player/qml/controlbarcontrols/FolderNameWidget.qml \
+	player/qml/controlbarcontrols/HdrButton.qml \
+	player/qml/controlbarcontrols/HomeButton.qml \
+	player/qml/controlbarcontrols/LibraryButton.qml \
+	player/qml/controlbarcontrols/MainMenuButton.qml \
+	player/qml/controlbarcontrols/MediaTitleWidget.qml \
+	player/qml/controlbarcontrols/PlaylistNameWidget.qml \
+	player/qml/controlbarcontrols/PlaylistsButton.qml \
+	player/qml/controlbarcontrols/ReplayButton.qml \
+	player/qml/controlbarcontrols/RightSidebarButton.qml \
+	player/qml/controlbarcontrols/SettingsButton.qml \
+	player/qml/controlbarcontrols/SkipBack10Button.qml \
+	player/qml/controlbarcontrols/SkipForward10Button.qml \
+	player/qml/controlbarcontrols/TextInfoWidget.qml \
+	player/qml/controlbarcontrols/ThumbnailWidget.qml \
+	player/qml/controlbarcontrols/ZoomButton.qml \
 	player/qml/controlbarcontrols/Fallback.qml
 libqml_module_playercontrols_a_Singleton_QML =
 libqml_module_playercontrols_a_SOURCES = $(QML_MODULE_playercontrols_SRC)
@@ -1771,6 +1830,8 @@ libqml_module_widgets_a_QML = \
 	widgets/qml/RdSegmented.qml \
 	widgets/qml/RdSlider.qml \
 	widgets/qml/RdEndlessSlider.qml \
+	widgets/qml/RdSliderWheel.qml \
+	widgets/qml/RdWheelSink.qml \
 	widgets/qml/RdButton.qml \
 	widgets/qml/RdTextField.qml \
 	widgets/qml/RdOptionRow.qml \
@@ -1953,7 +2014,9 @@ libqt_plugin_la_BRAND_PUBLIC_RES = \
 	pixmaps/brand/public/cone-48.png \
 	pixmaps/brand/public/cone-64.png \
 	pixmaps/brand/public/cone-128.png \
-	pixmaps/brand/public/cone-256.png
+	pixmaps/brand/public/cone-256.png \
+	pixmaps/brand/public/prefs-sample-modern.png \
+	pixmaps/brand/public/prefs-sample-classic.png
 
 EXTRA_DIST += brand_public.qrc $(libqt_plugin_la_BRAND_PUBLIC_RES)
 

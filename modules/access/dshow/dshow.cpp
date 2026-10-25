@@ -54,6 +54,18 @@
 
 #include "../src/win32/mta_holder.h"
 
+/* redesign (brand layer, public profile): the capture error names Cone, not VLC; the vlc
+ * profile compiles VLC's text as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_CAPTURE_FAILED \
+    _("Cone cannot open ANY capture device. " \
+    "Check the error log for details.")
+#else
+# define BRAND_TEXT_CAPTURE_FAILED \
+    _("VLC cannot open ANY capture device. " \
+    "Check the error log for details.")
+#endif
+
 namespace dshow {
 
 /*****************************************************************************
@@ -550,8 +562,7 @@ static int CommonOpen( vlc_object_t *p_this, access_sys_t *p_sys,
     {
         msg_Err( p_this, "FATAL: could not open ANY device" ) ;
         vlc_dialog_display_error( p_this,  _("Capture failed"),
-                        _("VLC cannot open ANY capture device. "
-                          "Check the error log for details.") );
+                        BRAND_TEXT_CAPTURE_FAILED );
         return VLC_EGENERIC ;
     }
 

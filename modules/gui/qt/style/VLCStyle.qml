@@ -375,6 +375,15 @@ QtObject {
     readonly property int rd_waveformPlayheadGap: MainCtx.dp(3, scale)
     // narrow window: the seek bar never gets narrower than a time label
     readonly property int rd_seekBarMinimumWidth: MainCtx.dp(76, scale)
+    // the subtitle timeline's bar stays wider while there is room: 2 px per second of its one
+    // minute window, so a two second line is still a block to grab (the volume control keeps
+    // its place in a 760 px wide window)
+    readonly property int rd_seekTimelineMinimumWidth: MainCtx.dp(120, scale)
+    // the buttons beside the subtitle timeline seek bar (video 7:04, no Figma frame): as tall as
+    // the bar, "-" / "+" about square (20x22 in the video), "<" / ">" narrower (0.73 of the bar
+    // height)
+    readonly property int rd_timelineButtonWidth: MainCtx.dp(26, scale)
+    readonly property int rd_timelineChevronWidth: MainCtx.dp(20, scale)
     // seek bar preview card (Figma "thumbnail" 272x189: padding 10, gap 10, picture 252x142 r4,
     // time box 17 high, card radius rd_radius_large); the prototype opens it at -132,-209 of the
     // 8x24 playhead, so its bottom edge is 18 px above the seek track
@@ -402,6 +411,7 @@ QtObject {
     readonly property int rd_libraryRailFullWidth: MainCtx.dp(217, scale)  // full library rail (Figma Player-1..5)
     readonly property int rd_libraryPanelWidth: MainCtx.dp(377, scale)
     readonly property int rd_librarySlideDuration: 208                   // compact library open / close, Figma smart animate "slow"
+    readonly property int rd_libraryPageFadeDuration: 180                // library page and address line crossfade (IB-21); no Figma duration
     readonly property int rd_menuRowHeight: MainCtx.dp(48, scale)
     readonly property int rd_menuWidth: MainCtx.dp(265, scale)
     readonly property int rd_mainMenuWidth: MainCtx.dp(375, scale)
@@ -410,6 +420,7 @@ QtObject {
     readonly property int rd_submenuGap: MainCtx.dp(11, scale)          // Figma "Profiles": menu to submenu
     readonly property int rd_menuPadding: MainCtx.dp(4, scale)          // Figma menus: padding 4
     readonly property int rd_menuFadeDuration: 120                       // menu fade-in, video 5:08 at 60 fps
+    readonly property int rd_tabSwitchDuration: 220                      // sidebar tab crossfades (P4-16, IA-37): her video, 60 fps, linear
     readonly property int rd_rowHeight: MainCtx.dp(32, scale)
     // drag ghost of a list row (IB-15, video 11:45): the row content only; its FG/1 title measures
     // about #A9A9A9 over the black video, so about 75 % opaque
@@ -423,6 +434,12 @@ QtObject {
     readonly property int rd_settingsHeaderHeight: MainCtx.dp(50, scale)
     readonly property int rd_settingsNavWidth: MainCtx.dp(216, scale)
     readonly property int rd_settingsCategoryHeight: MainCtx.dp(40, scale)
+    // the pages' scrolling column (Figma "Frame 123" of "Settings - subtitles", "Settings - global-1"
+    // and the other pages: padding 20, 24, 40, 24; only the collapsed "Settings - global" has 100
+    // under it): the last element ends 40 above the dialog's edge once scrolled to the end
+    readonly property int rd_settingsPageTopPadding: MainCtx.dp(20, scale)
+    readonly property int rd_settingsPageSidePadding: MainCtx.dp(24, scale)
+    readonly property int rd_settingsPageBottomPadding: MainCtx.dp(40, scale)
     readonly property real rd_disabledRowOpacity: 0.3                    // Figma "Settings - library" dependent rows
     readonly property real rd_blurRadius: 50                              // effect "bg blur"
     // dialogs (Figma "Keyboard Shortcuts", "Add Subtitles"): 1048x800, header 96 (title + controls), footer 72

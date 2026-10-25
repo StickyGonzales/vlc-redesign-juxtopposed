@@ -154,6 +154,9 @@ public:
     COLOR_DEFINITION(rdSwatchStroke, QColor(0xFF, 0xFF, 0xFF, 54));
     // selected text on the Accent/DIm selection (no Figma style): FG/1 in Dark, BG/A1 in Light
     COLOR_DEFINITION(rdSelectionText, "#EAEAEA");
+    // the BG/A5 input fields (search fields, Add Subtitles fields and dropdowns): BG/A5 in Dark,
+    // BG/A3 in Light, where BG/A5 #888888 is a dark block that hides the FG/A4 placeholder
+    COLOR_DEFINITION(rdBgField, "#151515");
     COLOR_DEFINITION(rdShadow, QColor(0x00, 0x00, 0x00, 117)); // Figma effect drop shadow #000000 46%
     COLOR_DEFINITION(rdCardShadow, QColor(0x00, 0x00, 0x00, 97)); // Figma onboarding drop shadow #000000 38% (y 4, blur 11.8)
     COLOR_DEFINITION(rdKeyShadow, QColor(0x5C, 0x5C, 0x5C, 64)); // Figma onboarding keycap drop shadow #5C5C5C 25% (y 6, no blur)
@@ -176,6 +179,12 @@ public:
     COLOR_DEFINITION(rdCoverGlow, QColor(0xFF, 0xFF, 0xFF, 8));
     // the dashed border of the New Playlist drop zone (Figma "new playlist": #2D2D2D)
     COLOR_DEFINITION(rdDropZoneDash, "#2D2D2D");
+    // the subtitle timeline's blocks on the seek bar (video 7:00-7:04, no Figma style): the
+    // surface under them with 9 % white (Dark) or black (Light) over it. Played side: over
+    // BG/Accent Bright (the played fill), #4A331D in the video; the rest: over BG/B2 (the
+    // track), which is BG/A2 in Dark
+    COLOR_DEFINITION(rdSeekBlockPlayed, "#49331C");
+    COLOR_DEFINITION(rdSeekBlockUnplayed, "#1F1F1F");
 
     COLOR_DEFINITION(orange400, "#f89a06"); //FIXME name have been chosen randomly by me
     COLOR_DEFINITION(orange200, "#e29a06"); //FIXME name have been chosen randomly by me

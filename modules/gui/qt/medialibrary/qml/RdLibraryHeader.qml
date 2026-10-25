@@ -67,14 +67,23 @@ Item {
         return qsTr("%1 - %2").arg(count).arg(status)
     }
 
-    // closing the search clears it
+    // closing the search clears it; the keyboard stays in the library, not in the hidden field
+    // (it kept the next Escape, which then never closed the library)
     onSearchOpenChanged: {
         if (searchOpen)
             return
+        const hadFocus = searchField.editing
         searchField.text = ""
         if (page)
             page.searchText = ""
+        if (hadFocus)
+            root.forceActiveFocus()
     }
+
+    // the address line on screen, kept for the crossfade into the next one
+    property var _shownCrumbs: []
+
+    Component.onCompleted: _shownCrumbs = RdLibraryNav.location.crumbs
 
     Connections {
         target: RdLibraryNav
@@ -83,6 +92,15 @@ Item {
             root.searchOpen = false
             searchField.text = ""
             fullSearch.text = ""
+
+            // a crossfade still running ends at once, as the page's does
+            if (crumbsFade.running)
+                crumbsFade.complete()
+            previousBreadcrumb.crumbs = root._shownCrumbs
+            root._shownCrumbs = RdLibraryNav.location.crumbs
+            previousBreadcrumb.opacity = 1
+            breadcrumb.opacity = 0
+            crumbsFade.start()
         }
     }
 
@@ -117,6 +135,8 @@ Item {
         }
 
         RdBreadcrumb {
+            id: breadcrumb
+
             anchors.left: navButtons.right
             anchors.leftMargin: VLCStyle.dp(10)
             anchors.right: root.compact ? pageActions.left : fullTools.left
@@ -125,8 +145,42 @@ Item {
 
             crumbs: RdLibraryNav.location.crumbs
             // Figma Player-5: a category's root alone is not bold
-            boldLast: !root.compact && RdLibraryNav.location.crumbs.length > 1
+            boldLast: !root.compact && crumbs.length > 1
             onCrumbClicked: (index) => RdLibraryNav.openCrumb(index)
+        }
+
+        // the address line of the page before, fading out while the new one fades in, with the
+        // page rows (RdLibraryContent; video 12:12, IB-21: old and new overlap at the same place)
+        RdBreadcrumb {
+            id: previousBreadcrumb
+
+            anchors.fill: breadcrumb
+
+            enabled: false
+            visible: opacity > 0
+            opacity: 0
+
+            boldLast: !root.compact && crumbs.length > 1
+        }
+
+        ParallelAnimation {
+            id: crumbsFade
+
+            NumberAnimation {
+                target: previousBreadcrumb
+                property: "opacity"
+                to: 0
+                duration: VLCStyle.rd_libraryPageFadeDuration
+                easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+                target: breadcrumb
+                property: "opacity"
+                to: 1
+                duration: VLCStyle.rd_libraryPageFadeDuration
+                easing.type: Easing.OutQuad
+            }
         }
 
         Row {
@@ -154,9 +208,45 @@ Item {
             }
         }
 
-        // full library: everything on one row
+        // full library: everything on one row (Figma Player-5 "Frame 26": count, sort, view,
+        // search 325 x 34, "...", 20 apart). It never runs into back / forward: when the row is
+        // short the count elides, then hides, then the search field shrinks to its minimum, then
+        // the address line gives way (it folds and elides its parts); in a very small window the
+        // search field hides (its search is cleared), then sort and view; "..." always shows
         Row {
             id: fullTools
+
+            readonly property real searchMaxWidth: VLCStyle.dp(325)
+            readonly property real searchMinWidth: VLCStyle.dp(120)
+            readonly property real countMinWidth: VLCStyle.dp(40)
+            // what the address line keeps while the count and the search field give way
+            readonly property real crumbsMinWidth: VLCStyle.dp(100)
+
+            // room for this row once back / forward, the address line's minimum and the gaps
+            // are taken
+            readonly property real _room: firstRow.width - navButtons.width - breadcrumb.anchors.leftMargin
+                                          - breadcrumb.anchors.rightMargin - crumbsMinWidth
+            // sort and view fit next to "..." (the address line may give up all its room)
+            readonly property bool toolsFit: _room + crumbsMinWidth >= fullPageTools.implicitWidth + spacing
+                                                                       + fullMore.width
+            // the parts that always show, with the gaps around the search field
+            readonly property real _fixedWidth: fullPageTools.implicitWidth + fullMore.width + 2 * spacing
+            readonly property real searchWidth: {
+                const room = _room - _fixedWidth
+                if (room >= searchMinWidth)
+                    return Math.min(searchMaxWidth, room)
+                return toolsFit && room + crumbsMinWidth >= searchMinWidth ? searchMinWidth : 0
+            }
+            readonly property real countWidth: {
+                const room = _room - _fixedWidth - searchWidth - spacing
+                return room >= countMinWidth ? Math.min(fullCount.implicitWidth, room) : 0
+            }
+
+            // a search nobody can see or clear does not stay applied
+            onSearchWidthChanged: {
+                if (searchWidth === 0)
+                    fullSearch.text = ""
+            }
 
             visible: !root.compact
             anchors.right: parent.right
@@ -164,12 +254,19 @@ Item {
             spacing: VLCStyle.dp(20)
 
             CountText {
+                id: fullCount
+
                 anchors.verticalCenter: parent.verticalCenter
+                visible: fullTools.countWidth > 0
+                width: fullTools.countWidth
                 text: root._countText()
             }
 
             PageTools {
+                id: fullPageTools
+
                 anchors.verticalCenter: parent.verticalCenter
+                visible: fullTools.toolsFit
                 header: root
                 menu: toolMenu
                 showSearchButton: false
@@ -181,7 +278,8 @@ Item {
                 id: fullSearch
 
                 anchors.verticalCenter: parent.verticalCenter
-                width: VLCStyle.dp(325)
+                visible: fullTools.searchWidth > 0
+                width: fullTools.searchWidth
                 height: VLCStyle.dp(34)
                 page: root.page
             }
@@ -210,6 +308,9 @@ Item {
         CountText {
             visible: !root.searchOpen
             anchors.left: parent.left
+            // elided before the tools ("3007 items - Indexing 45%")
+            anchors.right: compactTools.left
+            anchors.rightMargin: VLCStyle.dp(12)
             anchors.verticalCenter: parent.verticalCenter
             text: root._countText()
         }
@@ -246,6 +347,8 @@ Item {
 
     RdLibraryItemMenu {
         id: pageMenu
+
+        forPage: true
     }
 
     RdLibraryMenu {
@@ -253,6 +356,7 @@ Item {
     }
 
     component CountText: Text {
+        elide: Text.ElideRight
         font.family: VLCStyle.rd_fontFamily
         font.pixelSize: VLCStyle.rd_fontSize_label
         color: VLCStyle.palette.rdFgA3
@@ -360,6 +464,7 @@ Item {
 
         property alias text: input.text
         property Item page
+        readonly property bool editing: input.activeFocus
 
         signal escaped()
 
@@ -370,7 +475,7 @@ Item {
         implicitHeight: VLCStyle.dp(34)
         radius: VLCStyle.rd_radius_normal
         // a little lighter than the page (video 10:44-10:59)
-        color: VLCStyle.palette.rdBgA5
+        color: VLCStyle.palette.rdBgField
         enabled: !!page && page.searchable
         opacity: enabled ? 1 : 0.5
 

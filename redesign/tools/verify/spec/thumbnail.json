@@ -1,0 +1,73 @@
+{
+ "format": 1,
+ "node": "2151:9673",
+ "name": "thumbnail",
+ "png": "thumbnail.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  272,
+  189
+ ],
+ "theme": "dark",
+ "rows": [
+  36,
+  37
+ ],
+ "background": [
+  {
+   "token": "BG/A3 Transparent",
+   "dark": "#191919",
+   "light": "#D5D5D5",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "2151:9674",
+   "name": "Frame 244",
+   "type": "frame",
+   "path": "Frame 244",
+   "bounds": [
+    10,
+    10,
+    252,
+    142
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "type": "image"
+    }
+   ],
+   "mask": "image"
+  },
+  {
+   "id": "5970:13199",
+   "name": "00:02:10",
+   "type": "text",
+   "path": "00:02:10",
+   "bounds": [
+    104.5,
+    162,
+    63,
+    17
+   ],
+   "text": {
+    "content": "00:02:10",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time"
+  }
+ ]
+}

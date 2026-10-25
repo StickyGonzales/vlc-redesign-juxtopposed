@@ -35,6 +35,7 @@
 #include "widgets/native/searchlineedit.hpp"
 #include "widgets/native/qvlcframe.hpp"
 #include "maininterface/mainctx.hpp"
+#include "style/rdwidgetstyle.hpp"
 
 #include <QHBoxLayout>
 #include <QGroupBox>
@@ -89,6 +90,11 @@ PrefsDialog::PrefsDialog( QWindow *parent, qt_intf_t *_p_intf )
     save->setToolTip( qtr( "Save and close the dialog" ) );
     QPushButton *cancel = new QPushButton( qtr( "&Cancel" ) );
     QPushButton *reset = new QPushButton( qtr( "&Reset Preferences" ) );
+
+    /* redesign (Decision 70): the redesign's dialog look, following the color scheme live,
+     * as the other dialogs that stay Qt widgets */
+    RdWidgetStyle::apply( this, p_intf );
+    RdWidgetStyle::setPrimary( save );
 
     buttonsBox->addButton( save, QDialogButtonBox::AcceptRole );
     buttonsBox->addButton( cancel, QDialogButtonBox::RejectRole );
@@ -381,7 +387,11 @@ void PrefsDialog::save()
         int restart = QMessageBox::question(
                           this,
                           qtr( "Restart Required" ),
+#ifdef VLC_BRAND_PUBLIC
+                          qtr( "Cone needs to be restarted for the reset to take full effect.\n\nRestart now?" ),
+#else
                           qtr( "VLC needs to be restarted for the reset to take full effect.\n\nRestart now?" ),
+#endif
                           QMessageBox::Yes | QMessageBox::No,
                           QMessageBox::Yes);
         
@@ -418,7 +428,11 @@ void PrefsDialog::reset()
     int ret = QMessageBox::question(
                  this,
                  qtr( "Reset Preferences" ),
+#ifdef VLC_BRAND_PUBLIC
+                 qtr( "Are you sure you want to reset your Cone preferences?" ),
+#else
                  qtr( "Are you sure you want to reset your VLC media player preferences?" ),
+#endif
                  QMessageBox::Ok | QMessageBox::Cancel,
                  QMessageBox::Ok);
 

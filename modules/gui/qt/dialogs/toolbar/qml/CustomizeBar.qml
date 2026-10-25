@@ -19,10 +19,11 @@
 // redesign (W8.1a, video 19:20-19:27, Figma "Player - customize" / "-6"): the edited bar, drawn
 // where the control bar is (bottom of the window, Figma "Controls": 54 high, BG/A3, padding 20)
 // with every control in a dashed outline. It edits VLC's three zones of the selected player
-// layout like the live bar lays them out (PlayerControlLayout): with an empty center zone the
-// video and audio players show the seek row between the left and right controls (a drop on it
-// goes to the center zone, which then takes its place, as in the live bar); otherwise the center
-// controls sit in the middle and the left / right zones show their free room as empty slots.
+// layout like the live bar lays them out (ControlBar, PlayerControlLayout): with an empty center
+// zone the video and audio players show the seek row between the left and right controls (a
+// drop on it goes to the center zone); with center controls the seek row moves to its own row
+// above the controls (Figma "Player - customize-1" / "-6": two 54 px rows), the center controls
+// sit in the middle and the left / right zones show their free room as empty slots.
 import QtQuick
 
 import VLC.MainInterface
@@ -43,12 +44,19 @@ Rectangle {
     // the video and audio players have the seek row between their zones (ControlBar Inline)
     property bool hasSeekRow: true
 
-    readonly property bool _seekRowShown: hasSeekRow && !!playerModel && playerModel.center.count === 0
+    readonly property bool _hasCenter: !!playerModel && playerModel.center.count > 0
+    // the seek row between the left and right zones, or on its own row above them
+    readonly property bool _seekRowInline: hasSeekRow && !!playerModel && !_hasCenter
+    readonly property bool _seekRowOnOwnRow: hasSeekRow && _hasCenter
+
+    readonly property real _rowHeight: VLCStyle.rd_controlBarHeight
+    // the row of the zones
+    readonly property real _zonesY: _seekRowOnOwnRow ? _rowHeight : 0
 
     readonly property real _padding: VLCStyle.rd_controlBarSpacing
     readonly property real _zoneSpacing: VLCStyle.rd_controlBarSpacing
 
-    implicitHeight: VLCStyle.rd_controlBarHeight
+    implicitHeight: _seekRowOnOwnRow ? 2 * _rowHeight : _rowHeight
 
     // Figma "Controls" BG/A3 Transparent, opaque over the native video
     color: Qt.alpha(VLCStyle.palette.rdBgA3Transparent, 1.0)
@@ -72,9 +80,10 @@ Rectangle {
         id: leftZone
 
         x: root._padding
-        width: root._seekRowShown ? implicitWidth
+        width: root._seekRowInline ? implicitWidth
                                   : Math.max(implicitWidth, centerZone.x - root._zoneSpacing - x)
-        height: parent.height
+        y: root._zonesY
+        height: root._rowHeight
 
         alignment: Qt.AlignLeft
         editor: root.editor
@@ -86,9 +95,10 @@ Rectangle {
 
         x: Math.round((root.width - width) / 2)
         width: implicitWidth
-        height: parent.height
+        y: root._zonesY
+        height: root._rowHeight
 
-        visible: !root._seekRowShown
+        visible: !root._seekRowInline
 
         alignment: Qt.AlignHCenter
         acceptsExpandingSpacer: false
@@ -99,12 +109,13 @@ Rectangle {
     CustomizeZone {
         id: rightZone
 
-        readonly property real _left: root._seekRowShown ? root.width - root._padding - implicitWidth
+        readonly property real _left: root._seekRowInline ? root.width - root._padding - implicitWidth
                                                          : centerZone.x + centerZone.width + root._zoneSpacing
 
         x: Math.min(_left, root.width - root._padding - implicitWidth)
         width: root.width - root._padding - x
-        height: parent.height
+        y: root._zonesY
+        height: root._rowHeight
 
         alignment: Qt.AlignRight
         editor: root.editor
@@ -112,16 +123,18 @@ Rectangle {
     }
 
     // the seek row of the live bar (Figma "seekbar": time 76, thick bar, duration 76, gap 8, in a
-    // 36 high dashed outline); in this step it is not movable, a drop on it fills the center zone
+    // 36 high dashed outline, centered in its 54 px row); it is not movable itself: between the
+    // zones a drop on it fills the center zone, which sends it to its own row
     Item {
         id: seekRow
 
-        x: leftZone.x + leftZone.width + root._zoneSpacing
-        width: Math.max(0, rightZone.x + (rightZone.width - rightZone.controlsWidth) - root._zoneSpacing - x)
+        x: root._seekRowOnOwnRow ? root._padding : leftZone.x + leftZone.width + root._zoneSpacing
+        width: root._seekRowOnOwnRow ? Math.max(0, root.width - 2 * root._padding)
+                                     : Math.max(0, rightZone.x + (rightZone.width - rightZone.controlsWidth) - root._zoneSpacing - x)
         height: VLCStyle.dp(36)
-        anchors.verticalCenter: parent.verticalCenter
+        y: Math.round((root._rowHeight - height) / 2)
 
-        visible: root._seekRowShown
+        visible: root._seekRowInline || root._seekRowOnOwnRow
 
         Widgets.RdDashedFrame {
             anchors.fill: parent
@@ -192,6 +205,7 @@ Rectangle {
             id: seekDrop
 
             anchors.fill: parent
+            enabled: root._seekRowInline
 
             onEntered: (drag) => {
                 if (!centerZone.acceptsDrag(drag))

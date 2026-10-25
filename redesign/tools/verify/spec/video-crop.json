@@ -1,0 +1,587 @@
+{
+ "format": 1,
+ "node": "543:990",
+ "name": "Video - Crop",
+ "png": "Video - Crop.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  400,
+  821
+ ],
+ "theme": "dark",
+ "rows": [
+  135,
+  344
+ ],
+ "variants": [
+  {
+   "node": "543:991",
+   "name": "Property 1=collapsed",
+   "props": {
+    "Property 1": "collapsed"
+   },
+   "bounds": [
+    20,
+    20,
+    360,
+    48
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "543:993",
+     "name": "Expand Settings",
+     "type": "text",
+     "path": "Expand Settings",
+     "bounds": [
+      16,
+      15.5,
+      108,
+      17
+     ],
+     "text": {
+      "content": "Expand Settings",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "543:994",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:chevron",
+     "bounds": [
+      326,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "right",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      344
+     ]
+    }
+   ]
+  },
+  {
+   "node": "543:995",
+   "name": "Property 1=expanded",
+   "props": {
+    "Property 1": "expanded"
+   },
+   "bounds": [
+    20,
+    88,
+    360,
+    152
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "543:997",
+     "name": "Collapse Settings",
+     "type": "text",
+     "path": "Collapse Settings",
+     "bounds": [
+      16,
+      15.5,
+      116,
+      17
+     ],
+     "text": {
+      "content": "Collapse Settings",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "543:998",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:chevron",
+     "bounds": [
+      326,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "down",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1024",
+     "name": "Frame 87",
+     "type": "frame",
+     "path": "Frame 87",
+     "bounds": [
+      16,
+      54,
+      141,
+      33
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1025",
+     "name": "Top",
+     "type": "text",
+     "path": "Top",
+     "bounds": [
+      28,
+      62,
+      25,
+      17
+     ],
+     "text": {
+      "content": "Top",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1026",
+     "name": "0 px",
+     "type": "text",
+     "path": "0 px",
+     "bounds": [
+      88,
+      62,
+      29,
+      17
+     ],
+     "text": {
+      "content": "0 px",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1028",
+     "name": "Frame 88",
+     "type": "frame",
+     "path": "Frame 88",
+     "bounds": [
+      165,
+      54,
+      141,
+      33
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1029",
+     "name": "Bottom",
+     "type": "text",
+     "path": "Bottom",
+     "bounds": [
+      177,
+      62,
+      49,
+      17
+     ],
+     "text": {
+      "content": "Bottom",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1030",
+     "name": "0 px",
+     "type": "text",
+     "path": "0 px",
+     "bounds": [
+      237,
+      62,
+      29,
+      17
+     ],
+     "text": {
+      "content": "0 px",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1081",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      314,
+      54.5,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "I774:1081;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:link",
+     "bounds": [
+      317,
+      58.5,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "link",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "link",
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1032",
+     "name": "Frame 87",
+     "type": "frame",
+     "path": "Frame 87",
+     "bounds": [
+      16,
+      103,
+      141,
+      33
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1033",
+     "name": "Left",
+     "type": "text",
+     "path": "Left",
+     "bounds": [
+      28,
+      111,
+      27,
+      17
+     ],
+     "text": {
+      "content": "Left",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1034",
+     "name": "0 px",
+     "type": "text",
+     "path": "0 px",
+     "bounds": [
+      88,
+      111,
+      29,
+      17
+     ],
+     "text": {
+      "content": "0 px",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1035",
+     "name": "Frame 88",
+     "type": "frame",
+     "path": "Frame 88",
+     "bounds": [
+      165,
+      103,
+      141,
+      33
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1036",
+     "name": "Right",
+     "type": "text",
+     "path": "Right",
+     "bounds": [
+      177,
+      111,
+      35,
+      17
+     ],
+     "text": {
+      "content": "Right",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1037",
+     "name": "0 px",
+     "type": "text",
+     "path": "0 px",
+     "bounds": [
+      237,
+      111,
+      29,
+      17
+     ],
+     "text": {
+      "content": "0 px",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "774:1092",
+     "name": "Icon Wrapper",
+     "type": "instance",
+     "path": "Icon Wrapper",
+     "bounds": [
+      314,
+      103.5,
+      30,
+      32
+     ],
+     "component": "Icon Wrapper",
+     "variant": {
+      "Property 1": "Default"
+     },
+     "radius": 4,
+     "rows": [
+      344
+     ]
+    },
+    {
+     "id": "I774:1092;177:88",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon Wrapper / Icon:link",
+     "bounds": [
+      317,
+      107.5,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "link",
+      "direction": "default",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "link",
+     "rows": [
+      344
+     ]
+    }
+   ]
+  }
+ ]
+}

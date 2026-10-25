@@ -2,15 +2,15 @@
 setlocal EnableExtensions
 rem Test VLC Redesign: downloads the newest successful build of the redesign branch from
 rem GitHub Actions and starts it in portable mode (its own settings, never the installed VLC's).
-rem Builds are downloaded to "%BUILDS%\<run number>" (a run that
-rem is already there is not downloaded again) and copied into the fixed folder "builds\current",
-rem where VLC runs from: one fixed vlc.exe path, so Windows Firewall asks only once, and one
-rem portable settings folder (builds\current\portable) that every build keeps using.
+rem Builds are downloaded to "%BUILDS%\<run number>" (a run that is already there is not
+rem downloaded again) and copied into a fixed folder the player runs from, so Windows Firewall
+rem asks only once per program path and the portable settings stay in one place:
+rem   "public" builds (Cone.exe, the default since Decision 50) -> builds\current-public
+rem   "vlc" builds (vlc.exe, started by hand with the vlc profile) -> builds\current
 title Test VLC Redesign
 
 set "REPO=StickyGonzales/vlc-redesign-juxtopposed"
 set "BRANCH=redesign"
-set "ARTIFACT=vlc-redesign-win64"
 rem the builds folder of this PC: set BUILDS in test-latest.local.cmd next to this script
 rem (gitignored, never committed); default: a folder in the user profile
 set "BUILDS=%USERPROFILE%\VLC Redesign\builds"
@@ -42,36 +42,35 @@ if not defined RUN (
 echo Newest successful build: run %RUN%
 
 set "DEST=%BUILDS%\%RUN%"
-set "VLCDIR=%DEST%\vlc-4.0.0-dev"
-
-if exist "%VLCDIR%\vlc.exe" (
+call :find
+if defined VLCDIR (
     echo This build is already downloaded.
 ) else (
     echo Downloading build %RUN% ^(about 90 MB, a few minutes^)...
     if not exist "%DEST%" mkdir "%DEST%"
-    gh run download %RUN% -R %REPO% -n %ARTIFACT% -D "%DEST%"
+    rem every artifact of the run: vlc-redesign-win64-public ^(Cone^) or vlc-redesign-win64 ^(vlc^)
+    gh run download %RUN% -R %REPO% -D "%DEST%"
     if errorlevel 1 (
         echo The download failed. The build may be too old ^(builds are kept 14 days^)
         echo or the network is down. Details are above.
         goto :fail
     )
-    if not exist "%VLCDIR%\vlc.exe" (
-        echo The download finished but vlc.exe was not found in "%VLCDIR%".
-        goto :fail
-    )
+    call :find
+)
+if not defined VLCDIR (
+    echo The download finished but neither Cone.exe nor vlc.exe was found in "%DEST%".
+    goto :fail
 )
 
-set "CURRENT=%BUILDS%\current"
-
-rem the build in "current" cannot be replaced while it runs
-powershell -NoProfile -Command "if (Get-Process vlc -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '%CURRENT%\*' }) { exit 1 }"
+rem the build in the fixed folder cannot be replaced while it runs
+powershell -NoProfile -Command "if (Get-Process vlc, Cone -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '%CURRENT%\*' }) { exit 1 }"
 if errorlevel 1 (
-    echo VLC Redesign is still running from "%CURRENT%". Close it and start this again.
+    echo The player is still running from "%CURRENT%". Close it and start this again.
     goto :fail
 )
 
 echo Copying build %RUN% into "%CURRENT%" ^(its settings in "portable" are kept^)...
-rem /MIR makes "current" an exact copy of the build; /XD keeps the portable settings folder
+rem /MIR makes the folder an exact copy of the build; /XD keeps the portable settings folder
 robocopy "%VLCDIR%" "%CURRENT%" /MIR /XD "%CURRENT%\portable" /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 (
     echo Copying the build failed.
@@ -79,12 +78,47 @@ if errorlevel 8 (
 )
 > "%CURRENT%\build-run.txt" echo %RUN%
 
-rem portable mode: a "portable" folder next to vlc.exe keeps vlcrc, the interface settings and
+rem portable mode: a "portable" folder next to the exe keeps vlcrc, the interface settings and
 rem the media library, never the installed VLC's
 if not exist "%CURRENT%\portable" mkdir "%CURRENT%\portable"
 
-echo Starting VLC Redesign build %RUN%...
-start "" /D "%CURRENT%" "%CURRENT%\vlc.exe" --no-qt-privacy-ask --no-qt-updates-notif
+echo Starting %EXE% from build %RUN%...
+rem Cone builds have no update checker, so that option only goes to vlc.exe
+set "EXTRA="
+if /i "%EXE%"=="vlc.exe" set "EXTRA=--no-qt-updates-notif"
+start "" /D "%CURRENT%" "%CURRENT%\%EXE%" --no-qt-privacy-ask %EXTRA%
+exit /b 0
+
+rem finds the downloaded player: sets VLCDIR, EXE and CURRENT (the fixed folder for that exe)
+:find
+set "VLCDIR="
+rem public builds since the beta branding: the zip's top folder is Cone-<version>[-suffix]
+for /d %%D in ("%DEST%\vlc-redesign-win64-public\Cone-*") do (
+    if exist "%%D\Cone.exe" (
+        set "VLCDIR=%%D"
+        set "EXE=Cone.exe"
+        set "CURRENT=%BUILDS%\current-public"
+        exit /b 0
+    )
+)
+if exist "%DEST%\vlc-redesign-win64-public\vlc-4.0.0-dev\Cone.exe" (
+    set "VLCDIR=%DEST%\vlc-redesign-win64-public\vlc-4.0.0-dev"
+    set "EXE=Cone.exe"
+    set "CURRENT=%BUILDS%\current-public"
+    exit /b 0
+)
+if exist "%DEST%\vlc-redesign-win64\vlc-4.0.0-dev\vlc.exe" (
+    set "VLCDIR=%DEST%\vlc-redesign-win64\vlc-4.0.0-dev"
+    set "EXE=vlc.exe"
+    set "CURRENT=%BUILDS%\current"
+    exit /b 0
+)
+rem builds downloaded by the earlier version of this script (one artifact, no subfolder)
+if exist "%DEST%\vlc-4.0.0-dev\vlc.exe" (
+    set "VLCDIR=%DEST%\vlc-4.0.0-dev"
+    set "EXE=vlc.exe"
+    set "CURRENT=%BUILDS%\current"
+)
 exit /b 0
 
 :fail

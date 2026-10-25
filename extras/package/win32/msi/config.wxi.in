@@ -64,10 +64,11 @@
     <?define GuidCompOtherFileAssociation = "67022ca8-dfc1-4f58-801d-9328c01524a8" ?>
     <?endif ?>
 
-    <?define VerMajor = "@VERSION_MAJOR@" ?>
-    <?define VerMinor = "@VERSION_MINOR@" ?>
-    <?define VerPatch = "@VERSION_REVISION@" ?>
-    <?define VerExtra = "@VERSION_EXTRA@" ?>
+    <!-- the product's version: Cone's own in the public profile (Decision 58), VLC's in the vlc profile -->
+    <?define VerMajor = "@BRAND_VERSION_MAJOR@" ?>
+    <?define VerMinor = "@BRAND_VERSION_MINOR@" ?>
+    <?define VerPatch = "@BRAND_VERSION_REVISION@" ?>
+    <?define VerExtra = "@BRAND_VERSION_EXTRA@" ?>
     <?define Version = "$(var.VerMajor).$(var.VerMinor).$(var.VerPatch)" ?>
     <?define VersionLong = "$(var.Version).$(var.VerExtra)" ?>
 

@@ -69,6 +69,15 @@ QVariant MLBookmarkModel::data( const QModelIndex &index, int role ) const
             return QVariant::fromValue( qfu( bookmark.psz_name ) );
         case BookmarkRoles::TimeRole:
             return QVariant::fromValue( VLCDuration::fromMS( bookmark.i_time ).formatHMS() );
+        case BookmarkRoles::PreciseTimeRole:
+        {
+            const int64_t ms = std::max<int64_t>( bookmark.i_time, 0 );
+            return QString::asprintf( "%02lld:%02lld:%02lld:%03lld",
+                                      static_cast<long long>( ms / 3600000 ),
+                                      static_cast<long long>( ms / 60000 % 60 ),
+                                      static_cast<long long>( ms / 1000 % 60 ),
+                                      static_cast<long long>( ms % 1000 ) );
+        }
         case BookmarkRoles::PositionRole:
         {
             vlc_player_locker lock{ m_player };
@@ -152,7 +161,8 @@ QHash<int, QByteArray> MLBookmarkModel::roleNames() const{
         {BookmarkRoles::NameRole, QByteArrayLiteral("name")},
         {BookmarkRoles::TimeRole, QByteArrayLiteral("time")},
         {BookmarkRoles::PositionRole, QByteArrayLiteral("position")},
-        {BookmarkRoles::DescriptionRole, QByteArrayLiteral("description")}
+        {BookmarkRoles::DescriptionRole, QByteArrayLiteral("description")},
+        {BookmarkRoles::PreciseTimeRole, QByteArrayLiteral("preciseTime")}
     };
 }
 
@@ -249,12 +259,22 @@ void MLBookmarkModel::add()
 
     vlc_tick_t currentTime;
     QString mediaUri;
+    QString mediaTitle;
     {
         vlc_player_locker lock{ m_player };
         currentTime = vlc_player_GetTime( m_player );
         input_item_t* currentMedia = vlc_player_GetCurrentMedia( m_player );
         if (currentMedia)
+        {
             mediaUri = qfu( currentMedia->psz_uri );
+            // redesign: the title the player shows (its meta title, as the top bar does); the
+            // media library's title of a file it has not parsed is the file name
+            if (char* title = input_item_GetTitle( currentMedia ))
+            {
+                mediaTitle = qfu( title ).trimmed();
+                free( title );
+            }
+        }
     }
 
     if (currentTime == VLC_TICK_INVALID || mediaUri.isEmpty())
@@ -273,7 +293,7 @@ void MLBookmarkModel::add()
     };
     m_mediaLib->runOnMLThread<Ctx>(this,
     //ML thread
-    [mediaUri, currentTime](vlc_medialibrary_t* ml, Ctx& ctx)
+    [mediaUri, mediaTitle, currentTime](vlc_medialibrary_t* ml, Ctx& ctx)
     {
         int64_t time = MS_FROM_VLC_TICK(currentTime);
 
@@ -292,8 +312,11 @@ void MLBookmarkModel::add()
         // redesign: Ctrl+B and the Bookmarks tab "+" add the bookmark at once, named after the
         // media title with a running number (video 15:08-15:16, P7-04 / P7-05): the next
         // number after the highest one in use. A second bookmark at the same time is not
-        // added (its name would replace the first one's).
-        const QString title = media->psz_title ? qfu(media->psz_title).trimmed() : QString();
+        // added (its name would replace the first one's). The title is the one the player
+        // shows; the media library's (the file name) only when the media has none.
+        QString title = mediaTitle;
+        if (title.isEmpty() && media->psz_title)
+            title = qfu(media->psz_title).trimmed();
         const QString prefix = title + QLatin1Char(' ');
         int number = 0;
 
@@ -341,12 +364,9 @@ void MLBookmarkModel::add()
 
         refresh( MLBOOKMARKMODEL_REFRESH );
 
-        // the bookmark is created without a dialog: say so on the video
-        if (ctx.added && m_player)
-        {
-            vlc_player_locker lock{ m_player };
-            vlc_player_osd_Message( m_player, "%s", qtu( qtr( "Bookmark added: %1" ).arg( ctx.name ) ) );
-        }
+        // the bookmark is created without a dialog: the interface says so (UINotifier)
+        if (ctx.added && m_mediaLib)
+            emit m_mediaLib->bookmarkAdded( ctx.name );
     });
 }
 

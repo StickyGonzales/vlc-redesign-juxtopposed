@@ -3,7 +3,8 @@
 # mounted at /build.
 #   win64-build.sh build      build.sh through ccache, then the portable zip
 #   win64-build.sh installer  the NSIS installer of an already built tree (make package-win32-exe)
-# Environment: VLC_BRAND (vlc or public), VLC_PREBUILT_CONTRIBS_URL (empty: contribs from source).
+# Environment: VLC_BRAND (vlc or public), VLC_PREBUILT_CONTRIBS_URL (empty: contribs from source),
+# BRAND_VERSION (public profile's version), BRAND_PACKAGE_SUFFIX (public package names, e.g. -beta).
 #
 # ccache only skips compiling a file it has compiled before with the same compiler, flags and
 # preprocessed source, and returns that compiler output byte for byte, so the build produces the
@@ -67,7 +68,8 @@ build)
     if [ -n "$VLC_PREBUILT_CONTRIBS_URL" ]; then P="-p"; else unset VLC_PREBUILT_CONTRIBS_URL; fi
     extras/package/win32/build.sh -r -a x86_64 $P -B "$VLC_BRAND"
     cd win64
-    make package-win32-zip
+    # BRAND_PACKAGE_SUFFIX (public profile, e.g. -beta): package names only, never the version
+    make package-win32-zip BRAND_PACKAGE_SUFFIX="${BRAND_PACKAGE_SUFFIX:-}"
     ;;
 installer)
     cd win64

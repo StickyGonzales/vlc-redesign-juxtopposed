@@ -461,9 +461,46 @@ RdSidePanelPage {
                         id: cropRow
 
                         required property var modelData
+                        required property int index
 
-                        // the link keeps both sides of the row equal (VLC's "synchronize" crop)
+                        // Figma "link" toggle: while linked, an edit of one side keeps the ratio the
+                        // two sides had when the link was turned on (both equal when one was 0,
+                        // VLC's "synchronize" crop); the state is kept across sessions
+                        readonly property string _settingKey: "rd/cropLinked/" + index
                         property bool linked: false
+                        // second side / first side
+                        property real _ratio: 1
+
+                        function cropValue(entry) {
+                            return Math.max(0, Number(RdEffects.values[RdEffects.videoKey(entry.name)]) || 0)
+                        }
+
+                        function takeRatio() {
+                            const first = cropValue(modelData[0])
+                            const second = cropValue(modelData[1])
+                            _ratio = (first > 0 && second > 0) ? second / first : 1
+                        }
+
+                        function setLinked(on) {
+                            if (on)
+                                takeRatio()
+                            linked = on
+                            MainCtx.setSettingValue(_settingKey, on)
+                        }
+
+                        function edit(entryIndex, value) {
+                            RdEffects.setVideoValue(modelData[entryIndex].name, value)
+                            if (!linked)
+                                return
+                            const other = entryIndex === 0 ? value * _ratio : value / _ratio
+                            RdEffects.setVideoValue(modelData[1 - entryIndex].name, Math.max(0, Math.round(other)))
+                        }
+
+                        Component.onCompleted: {
+                            const saved = MainCtx.settingValue(_settingKey, false)
+                            if (saved === true || saved === "true")
+                                setLinked(true)
+                        }
 
                         spacing: VLCStyle.dp(8)
 
@@ -472,6 +509,7 @@ RdSidePanelPage {
 
                             delegate: Widgets.RdValueBox {
                                 required property var modelData
+                                required property int index
 
                                 implicitWidth: VLCStyle.dp(141)
                                 implicitHeight: VLCStyle.dp(33)
@@ -484,8 +522,7 @@ RdSidePanelPage {
                                     const n = Math.round(group.parseNumber(value))
                                     if (isNaN(n))
                                         return
-                                    for (const e of (cropRow.linked ? cropRow.modelData : [modelData]))
-                                        RdEffects.setVideoValue(e.name, Math.max(0, n))
+                                    cropRow.edit(index, Math.max(0, n))
                                 }
                             }
                         }
@@ -494,13 +531,16 @@ RdSidePanelPage {
                             anchors.verticalCenter: parent.verticalCenter
                             rdMinimumWidth: VLCStyle.rd_iconButtonWidth
                             rdMinimumHeight: VLCStyle.rd_iconButtonHeight
+                            // Figma "link" default (FG/A2 1.5) and active (Accent/Main 2, with the bar)
                             rdIcon: "link"
+                            rdIconChecked: "link_state-active"
                             font.pixelSize: VLCStyle.rd_iconSize
                             text: "link"
-                            description: qsTr("Same value on both sides")
+                            description: cropRow.linked ? qsTr("Unlink the two sides")
+                                                        : qsTr("Link the two sides (keep their ratio)")
                             checkable: true
                             checked: cropRow.linked
-                            onClicked: cropRow.linked = checked
+                            onClicked: cropRow.setLinked(checked)
                         }
                     }
                 }

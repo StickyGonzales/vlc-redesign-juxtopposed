@@ -88,6 +88,10 @@ T.Popup {
     parent: T.Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(VLCStyle.dp(420), parent ? parent.width - VLCStyle.dp(40) : VLCStyle.dp(420))
+    // a Templates popup has no implicit height of its own (it was only its padding high, the
+    // text ran out of its background)
+    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                             implicitContentHeight + topPadding + bottomPadding)
     // Figma info popover ("audio value"): padding 10, radius 6
     padding: VLCStyle.dp(10)
     modal: false

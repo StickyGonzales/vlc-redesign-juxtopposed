@@ -450,6 +450,11 @@ VLCProfileEditor::VLCProfileEditor( const QString& qs_name, const QString& value
                  : QVLCDialog( _parent, NULL )
 {
     ui.setupUi( this );
+#ifdef VLC_BRAND_PUBLIC
+    /* brand layer: the .ui text names VLC */
+    ui.label->setText( qtr( "You just need to fill one of the three following parameters, "
+                            "Cone will autodetect the other using the original aspect ratio" ) );
+#endif
     ui.buttonGroup->setObjectName( CATPROP2NAME( CATANDPROP( "muxer", "mux" ) ) );
     if( !qs_name.isEmpty() )
     {
@@ -648,7 +653,11 @@ void VLCProfileEditor::muxSelected()
     if( current->property("module").toString() == "avformat" )
         ui.muxerwarning->setText(
                     QString( "<img src=\":/menu/info.svg\" width=%2 height=%2/> %1" )
+#ifdef VLC_BRAND_PUBLIC
+                    .arg( qtr( "This muxer is not provided directly by Cone: It could be missing." ) )
+#else
                     .arg( qtr( "This muxer is not provided directly by VLC: It could be missing." ) )
+#endif
                     .arg(textsize)
                     );
     else if ( !caps["muxers"].contains( current->property("module").toString() ) &&

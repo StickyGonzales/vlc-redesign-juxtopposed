@@ -150,3 +150,6 @@ skipped (VLC lost the foreground while Sticky was active): run them in round 4 w
 | Volume drag | Figma prototype | smart animate ease-in-and-out 300 ms | to check |
 | Mini player | Figma prototype | smart animate ease-out 300 ms | (Phase 5) |
 | Customize drags | Figma prototype | 50 ms | (W8.1) |
+
+### Profile switch (2026-10-16, build 38829058873, public)
+Desktop Duplication capture at 240 Hz (changed frames only), Default Style -> Minimalist Style from the main menu: the new bars appear in the frame after the menu closes (~7 ms); one 23 ms gap at the switch (one missed refresh at 99 Hz), then 10 ms steady. Target 16.7 ms: one dropped frame.

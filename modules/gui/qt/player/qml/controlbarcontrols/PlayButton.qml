@@ -76,7 +76,13 @@ T.Control {
 
     // Tooltip
 
-    T.ToolTip.visible: (hovered || visualFocus)
+    T.ToolTip.visible: (hovered || visualFocus) && !_toolTipDismissed
+
+    // redesign: a click or Enter hides the tooltip until the pointer and the keyboard focus
+    // leave the button (it stayed over the video and the panels)
+    property bool _toolTipDismissed: false
+    onHoveredChanged: if (!hovered && !visualFocus) _toolTipDismissed = false
+    onVisualFocusChanged: if (!hovered && !visualFocus) _toolTipDismissed = false
     T.ToolTip.delay: VLCStyle.delayToolTipAppear
     T.ToolTip.text: root.Accessible.name
 
@@ -86,6 +92,7 @@ T.Control {
         if (KeyHelper.matchOk(event) ) {
             if (!event.isAutoRepeat) {
                 _keyOkPressed = true
+                _toolTipDismissed = true
                 keyHoldTimer.restart()
             }
             event.accepted = true
@@ -139,6 +146,7 @@ T.Control {
             }
 
             root.forceActiveFocus(Qt.MouseFocusReason)
+            root._toolTipDismissed = true
         }
 
         onClicked: (mouse) => {

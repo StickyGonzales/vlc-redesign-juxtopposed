@@ -268,19 +268,22 @@ FocusScope {
         }
     }
 
+    // a row whose data the section has not loaded yet (it reloads on media library events) has
+    // no values: it shows empty until they come
     function toItem(model, index) {
         return {
             kind: model.kind,
             index: index,
-            id: model.id,
-            title: model.title,
-            subtitle: model.subtitle,
-            mrl: model.mrl,
-            thumbnail: model.thumbnail,
-            progress: model.progress,
-            watched: model.watched,
-            isVideo: model.isVideo,
-            isFavorite: model.isFavorite
+            // held by value (the section reloads on media library events, see RdLibraryNav)
+            id: RdLibraryNav.detachedId(model.id),
+            title: model.title ?? "",
+            subtitle: model.subtitle ?? "",
+            mrl: model.mrl ?? "",
+            thumbnail: model.thumbnail ?? "",
+            progress: model.progress ?? -1,
+            watched: model.watched ?? false,
+            isVideo: model.isVideo ?? false,
+            isFavorite: model.isFavorite ?? false
         }
     }
 

@@ -20,7 +20,7 @@
 // 5187:24308). Final order (Decision 13: the video's rows plus Figma's Show Statistics):
 // Show Subtitle Timeline on Seekbar, Show Waveform on Seekbar, Show Metadata, Show Statistics,
 // Reverse, Sleep Timer, Audio Visualizer, Speed. The subtitle timeline and waveform toggles come
-// with their seek bar modes (the waveform row is here, P6-06), Reverse is postponed (Decision 29).
+// with their seek bar modes (P3-16, P6-06), Reverse is postponed (Decision 29).
 import QtQuick
 import QtQuick.Layouts
 
@@ -67,8 +67,21 @@ RdSidePanelPage {
         rowSpacing: 0
 
         // Figma "Frame 115" / "Frame 116": 52 px toggle rows (padding 10, 68x32 toggle). The
-        // waveform row is the video's (Decision 13; no Figma frame), styled like them: VLC's
-        // qt-seek-waveform option, which the thick seek bar reads (P6-06)
+        // subtitle timeline row is Figma's first row (P4-35), the qt-seek-subtitle-timeline
+        // option the thick seek bar reads (P3-16); it shows for subtitles from a text file
+        Widgets.RdSettingRow {
+            text: qsTr("Show Subtitle Timeline on Seekbar")
+            rowHeight: VLCStyle.dp(52)
+
+            Widgets.RdToggle {
+                checked: RdEffects.values[RdEffects.optionKey("qt-seek-subtitle-timeline")] === true
+                Accessible.name: qsTr("Show Subtitle Timeline on Seekbar")
+                onToggled: RdEffects.setOption("qt-seek-subtitle-timeline", checked)
+            }
+        }
+
+        // the waveform row is the video's (Decision 13; no Figma frame), styled like them:
+        // VLC's qt-seek-waveform option, which the thick seek bar reads (P6-06)
         Widgets.RdSettingRow {
             text: qsTr("Show Waveform on Seekbar")
             rowHeight: VLCStyle.dp(52)
@@ -156,6 +169,8 @@ RdSidePanelPage {
             limitFrom: root._rateMin
             limitTo: root._rateMax
             stepSize: 0.25
+            // the wheel fine-tunes in 0.05x steps (Decision 54)
+            wheelStep: 0.05
             scrollSpeed: 1
             // the zero edge label points to normal speed
             zeroValue: 1

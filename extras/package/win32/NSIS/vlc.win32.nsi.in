@@ -5,8 +5,11 @@
 
 ; redesign: brand layer, the BRAND values come from configure --with-brand (vlc / public)
 !define PRODUCT_NAME "@BRAND_PRODUCT_NAME@"
-!define VERSION @VERSION@
-!define PRODUCT_VERSION @VERSION@
+; the product's version: Cone's own in the public profile (Decision 58), VLC's in the vlc profile;
+; VLC_VERSION is the engine's
+!define VERSION @BRAND_VERSION@
+!define PRODUCT_VERSION @BRAND_VERSION@
+!define VLC_VERSION @VERSION@
 !define PRODUCT_GROUP "@BRAND_COMPANY@"
 !define PRODUCT_PUBLISHER "@BRAND_COMPANY@"
 !define PRODUCT_WEB_SITE "@BRAND_WEBSITE@"
@@ -29,15 +32,20 @@
   !define PRODUCT_SKINS_URL "${PRODUCT_WEB_SITE}/vlc/skins.php"
   !define PRODUCT_WEBSITE_LINK "${PRODUCT_GROUP} Website"
   !define PRODUCT_BRANDING_TEXT "${PRODUCT_GROUP} ${PRODUCT_NAME}"
+  !define PRODUCT_TITLE "${PRODUCT_NAME}"
+  !define PRODUCT_DISPLAY_NAME "$(^Name)"
 !else
   !define PRODUCT_SHORT_NAME "${PRODUCT_NAME}"
   !define PRODUCT_DESCRIPTION "${PRODUCT_NAME}, a media player based on VLC media player"
   !define PRODUCT_APPDATA_DIR "${PRODUCT_NAME}"
-  ; the project page holds the documentation; VLC's skins work in the skinned interface too
+  ; the project page holds the documentation; no skins (Decision 63): no skins link
   !define PRODUCT_DOC_URL "${PRODUCT_WEB_SITE}#readme"
-  !define PRODUCT_SKINS_URL "https://www.videolan.org/vlc/skins.php"
   !define PRODUCT_WEBSITE_LINK "${PRODUCT_NAME} Website"
-  !define PRODUCT_BRANDING_TEXT "${PRODUCT_NAME}"
+  ; Decision 58: "Cone 0.1.0" in the window title and on the welcome and finish pages, "based on
+  ; VLC <version>" under every page; the Windows Apps list shows "Cone" with the version 0.1.0
+  !define PRODUCT_BRANDING_TEXT "based on VLC ${VLC_VERSION}"
+  !define PRODUCT_TITLE "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+  !define PRODUCT_DISPLAY_NAME "${PRODUCT_NAME}"
 !endif
 
 !define MUI_LANGDLL_REGISTRY_ROOT "HKLM"
@@ -69,7 +77,7 @@ Var 32bitPath
 ; General configuration ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Name "${PRODUCT_NAME}"
+Name "${PRODUCT_TITLE}"
 @HAVE_WIN64_FALSE@                   OutFile ..\@BRAND_INTERNAL_NAME@-${VERSION}-win32.exe
 @HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\@BRAND_INTERNAL_NAME@-${VERSION}-win64.exe
 @HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\@BRAND_INTERNAL_NAME@-${VERSION}-winarm64.exe
@@ -370,8 +378,10 @@ skip_uninstall32_cleanup:
   FileWrite $UninstallLog "${PRODUCT_WEBSITE_LINK}.url$\r$\n"
   WriteIniStr "$INSTDIR\Documentation.url" "InternetShortcut" "URL" "${PRODUCT_DOC_URL}"
   FileWrite $UninstallLog "Documentation.url$\r$\n"
+!if "${PRODUCT_PROGID}" == "VLC"
   WriteIniStr "$INSTDIR\New_Skins.url" "InternetShortcut" "URL" "${PRODUCT_SKINS_URL}"
   FileWrite $UninstallLog "New_Skins.url$\r$\n"
+!endif
 
   !insertmacro CloseUninstallLog
 
@@ -406,8 +416,14 @@ ${MementoSection} "$(Name_Section02a)" SEC02a
   CreateDirectory "$SMPROGRAMS\${PRODUCT_PUBLISHER}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}.lnk" \
     "$INSTDIR\${PRODUCT_EXE}" ""
+!if "${PRODUCT_PROGID}" == "VLC"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_NAME} skinned.lnk" \
     "$INSTDIR\${PRODUCT_EXE}" "-Iskins"
+!else
+  ; redesign: brand layer (Decision 63), Cone has no skins interface; an earlier test install's
+  ; skinned shortcut goes away on upgrade
+  Delete "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_NAME} skinned.lnk"
+!endif
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\Documentation.lnk" \
     "$INSTDIR\Documentation.url"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_PUBLISHER}\Release Notes.lnk" \
@@ -554,7 +570,9 @@ SectionGroup /e "!$(Name_Section06)" SEC06
   SectionGroupEnd
   SectionGroup "$(Name_SectionGroupOther)"
     !insertmacro MacroOtherExtensions AssociateExtensionSection
+!if "${PRODUCT_PROGID}" == "VLC"
     !insertmacro MacroSkinExtensions AssociateSkinExtensionSection
+!endif
     !insertmacro MacroUnassociatedExtensions AssociateExtensionUnselectedSection
   SectionGroupEnd
 SectionGroupEnd
@@ -584,6 +602,63 @@ ${MementoSectionDone}
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC07} "$(Desc_Section07)"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC08} "$(Desc_Section08)"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
+
+;;; redesign: brand layer (Decision 56). Next to an installed VLC the file associations start
+;;; unticked, so VLC keeps opening the user's files unless they tick them; without VLC they start
+;;; ticked, like VLC's installer. A choice saved by an earlier install of this app (Memento) wins.
+;;; Only reads VLC's keys, never writes them.
+!if "${PRODUCT_PROGID}" != "VLC"
+Var VlcInstalled
+
+Function DetectInstalledVlcInView
+  ReadRegStr $0 HKLM "Software\VideoLAN\VLC" "InstallDir"
+  ${If} $0 == ""
+    ReadRegStr $0 HKLM "Software\VideoLAN\VLC" ""
+  ${EndIf}
+  ${If} $0 == ""
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\VLC media player" "UninstallString"
+  ${EndIf}
+  ${If} $0 == ""
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\vlc.exe" ""
+  ${EndIf}
+  ${If} $0 != ""
+    StrCpy $VlcInstalled 1
+  ${EndIf}
+FunctionEnd
+
+Function UnselectAssociationsNextToVlc
+  Push $0
+  Push $1
+
+  ClearErrors
+  ReadRegStr $0 ${MEMENTO_REGISTRY_ROOT} `${MEMENTO_REGISTRY_KEY}` MementoSectionUsed
+  ${If} ${Errors}
+    ; a 64-bit or a 32-bit VLC
+    StrCpy $VlcInstalled 0
+    SetRegView 64
+    Call DetectInstalledVlcInView
+    SetRegView 32
+    Call DetectInstalledVlcInView
+@HAVE_WIN64_TRUE@    SetRegView 64
+@HAVE_WIN64_FALSE@   SetRegView default
+
+    ${If} $VlcInstalled == 1
+      ; every entry of the file associations group (SEC06 up to the next section, SEC07):
+      ; clear SF_SELECTED (1) and SF_PSELECTED (64)
+      StrCpy $0 ${SEC06}
+      ${DoWhile} $0 < ${SEC07}
+        SectionGetFlags $0 $1
+        IntOp $1 $1 & 0xFFFFFFBE
+        SectionSetFlags $0 $1
+        IntOp $0 $0 + 1
+      ${Loop}
+    ${EndIf}
+  ${EndIf}
+
+  Pop $1
+  Pop $0
+FunctionEnd
+!endif
 
 ;;; Start function
 Function .onInit
@@ -643,6 +718,10 @@ WinOk:
       StrCpy $PerformUpdate 0
     ${EndIf}
   ${EndIf}
+
+!if "${PRODUCT_PROGID}" != "VLC"
+  Call UnselectAssociationsNextToVlc
+!endif
 
   !insertmacro MUI_LANGDLL_DISPLAY
 
@@ -813,7 +892,7 @@ Section -Post
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\${PRODUCT_EXE}"
 
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "DisplayName" "$(^Name)"
+    "DisplayName" "${PRODUCT_DISPLAY_NAME}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
@@ -827,9 +906,9 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "Publisher" "${PRODUCT_PUBLISHER}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "VersionMajor"  "@VERSION_MAJOR@"
+    "VersionMajor"  "@BRAND_VERSION_MAJOR@"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "VersionMinor" "@VERSION_MINOR@"
+    "VersionMinor" "@BRAND_VERSION_MINOR@"
 SectionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -945,7 +1024,7 @@ Section "un.$(Name_Section91)" SEC91
 
 !if "${PRODUCT_PROGID}" == "VLC"
   DeleteRegKey HKLM \
-    "SOFTWARE\MozillaPlugins\@videolan.org/vlc,version=${VERSION}"
+    "SOFTWARE\MozillaPlugins\@videolan.org/vlc,version=${VLC_VERSION}"
 !endif
 
   DeleteRegKey HKLM \

@@ -4606,6 +4606,13 @@ dnl Skins2 module
 dnl
 AC_ARG_ENABLE([skins2],
   AS_HELP_STRING([--enable-skins2], [skins interface module (default auto)]))
+dnl redesign: brand layer (Decision 63), Cone has no skins interface: the design is its only one
+AS_IF([test "${with_brand}" = "public"], [
+  AS_IF([test "${enable_skins2}" = "yes"], [
+    AC_MSG_ERROR([--with-brand=public has no skins interface: drop --enable-skins2])
+  ])
+  enable_skins2="no"
+])
 AS_IF([test "${enable_skins2}" != "no"], [
   have_skins_deps="yes"
 
@@ -5252,6 +5259,11 @@ dnl
 AC_ARG_WITH([brand],
   AS_HELP_STRING([--with-brand=PROFILE],
     [name and logo of the app: vlc or public (default vlc)]),, [with_brand="vlc"])
+dnl the public profile's own version (Decision 58): About, installer and the Windows Apps list
+dnl show it; the release workflow's version tag sets it. The vlc profile keeps VLC's version.
+AC_ARG_WITH([brand-version],
+  AS_HELP_STRING([--with-brand-version=X.Y.Z],
+    [version of the public profile (default 0.1.0)]),, [with_brand_version="0.1.0"])
 AS_CASE(["${with_brand}"],
   [vlc], [
     BRAND_PRODUCT_NAME="VLC media player"
@@ -5268,6 +5280,11 @@ AS_CASE(["${with_brand}"],
     BRAND_PRODUCT_ID="{ea92ef52-afe4-4212-bacb-dfe9fca94cd6}"
     BRAND_NSIS_BITMAP_TRUE=""
     BRAND_PROGID="VLC"
+    BRAND_VERSION="${VERSION}"
+    BRAND_VERSION_MAJOR="${VERSION_MAJOR}"
+    BRAND_VERSION_MINOR="${VERSION_MINOR}"
+    BRAND_VERSION_REVISION="${VERSION_REVISION}"
+    BRAND_VERSION_EXTRA="${VERSION_EXTRA}"
   ],
   [public], [
     dnl the approved logo files the public profile builds with
@@ -5282,6 +5299,8 @@ AS_CASE(["${with_brand}"],
         modules/gui/qt/pixmaps/brand/public/cone-64.png \
         modules/gui/qt/pixmaps/brand/public/cone-128.png \
         modules/gui/qt/pixmaps/brand/public/cone-256.png \
+        modules/gui/qt/pixmaps/brand/public/prefs-sample-modern.png \
+        modules/gui/qt/pixmaps/brand/public/prefs-sample-classic.png \
         extras/package/win32/brand/public/cone.ico; do
       AS_IF([test -f "${srcdir}/${brand_file}"],, [
         AC_MSG_ERROR([--with-brand=public needs the Cone logo file ${brand_file}; build with --with-brand=vlc until it is added])
@@ -5294,7 +5313,7 @@ AS_CASE(["${with_brand}"],
       ])
     done
     BRAND_PRODUCT_NAME="Cone"
-    BRAND_COMPANY="Sticky"
+    BRAND_COMPANY="StickyGonzales"
     BRAND_INTERNAL_NAME="cone"
     BRAND_EXE="Cone.exe"
     BRAND_ICON_SRC="extras/package/win32/brand/public/cone.ico"
@@ -5314,6 +5333,15 @@ AS_CASE(["${with_brand}"],
     AS_IF([test "${enable_update_check}" = "yes"], [
       AC_MSG_ERROR([--with-brand=public has no update checker: drop --enable-update-check])
     ])
+    AS_IF([echo "${with_brand_version}" | grep -Eq '^@<:@0-9@:>@+\.@<:@0-9@:>@+\.@<:@0-9@:>@+$'],, [
+      AC_MSG_ERROR([--with-brand-version must be X.Y.Z with numbers only (got ${with_brand_version})])
+    ])
+    BRAND_VERSION="${with_brand_version}"
+    BRAND_VERSION_MAJOR=`echo "${BRAND_VERSION}" | cut -d. -f1`
+    BRAND_VERSION_MINOR=`echo "${BRAND_VERSION}" | cut -d. -f2`
+    BRAND_VERSION_REVISION=`echo "${BRAND_VERSION}" | cut -d. -f3`
+    BRAND_VERSION_EXTRA="0"
+    AC_DEFINE_UNQUOTED([BRAND_VERSION], ["${BRAND_VERSION}"], [Version of the public brand (Cone)])
     AC_DEFINE([VLC_BRAND_PUBLIC], [1], [Define to build the public brand (Cone) instead of VLC's name and cone])
   ],
   [AC_MSG_ERROR([--with-brand must be vlc or public (got ${with_brand})])])
@@ -5332,6 +5360,11 @@ AC_SUBST([BRAND_INSTALL_DIR])
 AC_SUBST([BRAND_PRODUCT_ID])
 AC_SUBST([BRAND_NSIS_BITMAP_TRUE])
 AC_SUBST([BRAND_PROGID])
+AC_SUBST([BRAND_VERSION])
+AC_SUBST([BRAND_VERSION_MAJOR])
+AC_SUBST([BRAND_VERSION_MINOR])
+AC_SUBST([BRAND_VERSION_REVISION])
+AC_SUBST([BRAND_VERSION_EXTRA])
 
 AS_IF([test -z "$VLC_COMPILE_BY"],[
    VLC_COMPILE_BY=`whoami|sed -e 's/\\\/\\\\\\\/g'`

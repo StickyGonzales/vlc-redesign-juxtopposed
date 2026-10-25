@@ -230,6 +230,8 @@ static subpicture_t *SubpicClone( subpicture_t *p_source, subpicture_updater_t *
 
 static void SubpicDestroyClone( subpicture_t *p_subpic );
 
+static void SubpicMoveRegions( vlc_spu_regions *p_dst, vlc_spu_regions *p_src );
+
 /*****************************************************************************
  * Heap functions
  *****************************************************************************/
@@ -946,20 +948,22 @@ static void SubpicUpdateWrapper( subpicture_t *p_subpic,
         p_entry->b_last_region_saved = true;
     }
 
-    vlc_spu_regions_Clear( &p_subpic->regions );
-
     /* call source update */
     struct vlc_spu_updater_configuration new_cfg = *cfg;
     new_cfg.pts = p_entry->p_source->i_start +
                 ( (double)( p_entry->p_source->i_stop - p_entry->p_source->i_start ) * ( cfg->pts - p_entry->p_source->i_start ) ) /
                 ( p_entry->i_new_stop - p_entry->p_source->i_start );
 
-    p_entry->p_source->regions = p_entry->p_subpic->regions;
+    /* the regions live in the local subpic: the source's updater gets them for its update and
+     * gives them back. It keeps them when nothing changed and rebuilds them otherwise, so they
+     * are not cleared here (cleared, a subtitle showed for one frame at most) */
+    SubpicMoveRegions( &p_entry->p_source->regions, &p_entry->p_subpic->regions );
 
     subpicture_updater_t *updater = &p_entry->p_source->updater;
-    updater->ops->update( p_entry->p_source, &new_cfg );
+    if( updater->ops != NULL )
+        updater->ops->update( p_entry->p_source, &new_cfg );
 
-    p_entry->p_subpic->regions = p_entry->p_source->regions;
+    SubpicMoveRegions( &p_entry->p_subpic->regions, &p_entry->p_source->regions );
 
     SubpicLocalUpdate( p_subpic, cfg->pts );
 }
@@ -1087,7 +1091,20 @@ static bool SubpicIsEmpty( subpicture_t* p_subpic )
 }
 
 /*****************************************************************************
- * SubpicClone: Clone subpicture (shallow copy)
+ * SubpicMoveRegions: Move every region of a list to the end of another one
+ *****************************************************************************/
+static void SubpicMoveRegions( vlc_spu_regions *p_dst, vlc_spu_regions *p_src )
+{
+    subpicture_region_t *p_region;
+    vlc_spu_regions_foreach( p_region, p_src )
+    {
+        vlc_spu_regions_remove( p_src, p_region );
+        vlc_spu_regions_push( p_dst, p_region );
+    }
+}
+
+/*****************************************************************************
+ * SubpicClone: Clone subpicture (shallow copy, the regions move to the clone)
  *****************************************************************************/
 static subpicture_t *SubpicClone( subpicture_t *p_source, subpicture_updater_t *updater )
 {
@@ -1113,12 +1130,18 @@ static subpicture_t *SubpicClone( subpicture_t *p_source, subpicture_updater_t *
     p_subpic->updater = subpic_updater;
     p_subpic->p_private = p_subpic_private;
 
+    /* the regions are a list: copying its head leaves the regions linked to the source's head,
+     * so walking the clone's list runs into the source (the subpicture then never renders and the
+     * video output stalls); they move to the clone instead */
+    vlc_spu_regions_init( &p_subpic->regions );
+    SubpicMoveRegions( &p_subpic->regions, &p_source->regions );
+
     return p_subpic;
 }
 
 /*****************************************************************************
  * SubpicDestroyClone: destroy cloned subpicture (shared references will not
- *     be destroyed)
+ *     be destroyed; its regions moved to the clone)
  *****************************************************************************/
 static void SubpicDestroyClone( subpicture_t *p_subpic )
 {

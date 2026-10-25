@@ -77,6 +77,13 @@ option('brand',
     value : 'vlc',
     description : 'Name and logo of the app: vlc (VLC media player) or public (Cone)')
 
+# redesign: brand layer, the public profile's own version (Decision 58); the vlc profile keeps
+# VLC's version
+option('brand-version',
+    type : 'string',
+    value : '0.1.0',
+    description : 'Version of the public profile (Cone), X.Y.Z')
+
 option('rust',
     type : 'feature',
     value : 'disabled',

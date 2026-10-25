@@ -35,6 +35,12 @@ Row {
 
     property bool showFullscreenButton: false
 
+    // redesign (W8.1b): an item shown between maximize and close, where Figma's top bar has its
+    // fullscreen button: the right zone of the editable top bar (TopBar.qml). The slot takes its
+    // width; the owner draws the item over `middleSlotItem` (the item stays the owner's child)
+    property Item middleItem: null
+    readonly property Item middleSlotItem: middleSlot
+
     readonly property bool useWinIcons: ((MainCtx.osName === MainCtx.Windows)&&(MainCtx.osVersion >= 10))
 
     readonly property bool buttonHovered: {
@@ -161,6 +167,26 @@ Row {
         iconTxt: (MainCtx.intfMainWindow.visibility === Window.FullScreen) ? VLCIcons.defullscreen : VLCIcons.fullscreen
         rdIcon: (MainCtx.intfMainWindow.visibility === Window.FullScreen) ? "fullscreen_state-active" : "fullscreen"
         onClicked: MainCtx.toggleInterfaceFullScreen()
+    }
+
+    Item {
+        id: middleSlot
+
+        width: windowButtonGroup.middleItem ? windowButtonGroup.middleItem.width : 0
+        height: windowButtonGroup.height
+    }
+
+    // redesign (W8.1b): the set is anchored to the right, so a wider middle slot (or the
+    // fullscreen button shown or hidden) moves minimize and maximize: the window's hit test learns
+    // where every button is now (after the Row placed them)
+    onWidthChanged: {
+        for (const rep of [repeater, closeRepeater]) {
+            for (let i = 0; i < rep.count; ++i) {
+                const button = rep.itemAt(i)
+                if (button)
+                    Qt.callLater(button.updateRect)
+            }
+        }
     }
 
     Repeater {

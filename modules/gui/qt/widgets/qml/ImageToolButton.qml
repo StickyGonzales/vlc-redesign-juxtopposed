@@ -57,7 +57,14 @@ T.ToolButton {
     Accessible.name: description
 
     // Tooltip
-    T.ToolTip.visible: (hovered || visualFocus)
+    // redesign: a press hides the tooltip until the pointer and the keyboard focus leave the
+    // button: it would stay over the menu or popup the button opened
+    property bool _toolTipDismissed: false
+    onPressedChanged: if (pressed) _toolTipDismissed = true
+    onHoveredChanged: if (!hovered && !visualFocus) _toolTipDismissed = false
+    onVisualFocusChanged: if (!hovered && !visualFocus) _toolTipDismissed = false
+
+    T.ToolTip.visible: (hovered || visualFocus) && !_toolTipDismissed
     T.ToolTip.delay: VLCStyle.delayToolTipAppear
     T.ToolTip.text: description
 

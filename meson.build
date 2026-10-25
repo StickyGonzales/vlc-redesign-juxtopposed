@@ -64,7 +64,7 @@ brand_profiles = {
     },
     'public': {
         'product_name': 'Cone',
-        'company': 'Sticky',
+        'company': 'StickyGonzales',
         'internal_name': 'cone',
         'exe_name': 'Cone',
         'icon_src': 'extras/package/win32/brand/public/cone.ico',
@@ -82,12 +82,33 @@ brand_profiles = {
     },
 }
 brand = brand_profiles[get_option('brand')]
+# the public profile's own version (Decision 58): About, installer and the Windows Apps list show
+# it, the release workflow's version tag sets it; the vlc profile keeps VLC's version
+if get_option('brand') == 'public'
+    brand_version = get_option('brand-version')
+    brand_version_parts = brand_version.split('.')
+    if brand_version_parts.length() != 3
+        error('-Dbrand-version must be X.Y.Z (got ' + brand_version + ')')
+    endif
+    brand_version_major = brand_version_parts[0].to_int()
+    brand_version_minor = brand_version_parts[1].to_int()
+    brand_version_revision = brand_version_parts[2].to_int()
+    brand_version_extra = 0
+    cdata.set_quoted('BRAND_VERSION', brand_version)
+else
+    brand_version = vlc_version
+    brand_version_major = vlc_version_major
+    brand_version_minor = vlc_version_minor
+    brand_version_revision = vlc_version_revision
+    brand_version_extra = vlc_version_extra
+endif
 if get_option('brand') == 'public'
     brand_fs = import('fs')
     # the approved logo files the public profile builds with
     foreach f : ['cone-logo.svg', 'cone-logo-16.svg', 'cone-logo-24.svg',
                  'cone-16.png', 'cone-24.png', 'cone-32.png', 'cone-48.png',
-                 'cone-64.png', 'cone-128.png', 'cone-256.png']
+                 'cone-64.png', 'cone-128.png', 'cone-256.png',
+                 'prefs-sample-modern.png', 'prefs-sample-classic.png']
         if not brand_fs.is_file('modules/gui/qt/pixmaps/brand/public' / f)
             error('-Dbrand=public needs the Cone logo file modules/gui/qt/pixmaps/brand/public/' + f
                   + '; build with -Dbrand=vlc until it is added')
@@ -107,6 +128,11 @@ if get_option('brand') == 'public'
     # VLC's update checker downloads VLC releases from videolan.org: never in Cone
     if get_option('update-check').allowed()
         error('-Dbrand=public has no update checker: drop -Dupdate-check')
+    endif
+    # Decision 63: Cone has no skins interface, the design is its only one
+    # (modules/gui/skins2/meson.build leaves the module out)
+    if get_option('skins2').enabled()
+        error('-Dbrand=public has no skins interface: drop -Dskins2=enabled')
     endif
     cdata.set('VLC_BRAND_PUBLIC', 1)
 endif
@@ -1264,6 +1290,10 @@ if host_system == 'windows'
     rc_conf.set('BRAND_INTERNAL_NAME', brand['internal_name'])
     rc_conf.set('BRAND_EXE', brand['exe_name'] + '.exe')
     rc_conf.set('BRAND_ICON_RC', brand['icon_rc'])
+    rc_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
+    rc_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
+    rc_conf.set('BRAND_VERSION_REVISION', brand_version_revision)
+    rc_conf.set('BRAND_VERSION_EXTRA', brand_version_extra)
 endif
 
 # libvlccore

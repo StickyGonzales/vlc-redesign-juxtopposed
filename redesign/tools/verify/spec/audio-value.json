@@ -1,0 +1,54 @@
+{
+ "format": 1,
+ "node": "2245:9805",
+ "name": "audio value",
+ "png": "audio value.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  121,
+  37
+ ],
+ "theme": "dark",
+ "rows": [
+  30,
+  55,
+  329
+ ],
+ "background": [
+  {
+   "token": "BG/B1 Transparent",
+   "dark": "#0E0E0E",
+   "light": "#E7E7E7",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "2245:9804",
+   "name": "100 %",
+   "type": "text",
+   "path": "100 %",
+   "bounds": [
+    40.5,
+    10,
+    40,
+    17
+   ],
+   "text": {
+    "content": "100 %",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   }
+  }
+ ]
+}

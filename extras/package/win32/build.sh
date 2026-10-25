@@ -44,6 +44,7 @@ OPTIONS:
                      l: LGPLv3 + ad-clauses
                      a: LGPLv2 + ad-clauses
    -B <profile>  Brand profile of the redesign: vlc (default) or public
+                 (public: the BRAND_VERSION environment variable sets its version, default 0.1.0)
 EOF
 }
 
@@ -549,8 +550,14 @@ if [ -n "$DISABLEGUI" ]; then
     CONFIGFLAGS="$CONFIGFLAGS --disable-qt --disable-skins2"
     MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=disabled -Dskins2=disabled"
 else
-    CONFIGFLAGS="$CONFIGFLAGS --enable-qt --enable-skins2"
-    MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=enabled -Dskins2=enabled"
+    # redesign (brand layer, Decision 63): Cone has no skins interface, the design is its only one
+    if [ "$BRAND" = "public" ]; then
+        CONFIGFLAGS="$CONFIGFLAGS --enable-qt --disable-skins2"
+        MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=enabled -Dskins2=disabled"
+    else
+        CONFIGFLAGS="$CONFIGFLAGS --enable-qt --enable-skins2"
+        MCONFIGFLAGS="$MCONFIGFLAGS -Dqt=enabled -Dskins2=enabled"
+    fi
     # redesign (brand layer): VLC's update checker asks videolan.org for VLC releases; the public
     # profile (Cone) has no update checker and no update notice
     if [ "$BRAND" != "public" ]; then
@@ -579,6 +586,12 @@ fi
 if [ -n "$BRAND" ]; then
     CONFIGFLAGS="$CONFIGFLAGS --with-brand=$BRAND"
     MCONFIGFLAGS="$MCONFIGFLAGS -Dbrand=$BRAND"
+fi
+# the public profile's own version (Decision 58), from the BRAND_VERSION environment variable
+# (the build-windows workflow sets it from a vX.Y.Z tag); without it configure uses 0.1.0
+if [ "$BRAND" = "public" ] && [ -n "$BRAND_VERSION" ]; then
+    CONFIGFLAGS="$CONFIGFLAGS --with-brand-version=$BRAND_VERSION"
+    MCONFIGFLAGS="$MCONFIGFLAGS -Dbrand-version=$BRAND_VERSION"
 fi
 
 if [ "$INSTALLER" = "n" ]; then

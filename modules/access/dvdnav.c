@@ -67,6 +67,18 @@ dvdnav_status_t dvdnav_jump_to_sector_by_time(dvdnav_t *, uint64_t, int32_t);
 #include "disc_helper.h"
 #include "dvd_description.h"
 
+/* redesign (brand layer, public profile): the DVD title error names Cone, not VLC; the vlc
+ * profile compiles VLC's text as before (redesign/CONE_RELEASE_NOTES.md "Dialog texts") */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_TEXT_DVD_TITLE_FAILED \
+    _("Cone cannot set the DVD's title. It possibly " \
+    "cannot decrypt the entire disc.")
+#else
+# define BRAND_TEXT_DVD_TITLE_FAILED \
+    _("VLC cannot set the DVD's title. It possibly " \
+    "cannot decrypt the entire disc.")
+#endif
+
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
@@ -395,8 +407,7 @@ static int CommonOpen( vlc_object_t *p_this,
         {
             msg_Err( p_demux, "cannot set title (can't decrypt DVD?)" );
             vlc_dialog_display_error( p_demux, _("Playback failure"), "%s",
-                _("VLC cannot set the DVD's title. It possibly "
-                  "cannot decrypt the entire disc.") );
+                BRAND_TEXT_DVD_TITLE_FAILED );
             timestamps_filter_es_out_Delete( p_sys->p_tf_out );
             free( p_sys );
             return VLC_EGENERIC;

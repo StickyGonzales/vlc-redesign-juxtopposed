@@ -176,7 +176,7 @@ static int Open(vout_display_t *vd,
                    vd->source->projection_mode != PROJECTION_MODE_RECTANGULAR))
         goto error;
 
-    vlc_window_SetTitle(vd->cfg->window, VOUT_TITLE " (OpenGL output)");
+    vlc_window_SetTitle(vd->cfg->window, VOUT_OUTPUT_TITLE("OpenGL output"));
 
     vout_display_cfg_t embed_cfg = *vd->cfg;
     embed_cfg.window = EmbedVideoWindow_Create(vd);

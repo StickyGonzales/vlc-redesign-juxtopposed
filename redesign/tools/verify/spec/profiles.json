@@ -1,0 +1,1723 @@
+{
+ "format": 1,
+ "node": "6648:20666",
+ "name": "Profiles",
+ "png": "Profiles.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  651,
+  633
+ ],
+ "theme": "dark",
+ "rows": [
+  308,
+  309
+ ],
+ "background": [],
+ "elements": [
+  {
+   "id": "6648:20552",
+   "name": "menu",
+   "type": "frame",
+   "path": "menu",
+   "bounds": [
+    0,
+    0,
+    375,
+    585
+   ],
+   "radius": 10,
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "effects": {
+    "style": "bg blur + shadow"
+   },
+   "translucent": true,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20554",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:file",
+   "bounds": [
+    18,
+    16,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "file",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "file",
+   "rows": [
+    231
+   ]
+  },
+  {
+   "id": "6648:20555",
+   "name": "Open File(s)",
+   "type": "text",
+   "path": "menu / option / Open File(s)",
+   "bounds": [
+    52,
+    19.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Open File(s)",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20556",
+   "name": "Ctrl + O",
+   "type": "text",
+   "path": "menu / option / Ctrl + O",
+   "bounds": [
+    209.5,
+    19.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + O",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20558",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:folder",
+   "bounds": [
+    18,
+    64,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "folder",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20559",
+   "name": "Open Folder",
+   "type": "text",
+   "path": "menu / option / Open Folder",
+   "bounds": [
+    52,
+    67.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Open Folder",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20560",
+   "name": "Ctrl + F",
+   "type": "text",
+   "path": "menu / option / Ctrl + F",
+   "bounds": [
+    209.5,
+    67.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + F",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20562",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:streaming",
+   "bounds": [
+    18,
+    112,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "streaming",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "streaming",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20563",
+   "name": "Open Network Stream",
+   "type": "text",
+   "path": "menu / option / Open Network Stream",
+   "bounds": [
+    52,
+    115.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Open Network Stream",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20564",
+   "name": "Ctrl + N",
+   "type": "text",
+   "path": "menu / option / Ctrl + N",
+   "bounds": [
+    209.5,
+    115.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + N",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20566",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:disc",
+   "bounds": [
+    18,
+    160,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "disc",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "disc",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20567",
+   "name": "Open Disc",
+   "type": "text",
+   "path": "menu / option / Open Disc",
+   "bounds": [
+    52,
+    163.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Open Disc",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20568",
+   "name": "Ctrl + D",
+   "type": "text",
+   "path": "menu / option / Ctrl + D",
+   "bounds": [
+    209.5,
+    163.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + D",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20570",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:capture-device",
+   "bounds": [
+    18,
+    208,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "capture-device",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "capture-device",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20571",
+   "name": "Open Capture Device",
+   "type": "text",
+   "path": "menu / option / Open Capture Device",
+   "bounds": [
+    52,
+    211.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Open Capture Device",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20572",
+   "name": "Ctrl + C",
+   "type": "text",
+   "path": "menu / option / Ctrl + C",
+   "bounds": [
+    209.5,
+    211.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + C",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20574",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:swap",
+   "bounds": [
+    18,
+    256,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "swap",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "swap",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20575",
+   "name": "Convert",
+   "type": "text",
+   "path": "menu / option / Convert",
+   "bounds": [
+    52,
+    259.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Convert",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20576",
+   "name": "Ctrl + R",
+   "type": "text",
+   "path": "menu / option / Ctrl + R",
+   "bounds": [
+    209.5,
+    259.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + R",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20578",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:recent",
+   "bounds": [
+    18,
+    304,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "recent",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "recent",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20579",
+   "name": "Open Recent",
+   "type": "text",
+   "path": "menu / option / Open Recent",
+   "bounds": [
+    52,
+    307.5,
+    271,
+    17
+   ],
+   "text": {
+    "content": "Open Recent",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20580",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:chevron",
+   "bounds": [
+    333,
+    304,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "right",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron",
+   "rows": [
+    65
+   ]
+  },
+  {
+   "id": "6648:20582",
+   "name": "option",
+   "type": "frame",
+   "path": "menu / option",
+   "bounds": [
+    4,
+    341,
+    367,
+    48
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "color": "#1F1F1F",
+     "same_as_token": "BG/A2"
+    }
+   ],
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20583",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:profile",
+   "bounds": [
+    18,
+    353,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "profile",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "profile",
+   "rows": [
+    308
+   ]
+  },
+  {
+   "id": "6648:20584",
+   "name": "Profile (Movies)",
+   "type": "text",
+   "path": "menu / option / Profile (Movies)",
+   "bounds": [
+    52,
+    356.5,
+    271,
+    17
+   ],
+   "text": {
+    "content": "Profile (Movies)",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "sample name",
+   "rows": [
+    308
+   ]
+  },
+  {
+   "id": "6648:20585",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:chevron",
+   "bounds": [
+    333,
+    353,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "right",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron",
+   "rows": [
+    65
+   ]
+  },
+  {
+   "id": "6648:20587",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:hotkeys",
+   "bounds": [
+    18,
+    401,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "hotkeys",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "hotkeys",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20588",
+   "name": "Keyboard Shortcuts",
+   "type": "text",
+   "path": "menu / option / Keyboard Shortcuts",
+   "bounds": [
+    52,
+    404.5,
+    271,
+    17
+   ],
+   "text": {
+    "content": "Keyboard Shortcuts",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20589",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:check",
+   "bounds": [
+    333,
+    401,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20591",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:paint",
+   "bounds": [
+    18,
+    449,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "paint",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "paint",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20592",
+   "name": "Customize Player",
+   "type": "text",
+   "path": "menu / option / Customize Player",
+   "bounds": [
+    52,
+    452.5,
+    271,
+    17
+   ],
+   "text": {
+    "content": "Customize Player",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20593",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:check",
+   "bounds": [
+    333,
+    449,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20599",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:settings",
+   "bounds": [
+    18,
+    497,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "settings",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "settings",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20600",
+   "name": "Settings",
+   "type": "text",
+   "path": "menu / option / Settings",
+   "bounds": [
+    52,
+    500.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Settings",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20601",
+   "name": "Ctrl + P",
+   "type": "text",
+   "path": "menu / option / Ctrl + P",
+   "bounds": [
+    209.5,
+    500.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Ctrl + P",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20603",
+   "name": "Icon",
+   "type": "instance",
+   "path": "menu / option / Icon:info",
+   "bounds": [
+    18,
+    545,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "yes"
+   },
+   "icon": "info",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20604",
+   "name": "About VLC",
+   "type": "text",
+   "path": "menu / option / About VLC",
+   "bounds": [
+    52,
+    548.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "About VLC",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "brand": true,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20605",
+   "name": "Shift + F1",
+   "type": "text",
+   "path": "menu / option / Shift + F1",
+   "bounds": [
+    209.5,
+    548.5,
+    147.5,
+    17
+   ],
+   "text": {
+    "content": "Shift + F1",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "right",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20514",
+   "name": "context menu",
+   "type": "frame",
+   "path": "context menu",
+   "bounds": [
+    386,
+    337,
+    265,
+    249
+   ],
+   "radius": 10,
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "effects": {
+    "style": "bg blur + shadow"
+   },
+   "translucent": true,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20515",
+   "name": "option",
+   "type": "instance",
+   "path": "context menu / option",
+   "bounds": [
+    390,
+    341,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "hover"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A2",
+     "dark": "#1F1F1F",
+     "light": "#DDDDDD"
+    }
+   ],
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20515;2107:6174",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:check",
+   "bounds": [
+    404,
+    353,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "active",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    15
+   ]
+  },
+  {
+   "id": "I6648:20515;2107:5937",
+   "name": "Option",
+   "type": "text",
+   "path": "context menu / option / Option",
+   "bounds": [
+    438,
+    356.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Movies",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20515;2107:5938",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:check",
+   "bounds": [
+    609,
+    353,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20516",
+   "name": "option",
+   "type": "instance",
+   "path": "context menu / option",
+   "bounds": [
+    390,
+    389,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20516;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:0",
+   "bounds": [
+    404,
+    401,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "I6648:20516;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "context menu / option / Option",
+   "bounds": [
+    438,
+    404.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Shows",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20516;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:check",
+   "bounds": [
+    609,
+    401,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20517",
+   "name": "option",
+   "type": "instance",
+   "path": "context menu / option",
+   "bounds": [
+    390,
+    437,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20517;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:0",
+   "bounds": [
+    404,
+    449,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "I6648:20517;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "context menu / option / Option",
+   "bounds": [
+    438,
+    452.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Music",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20517;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:check",
+   "bounds": [
+    609,
+    449,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20518",
+   "name": "option",
+   "type": "instance",
+   "path": "context menu / option",
+   "bounds": [
+    390,
+    485,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20518;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:0",
+   "bounds": [
+    404,
+    497,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "I6648:20518;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "context menu / option / Option",
+   "bounds": [
+    438,
+    500.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "Work",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20518;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:check",
+   "bounds": [
+    609,
+    497,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "6648:20679",
+   "name": "Vector 104",
+   "type": "vector",
+   "path": "context menu",
+   "bounds": [
+    390,
+    533,
+    257,
+    1
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Dim",
+     "dark": "#222222",
+     "light": "#ACACAC"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center",
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "6648:20519",
+   "name": "option",
+   "type": "instance",
+   "path": "context menu / option",
+   "bounds": [
+    390,
+    534,
+    257,
+    48
+   ],
+   "component": "option",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20519;2107:6069",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:add",
+   "bounds": [
+    404,
+    546,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "add",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "add",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  },
+  {
+   "id": "I6648:20519;2107:5930",
+   "name": "Option",
+   "type": "text",
+   "path": "context menu / option / Option",
+   "bounds": [
+    438,
+    549.5,
+    161,
+    17
+   ],
+   "text": {
+    "content": "New",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    308,
+    309
+   ]
+  },
+  {
+   "id": "I6648:20519;2107:5931",
+   "name": "Icon",
+   "type": "instance",
+   "path": "context menu / option / Icon:check",
+   "bounds": [
+    609,
+    546,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "check",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "check",
+   "rows": [
+    62,
+    65,
+    172,
+    219,
+    231
+   ]
+  }
+ ]
+}

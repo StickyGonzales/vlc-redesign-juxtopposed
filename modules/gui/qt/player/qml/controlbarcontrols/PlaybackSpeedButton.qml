@@ -84,57 +84,8 @@ PopupIconToolButton {
 
         z: -1
 
-        WheelToVLCConverter {
-            id: wheelToVLC
-
-            function handle(steps: int) {
-                let func
-                if (steps > 0)
-                    func = root.popup.contentItem.slider.increase
-                else
-                    func = root.popup.contentItem.slider.decrease
-
-                for (let i = 0; i < Math.abs(steps); ++i)
-                    func()
-            }
-
-            Component.onCompleted: {
-                wheelUpDown.connect(wheelToVLC.handle)
-                wheelLeftRight.connect(wheelToVLC.handle)
-            }
-        }
-
-        WheelHandler {
-            orientation: Qt.Vertical | Qt.Horizontal
-
-            acceptedDevices: PointerDevice.AllDevices
-
-            onWheel: (wheel) => {
-                if (!root.popup.contentItem || !root.popup.contentItem.slider) {
-                    event.accepted = false
-                    return
-                }
-
-                // NOTE: Uncomment below to support (not only handle) high precision adjustment:
-                // if ((Math.abs(wheel.pixelDelta.x) % 120 > 0) || (Math.abs(wheel.pixelDelta.y) % 120 > 0)) {
-                //     let delta = 0
-                //     if (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y))
-                //         delta = wheel.pixelDelta.x
-                //     else
-                //         delta = wheel.pixelDelta.y
-
-                //     if (wheel.inverted)
-                //         delta = -delta
-
-                //     root.popup.contentItem.slider.value += 0.01 * delta
-                // } else
-                {
-                    wheelToVLC.qmlWheelEvent(wheel)
-                }
-
-                wheel.accepted = true
-            }
-        }
+        // redesign: the button takes no wheel (Decision 54): over the bars only the volume control
+        // reacts to it
 
         TapHandler {
             acceptedButtons: Qt.RightButton

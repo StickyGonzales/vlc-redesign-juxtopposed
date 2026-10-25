@@ -1,0 +1,197 @@
+{
+ "format": 1,
+ "node": "1904:7238",
+ "name": "Current Time",
+ "png": "Current Time.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  114,
+  164
+ ],
+ "theme": "dark",
+ "rows": [
+  33,
+  35,
+  328
+ ],
+ "variants": [
+  {
+   "node": "1904:7237",
+   "name": "state=Default",
+   "props": {
+    "state": "Default"
+   },
+   "bounds": [
+    20,
+    20,
+    76,
+    28
+   ],
+   "fills": [],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "1904:7236",
+     "name": "00:02:10",
+     "type": "text",
+     "path": "00:02:10",
+     "bounds": [
+      6.5,
+      5.5,
+      63,
+      17
+     ],
+     "text": {
+      "content": "00:02:10",
+      "font": "Inter",
+      "weight": 400,
+      "size": 15,
+      "line_height": 18.15,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      328
+     ]
+    }
+   ]
+  },
+  {
+   "node": "1904:7239",
+   "name": "state=hover",
+   "props": {
+    "state": "hover"
+   },
+   "bounds": [
+    20,
+    68,
+    76,
+    28
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "1904:7240",
+     "name": "00:02:10",
+     "type": "text",
+     "path": "00:02:10",
+     "bounds": [
+      6.5,
+      5.5,
+      63,
+      17
+     ],
+     "text": {
+      "content": "00:02:10",
+      "font": "Inter",
+      "weight": 400,
+      "size": 15,
+      "line_height": 18.15,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      328
+     ]
+    }
+   ]
+  },
+  {
+   "node": "1904:7241",
+   "name": "state=click",
+   "props": {
+    "state": "click"
+   },
+   "bounds": [
+    20,
+    116,
+    76,
+    28
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "1904:7242",
+     "name": "00:02:10",
+     "type": "text",
+     "path": "00:02:10",
+     "bounds": [
+      6.5,
+      5.5,
+      63,
+      17
+     ],
+     "text": {
+      "content": "00:02:10",
+      "font": "Inter",
+      "weight": 400,
+      "size": 15,
+      "line_height": 18.15,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A2",
+       "dark": "#8F8F8F",
+       "light": "#2E2E2E"
+      }
+     },
+     "mask": "time",
+     "rows": [
+      328
+     ]
+    },
+    {
+     "id": "1905:7272",
+     "name": "Vector 76",
+     "type": "vector",
+     "path": "Vector 76",
+     "bounds": [
+      69.5,
+      6.25,
+      0,
+      15.5
+     ],
+     "strokes": [
+      {
+       "token": "Accent/Main",
+       "dark": "#D37918",
+       "light": "#E8851A"
+      }
+     ],
+     "stroke_weight": 1,
+     "stroke_align": "center",
+     "rows": [
+      328
+     ]
+    }
+   ]
+  }
+ ]
+}

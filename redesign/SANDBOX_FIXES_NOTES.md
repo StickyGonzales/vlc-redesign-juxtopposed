@@ -1,0 +1,92 @@
+# Sandbox bug sweep of the beta (branch claude/zen-mendel-p1anpd)
+
+StickyGonzales reported that "half of the stuff doesn't really work" in the published beta. Section 6 adds Decisions 69 and 70 (2026-10-19). The web session swept the beta's code in its Linux sandbox and fixed what it found. Branch made from `wip/next-test` 2ffda4e20b (the beta in `redesign` plus the fixes already tested on Windows; every file changed here is identical in `redesign`). Pull request into `wip/next-test`. **Verified on Linux only** (screenshots below, in the session's scratchpad, not committed): it needs one Windows build and a test round on the PC before it goes on (Decision 55). One core change: the default of `video-title-show` in the Cone build (Decision 69, section 6).
+
+## 1. How it was tested
+- Built `wip/next-test` with `--with-brand=public --disable-skins2` and the media library in VideoLAN's Debian image (Qt 6.10.2), run on Xvfb at 1500 x 900 with xdotool input and a screenshot after every step; the QML warnings of each step were read from the log.
+- Generated media only: an MKV with 2 audio tracks (eng "Main", deu "Commentary") and 2 subtitle tracks, a 1080p MP4, a "Test Show" season of 3 episodes with title tags, 4 tagged MP3s.
+- Every fix: a screenshot of the beta's code (before) and of the fixed build (after) at the same place.
+- Not testable in the sandbox: anything that needs sound (no audio server: the volume cone stays empty, the output device list is empty), Windows-only behavior.
+
+## 2. Bugs fixed
+
+| # | Bug (beta) | Cause | Fix | Files |
+|---|---|---|---|---|
+| 1 | Picking an Audio Visualizer put the **subtitle and audio delays back to 0** and the visualizer itself back to **Disabled**: it could never be turned on. Anything that restarts the video or audio output did the same to the delays. | `RdPresets::onOutputsChanged()` (new output: its zoom / crop / stereo / visualizer lists fill) applied the whole current preset; for Default Preset that forces both delays to 0, and the 500 ms capture had not yet stored the new visualizer. | Once the new output's lists and VLC's cached values have been read again (one turn of the event loop later, once for all the lists), it stores a change that is still settling (not the new output's own default values; the visualizer is kept, choosing it is what restarts the output), then applies only what the output keeps: the zoom, aspect ratio, crop, stereo mode and visualizer lists and the crop margins (these last were never sent again to a new output before). | `player/rd_presets.cpp`, `.hpp` |
+| 2 | A **speed of 1.5x or a visualizer chosen once came back on every start** of Cone (the visualizer opens its own window). | Default Preset keeps speed, subtitle speed, stereo mode and visualizer from file to file (as VLC does) but also saved them, and applied them again at start. | They still carry from file to file (also when the file changes less than 500 ms after the change); when the presets are read at start they are dropped, so every session starts at VLC's values, as stock VLC does. Leaving a show's preset still resets both speeds to 1. | `player/rd_presets.cpp` |
+| 3 | The **title was cut** with plenty of room around it: "Episode 2" showed as "Episode..." in the top bar. Same cause as the PC test's "Bet..." in the bottom bar after Customize Save. | The text's natural width is fractional; the bars' layouts round it down, so the text was a fraction of a pixel too narrow and elided. | The title / name widgets take whole pixels (rounded up). | `player/qml/controlbarcontrols/TextInfoWidget.qml` |
+| 4 | With the compact library open, **subtitles were cut off** by the control bar. | The library keeps both bars shown, but the video still ran under them; VLC puts the subtitles at the bottom of the video's area (in the black band of a letterboxed picture), which was under the control bar. | Next to the library the video sits between the bars, like VLC's "pin video controls" mode. | `player/qml/Player.qml` |
+| 5 | **Opening the library closed the queue**, and every click in the library closed it too, so the video's "drag from the library into the open queue" (11:44) only worked in one order and without browsing. | The click-outside rule closed the queue for any press outside it. | A press in the compact library, or one that opens or closes it, keeps the queue sidebar open. The tracks popup and the settings sidebar still close as before. | `player/qml/Player.qml` |
+| 6 | **Escape did not close the compact library** (PC test). | Escape only closed panels and Hide UI. | Escape closes the open panel first, then the library, then Hide UI. In the library's search field Escape closes the search first; while the keyboard moves through the library (arrows, focus shown) Escape is left to VLC's Navigation (back a page) as before: not tested in the sandbox. After a mouse click in the library Escape closes it (in the beta it did nothing then). | `player/qml/Player.qml`, `medialibrary/qml/RdLibrarySidebar.qml` |
+| 7 | Sidebar Audio tab showed **"Track and language apply from the next file"** under Defaults (PC test, P4-15; not in Figma). | Leftover note. | Removed (the Subtitles tab lost the same line before). | `player/qml/AudioSettingsPage.qml` |
+| 8 | **QML warnings** on every start and when the Home lists change: `RdProfileNotice.qml:39 Accessible attached property must be attached to an object deriving from Item`, `MainMenuButton.qml:50 Cannot call method 'close' of null`, `RdLibraryHome.qml:195/201/204` and `RdLibraryPage.qml:790 Unable to assign [undefined]`. | Accessible on a Popup; stale signal connections calling a destroyed menu; rows read before their data loads. | Accessible on the notice's content; `mainMenu?.close()`; empty defaults for rows that have no data yet. | `dialogs/toolbar/qml/RdProfileNotice.qml`, `player/qml/controlbarcontrols/MainMenuButton.qml`, `medialibrary/qml/RdLibraryHome.qml`, `medialibrary/qml/RdLibraryPage.qml` |
+
+## 3. Independent review
+A fresh agent reviewed the whole diff. No HIGH findings. Fixed from it: the crop margins of a show's preset were never sent to a video output that started after the file (MED); storing a settling change on an output restart could have kept the new output's default zoom / crop / stereo mode over a show's values (LOW); a speed or visualizer change in the last 500 ms before the next file was lost (LOW). The re-tests of section 2 ran on the build with these changes. Left, LOW: leaving a show's preset that has a visualizer or a stereo mode keeps them on Default Preset until Cone quits (only the speeds go back to 1: the list titles are translated, so there is no fixed "off" value to put back); a command-line `--rate` is set back to 1 on the first file; the profile notice (a popup that closes on Escape) takes the first Escape while it shows.
+
+## 4. Checked and working in the sandbox
+Onboarding (folder, theme, live accent, shortcuts); library scan, Videos / Music folders, breadcrumbs, thumbnails, Continue Watching, Listen Again; playing videos and songs; control bar; tracks popup (subtitle and audio track switching both take effect); settings sidebar (toggles, Show Metadata and Show Statistics panels, speed, subtitle delay, sleep timer and visualizer menus); queue, bookmarks (Ctrl+B, times as in Figma), chapters; right-click menu; main menu; Keyboard Shortcuts; every Settings page; live Light theme and accent; Customize Player opens; Open Network Stream plays a URL; About; resume toast; quitting with Ctrl+Q and with the window's X after slider drags and key loops (1.2-1.4 s, 3 runs).
+
+## 5. Found, not changed (for StickyGonzales)
+- **Quit hang (PC, HIGH):** not reproducible on Linux (3 runs of the PC's sequence, clean exit every time). The PC's stuck threads include Windows audio (`vlc-mmdevice`), which the sandbox cannot run. Fix 1 removes a source of churn in that sequence (each `B` press or output restart re-applied both delays and the speed), but it is not known to be the cause: retest the PC sequence on this build.
+- When one library folder is in both Videos and Music, Videos lists its music folders and Music its video folders (leading to empty pages). The normal setup (Videos and Music folders) does not show it; hiding them needs a recursive check of every subfolder. Low.
+- `CustomizeZoneItem.qml:70` logs one "Binding loop detected for property width" when Customize Player opens (present before these changes, nothing visible). Low.
+- Settings > Subtitles "Size values" stays Relative / Precise: the pixel size is still waiting on Sticky's decision (CLAUDE.md).
+- Stock VLC behavior, left as is: a single click on the video pauses (VLC 4's mouse-pause-policy), the control bar switches to the audio layout for a moment at the end of a video, clicking a library item adds it to the queue and plays it.
+
+## 6. Decisions 69 and 70 (StickyGonzales, 2026-10-19)
+
+### Decision 69: no file name over the video in Cone
+- VLC showed the file name at the bottom of the video for 5 s whenever a file started; under Cone's control bar it was half hidden, and the top bar shows the title already.
+- **Change (core, one line, public profile only):** `src/libvlc-module.c`, the default of `video-title-show` is false inside `#ifdef VLC_BRAND_PUBLIC`; the vlc profile keeps VLC's default (on). Listed in VIDEO_INDEX "Core changes (status)".
+- Settings > Subtitles > On-Screen Messages "Show filename when a video starts" still turns it on. A settings file that saved the old value keeps it; VLC only writes values that differ from the default, so a beta's settings file has none and follows the new default.
+- Verified in the sandbox: the beta shows "movie.mp4" over the video at 0:03; the new build shows nothing from 0:02 to 0:05 (a screenshot every 0.3 s from the start of the file).
+- Build rule note: this PR now holds one core change next to its Qt changes. It is a default value inside the brand switch, nothing else in core moves; if the core changes must still get their own build, the commit "core: Cone starts without the file name over the video" is separate and can go alone.
+
+### Decision 70: "All Cone Settings" with the Cone logo and the redesign's look
+- **Cone logo for every VLC cone picture (public profile only):**
+  - the category icons of the Simple view (Interface, Audio, Video, Subtitles / OSD, Input / Codecs, Hotkeys, and Media Library when the media library is on) show the Cone logo (`:/brand/cone-128.png`, already in the public build);
+  - the Modern / Classic layout previews are new pictures, `pixmaps/brand/public/prefs-sample-modern.png` and `prefs-sample-classic.png`: VLC's previews with the Cone logo in place of the cone (video area and title bar) and "Cone" as the window title. They are made by `redesign/tools/make_prefs_samples.sh` (ImageMagick 6) from VLC's own previews, so they can be made again.
+  - The All view's tree icons and the Expert view have no cone (grey glyphs); the skins preview is already hidden in Cone (no skins, Decision 63).
+- **Dark theme:** the window takes the redesign's dialog look, `RdWidgetStyle::apply()`, as the Open, Convert and Stream Output dialogs already do (both profiles, like those dialogs): Figma colors, Inter 14, the accent Save button; it follows Dark / Light and the accent color live. Rules added to that shared style sheet (no other dialog using it has such widgets, so only this window changes): alternate rows of lists and tables (were white; BG/A4 in Dark, half of it in Light), table headers (were light), the selected button of a row of checkable tool buttons (the categories: only the hover showed it), and the layout previews drawn without the button tile (they are flat picture buttons, which a style sheet otherwise fills). The two new pictures are in configure's and meson's checks of the brand files.
+- **Not simple, left as is:**
+  - the sliders (Audio volume, Video) and the spin box and combo box arrows keep Qt's own drawing (a light groove in the dark window), as in the other redesigned dialogs: styling them means a QStyle subclass, not a style sheet;
+  - the All view's tree icons are VLC's dark grey glyphs (#757575): readable but low contrast on the dark background; recoloring them means new SVGs or a tinting proxy style;
+  - the window keeps VLC's layout; with Inter 14 the pages are a little longer and scroll more, and the "Show settings" title sits at the left (the shared style puts every group title there);
+  - "Customize Toolbar" in the Interface page still opens VLC's old toolbar editor, and the Interface page's "Modern / Classic" choice and window style options are VLC's (they still work).
+- Verified in the sandbox: before / after screenshots of the Interface page, Hotkeys, the All tree and the Expert list in Dark, and Hotkeys and the All tree in Light.
+- Reviewed by a fresh agent: no HIGH findings; the preview tiles, the Light row contrast and the brand file checks it found are fixed.
+- Numbering (2026-10-20): first recorded here as 67 and 68, which clashed with the filter previews (67, PR #28) and the release title rule (68) on `wip/next-test`; renumbered to 69 and 70, the next free numbers across `redesign` and every open branch (the older commit messages of this branch still say 67 and 68). Decision 66 ("Additional command line options" ignores interface options) is on `wip/musthaves-2` (PR #22).
+
+## 7. How to test on Windows
+1. Play a video with subtitles, set Subtitle Track Delay to about 2 s in the sidebar, then pick Spectrometer under Playback > Audio Visualizer: the delay stays, the visualizer stays selected and shows. Press `B` (audio track): the delay stays.
+2. Set the speed to 1.5x and a visualizer, play the next file (both carry over), quit and start Cone again: 1x and Disabled.
+3. A file with a title tag ("Episode 2" style) and a short file name: the top bar shows the whole title. Customize Player, move the title into the bottom bar, Save: the whole name shows (the PC test's "Bet...").
+4. Open the compact library during a video with subtitles: the subtitles show fully above the control bar.
+5. Open the queue, then the library: the queue stays. Browse folders in the library: the queue stays. Drag a row into the queue. Click on the video: the queue closes.
+6. Library open: Escape closes it. Click a folder in it, then Escape: closes. Type in its search, Escape: the search closes, a second Escape closes the library. With the keyboard (Tab into the library, arrows, Enter on a folder), check that Escape goes back a page.
+7. Sidebar Audio tab: no line under Defaults.
+8. Quit hang sequence from STATUS.md on the real film.
+9. Play a video from the start: no file name over the video. Settings > Subtitles > "Show filename when a video starts" on: it shows again on the next file.
+10. Settings > All Cone Settings: Cone logos on the seven categories and in both layout previews; the window dark, then Light after switching the theme in Settings > General; the selected category in the accent color; the Hotkeys table and the All / Expert lists readable (no white rows).
+
+## 8. Follow-up: Escape after the library search (branch wip/fix-library-escape, PR into this branch)
+The PC's Windows test of fix 6 failed on one step: type in the library search, Escape closes the search, and **the second Escape does not close the library**.
+
+- **Cause:**
+  1. Escape in the compact library's search field cleared and hid the field, but the keyboard focus stayed on its hidden text box. A hidden Qt Quick item keeps the focus.
+  2. The player's Escape shortcut is off while a text box in the library has the focus, so that the first Escape reaches the search.
+  3. So the second Escape went to the hidden box again, which had nothing left to close.
+- **Fix:**
+  - `medialibrary/qml/RdLibraryHeader.qml`: closing the search moves the focus to the library header when the field had it. The keyboard stays in the library, and typing no longer goes into a hidden field.
+  - `player/qml/Player.qml`: the shortcut only stands back for a text box that is shown.
+- **Checks:** qmlcheck errors 1 / crashed 0, buildlists 0, privacycheck 0.
+- **Sandbox (Linux build 39420016007, test-only branch `wip/fix-library-escape-linux` = this branch + the Linux build job; screenshots looked at):**
+  - Compact library > Videos, search, type "abc": first Escape closes the search (the list comes back), second Escape closes the library.
+  - No regression: Escape alone closes the library, and so does Escape after a click in it (Music page).
+  - Not checked in the sandbox: the keyboard case (Tab into the library, Enter on a folder, Escape goes back a page), because the sandbox library is empty.
+
+**Retest on Windows** (build of this branch merged with #26, or #26 after this PR merges):
+1. Library open, click in its search, type a few letters. Escape: the search closes and the list shows everything again. Escape: the library closes.
+2. Library open, search open and typed, then click the search button again (the search closes): Escape closes the library.
+3. The other step-6 checks still pass: Escape alone closes the library, and closes it after a click on a folder. With the keyboard (Tab into the library, arrows, Enter on a folder), Escape goes back a page.

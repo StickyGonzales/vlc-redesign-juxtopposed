@@ -282,7 +282,7 @@ Totals: 380 elements: 92 KEEP, 165 MOVE, 116 NOT IN VIDEO, 7 "?". Of the 116 NOT
 |---|---|---|---|---|
 | Elapsed time label | KEEP | Current time right of Next (P2-03); hover and click-to-edit jump (F-02) | Player.time | - |
 | Remaining/total time label (click toggles; tooltip with speed-adjusted remaining) | KEEP | Total time; click toggles remaining "-00:23:30" (F-01). The speed-adjusted remaining-time tooltip is not shown. | MainCtx.showRemainingTime | - |
-| Seek slider (click/drag, hover time with chapter name, chapter marks, A-B markers, wheel, Left/Right keys) | KEEP | Thick seek bar (P2-02, IA-13), hover thumbnail with time (P2-04, Decision 6, Step 2 W3.3b), chapter segments (IB-46). A-B markers, the chapter-name tooltip, wheel and arrow keys are not shown (keep them). | Seek, chapters, jumpFwd / jumpBwd | - |
+| Seek slider (click/drag, hover time with chapter name, chapter marks, A-B markers, wheel, Left/Right keys) | KEEP | Thick seek bar (P2-02, IA-13), hover thumbnail with time (P2-04, Decision 6, Step 2 W3.3b), chapter segments (IB-46). A-B markers, the chapter-name tooltip and arrow keys are not shown (keep them); the wheel over the seek bar is removed (Decision 54: over the bars only the volume control takes the wheel). | Seek, chapters, jumpFwd / jumpBwd | - |
 | Bookmarks strip above slider | MOVE | Queue sidebar > Bookmarks tab lists and jumps (P7-05). Ticks on the seek bar are not shown (INTERACTIONS.md section 5 plans a bookmark-marks layer). | MLBookmarkModel::select | - |
 | Configurable button rows (left / center / right) | KEEP | Control bar zones, edited in Customize Player (P8-24 to P8-26; the alternate layout uses left / center / right) | Hosts the controls of 2.4 | - |
 

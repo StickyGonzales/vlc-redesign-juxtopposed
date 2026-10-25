@@ -35,6 +35,51 @@ Item {
     // the page the menu belongs to (RdLibraryNav location)
     property var location: RdLibraryNav.location
 
+    // the menu of the page itself (header "..."): it keeps the favorite state of the playlist
+    // the page shows
+    property bool forPage: false
+
+    // the favorite state of the playlist shown by the page (Figma "playlist context menu",
+    // F-11): the location does not carry it, so it is read when the page opens, off the UI
+    // thread, and the menu still opens at once
+    property var _pageFavorite: undefined
+    // favorite writes seen: a read that started before one of them is out of date (the media
+    // library runs its jobs on several threads, not in order)
+    property int _favoriteWrites: 0
+
+    function _isPagePlaylist(id) {
+        const loc = root.location
+        return !!loc && loc.page === "playlist" && !!loc.id && loc.id.toString() === id.toString()
+    }
+
+    function _readPageFavorite() {
+        _pageFavorite = undefined
+        const loc = root.location
+        if (!forPage || !loc || loc.page !== "playlist" || !loc.id)
+            return
+        const writes = _favoriteWrites
+        RdLibraryStore.playlistFavorite(loc.id, (favorite) => {
+            if (root.location === loc && root._favoriteWrites === writes)
+                root._pageFavorite = favorite
+        })
+    }
+
+    onLocationChanged: _readPageFavorite()
+    onForPageChanged: _readPageFavorite()
+    Component.onCompleted: _readPageFavorite()
+
+    Connections {
+        target: RdLibraryStore
+        enabled: root.forPage
+
+        function onFavoriteChanged(id, favorite) {
+            if (!root._isPagePlaylist(id))
+                return
+            root._favoriteWrites += 1
+            root._pageFavorite = favorite
+        }
+    }
+
     function _fileEntries(item) {
         const isLocal = (item.mrl ?? "").startsWith("file://")
         const isMl = item.kind === "media" && item.id && item.id.isValid()
@@ -57,7 +102,7 @@ Item {
         entries.push({ text: qsTr("Add to Queue"), icon: "queue_two-tone-yes", action: () => RdLibraryActions.addToQueue(item) })
         if (isMl)
             entries.push({ text: qsTr("Add to Playlist"), icon: "playlist_two-tone-yes", submenu: true, chevron: false,
-                           action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.openBeside(row) } })
+                           action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.mediaNames = [item.title ?? ""]; playlistMenu.openBeside(row) } })
         if (isLocal) {
             entries.push({ text: qsTr("Show in File Explorer"), icon: "folder_two-tone-yes",
                            action: () => RdLibraryActions.showInFileExplorer(item) })
@@ -68,7 +113,7 @@ Item {
         // the Add Subtitles dialog for this file (W6.5)
         entries.push({ text: qsTr("Add Subtitle Tracks"), icon: "subtitles_two-tone-yes",
                        action: () => AddSubtitles.open({ mrl: item.mrl ?? "" }) })
-        entries.push({ text: qsTr("Add Audio Tracks"), icon: "waveform_two-tone-yes",
+        entries.push({ text: qsTr("Add Audio Tracks"), icon: "audio_two-tone-yes",
                        action: () => RdLibraryActions.addTracks(item, false) })
         if (isMl)
             entries.push({ text: qsTr("Properties & Metadata"), icon: "info_two-tone-yes",
@@ -91,7 +136,7 @@ Item {
               action: () => RdLibraryStore.playlistMedia(item.id, (mrls) => AddSubtitles.open({
                   target: "playlist", items: mrls, title: item.title ?? "" })) },
             // audio tracks are added to the file that is playing
-            { text: qsTr("Add Audio Tracks"), icon: "waveform_two-tone-yes", enabled: Player.isStarted,
+            { text: qsTr("Add Audio Tracks"), icon: "audio_two-tone-yes", enabled: Player.isStarted,
               action: () => DialogsProvider.loadAudioFile() },
             { text: qsTr("Properties & Metadata"), icon: "info_two-tone-yes",
               action: () => RdLibraryNav.playlistDialogRequested({ playlist: item }) },
@@ -114,7 +159,7 @@ Item {
             { text: qsTr("Shuffle"), icon: "shuffle_two-tone-yes_direction-right", action: () => RdLibraryActions.shuffle(item) },
             { text: qsTr("Add to Queue"), icon: "queue_two-tone-yes", action: () => RdLibraryActions.addToQueue(item) },
             { text: qsTr("Add to Playlist"), icon: "playlist_two-tone-yes", submenu: true, chevron: false,
-              action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.openBeside(row) } }
+              action: (row) => { playlistMenu.mediaItems = [item.id]; playlistMenu.mediaNames = [item.title ?? ""]; playlistMenu.openBeside(row) } }
         ].filter((entry) => !!entry)
     }
 
@@ -130,7 +175,7 @@ Item {
             { text: qsTr("Edit Subtitle Tracks"), icon: "subtitles_two-tone-yes", enabled: !!folder || Player.isStarted,
               action: () => AddSubtitles.open(folder ? { target: "folder", folder: folder.mrl ?? "" } : {}) },
             // audio tracks are added to the file that is playing
-            { text: qsTr("Edit Audio Tracks"), icon: "waveform_two-tone-yes", enabled: Player.isStarted,
+            { text: qsTr("Edit Audio Tracks"), icon: "audio_two-tone-yes", enabled: Player.isStarted,
               action: () => DialogsProvider.loadAudioFile() },
             { text: qsTr("Resync"), icon: "refresh_two-tone-yes",
               action: () => RdLibraryStore.reloadFolder(folder ? folder.mrl : "") },
@@ -193,7 +238,8 @@ Item {
             entries = _folderEntries(null, "music")
             break
         case "playlist":
-            entries = _playlistEntries({ kind: "playlist", id: loc.id, title: loc.title })
+            entries = _playlistEntries({ kind: "playlist", id: loc.id, title: loc.title,
+                                         isFavorite: root._pageFavorite })
             break
         case "playlists":
             entries = [{ text: qsTr("Create playlist"), icon: "add", action: () => RdLibraryNav.playlistDialogRequested({ items: [] }) }]

@@ -1,0 +1,232 @@
+{
+ "format": 1,
+ "node": "536:1014",
+ "name": "Toggle",
+ "png": "Toggle.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  120,
+  194
+ ],
+ "theme": "dark",
+ "rows": [
+  96,
+  97,
+  103,
+  125,
+  126,
+  143,
+  145,
+  146,
+  147
+ ],
+ "variants": [
+  {
+   "node": "536:1013",
+   "name": "Value=on",
+   "props": {
+    "Value": "on"
+   },
+   "bounds": [
+    32,
+    20,
+    68,
+    32
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "536:1010",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      3,
+      3,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "536:1011",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Rectangle 12",
+     "bounds": [
+      39,
+      3,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "536:1012",
+     "name": "ON",
+     "type": "text",
+     "path": "ON",
+     "bounds": [
+      10,
+      9,
+      19,
+      15
+     ],
+     "text": {
+      "content": "ON",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "Accent/Main",
+       "dark": "#D37918",
+       "light": "#E8851A"
+      }
+     },
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    }
+   ]
+  },
+  {
+   "node": "536:1336",
+   "name": "Value=off",
+   "props": {
+    "Value": "off"
+   },
+   "bounds": [
+    32,
+    142,
+    68,
+    32
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "536:1337",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "Rectangle 11",
+     "bounds": [
+      32,
+      3,
+      33,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "BG/A4",
+       "dark": "#191919",
+       "light": "#B3B3B3"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "536:1338",
+     "name": "Rectangle 12",
+     "type": "rectangle",
+     "path": "Rectangle 12",
+     "bounds": [
+      3,
+      3,
+      26,
+      26
+     ],
+     "radius": 3,
+     "fills": [
+      {
+       "token": "FG/A4",
+       "dark": "#404040",
+       "light": "#3B3B3B"
+      }
+     ],
+     "rows": [
+      97,
+      126,
+      143
+     ]
+    },
+    {
+     "id": "536:1339",
+     "name": "OFF",
+     "type": "text",
+     "path": "OFF",
+     "bounds": [
+      36,
+      9,
+      24,
+      15
+     ],
+     "text": {
+      "content": "OFF",
+      "font": "Inter",
+      "weight": 400,
+      "size": 12,
+      "line_height": 14.52,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      97
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,2113 @@
+{
+ "format": 1,
+ "node": "970:4028",
+ "name": "Player",
+ "png": "Player-4.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1920,
+  1080
+ ],
+ "theme": "dark",
+ "rows": [
+  151,
+  217,
+  343
+ ],
+ "background": [
+  {
+   "color": "#303030"
+  },
+  {
+   "type": "image"
+  }
+ ],
+ "background_mask": "image",
+ "elements": [
+  {
+   "id": "970:4030",
+   "name": "Frame 2",
+   "type": "frame",
+   "path": "Frame 2",
+   "bounds": [
+    0,
+    0,
+    1920,
+    40
+   ],
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  },
+  {
+   "id": "970:4033",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:vlc",
+   "bounds": [
+    13,
+    8,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "vlc",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "vlc",
+   "brand": true
+  },
+  {
+   "id": "970:4036",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:more",
+   "bounds": [
+    51,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "more",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "more"
+  },
+  {
+   "id": "970:4037",
+   "name": "VLC Media Player",
+   "type": "text",
+   "path": "VLC Media Player",
+   "bounds": [
+    901.5,
+    11.5,
+    117,
+    17
+   ],
+   "text": {
+    "content": "VLC Media Player",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "brand": true,
+   "rows": [
+    343
+   ]
+  },
+  {
+   "id": "970:4039",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:minimize",
+   "bounds": [
+    1770,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "minimize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "minimize"
+  },
+  {
+   "id": "970:4040",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:maximize",
+   "bounds": [
+    1806,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "maximize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "maximize"
+  },
+  {
+   "id": "970:4041",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:fullscreen",
+   "bounds": [
+    1842,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "fullscreen",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "fullscreen"
+  },
+  {
+   "id": "970:4042",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:close",
+   "bounds": [
+    1878,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close"
+  },
+  {
+   "id": "970:4044",
+   "name": "Frame 3",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    0,
+    40,
+    217,
+    1040
+   ],
+   "fills": [
+    {
+     "token": "BG/B1",
+     "dark": "#0E0E0E",
+     "light": "#E7E7E7"
+    }
+   ]
+  },
+  {
+   "id": "970:4045",
+   "name": "Frame 110",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    8,
+    48,
+    201,
+    1024
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A4",
+     "dark": "#191919",
+     "light": "#B3B3B3"
+    }
+   ]
+  },
+  {
+   "id": "970:4047",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    60,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I970:4047;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:home",
+   "bounds": [
+    27,
+    64,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "home",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "home",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "970:4048",
+   "name": "Home",
+   "type": "text",
+   "path": "sidebar / Home",
+   "bounds": [
+    62,
+    67.5,
+    40,
+    17
+   ],
+   "text": {
+    "content": "Home",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "970:4050",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    106,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I970:4050;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:videos",
+   "bounds": [
+    28,
+    110,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "videos",
+    "direction": "default",
+    "state": "selected",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "videos",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "970:4051",
+   "name": "Videos",
+   "type": "text",
+   "path": "sidebar / Videos",
+   "bounds": [
+    64,
+    113.5,
+    46,
+    17
+   ],
+   "text": {
+    "content": "Videos",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "970:4053",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    152,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I970:4053;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:songs",
+   "bounds": [
+    27,
+    156,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "songs",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "songs",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "970:4054",
+   "name": "Music",
+   "type": "text",
+   "path": "sidebar / Music",
+   "bounds": [
+    62,
+    159.5,
+    40,
+    17
+   ],
+   "text": {
+    "content": "Music",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "970:4059",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    198,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I970:4059;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:streaming",
+   "bounds": [
+    27,
+    202,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "streaming",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "streaming",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "970:4060",
+   "name": "Network",
+   "type": "text",
+   "path": "sidebar / Network",
+   "bounds": [
+    62,
+    205.5,
+    57,
+    17
+   ],
+   "text": {
+    "content": "Network",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "970:4062",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    244,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I970:4062;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:playlist",
+   "bounds": [
+    27,
+    248,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "playlist",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "playlist",
+   "rows": [
+    24,
+    25,
+    151,
+    200,
+    217
+   ]
+  },
+  {
+   "id": "970:4063",
+   "name": "Playlists",
+   "type": "text",
+   "path": "sidebar / Playlists",
+   "bounds": [
+    62,
+    251.5,
+    54,
+    17
+   ],
+   "text": {
+    "content": "Playlists",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    151,
+    217
+   ]
+  },
+  {
+   "id": "2154:9906",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    290,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I2154:9906;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:recent",
+   "bounds": [
+    27,
+    294,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "recent",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "recent",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "2154:9907",
+   "name": "Recent",
+   "type": "text",
+   "path": "sidebar / Recent",
+   "bounds": [
+    62,
+    297.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Recent",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "1105:5582",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper",
+   "bounds": [
+    24,
+    336,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I1105:5582;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon Wrapper / Icon:add",
+   "bounds": [
+    27,
+    340,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "add",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "add",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "1105:5583",
+   "name": "Add item",
+   "type": "text",
+   "path": "sidebar / Add item",
+   "bounds": [
+    62,
+    343.5,
+    60,
+    17
+   ],
+   "text": {
+    "content": "Add item",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "970:4064",
+   "name": "Frame 20",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    217,
+    40,
+    1703,
+    1040
+   ],
+   "fills": [
+    {
+     "token": "BG/B1",
+     "dark": "#0E0E0E",
+     "light": "#E7E7E7"
+    }
+   ]
+  },
+  {
+   "id": "1040:2672",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon:arrow",
+   "bounds": [
+    237,
+    65,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "arrow",
+    "direction": "left",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "arrow",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "1040:2673",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon:arrow",
+   "bounds": [
+    273,
+    65,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "arrow",
+    "direction": "right",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "arrow",
+   "opacity": 0.3,
+   "rows": [
+    249
+   ]
+  },
+  {
+   "id": "6153:13643",
+   "name": "Videos",
+   "type": "text",
+   "path": "sidebar / Videos",
+   "bounds": [
+    307,
+    67.5,
+    52,
+    19
+   ],
+   "text": {
+    "content": "Videos",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6153:13644",
+   "name": "▶",
+   "type": "text",
+   "path": "sidebar / ▶",
+   "bounds": [
+    365,
+    67.5,
+    8,
+    19
+   ],
+   "text": {
+    "content": "▶",
+    "font": "Inter",
+    "weight": 400,
+    "size": 8,
+    "line_height": 9.68,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "6153:13645",
+   "name": "Shows",
+   "type": "text",
+   "path": "sidebar / Shows",
+   "bounds": [
+    379,
+    67.5,
+    51,
+    19
+   ],
+   "text": {
+    "content": "Shows",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6153:13646",
+   "name": "▶",
+   "type": "text",
+   "path": "sidebar / ▶",
+   "bounds": [
+    436,
+    67.5,
+    8,
+    19
+   ],
+   "text": {
+    "content": "▶",
+    "font": "Inter",
+    "weight": 400,
+    "size": 8,
+    "line_height": 9.68,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "6153:13647",
+   "name": "The Wand",
+   "type": "text",
+   "path": "sidebar / The Wand",
+   "bounds": [
+    450,
+    67.5,
+    77,
+    19
+   ],
+   "text": {
+    "content": "The Wand",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "sample name"
+  },
+  {
+   "id": "6153:13648",
+   "name": "▶",
+   "type": "text",
+   "path": "sidebar / ▶",
+   "bounds": [
+    533,
+    67.5,
+    8,
+    19
+   ],
+   "text": {
+    "content": "▶",
+    "font": "Inter",
+    "weight": 400,
+    "size": 8,
+    "line_height": 9.68,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "6153:13649",
+   "name": "S01",
+   "type": "text",
+   "path": "sidebar / S01",
+   "bounds": [
+    547,
+    67.5,
+    29,
+    19
+   ],
+   "text": {
+    "content": "S01",
+    "font": "Inter",
+    "weight": 600,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "sample name"
+  },
+  {
+   "id": "1040:2676",
+   "name": "15 items",
+   "type": "text",
+   "path": "sidebar / 15 items",
+   "bounds": [
+    1368,
+    68.5,
+    55,
+    17
+   ],
+   "text": {
+    "content": "15 items",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "mask": "count"
+  },
+  {
+   "id": "1040:2678",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon:sort",
+   "bounds": [
+    1443,
+    65,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "sort",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "sort",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "2107:7025",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon:grid",
+   "bounds": [
+    1487,
+    65,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "grid",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "grid",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "1040:2876",
+   "name": "Frame 122",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1531,
+    60,
+    325,
+    34
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "1040:2877",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon:search",
+   "bounds": [
+    1539,
+    65,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "search",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "search",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "1040:2878",
+   "name": "Search",
+   "type": "text",
+   "path": "sidebar / Search",
+   "bounds": [
+    1573,
+    68.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Search",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A4",
+     "dark": "#404040",
+     "light": "#3B3B3B"
+    }
+   }
+  },
+  {
+   "id": "2139:8918",
+   "name": "Icon",
+   "type": "instance",
+   "path": "sidebar / Icon:more",
+   "bounds": [
+    1876,
+    65,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "more",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "more",
+   "rows": [
+    137,
+    158,
+    177,
+    186,
+    249
+   ]
+  },
+  {
+   "id": "970:4078",
+   "name": "Vector",
+   "type": "vector",
+   "path": "sidebar",
+   "bounds": [
+    237,
+    111,
+    1663,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Dim",
+     "dark": "#222222",
+     "light": "#ACACAC"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "6270:13768",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    237,
+    131,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13769",
+   "name": "The_Wand_S01E05.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E05.mp4",
+   "bounds": [
+    237,
+    328.75,
+    182,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E05.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13771",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    573,
+    131,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13772",
+   "name": "The_Wand_S01E06.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E06.mp4",
+   "bounds": [
+    573,
+    328.75,
+    182,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E06.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13774",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    909,
+    131,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13775",
+   "name": "The_Wand_S01E07.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E07.mp4",
+   "bounds": [
+    909,
+    328.75,
+    180,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E07.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13777",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1245,
+    131,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13778",
+   "name": "The_Wand_S01E08.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E08.mp4",
+   "bounds": [
+    1245,
+    328.75,
+    182,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E08.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13780",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1581,
+    131,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13781",
+   "name": "The_Wand_S01E09.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E09.mp4",
+   "bounds": [
+    1581,
+    328.75,
+    182,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E09.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13783",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    237,
+    387.75,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13784",
+   "name": "The_Wand_S01E10.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E10.mp4",
+   "bounds": [
+    237,
+    585.5,
+    180,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E10.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "color": "#969696",
+     "same_as_token": "FG/A1"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13786",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    573,
+    387.75,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13787",
+   "name": "The_Wand_S01E11.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E11.mp4",
+   "bounds": [
+    573,
+    585.5,
+    177,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E11.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13789",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    909,
+    387.75,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#000000"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13790",
+   "name": "The_Wand_S01E12.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E12.mp4",
+   "bounds": [
+    909,
+    585.5,
+    180,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E12.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13792",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1245,
+    387.75,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#000000"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13793",
+   "name": "The_Wand_S01E13.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E13.mp4",
+   "bounds": [
+    1245,
+    585.5,
+    1788,
+    19
+   ],
+   "clipped": true,
+   "text": {
+    "content": "The_Wand_S01E13.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13795",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1581,
+    387.75,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#000000"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13796",
+   "name": "The_Wand_S01E14.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E14.mp4",
+   "bounds": [
+    1581,
+    585.5,
+    180,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E14.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13798",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    237,
+    644.5,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#303030"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13799",
+   "name": "The_Wand_S01E15.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E15.mp4",
+   "bounds": [
+    237,
+    842.25,
+    1788,
+    19
+   ],
+   "clipped": true,
+   "text": {
+    "content": "The_Wand_S01E15.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "color": "#969696",
+     "same_as_token": "FG/A1"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13801",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    573,
+    644.5,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13802",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "sidebar",
+   "bounds": [
+    573,
+    818.5,
+    292,
+    4
+   ],
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ]
+  },
+  {
+   "id": "6270:13803",
+   "name": "The_Wand_S01E01.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E01.mp4",
+   "bounds": [
+    573,
+    842.25,
+    180,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E01.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13805",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    909,
+    644.5,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13806",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "sidebar",
+   "bounds": [
+    909,
+    818.5,
+    274,
+    4
+   ],
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ]
+  },
+  {
+   "id": "6270:13807",
+   "name": "The_Wand_S01E02.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E02.mp4",
+   "bounds": [
+    909,
+    842.25,
+    182,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E02.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13809",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1245,
+    644.5,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13810",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "sidebar",
+   "bounds": [
+    1245,
+    818.5,
+    298,
+    4
+   ],
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ]
+  },
+  {
+   "id": "6270:13811",
+   "name": "The_Wand_S01E03.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E03.mp4",
+   "bounds": [
+    1245,
+    842.25,
+    183,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E03.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6270:13813",
+   "name": "Frame 28",
+   "type": "frame",
+   "path": "sidebar",
+   "bounds": [
+    1581,
+    644.5,
+    316,
+    177.75
+   ],
+   "radius": 12,
+   "fills": [
+    {
+     "color": "#171717"
+    },
+    {
+     "type": "image"
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "mask": "image"
+  },
+  {
+   "id": "6270:13814",
+   "name": "Rectangle 12",
+   "type": "rectangle",
+   "path": "sidebar",
+   "bounds": [
+    1581,
+    818.5,
+    280,
+    4
+   ],
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ]
+  },
+  {
+   "id": "6270:13815",
+   "name": "The_Wand_S01E04.mp4",
+   "type": "text",
+   "path": "sidebar / The_Wand_S01E04.mp4",
+   "bounds": [
+    1581,
+    842.25,
+    182,
+    19
+   ],
+   "text": {
+    "content": "The_Wand_S01E04.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 16,
+    "line_height": 19.36,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   },
+   "mask": "file name"
+  }
+ ]
+}

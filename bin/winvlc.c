@@ -44,13 +44,21 @@
 
 /* redesign (brand layer, public profile): Cone reads its interface language from its own key
  * and writes crash dumps in its own folder, never an installed VLC's
- * (modules/gui/qt/util/brand.hpp BRAND_REGISTRY_KEY, src/win32/dirs.c APP_DIR_NAME) */
+ * (modules/gui/qt/util/brand.hpp BRAND_REGISTRY_KEY, src/win32/dirs.c APP_DIR_NAME); its audio
+ * session (volume mixer entry, modules/audio_output/mmdevice.c) carries its own name, and so
+ * does the message box shown when it cannot start */
 #ifdef VLC_BRAND_PUBLIC
 # define LANG_REGISTRY_KEY "Software\\Cone\\"
 # define CRASHDUMP_DIR L"\\Cone\\crashdump"
+# define USER_AGENT_NAME "Cone"
+# define START_ERROR_TEXT "Cone could not start.\n"
+# define START_ERROR_TITLE "Cone"
 #else
 # define LANG_REGISTRY_KEY "Software\\VideoLAN\\VLC\\"
 # define CRASHDUMP_DIR L"\\vlc\\crashdump"
+# define USER_AGENT_NAME "VLC media player"
+# define START_ERROR_TEXT "VLC media player could not start.\n"
+# define START_ERROR_TITLE "VLC media player"
 #endif
 
 #ifdef HAVE_BREAKPAD
@@ -162,6 +170,23 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
             continue;
         }
 
+#ifdef VLC_BRAND_PUBLIC
+        /* Decision 63: Cone has no skins interface, so libVLC does not know the skins2
+         * options (skins2-*, skinned-playlist, skinned-video) and would refuse to start on
+         * them (e.g. a VLC shortcut "-Iskins --skins2-last <file>"): they are dropped, with
+         * the value of the two that take one;
+         * the skins interface itself falls back to the default one (libvlc_InternalAddIntf
+         * below) */
+        if (!wcsncmp(wargv[i], L"--skins2-", 9) || !wcsncmp(wargv[i], L"--no-skins2-", 12)
+         || !wcsncmp(wargv[i], L"--noskins2-", 11) || !wcsncmp(wargv[i], L"--skinned-", 10)
+         || !wcsncmp(wargv[i], L"--no-skinned-", 13) || !wcsncmp(wargv[i], L"--noskinned-", 12))
+        {
+            if ((!wcscmp(wargv[i], L"--skins2-last") || !wcscmp(wargv[i], L"--skins2-config"))
+             && i < argc - 1)
+                i++;
+            continue;
+        }
+#endif
         argv[j++] = FromWide (wargv[i]);
     }
 
@@ -229,8 +254,21 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
         libvlc_SetExitHandler(vlc->p_libvlc_int, vlc_kill, &sem);
         libvlc_set_app_id (vlc, "org.VideoLAN.VLC", PACKAGE_VERSION,
                            PACKAGE_NAME);
-        libvlc_set_user_agent (vlc, "VLC media player", "VLC/"PACKAGE_VERSION);
+        libvlc_set_user_agent (vlc, USER_AGENT_NAME, "VLC/"PACKAGE_VERSION);
+#ifdef VLC_BRAND_PUBLIC
+        /* Decision 63: an interface Cone does not have (the skins interface asked for by
+         * "-I skins" or by settings copied from VLC, "intf=skins2") opens the default Qt
+         * interface instead of no window at all; a failing Qt interface is not tried twice */
+        if (libvlc_InternalAddIntf (vlc->p_libvlc_int, NULL) != VLC_SUCCESS)
+        {
+            char *intf = var_InheritString (vlc->p_libvlc_int, "intf");
+            if (intf != NULL && strncmp (intf, "qt", 2) != 0)
+                libvlc_InternalAddIntf (vlc->p_libvlc_int, "qt");
+            free (intf);
+        }
+#else
         libvlc_InternalAddIntf (vlc->p_libvlc_int, NULL);
+#endif
         libvlc_InternalPlay (vlc->p_libvlc_int);
 
         WaitForSingleObject(sem, INFINITE);
@@ -239,9 +277,9 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
         libvlc_release (vlc);
     }
     else
-        MessageBox (NULL, TEXT("VLC media player could not start.\n"
+        MessageBox (NULL, TEXT(START_ERROR_TEXT
                     "Either the command line options were invalid or no plugins were found.\n"),
-                    TEXT("VLC media player"),
+                    TEXT(START_ERROR_TITLE),
                     MB_OK|MB_ICONERROR);
 
 

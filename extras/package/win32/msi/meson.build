@@ -44,6 +44,10 @@ wix_conf.set('BRAND_ICON_FILE', brand['icon_file'])
 wix_conf.set('BRAND_WEBSITE', brand['website'])
 wix_conf.set('BRAND_REGKEY', brand['regkey'])
 wix_conf.set('BRAND_PROGID', brand['progid'])
+wix_conf.set('BRAND_VERSION_MAJOR', brand_version_major)
+wix_conf.set('BRAND_VERSION_MINOR', brand_version_minor)
+wix_conf.set('BRAND_VERSION_REVISION', brand_version_revision)
+wix_conf.set('BRAND_VERSION_EXTRA', brand_version_extra)
 
 vlc_wix = configure_file(
     input: 'config.wxi.in',

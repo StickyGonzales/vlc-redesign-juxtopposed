@@ -1,0 +1,3786 @@
+{
+ "format": 1,
+ "node": "2160:7005",
+ "name": "Player - customize",
+ "png": "Player - customize-3.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1920,
+  1080
+ ],
+ "theme": "dark",
+ "rows": [
+  302,
+  304,
+  322,
+  348
+ ],
+ "background": [
+  {
+   "color": "#000000"
+  },
+  {
+   "type": "image"
+  }
+ ],
+ "background_mask": "image",
+ "elements": [
+  {
+   "id": "2160:7029",
+   "name": "Controls",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    0,
+    972,
+    1920,
+    54
+   ],
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Dim",
+     "dark": "#222222",
+     "light": "#ACACAC"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true,
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7030",
+   "name": "Controls",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    0,
+    1026,
+    1920,
+    54
+   ],
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Dim",
+     "dark": "#222222",
+     "light": "#ACACAC"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true,
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7032",
+   "name": "Frame 8",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    895,
+    1039,
+    30,
+    28
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7033",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:previous",
+   "bounds": [
+    898,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "previous",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "previous",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7034",
+   "name": "Frame 231",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    933,
+    1036,
+    54,
+    34
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7035",
+   "name": "play",
+   "type": "instance",
+   "path": "Controls / play",
+   "bounds": [
+    936,
+    1039,
+    48,
+    28
+   ],
+   "component": "play",
+   "variant": {
+    "type": "play"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "rows": [
+    17,
+    21,
+    47,
+    48,
+    148
+   ]
+  },
+  {
+   "id": "I2160:7035;848:1707",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / play / Icon:play",
+   "bounds": [
+    949,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "play",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "play",
+   "rows": [
+    17,
+    21,
+    26,
+    27,
+    47
+   ]
+  },
+  {
+   "id": "2160:7036",
+   "name": "Frame 10",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    995,
+    1039,
+    30,
+    28
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7037",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:next",
+   "bounds": [
+    998,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "next",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "next",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7038",
+   "name": "Frame 15",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    1591,
+    1035,
+    130,
+    36
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7039",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:volume",
+   "bounds": [
+    1596,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "volume",
+    "direction": "default",
+    "state": "default",
+    "value": "high",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "volume",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7040",
+   "name": "volume",
+   "type": "instance",
+   "path": "Controls / volume",
+   "bounds": [
+    1628,
+    1039,
+    88,
+    28
+   ],
+   "component": "volume",
+   "variant": {
+    "Property 1": "50%"
+   },
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "I2160:7040;244:211",
+   "name": "Rectangle 6",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1628,
+    1039,
+    89,
+    28
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "I2160:7040;244:213",
+   "name": "Rectangle 7",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1628,
+    1038,
+    33,
+    30
+   ],
+   "fills": [
+    {
+     "color": "#262626"
+    }
+   ],
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "I2160:7040;244:214",
+   "name": "Rectangle 6",
+   "type": "vector",
+   "path": "Controls / volume",
+   "bounds": [
+    1629.5,
+    1040.5,
+    86,
+    25
+   ],
+   "radius": 2,
+   "fills": [
+    {
+     "type": "gradient_linear",
+     "stops": [
+      {
+       "pos": 0,
+       "color": "#95D318",
+       "alpha": 1
+      },
+      {
+       "pos": 0.58,
+       "color": "#B2A918",
+       "alpha": 1
+      },
+      {
+       "pos": 0.79,
+       "color": "#D37918",
+       "alpha": 1
+      },
+      {
+       "pos": 1,
+       "color": "#FF3737",
+       "alpha": 1
+      }
+     ]
+    },
+    {
+     "color": "#000000",
+     "alpha": 0.2
+    }
+   ],
+   "translucent": true,
+   "rows": [
+    30,
+    31,
+    330
+   ]
+  },
+  {
+   "id": "2160:7042",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1736,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:7042;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:audio",
+   "bounds": [
+    1739,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "audio",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "audio",
+   "rows": [
+    22,
+    26,
+    54,
+    132,
+    344
+   ]
+  },
+  {
+   "id": "2160:7043",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1778,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:7043;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:subtitles",
+   "bounds": [
+    1781,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitles",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitles",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7044",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1820,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:7044;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:settings",
+   "bounds": [
+    1823,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "settings",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "settings",
+   "rows": [
+    26
+   ]
+  },
+  {
+   "id": "2160:7045",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper",
+   "bounds": [
+    1870,
+    1037,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    331,
+    348
+   ]
+  },
+  {
+   "id": "I2160:7045;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon Wrapper / Icon:lists",
+   "bounds": [
+    1873,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "lists",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "lists",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7046",
+   "name": "Frame 6",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    157,
+    1035,
+    730,
+    36
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7047",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:0",
+   "bounds": [
+    510,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7048",
+   "name": "Frame 24",
+   "type": "frame",
+   "path": "Controls",
+   "bounds": [
+    1033,
+    1035,
+    552,
+    36
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    302,
+    304,
+    348
+   ]
+  },
+  {
+   "id": "2160:7049",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Controls / Icon:0",
+   "bounds": [
+    1297,
+    1041,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    22,
+    26,
+    27,
+    32,
+    44
+   ]
+  },
+  {
+   "id": "2160:7050",
+   "name": "seekbar",
+   "type": "frame",
+   "path": "seekbar",
+   "bounds": [
+    20,
+    981,
+    1880,
+    36
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "2160:7051",
+   "name": "Current Time",
+   "type": "instance",
+   "path": "seekbar / Current Time",
+   "bounds": [
+    20,
+    985,
+    76,
+    28
+   ],
+   "component": "Current Time",
+   "variant": {
+    "state": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    328
+   ]
+  },
+  {
+   "id": "I2160:7051;1904:7236",
+   "name": "00:02:10",
+   "type": "text",
+   "path": "seekbar / Current Time / 00:02:10",
+   "bounds": [
+    26.5,
+    990.5,
+    63,
+    17
+   ],
+   "text": {
+    "content": "00:02:10",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time",
+   "rows": [
+    328
+   ]
+  },
+  {
+   "id": "2160:7052",
+   "name": "Frame 21",
+   "type": "frame",
+   "path": "seekbar",
+   "bounds": [
+    104,
+    985,
+    1712,
+    28
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "2160:7053",
+   "name": "Rectangle 11",
+   "type": "rectangle",
+   "path": "seekbar",
+   "bounds": [
+    106,
+    987,
+    192,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ],
+   "mask": "seek bar content"
+  },
+  {
+   "id": "2160:7054",
+   "name": "Rectangle 10",
+   "type": "rectangle",
+   "path": "seekbar",
+   "bounds": [
+    290,
+    987,
+    8,
+    24
+   ],
+   "radius": 4,
+   "fills": [
+    {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   ],
+   "mask": "seek bar content"
+  },
+  {
+   "id": "2160:7055",
+   "name": "Duration",
+   "type": "instance",
+   "path": "seekbar / Duration",
+   "bounds": [
+    1824,
+    985,
+    76,
+    28
+   ],
+   "component": "Duration",
+   "variant": {
+    "state": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    33,
+    35
+   ]
+  },
+  {
+   "id": "I2160:7055;1905:7314",
+   "name": "00:25:40",
+   "type": "text",
+   "path": "seekbar / Duration / 00:25:40",
+   "bounds": [
+    1829.5,
+    990,
+    65,
+    18
+   ],
+   "text": {
+    "content": "00:25:40",
+    "font": "Inter",
+    "weight": 400,
+    "size": 15,
+    "line_height": 18.15,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "time",
+   "rows": [
+    33,
+    35
+   ]
+  },
+  {
+   "id": "2160:7007",
+   "name": "topbar",
+   "type": "frame",
+   "path": "topbar",
+   "bounds": [
+    0,
+    0,
+    1920,
+    40
+   ],
+   "fills": [
+    {
+     "token": "BG/A3 Transparent",
+     "dark": "#191919",
+     "light": "#D5D5D5",
+     "alpha": 0.95
+    }
+   ],
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  },
+  {
+   "id": "2160:7010",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:vlc",
+   "bounds": [
+    13,
+    8,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "vlc",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "vlc",
+   "brand": true,
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7013",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:more",
+   "bounds": [
+    51,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "more",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "more",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7014",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:sidebar",
+   "bounds": [
+    89,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "sidebar",
+    "direction": "left",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "sidebar",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    186
+   ]
+  },
+  {
+   "id": "2160:7015",
+   "name": "Frame 6",
+   "type": "frame",
+   "path": "topbar",
+   "bounds": [
+    117,
+    6,
+    24,
+    28
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "2160:7016",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:divider",
+   "bounds": [
+    117,
+    8,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "divider",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "divider",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7017",
+   "name": "Frame 230",
+   "type": "frame",
+   "path": "topbar",
+   "bounds": [
+    141,
+    6,
+    61,
+    28
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "2160:7019",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:folder",
+   "bounds": [
+    141,
+    6,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "folder",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7020",
+   "name": "S01",
+   "type": "text",
+   "path": "topbar / S01",
+   "bounds": [
+    173,
+    11.5,
+    25,
+    17
+   ],
+   "text": {
+    "content": "S01",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "sample name"
+  },
+  {
+   "id": "2160:7024",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:minimize",
+   "bounds": [
+    1770,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "minimize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "minimize",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7025",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:maximize",
+   "bounds": [
+    1806,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "maximize",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "maximize",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7026",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:fullscreen",
+   "bounds": [
+    1842,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "fullscreen",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "fullscreen",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7027",
+   "name": "Icon",
+   "type": "instance",
+   "path": "topbar / Icon:close",
+   "bounds": [
+    1878,
+    8,
+    36,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    44,
+    186
+   ]
+  },
+  {
+   "id": "2160:7021",
+   "name": "Frame 229",
+   "type": "frame",
+   "path": "topbar",
+   "bounds": [
+    20,
+    1039,
+    131,
+    27
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "2160:7022",
+   "name": "The Wand S01E11",
+   "type": "text",
+   "path": "topbar / The Wand S01E11",
+   "bounds": [
+    27,
+    1044,
+    117,
+    17
+   ],
+   "text": {
+    "content": "The Wand S01E11",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "file name"
+  },
+  {
+   "id": "6587:19131",
+   "name": "Add Subtitles to Playlist/Folder",
+   "type": "frame",
+   "path": "Add Subtitles to Playlist/Folder",
+   "bounds": [
+    436,
+    189.5,
+    1048,
+    655
+   ],
+   "radius": 14,
+   "fills": [
+    {
+     "token": "BG/B1 Transparent",
+     "dark": "#0E0E0E",
+     "light": "#E7E7E7",
+     "alpha": 0.95
+    }
+   ],
+   "effects": {
+    "style": "bg blur + shadow"
+   },
+   "translucent": true
+  },
+  {
+   "id": "6587:19132",
+   "name": "Frame 120",
+   "type": "frame",
+   "path": "Add Subtitles to Playlist/Folder",
+   "bounds": [
+    436,
+    189.5,
+    1048,
+    94
+   ],
+   "radius": [
+    14,
+    14,
+    0,
+    0
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "6587:19134",
+   "name": "Customize Player",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Customize Player",
+   "bounds": [
+    455,
+    206,
+    115,
+    17
+   ],
+   "text": {
+    "content": "Customize Player",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    302
+   ]
+  },
+  {
+   "id": "6587:19135",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    1443,
+    198.5,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I6587:19135;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:close",
+   "bounds": [
+    1447,
+    202.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19137",
+   "name": "Drag items around and out of the box below to re-order them. Drag items into the box to remove them from the player.",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Drag items around and out of the box below to re-order them. Drag items into the box to remove them from the player.",
+   "bounds": [
+    455,
+    250,
+    783,
+    17
+   ],
+   "text": {
+    "content": "Drag items around and out of the box below to re-order them. Drag items into the box to remove them from the player.",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A3",
+     "dark": "#6B6B6B",
+     "light": "#6B6B6B"
+    }
+   },
+   "rows": [
+    304
+   ]
+  },
+  {
+   "id": "6587:19141",
+   "name": "Frame 6",
+   "type": "frame",
+   "path": "Add Subtitles to Playlist/Folder",
+   "bounds": [
+    501,
+    317.5,
+    24,
+    32
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6587:19142",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:0",
+   "bounds": [
+    501,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "0",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "0",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19143",
+   "name": "Spacer",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Spacer",
+   "bounds": [
+    470,
+    365.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Spacer",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19145",
+   "name": "Frame 6",
+   "type": "frame",
+   "path": "Add Subtitles to Playlist/Folder",
+   "bounds": [
+    611,
+    317.5,
+    24,
+    32
+   ],
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "6587:19146",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:divider",
+   "bounds": [
+    611,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "divider",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "divider",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19147",
+   "name": "Divider",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Divider",
+   "bounds": [
+    580,
+    365.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Divider",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19149",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    718,
+    317.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19149;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:speed",
+   "bounds": [
+    721,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "speed",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "speed",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19150",
+   "name": "Playback Speed",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Playback Speed",
+   "bounds": [
+    690,
+    365.5,
+    86,
+    34
+   ],
+   "text": {
+    "content": "Playback Speed",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19152",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    828,
+    317.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19152;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:forward-10-sec",
+   "bounds": [
+    831,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "forward-10-sec",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "forward-10-sec",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19153",
+   "name": "Forward 10s",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Forward 10s",
+   "bounds": [
+    815.5,
+    365.5,
+    55,
+    34
+   ],
+   "text": {
+    "content": "Forward\n10s",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19155",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    938,
+    317.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19155;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:backward-10-sec",
+   "bounds": [
+    941,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "backward-10-sec",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "backward-10-sec",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19156",
+   "name": "Backward 10s",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Backward 10s",
+   "bounds": [
+    920,
+    365.5,
+    66,
+    34
+   ],
+   "text": {
+    "content": "Backward\n10s",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19158",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:forward-15-sec",
+   "bounds": [
+    1049,
+    317.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "forward-15-sec",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "forward-15-sec",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19159",
+   "name": "Forward 15s",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Forward 15s",
+   "bounds": [
+    1020,
+    361.5,
+    86,
+    34
+   ],
+   "text": {
+    "content": "Forward \n15s",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19161",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:backward-15-sec",
+   "bounds": [
+    1159,
+    317.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "backward-15-sec",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "backward-15-sec",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19162",
+   "name": "Backward15s",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Backward15s",
+   "bounds": [
+    1130,
+    361.5,
+    86,
+    34
+   ],
+   "text": {
+    "content": "Backward15s",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19164",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    1268,
+    317.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19164;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:stop",
+   "bounds": [
+    1271,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "stop",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "stop",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19165",
+   "name": "Stop",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Stop",
+   "bounds": [
+    1267.5,
+    365.5,
+    31,
+    17
+   ],
+   "text": {
+    "content": "Stop",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19167",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    1378,
+    317.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19167;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:repeat",
+   "bounds": [
+    1381,
+    321.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "repeat",
+    "direction": "right",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "repeat",
+   "rows": [
+    24,
+    25,
+    26,
+    65,
+    249
+   ]
+  },
+  {
+   "id": "6587:19168",
+   "name": "Repeat",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Repeat",
+   "bounds": [
+    1369.5,
+    365.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Repeat",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19170",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    498,
+    437.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19170;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:shuffle",
+   "bounds": [
+    501,
+    441.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "shuffle",
+    "direction": "right",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "shuffle",
+   "rows": [
+    24,
+    25,
+    26,
+    65,
+    249
+   ]
+  },
+  {
+   "id": "6587:19171",
+   "name": "Shuffle",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Shuffle",
+   "bounds": [
+    489.5,
+    485.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Shuffle",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19173",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    608,
+    437.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19173;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:record",
+   "bounds": [
+    611,
+    441.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "record",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "record",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19174",
+   "name": "Record",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Record",
+   "bounds": [
+    599.5,
+    485.5,
+    47,
+    17
+   ],
+   "text": {
+    "content": "Record",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19176",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    718,
+    437.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19176;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:snapshot",
+   "bounds": [
+    721,
+    441.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "snapshot",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "snapshot",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19177",
+   "name": "Snapshot",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Snapshot",
+   "bounds": [
+    701.5,
+    485.5,
+    63,
+    17
+   ],
+   "text": {
+    "content": "Snapshot",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19179",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    828,
+    437.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19179;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:PiP",
+   "bounds": [
+    831,
+    441.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "PiP",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "PiP",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19180",
+   "name": "Picture in Picture",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Picture in Picture",
+   "bounds": [
+    800,
+    485.5,
+    86,
+    34
+   ],
+   "text": {
+    "content": "Picture in Picture",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19182",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    938,
+    437.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19182;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:HDR",
+   "bounds": [
+    941,
+    441.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "HDR",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "HDR",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19183",
+   "name": "HDR",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / HDR",
+   "bounds": [
+    910,
+    485.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "HDR",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19185",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    1048,
+    437.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19185;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:zoom",
+   "bounds": [
+    1051,
+    441.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "zoom",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "zoom",
+   "rows": [
+    269
+   ]
+  },
+  {
+   "id": "6587:19186",
+   "name": "Zoom",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Zoom",
+   "bounds": [
+    1020,
+    485.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Zoom",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19188",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:sidebar",
+   "bounds": [
+    1157,
+    437.5,
+    32,
+    32
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "sidebar",
+    "direction": "right",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "sidebar",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    249
+   ]
+  },
+  {
+   "id": "6587:19189",
+   "name": "Right Sidebar",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Right Sidebar",
+   "bounds": [
+    1130,
+    485.5,
+    86,
+    34
+   ],
+   "text": {
+    "content": "Right Sidebar",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19191",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:quit",
+   "bounds": [
+    1269,
+    437.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "quit",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "quit",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19192",
+   "name": "Quit VLC",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Quit VLC",
+   "bounds": [
+    1240,
+    481.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Quit VLC",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "brand": true
+  },
+  {
+   "id": "6587:19194",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:settings",
+   "bounds": [
+    1379,
+    437.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "settings",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "settings",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    26,
+    200,
+    269
+   ]
+  },
+  {
+   "id": "6587:19195",
+   "name": "VLC Settings",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / VLC Settings",
+   "bounds": [
+    1350,
+    481.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "VLC Settings",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "brand": true
+  },
+  {
+   "id": "6587:19197",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:home",
+   "bounds": [
+    499,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "home",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "home",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19198",
+   "name": "Go Home",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Go Home",
+   "bounds": [
+    470,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Go Home",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19203",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:thumbnail",
+   "bounds": [
+    609,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "thumbnail",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "thumbnail",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19204",
+   "name": "Thumbnail",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Thumbnail",
+   "bounds": [
+    580,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Thumbnail",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19206",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:info",
+   "bounds": [
+    719,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19207",
+   "name": "File Name",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / File Name",
+   "bounds": [
+    690,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "File Name",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19209",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:info",
+   "bounds": [
+    829,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19210",
+   "name": "Artist Name",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Artist Name",
+   "bounds": [
+    800,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Artist Name",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "mask": "sample name"
+  },
+  {
+   "id": "6587:19212",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:info",
+   "bounds": [
+    939,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19213",
+   "name": "Folder Name",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Folder Name",
+   "bounds": [
+    910,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Folder Name",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19215",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:info",
+   "bounds": [
+    1049,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19216",
+   "name": "Playlist Name",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Playlist Name",
+   "bounds": [
+    1020,
+    601.5,
+    86,
+    34
+   ],
+   "text": {
+    "content": "Playlist Name",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19218",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:info",
+   "bounds": [
+    1159,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "info",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "info",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19219",
+   "name": "Properties",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Properties",
+   "bounds": [
+    1130,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Properties",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19224",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:replay",
+   "bounds": [
+    1269,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "replay",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "replay",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19225",
+   "name": "Replay",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Replay",
+   "bounds": [
+    1240,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Replay",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19227",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:chapters",
+   "bounds": [
+    1379,
+    557.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chapters",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chapters",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19228",
+   "name": "Chapters",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Chapters",
+   "bounds": [
+    1350,
+    601.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Chapters",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19200",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:favorite",
+   "bounds": [
+    499,
+    673.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "favorite",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "favorite",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19201",
+   "name": "Favorite",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Favorite",
+   "bounds": [
+    470,
+    717.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Favorite",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19230",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    608,
+    673.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19230;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:bookmark",
+   "bounds": [
+    611,
+    677.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "bookmark",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "bookmark",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19231",
+   "name": "Bookmark",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Bookmark",
+   "bounds": [
+    589.5,
+    721.5,
+    67,
+    17
+   ],
+   "text": {
+    "content": "Bookmark",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19233",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon:bookmarks",
+   "bounds": [
+    719,
+    673.5,
+    28,
+    28
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "bookmarks",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "bookmarks",
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19234",
+   "name": "Bookmarks",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Bookmarks",
+   "bounds": [
+    690,
+    717.5,
+    86,
+    17
+   ],
+   "text": {
+    "content": "Bookmarks",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "center",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19236",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper",
+   "bounds": [
+    828,
+    673.5,
+    30,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "strokes": [
+    {
+     "color": "#6B6B6B",
+     "same_as_token": "FG/A3"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "inside"
+  },
+  {
+   "id": "I6587:19236;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Add Subtitles to Playlist/Folder / Icon Wrapper / Icon:playlist",
+   "bounds": [
+    831,
+    677.5,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "playlist",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "playlist",
+   "rows": [
+    24,
+    25,
+    200
+   ]
+  },
+  {
+   "id": "6587:19237",
+   "name": "Playlists",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Playlists",
+   "bounds": [
+    816,
+    721.5,
+    54,
+    17
+   ],
+   "text": {
+    "content": "Playlists",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19239",
+   "name": "Frame 140",
+   "type": "frame",
+   "path": "Add Subtitles to Playlist/Folder",
+   "bounds": [
+    456,
+    792.5,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ]
+  },
+  {
+   "id": "6587:19240",
+   "name": "Cancel",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Cancel",
+   "bounds": [
+    482,
+    800,
+    48,
+    17
+   ],
+   "text": {
+    "content": "Cancel",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "6587:19241",
+   "name": "Frame 141",
+   "type": "frame",
+   "path": "Add Subtitles to Playlist/Folder",
+   "bounds": [
+    1364,
+    792.5,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "6587:19242",
+   "name": "Save",
+   "type": "text",
+   "path": "Add Subtitles to Playlist/Folder / Save",
+   "bounds": [
+    1397.5,
+    800,
+    33,
+    17
+   ],
+   "text": {
+    "content": "Save",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   }
+  }
+ ]
+}

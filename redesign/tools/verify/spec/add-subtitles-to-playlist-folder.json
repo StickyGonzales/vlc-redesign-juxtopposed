@@ -1,0 +1,2789 @@
+{
+ "format": 1,
+ "node": "1911:7545",
+ "name": "Add Subtitles to Playlist/Folder",
+ "png": "Add Subtitles to Playlist/Folder.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1048,
+  800
+ ],
+ "theme": "dark",
+ "rows": [
+  75,
+  76,
+  77,
+  78,
+  79
+ ],
+ "background": [
+  {
+   "token": "BG/B1 Transparent",
+   "dark": "#0E0E0E",
+   "light": "#E7E7E7",
+   "alpha": 0.95
+  }
+ ],
+ "elements": [
+  {
+   "id": "1911:7546",
+   "name": "Frame 120",
+   "type": "frame",
+   "path": "Frame 120",
+   "bounds": [
+    0,
+    0,
+    1048,
+    96
+   ],
+   "radius": [
+    14,
+    14,
+    0,
+    0
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ]
+  },
+  {
+   "id": "1911:7766",
+   "name": "Add Subtitles",
+   "type": "text",
+   "path": "Add Subtitles",
+   "bounds": [
+    19,
+    16.5,
+    89,
+    17
+   ],
+   "text": {
+    "content": "Add Subtitles",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   },
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "1911:7560",
+   "name": "Icon Wrapper",
+   "type": "instance",
+   "path": "Icon Wrapper",
+   "bounds": [
+    1007,
+    9,
+    32,
+    32
+   ],
+   "component": "Icon Wrapper",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 4
+  },
+  {
+   "id": "I1911:7560;177:88",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon Wrapper / Icon:close",
+   "bounds": [
+    1011,
+    13,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "close",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "close"
+  },
+  {
+   "id": "1959:5382",
+   "name": "target",
+   "type": "instance",
+   "path": "target",
+   "bounds": [
+    9,
+    53,
+    200,
+    34
+   ],
+   "component": "target",
+   "variant": {
+    "state": "to this folder"
+   },
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ],
+   "rows": [
+    77,
+    79
+   ]
+  },
+  {
+   "id": "I1959:5382;1959:5320",
+   "name": "To This Folder",
+   "type": "text",
+   "path": "target / To This Folder",
+   "bounds": [
+    21,
+    61.5,
+    94,
+    17
+   ],
+   "text": {
+    "content": "To This Folder",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "rows": [
+    77,
+    79
+   ]
+  },
+  {
+   "id": "I1959:5382;1959:5321",
+   "name": "Icon",
+   "type": "instance",
+   "path": "target / Icon:chevron",
+   "bounds": [
+    177,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron",
+   "rows": [
+    77
+   ]
+  },
+  {
+   "id": "1919:9359",
+   "name": "Frame 123",
+   "type": "frame",
+   "path": "Frame 123",
+   "bounds": [
+    219,
+    53,
+    200,
+    34
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "1919:9360",
+   "name": "From Computer",
+   "type": "text",
+   "path": "From Computer",
+   "bounds": [
+    231,
+    61.5,
+    104,
+    17
+   ],
+   "text": {
+    "content": "From Computer",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "rows": [
+    78,
+    79
+   ]
+  },
+  {
+   "id": "1919:9361",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:chevron",
+   "bounds": [
+    387,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "chevron",
+    "direction": "down",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "chevron"
+  },
+  {
+   "id": "1911:7755",
+   "name": "Frame 122",
+   "type": "frame",
+   "path": "Frame 122",
+   "bounds": [
+    429,
+    53,
+    610,
+    34
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A5",
+     "dark": "#151515",
+     "light": "#888888"
+    }
+   ]
+  },
+  {
+   "id": "1919:8671",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:folder",
+   "bounds": [
+    437,
+    58,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "folder",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "folder",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7757",
+   "name": "Videos / Shows / The Wand / S01",
+   "type": "text",
+   "path": "Videos / Shows / The Wand / S01",
+   "bounds": [
+    471,
+    61.5,
+    219,
+    17
+   ],
+   "text": {
+    "content": "Videos / Shows / The Wand / S01",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "sample name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7854",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    126,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7855",
+   "name": "The_Wand_S01E01.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E01.mp4",
+   "bounds": [
+    68,
+    129.5,
+    157,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E01.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7954",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    239,
+    138,
+    280,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7772",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    166,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7781",
+   "name": "The_Wand_S01E02.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E02.mp4",
+   "bounds": [
+    68,
+    169.5,
+    160,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E02.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7859",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    242,
+    178,
+    277,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7784",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    206,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7785",
+   "name": "The_Wand_S01E03.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E03.mp4",
+   "bounds": [
+    68,
+    209.5,
+    160,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E03.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7944",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    242,
+    218,
+    277,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7789",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    246,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7790",
+   "name": "The_Wand_S01E04.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E04.mp4",
+   "bounds": [
+    68,
+    249.5,
+    160,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E04.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7947",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    242,
+    258,
+    277,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7794",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    286,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7795",
+   "name": "The_Wand_S01E05.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E05.mp4",
+   "bounds": [
+    68,
+    289.5,
+    159,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E05.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7953",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    241,
+    298,
+    278,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7799",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    326,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7800",
+   "name": "The_Wand_S01E06.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E06.mp4",
+   "bounds": [
+    68,
+    329.5,
+    159,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E06.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7948",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    241,
+    338,
+    278,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7804",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    366,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7805",
+   "name": "The_Wand_S01E07.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E07.mp4",
+   "bounds": [
+    68,
+    369.5,
+    157,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E07.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7945",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    239,
+    378,
+    280,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7809",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    406,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7810",
+   "name": "The_Wand_S01E08.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E08.mp4",
+   "bounds": [
+    68,
+    409.5,
+    160,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E08.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7951",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    242,
+    418,
+    277,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7814",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    446,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7815",
+   "name": "The_Wand_S01E09.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E09.mp4",
+   "bounds": [
+    68,
+    449.5,
+    160,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E09.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7952",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    242,
+    458,
+    277,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7819",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    486,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7820",
+   "name": "The_Wand_S01E10.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E10.mp4",
+   "bounds": [
+    68,
+    489.5,
+    157,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E10.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7949",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    239,
+    498,
+    280,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7824",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    526,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7825",
+   "name": "The_Wand_S01E11.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E11.mp4",
+   "bounds": [
+    68,
+    529.5,
+    155,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E11.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7950",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    237,
+    538,
+    282,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7829",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    566,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7830",
+   "name": "The_Wand_S01E12.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E12.mp4",
+   "bounds": [
+    68,
+    569.5,
+    157,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E12.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7946",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    239,
+    578,
+    280,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7834",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    606,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7835",
+   "name": "The_Wand_S01E13.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E13.mp4",
+   "bounds": [
+    68,
+    609.5,
+    158,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E13.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7956",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    240,
+    618,
+    279,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7839",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    646,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7840",
+   "name": "The_Wand_S01E14.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E14.mp4",
+   "bounds": [
+    68,
+    649.5,
+    157,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E14.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7957",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    239,
+    658,
+    280,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1911:7844",
+   "name": "Icon",
+   "type": "instance",
+   "path": "Icon:video",
+   "bounds": [
+    30,
+    686,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "video",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "video"
+  },
+  {
+   "id": "1911:7845",
+   "name": "The_Wand_S01E15.mp4",
+   "type": "text",
+   "path": "The_Wand_S01E15.mp4",
+   "bounds": [
+    68,
+    689.5,
+    157,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E15.mp4",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1911:7958",
+   "name": "Vector 77",
+   "type": "vector",
+   "path": "Vector 77",
+   "bounds": [
+    239,
+    698,
+    280,
+    0
+   ],
+   "strokes": [
+    {
+     "token": "Divider/Bright",
+     "dark": "#373737",
+     "light": "#9B9B9B"
+    }
+   ],
+   "stroke_weight": 1,
+   "stroke_align": "center"
+  },
+  {
+   "id": "1915:8446",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    118,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8446;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    124,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8446;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    127.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E01.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8459",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    158,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8459;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    164,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8459;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    167.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E02.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8472",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    198,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8472;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    204,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8472;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    207.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E03.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8485",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    238,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8485;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    244,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8485;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    247.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E04.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8498",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    278,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8498;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    284,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8498;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    287.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E05.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8511",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    318,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8511;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    324,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8511;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    327.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E06.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8524",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    358,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8524;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    364,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8524;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    367.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E07.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8537",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    398,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8537;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    404,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8537;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    407.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E08.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8550",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    438,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8550;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    444,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8550;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    447.5,
+    148,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E09.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8563",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    478,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8563;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    484,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8563;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    487.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E10.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8576",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    518,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8576;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    524,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8576;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    527.5,
+    143,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E11.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8589",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    558,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8589;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    564,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8589;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    567.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E12.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8602",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    598,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8602;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    604,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8602;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    607.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E13.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8615",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    638,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8615;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    644,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8615;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    647.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E14.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8628",
+   "name": "subtitle multiple",
+   "type": "instance",
+   "path": "subtitle multiple",
+   "bounds": [
+    539,
+    678,
+    489,
+    36
+   ],
+   "component": "subtitle multiple",
+   "variant": {
+    "Property 1": "Default"
+   },
+   "radius": 6,
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8628;1915:8385",
+   "name": "Icon",
+   "type": "instance",
+   "path": "subtitle multiple / Icon:subtitle",
+   "bounds": [
+    547,
+    684,
+    24,
+    24
+   ],
+   "component": "Icon",
+   "variant": {
+    "name": "subtitle",
+    "direction": "default",
+    "state": "default",
+    "value": "default",
+    "EQ": "default",
+    "two-tone": "no"
+   },
+   "icon": "subtitle",
+   "rows": [
+    75,
+    76,
+    77,
+    78,
+    79
+   ]
+  },
+  {
+   "id": "I1915:8628;1915:8386",
+   "name": "The_Wand_S01E01.srt",
+   "type": "text",
+   "path": "subtitle multiple / The_Wand_S01E01.srt",
+   "bounds": [
+    585,
+    687.5,
+    146,
+    17
+   ],
+   "text": {
+    "content": "The_Wand_S01E15.srt",
+    "font": "Inter",
+    "weight": 400,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A1",
+     "dark": "#969696",
+     "light": "#3C3C3C"
+    }
+   },
+   "mask": "file name",
+   "rows": [
+    79
+   ]
+  },
+  {
+   "id": "1915:8659",
+   "name": "Frame 140",
+   "type": "frame",
+   "path": "Frame 140",
+   "bounds": [
+    20,
+    748,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ]
+  },
+  {
+   "id": "1915:8660",
+   "name": "Cancel",
+   "type": "text",
+   "path": "Cancel",
+   "bounds": [
+    46,
+    755.5,
+    48,
+    17
+   ],
+   "text": {
+    "content": "Cancel",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "FG/A2",
+     "dark": "#8F8F8F",
+     "light": "#2E2E2E"
+    }
+   }
+  },
+  {
+   "id": "1915:8663",
+   "name": "Frame 141",
+   "type": "frame",
+   "path": "Frame 141",
+   "bounds": [
+    928,
+    748,
+    100,
+    32
+   ],
+   "radius": 6,
+   "fills": [
+    {
+     "token": "BG/Accent Bright",
+     "dark": "#371F06",
+     "light": "#D8BA9A"
+    }
+   ]
+  },
+  {
+   "id": "1915:8664",
+   "name": "Save",
+   "type": "text",
+   "path": "Save",
+   "bounds": [
+    961.5,
+    755.5,
+    33,
+    17
+   ],
+   "text": {
+    "content": "Save",
+    "font": "Inter",
+    "weight": 600,
+    "size": 14,
+    "line_height": 16.94,
+    "letter_spacing": 0,
+    "align": "left",
+    "color": {
+     "token": "Accent/Main",
+     "dark": "#D37918",
+     "light": "#E8851A"
+    }
+   }
+  }
+ ]
+}

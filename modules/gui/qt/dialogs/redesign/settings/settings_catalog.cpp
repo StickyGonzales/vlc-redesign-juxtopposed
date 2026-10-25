@@ -66,7 +66,7 @@ const QSet<QString>& curatedOptions()
         // General
         "interact", "qt-updates-notif", "file-logging", "logfile", "log-verbose",
         "qt-error-dialogs", "logmode", "stats", "syslog", "syslog-debug", "syslog-ident",
-        "syslog-facility", "qt-verbose", "qt-accent-color",
+        "syslog-facility", "qt-verbose", "qt-accent-color", "extra-options",
         // Interface
         "intf", "skins2-last", "embedded-video", "qt-video-autoresize", "qt-remember-window", "video-on-top", "qt-titlebar",
         "qt-name-in-title", "qt-fullscreen-screennumber", "qt-minimal-view", "qt-pin-controls",
@@ -103,8 +103,8 @@ const QSet<QString>& curatedOptions()
         "freetype-color", "freetype-opacity", "freetype-outline-thickness",
         "freetype-outline-color", "freetype-shadow-opacity", "freetype-shadow-color",
         "freetype-shadow-distance", "freetype-background-opacity", "freetype-background-color",
-        "sub-margin", "sub-delay", "osd", "video-title-show", "video-title-timeout",
-        "sub-autodetect-path", "freetype-shadow-angle", "freetype-text-direction",
+        "sub-margin", "sub-delay", "osd", "osd-duration", "video-title-show", "video-title-timeout",
+        "sub-autodetect-path", "ssa-ignore-styling", "freetype-shadow-angle", "freetype-text-direction",
         "freetype-monofont", "sub-text-scale",
         // Library
         "one-instance", "one-instance-when-started-from-file", "playlist-enqueue", "recursive",
@@ -233,7 +233,7 @@ SettingsCatalog::Catalog readCatalog()
         const QString capability = qfu(module_get_capability(module));
         const bool core = module_is_main(module);
 
-        catalog.plugins.append({ object, qfut(module_get_name(module, true)), capability,
+        catalog.plugins.append({ object, brand::engineText(qfut(module_get_name(module, true))), capability,
                                  module_get_score(module) });
 
         unsigned size = 0;
@@ -302,13 +302,13 @@ SettingsCatalog::Catalog readCatalog()
             else
             {
                 groupId = object;
-                groupTitle = qfut(module_get_name(module, true));
+                groupTitle = brand::engineText(qfut(module_get_name(module, true)));
             }
 
             SettingsCatalog::Option option;
             option.name = name;
-            option.text = qfut(item.psz_text);
-            option.longtext = item.psz_longtext ? qfut(item.psz_longtext) : QString();
+            option.text = brand::engineText(qfut(item.psz_text));
+            option.longtext = item.psz_longtext ? brand::engineText(qfut(item.psz_longtext)) : QString();
             option.group = groupId;
             option.category = category;
             option.type = item.i_type;
@@ -437,9 +437,10 @@ QVariantMap SettingsCatalog::describe(const QString& name) const
     QVariantMap result {
         { QStringLiteral("name"), name },
         { QStringLiteral("type"), typeName(config->i_type) },
-        { QStringLiteral("text"), config->psz_text ? qfut(config->psz_text) : name },
-        { QStringLiteral("description"), config->psz_longtext ? qfut(config->psz_longtext)
-                                                                : (config->psz_text ? qfut(config->psz_text) : QString()) },
+        { QStringLiteral("text"), config->psz_text ? brand::engineText(qfut(config->psz_text)) : name },
+        { QStringLiteral("description"), brand::engineText(
+              config->psz_longtext ? qfut(config->psz_longtext)
+                                   : (config->psz_text ? qfut(config->psz_text) : QString())) },
     };
     if (IsConfigIntegerType(config->i_type) && config->i_type != CONFIG_ITEM_RGB)
     {

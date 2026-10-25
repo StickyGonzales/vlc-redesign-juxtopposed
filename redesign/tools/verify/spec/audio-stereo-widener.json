@@ -1,0 +1,1431 @@
+{
+ "format": 1,
+ "node": "612:1223",
+ "name": "Audio - Stereo Widener",
+ "png": "Audio - Stereo Widener.png",
+ "png_scale": 2,
+ "kind": "component_set",
+ "size": [
+  400,
+  821
+ ],
+ "theme": "dark",
+ "rows": [
+  125
+ ],
+ "variants": [
+  {
+   "node": "612:1224",
+   "name": "Property 1=collapsed",
+   "props": {
+    "Property 1": "collapsed"
+   },
+   "bounds": [
+    20,
+    20,
+    360,
+    48
+   ],
+   "fills": [
+    {
+     "token": "BG/B2",
+     "dark": "#090909",
+     "light": "#DEDEDE"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "612:1226",
+     "name": "Expand Settings",
+     "type": "text",
+     "path": "Expand Settings",
+     "bounds": [
+      16,
+      15.5,
+      108,
+      17
+     ],
+     "text": {
+      "content": "Expand Settings",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1227",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:chevron",
+     "bounds": [
+      326,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "right",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      26,
+      54,
+      65,
+      125,
+      249
+     ]
+    }
+   ]
+  },
+  {
+   "node": "612:1228",
+   "name": "Property 1=expanded",
+   "props": {
+    "Property 1": "expanded"
+   },
+   "bounds": [
+    20,
+    88,
+    360,
+    362
+   ],
+   "fills": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "radius": 6,
+   "elements": [
+    {
+     "id": "612:1230",
+     "name": "Collapse Settings",
+     "type": "text",
+     "path": "Collapse Settings",
+     "bounds": [
+      16,
+      15.5,
+      116,
+      17
+     ],
+     "text": {
+      "content": "Collapse Settings",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1231",
+     "name": "Icon",
+     "type": "instance",
+     "path": "Icon:chevron",
+     "bounds": [
+      326,
+      12,
+      24,
+      24
+     ],
+     "component": "Icon",
+     "variant": {
+      "name": "chevron",
+      "direction": "down",
+      "state": "default",
+      "value": "default",
+      "EQ": "default",
+      "two-tone": "no"
+     },
+     "icon": "chevron",
+     "rows": [
+      54,
+      125,
+      132,
+      344
+     ]
+    },
+    {
+     "id": "612:1234",
+     "name": "Delay Time",
+     "type": "text",
+     "path": "Delay Time",
+     "bounds": [
+      16,
+      58,
+      74,
+      17
+     ],
+     "text": {
+      "content": "Delay Time",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1235",
+     "name": "20.0 ms",
+     "type": "text",
+     "path": "20.0 ms",
+     "bounds": [
+      291,
+      58,
+      53,
+      17
+     ],
+     "text": {
+      "content": "20.0 ms",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1237",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      94,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1238",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      96,
+      89,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1252",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / range / thumb",
+     "bounds": [
+      99,
+      90,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1255",
+     "name": "Feedback Gain",
+     "type": "text",
+     "path": "Feedback Gain",
+     "bounds": [
+      16,
+      134,
+      99,
+      17
+     ],
+     "text": {
+      "content": "Feedback Gain",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1256",
+     "name": "0.2 %",
+     "type": "text",
+     "path": "0.2 %",
+     "bounds": [
+      307,
+      134,
+      37,
+      17
+     ],
+     "text": {
+      "content": "0.2 %",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1258",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      170,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1259",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      172,
+      72,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1262",
+     "name": "Vector 58",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      54,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1263",
+     "name": "Vector 56",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      90,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1264",
+     "name": "Vector 55",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      126,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1265",
+     "name": "Vector 48",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      162,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1266",
+     "name": "Vector 50",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      198,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1267",
+     "name": "Vector 51",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      234,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1268",
+     "name": "Vector 52",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      270,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1337",
+     "name": "Vector 62",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      306,
+      175,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1272",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / thumb",
+     "bounds": [
+      86,
+      166,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1275",
+     "name": "Crossfeed",
+     "type": "text",
+     "path": "Crossfeed",
+     "bounds": [
+      16,
+      210,
+      68,
+      17
+     ],
+     "text": {
+      "content": "Crossfeed",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1276",
+     "name": "0.3 %",
+     "type": "text",
+     "path": "0.3 %",
+     "bounds": [
+      307,
+      210,
+      37,
+      17
+     ],
+     "text": {
+      "content": "0.3 %",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1339",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      246,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1340",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      248,
+      122,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1343",
+     "name": "Vector 58",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      58.5,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1344",
+     "name": "Vector 56",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      99,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1345",
+     "name": "Vector 55",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      139.5,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1346",
+     "name": "Vector 48",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      180,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1347",
+     "name": "Vector 50",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      220.5,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1348",
+     "name": "Vector 51",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      261,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1350",
+     "name": "Vector 62",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      301.5,
+      251,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1352",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / thumb",
+     "bounds": [
+      136,
+      242,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1295",
+     "name": "Dry Mix",
+     "type": "text",
+     "path": "Dry Mix",
+     "bounds": [
+      16,
+      286,
+      51,
+      17
+     ],
+     "text": {
+      "content": "Dry Mix",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1296",
+     "name": "0.8 %",
+     "type": "text",
+     "path": "0.8 %",
+     "bounds": [
+      308,
+      286,
+      36,
+      17
+     ],
+     "text": {
+      "content": "0.8 %",
+      "font": "Inter",
+      "weight": 400,
+      "size": 14,
+      "line_height": 16.94,
+      "letter_spacing": 0,
+      "align": "left",
+      "color": {
+       "token": "FG/A3",
+       "dark": "#6B6B6B",
+       "light": "#6B6B6B"
+      }
+     },
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1298",
+     "name": "range",
+     "type": "frame",
+     "path": "wrapper / range",
+     "bounds": [
+      16,
+      322,
+      328,
+      16
+     ],
+     "radius": 6,
+     "fills": [
+      {
+       "token": "BG/B2",
+       "dark": "#090909",
+       "light": "#DEDEDE"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1299",
+     "name": "Rectangle 11",
+     "type": "rectangle",
+     "path": "wrapper / range",
+     "bounds": [
+      18,
+      324,
+      263,
+      12
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "BG/Accent Bright",
+       "dark": "#371F06",
+       "light": "#D8BA9A"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1302",
+     "name": "Vector 58",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      50.4,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1303",
+     "name": "Vector 56",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      82.8,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1304",
+     "name": "Vector 55",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      115.2,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1305",
+     "name": "Vector 48",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      147.6,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1306",
+     "name": "Vector 50",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      180,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1307",
+     "name": "Vector 51",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      212.4,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1308",
+     "name": "Vector 52",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      244.8,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1309",
+     "name": "Vector 53",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      277.2,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1354",
+     "name": "Vector 63",
+     "type": "vector",
+     "path": "wrapper / range / degrees",
+     "bounds": [
+      309.6,
+      327,
+      0,
+      6
+     ],
+     "fills": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "strokes": [
+      {
+       "token": "BG/Accent Dark",
+       "dark": "#1A1611",
+       "light": "#C6AB89"
+      }
+     ],
+     "stroke_weight": 2,
+     "stroke_align": "center",
+     "rows": [
+      125
+     ]
+    },
+    {
+     "id": "612:1312",
+     "name": "thumb",
+     "type": "rectangle",
+     "path": "wrapper / range / thumb",
+     "bounds": [
+      273,
+      318,
+      8,
+      24
+     ],
+     "radius": 4,
+     "fills": [
+      {
+       "token": "Accent/DIm",
+       "dark": "#AB6314",
+       "light": "#965916"
+      }
+     ],
+     "rows": [
+      125
+     ]
+    }
+   ]
+  }
+ ]
+}

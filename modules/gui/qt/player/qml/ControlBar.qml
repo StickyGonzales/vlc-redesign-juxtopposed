@@ -70,6 +70,11 @@ T.Pane {
 
     enabled: visible
 
+    // the bar takes the wheel its controls leave, its empty parts included, so it never reaches
+    // the video or the music view behind it (volume / seek, Decision 54); only the volume control
+    // in the bar uses the wheel
+    wheelEnabled: true
+
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => root.Navigation.defaultKeyAction(event)
     Navigation.cancelAction: function() { History.previous(Qt.BacktabFocusReason) }
@@ -126,14 +131,43 @@ T.Pane {
     // PlayerControlLayout moves it into its middle slot
     readonly property Item inlineSeekRow: inlineSeekRowItem
 
+    // redesign: a layout with center controls has no middle slot between the left and right
+    // controls, so the seek row gets its own full-width row above them (Figma "Player -
+    // customize-1" / "-6" / "-7", the alternate layout of video 19:24-19:28: two 54 px rows).
+    // A layout with no control at all has no middle slot either: the seek row is then the only
+    // row.
+    readonly property bool _seekRowOnOwnRow: {
+        if (textPosition !== ControlBar.TimeTextPosition.Inline)
+            return false
+        const model = playerControlLayout.model
+        if (!model)
+            return false
+        return model.center.count > 0 || (model.left.count === 0 && model.right.count === 0)
+    }
+
     // redesign: narrow window. The right controls are hidden first (from the queue button
-    // inwards, VLC's ControlRepeater rule) while the seek row keeps both times; when even the
-    // room left with no right control is too small, the duration goes, then the current time.
-    // The seek bar itself never gets narrower than rd_seekBarMinimumWidth.
+    // inwards, VLC's ControlRepeater rule) while the seek row keeps all its parts; when even the
+    // room left with no right control is too small, the subtitle timeline's buttons go (its
+    // window still turns its pages by itself), then the duration, then the current time. The
+    // seek bar itself never gets narrower than _inlineBarMinimum. On its own row the seek row
+    // has the bar's whole width and keeps every part.
     readonly property real _inlineSpacing: VLCStyle.dp(8, VLCStyle.scale)
     readonly property real _inlineTimeSlot: VLCStyle.rd_timeLabelWidth + _inlineSpacing
-    readonly property bool _inlineShowsTime: playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + _inlineTimeSlot
-    readonly property bool _inlineShowsLength: playerControlLayout.middleRoom >= VLCStyle.rd_seekBarMinimumWidth + 2 * _inlineTimeSlot
+    // the subtitle timeline keeps a wider bar than the normal one, so that the blocks of a one
+    // minute window can still be told apart and grabbed, unless the room is smaller
+    readonly property real _inlineBarMinimum: trackPositionSlider.timelineShown
+                                              ? Math.max(VLCStyle.rd_seekBarMinimumWidth,
+                                                         Math.min(VLCStyle.rd_seekTimelineMinimumWidth, playerControlLayout.middleRoom))
+                                              : VLCStyle.rd_seekBarMinimumWidth
+    // the subtitle timeline's buttons on both sides of the bar (they touch the bar: no spacing
+    // on its side)
+    readonly property real _inlineTimelineRoom: 2 * timelineLeading.fullWidth
+    readonly property bool _inlineShowsTimelineButtons: _seekRowOnOwnRow
+                                                        || playerControlLayout.middleRoom >= _inlineBarMinimum + _inlineTimelineRoom + 2 * _inlineTimeSlot
+    readonly property bool _inlineShowsTime: _seekRowOnOwnRow
+                                             || playerControlLayout.middleRoom >= _inlineBarMinimum + _inlineTimeSlot
+    readonly property bool _inlineShowsLength: _seekRowOnOwnRow
+                                               || playerControlLayout.middleRoom >= _inlineBarMinimum + 2 * _inlineTimeSlot
 
     // redesign: Figma "Controls": BG/A3, no stroke (the 1 px top line was not in the design)
     background: Rectangle {
@@ -155,7 +189,8 @@ T.Pane {
             width: parent ? parent.width : 0
             height: VLCStyle.rd_seekBarHeight
 
-            children: (root.textPosition === ControlBar.TimeTextPosition.Inline) ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
+            children: (root.textPosition === ControlBar.TimeTextPosition.Inline && !root._seekRowOnOwnRow)
+                      ? [mediaTime, timelineLeading, trackPositionSlider, timelineTrailing, mediaRemainingTime] : []
         }
     }
 
@@ -189,8 +224,11 @@ T.Pane {
                         // redesign: while the seek bar is dragged, the time under the pointer
                         // (the preview card's time, video 3:30), not the time the player has
                         // reached yet
-                        if (trackPositionSlider.dragging)
+                        if (trackPositionSlider.dragging && !trackPositionSlider.shifting)
                             return length.scale(trackPositionSlider.scrubPosition).formatHHMMSS()
+                        // the subtitle timeline: the start of its window (video 6:52)
+                        if (trackPositionSlider.timelineShown)
+                            return trackPositionSlider.timelineStartText
                         return Player.time.formatHHMMSS()
                     }
                     return Player.time.formatHMS(length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
@@ -314,8 +352,11 @@ T.Pane {
                 readonly property bool showRemainingTime: (MainCtx.showRemainingTime && Player.remainingTime.valid())
 
                 readonly property bool _inline: textPosition === ControlBar.TimeTextPosition.Inline
+                // the subtitle timeline: the end of its window (video 6:52)
+                readonly property bool _timeline: _inline && trackPositionSlider.timelineShown
 
-                text: showRemainingTime
+                text: _timeline ? trackPositionSlider.timelineEndText
+                      : showRemainingTime
                       ? "-" + (_inline ? Player.remainingTime.formatHHMMSS() : Player.remainingTime.formatHMS())
                       : (_inline ? Player.length.formatHHMMSS() : Player.length.formatHMS())
                 color: mediaTime.color
@@ -328,6 +369,7 @@ T.Pane {
                 // redesign: hover background BG/B2 like the current time label
                 background: Rectangle {
                     visible: textPosition === ControlBar.TimeTextPosition.Inline && mediaRemainingTimeHover.hovered
+                             && !mediaRemainingTime._timeline
                     radius: VLCStyle.rd_radius_normal
                     color: VLCStyle.palette.rdBgB2
                 }
@@ -345,7 +387,9 @@ T.Pane {
                 anchors.right: (parent === pseudoRow) ? parent.right : undefined
                 anchors.verticalCenter: (parent === pseudoRow) ? parent.verticalCenter : undefined
 
+                // the window's end of the subtitle timeline is not a switch
                 TapHandler {
+                    enabled: !mediaRemainingTime._timeline
                     onTapped: (eventPoint, button) => {
                         MainCtx.showRemainingTime = !MainCtx.showRemainingTime
                     }
@@ -355,7 +399,7 @@ T.Pane {
                 HoverHandler {
                     id: mediaRemainingTimeHover
 
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: mediaRemainingTime._timeline ? undefined : Qt.PointingHandCursor
                 }
 
                 Widgets.ToolTipExt {
@@ -391,7 +435,7 @@ T.Pane {
                 AccessibleCompat.id: "progressSlider"
 
                 Layout.fillWidth: true
-                Layout.minimumWidth: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_seekBarMinimumWidth : -1
+                Layout.minimumWidth: (textPosition === ControlBar.TimeTextPosition.Inline) ? root._inlineBarMinimum : -1
                 enabled: Player.playingState === Player.PLAYING_STATE_PLAYING || Player.playingState === Player.PLAYING_STATE_PAUSED
 
                 Navigation.parentItem: root
@@ -406,6 +450,27 @@ T.Pane {
                 }
 
                 onRightClicked: root.contextMenuRequested()
+            },
+            // redesign: the subtitle timeline's buttons, on both sides of the bar while it
+            // shows it (P3-16 / IA-27); they touch the bar's ends (video 7:04), so the seek
+            // row's spacing is taken back on the bar's side
+            SubtitleTimelineButtons {
+                id: timelineLeading
+
+                slider: trackPositionSlider
+                leading: true
+                fits: root._inlineShowsTimelineButtons
+                Layout.alignment: Qt.AlignVCenter
+                Layout.rightMargin: -root._inlineSpacing
+            },
+            SubtitleTimelineButtons {
+                id: timelineTrailing
+
+                slider: trackPositionSlider
+                leading: false
+                fits: root._inlineShowsTimelineButtons
+                Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: -root._inlineSpacing
             },
             Loader {
                 id: bookmarksLoader
@@ -466,6 +531,9 @@ T.Pane {
                 case ControlBar.TimeTextPosition.LeftRightSlider:
                     return [mediaTime, trackPositionSlider, mediaRemainingTime]
                 case ControlBar.TimeTextPosition.Inline:
+                    // redesign: the seek row on its own row (Figma "seekbar": 20 from the sides,
+                    // centered in the first 54 px row, 8 between its parts)
+                    return root._seekRowOnOwnRow ? [mediaTime, timelineLeading, trackPositionSlider, timelineTrailing, mediaRemainingTime] : []
                 default:
                     return []
                 }
@@ -473,14 +541,21 @@ T.Pane {
 
             visible: children.length > 0
 
-            spacing: VLCStyle.margin_xsmall
+            spacing: (textPosition === ControlBar.TimeTextPosition.Inline) ? root._inlineSpacing : VLCStyle.margin_xsmall
 
             Layout.fillWidth: true
             Layout.fillHeight: false
+            Layout.preferredHeight: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_controlBarHeight - 2 * VLCStyle.rd_controlBarPaddingV
+                                                                                          : -1
             Layout.leftMargin: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.margin_xsmall
-                                                                                              : 0
+                             : (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_controlBarSpacing
+                                                                                     : 0
 
             Layout.rightMargin: Layout.leftMargin
+            // the rows' padding between the seek row and the controls (Figma: two 54 px rows);
+            // from the model, not the controls' visibility, which a faded out bar also clears
+            Layout.bottomMargin: (root._seekRowOnOwnRow && !(playerControlLayout.model?.empty ?? true))
+                                 ? 2 * VLCStyle.rd_controlBarPaddingV - parent.spacing : 0
         }
 
         PlayerControlLayout {
@@ -494,8 +569,9 @@ T.Pane {
             identifier: root.identifier
 
             middleItem: (textPosition === ControlBar.TimeTextPosition.Inline) ? inlineSeekRow : null
-            middleItemMinimumWidth: VLCStyle.rd_seekBarMinimumWidth + (root._inlineShowsTime ? root._inlineTimeSlot : 0)
+            middleItemMinimumWidth: root._inlineBarMinimum + (root._inlineShowsTime ? root._inlineTimeSlot : 0)
                                     + (root._inlineShowsLength ? root._inlineTimeSlot : 0)
+                                    + ((trackPositionSlider.timelineShown && root._inlineShowsTimelineButtons) ? root._inlineTimelineRoom : 0)
             spacing: (textPosition === ControlBar.TimeTextPosition.Inline) ? root._inlineSpacing : VLCStyle.margin_normal
             layoutSpacing: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_controlBarSpacing : VLCStyle.margin_xxlarge
             figmaGaps: textPosition === ControlBar.TimeTextPosition.Inline

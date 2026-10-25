@@ -64,9 +64,29 @@ Function un.RegisterExtension
       DeleteRegKey HKCR "$R0"
     Goto NoOwn
 Restore:
+!if "${PRODUCT_PROGID}" != "VLC"
+      ; redesign: brand layer, give the extension back to the previous handler only while its
+      ; ProgID still exists (an uninstalled VLC leaves a dangling VLC.<ext>); never write a
+      ; handler that is gone
+      Push $2
+      ClearErrors
+      EnumRegKey $2 HKCR "$1" 0
+      ${If} ${Errors}
+        DeleteRegValue HKCR "$R0" ""
+      ${Else}
+        WriteRegStr HKCR "$R0" "" $1
+      ${EndIf}
+      Pop $2
+!else
       WriteRegStr HKCR "$R0" "" $1
+!endif
       DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
 NoOwn:
+!if "${PRODUCT_PROGID}" != "VLC"
+    ; redesign: brand layer, another player took the extension after this app: drop only this
+    ; app's own backup value
+    DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
+!endif
     DeleteRegKey HKCR "${PRODUCT_PROGID}$R0" ;Delete key with association settings
     DeleteRegKey HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations\${PRODUCT_PROGID}$R0" ; for vista
 FunctionEnd

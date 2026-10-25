@@ -14,8 +14,42 @@ Everything below applies to the **public** brand profile only. The **vlc** profi
 | 3c | Installer look and wording | Cone images and texts, see section 2. The Cone uninstaller also removes the Blu-ray autoplay handler (VLC's uninstaller forgets it). | `extras/package/win32/brand/public/*.bmp`, `installer-art.js`, `NSIS/brand-languages.sh`, `vlc.win32.nsi.in`, `package.mak`, `NSIS/meson.build`, MSI files | 03580142e9 |
 | 4 | Preferences file associations | The old preferences' association list and its Default Programs button used VLC's ProgIDs and install key (would have pointed file types at an installed VLC). Now Cone's. | `util/brand.hpp`, `dialogs/preferences/simple_preferences.cpp` | 146d6f00c7 |
 | 5 | CI | A public build also builds `cone-<version>-win64.exe` and uploads it as the artifact **cone-installer-win64** (test only; this step cannot fail the build). | `.github/workflows/build-windows.yml` | 2ca74d52d6 |
+| 6 | Audio session (Decision 57) | Own audio session GUID (own volume mixer entry and own saved session volume when "volume-save" is on) and the session name "Cone" (the user-agent name; the HTTP user agent is unchanged). | `modules/audio_output/mmdevice.c`, `winstore.c`, `bin/winvlc.c` | f2580bbf40 |
+| 7 | Single instance (Decision 57) | Own mutex and IPC window name "Cone ipc <version>", so "Allow only one instance" never hands files to a running VLC. | `src/win32/specific.c` (core), `modules/control/win_msg.c` | b1d5a41ca4 |
+| 8 | File associations next to VLC (Decision 56) | NSIS: on a first install, if VLC is installed (its install key, uninstall key or App Paths entry, 64-bit or 32-bit; only read) every file association starts unticked; without VLC they start ticked. A reinstall or upgrade keeps the user's saved choice. MSI (no backup of the previous handler): next to VLC the association features are left out entirely (level 0), without VLC they are ticked. | `NSIS/vlc.win32.nsi.in`, `msi/product.wxs` | 82f3ba9ec1 |
+| 9 | Own version (Decision 58) and public name | One brand value: configure `--with-brand-version` / meson `-Dbrand-version` (default 0.1.0; `build.sh` reads `BRAND_VERSION`, the build-windows workflow sets it from a `vX.Y.Z` tag). About: "Cone 0.1.0" with "based on VLC <version>" under it, "Built by StickyGonzales". Installer: "Cone 0.1.0" in its title and pages, "based on VLC <version>" under every page, file `cone-0.1.0-win64.exe`, upgrade check on Cone's version. Windows Apps list: "Cone", version 0.1.0, publisher StickyGonzales. Exe ProductVersion and MSI version are Cone's (exe FileVersion stays VLC's). Publisher / company everywhere: StickyGonzales. | `configure.ac`, `meson.build`, `meson_options.txt`, `bin/vlc_win32_rc.rc.in`, `NSIS/vlc.win32.nsi.in`, `msi/config.wxi.in`, `util/brand.hpp`, `dialogs/help/help.cpp`, `build.sh`, workflow, README, CREDITS | d18d857d20 |
+| 10 | Dialog texts | VLC's built-in dialogs, questions and errors say "Cone" (list under "Dialog texts" below). | core: `modules/demux/avi/avi.c`, `modules/demux/mp4/mp4.c`, `src/input/decoder.c`, `src/input/input.c`, `modules/access/dshow/dshow.cpp`, `dvdnav.c`, `ftp.c`, `vdr.c`, `modules/codec/avcodec/encoder.c`, `modules/codec/fluidsynth.c`, `modules/misc/audioscrobbler.c`, `bin/winvlc.c`; Qt: `dialogs/preferences/preferences.cpp`, `simple_preferences.cpp`, `dialogs/firstrun/firstrunwizard.cpp`, `dialogs/sout/profile_selector.cpp`, `dialogs/open/open.cpp`, `open_panels.cpp`, `dialogs/extended/extended_panels.cpp`, `network/addonsmodel.cpp` | see BUILD_NOTES |
 
-Core change: `src/win32/dirs.c` (one `#define` for the folder name). Per the build rounds rule it should go in its own build.
+Core changes (all inside `#ifdef VLC_BRAND_PUBLIC`, the vlc profile compiles the same tokens as before): `src/win32/dirs.c` (the folder name), `src/win32/specific.c` (single-instance name), `modules/audio_output/mmdevice.c` and `winstore.c` (audio session GUID), `modules/control/win_msg.c` (IPC window name), and the dialog texts of row 10 (`modules/demux/avi/avi.c`, `modules/demux/mp4/mp4.c`, `src/input/decoder.c`, `src/input/input.c`, `modules/access/dshow/dshow.cpp`, `modules/access/dvdnav.c`, `modules/access/ftp.c`, `modules/access/vdr.c`, `modules/codec/avcodec/encoder.c`, `modules/codec/fluidsynth.c`, `modules/misc/audioscrobbler.c`, `bin/winvlc.c`). Per the build rounds rule they go in their own build.
+
+### Dialog texts
+
+Public profile only. Each text is chosen by `#ifdef VLC_BRAND_PUBLIC`: in the core a `BRAND_TEXT_*` / `START_ERROR_*` macro defined at the top of the file (vlc_dialog_* are macros, so no directive can sit inside their arguments), in Qt an `#ifdef` around the `qtr("...")` call itself, and for a text that lives in a `.ui` file a `setText` / `setToolTip` after `setupUi` in the public profile only. The vlc profile compiles exactly VLC's tokens: checked by expanding the vlc branch's macros and comparing the token stream of every touched file with origin/wip/cone-release (identical; in the vlc profile the Qt files differ only by `#include "util/brand.hpp"` in `addonsmodel.cpp` and `firstrunwizard.cpp`, for config.h's VLC_BRAND_PUBLIC).
+
+Translations: the vlc profile keeps VLC's msgids, so its translations are unchanged. The Cone wording is a new msgid (like the brand layer's earlier Cone texts: welcome, tray, About), so until Cone has translations of its own these sentences show in English in every language; the rest of each dialog (title, buttons) stays translated. Both the VLC and the Cone wording are literal arguments of `_()` / `qtr()` (core macros: `_()` inside the `#define`, as VLC's own `N_()` option texts), so a .pot regeneration still extracts VLC's msgids and adds the Cone ones. (The brand layer's earlier `qtr(BRAND_NAME)`-style texts in `util/brand.hpp` are not extracted; see BUILD_NOTES "Brand layer".)
+
+| Where it shows | VLC text | Cone text |
+|---|---|---|
+| AVI and MP4 "Broken or missing Index" question | "VLC won't repair your file but can temporary fix this problem ..." | "Cone won't repair your file ..." |
+| Codec not supported / Unidentified codec | "VLC could not decode the format ..." / "VLC could not identify the audio or video codec" | "Cone could not ..." |
+| Streaming / Transcoding failed (decoder, packetizer, encoder) | "VLC could not open the %s module." / "... the decoder module." / "... the %4.4s %s encoder." | "Cone could not open ..." |
+| Your media can't be opened | "VLC is unable to open the MRL '%s'. Check the log for details." | "Cone is unable to open ..." |
+| Capture failed (DirectShow) | "VLC cannot open ANY capture device. ..." | "Cone cannot open ..." |
+| DVD playback failure | "VLC cannot set the DVD's title. ..." | "Cone cannot set ..." |
+| FTP network errors | "VLC could not connect with the given server." / "VLC's connection to the given server was rejected." | "Cone could not connect ..." / "Cone's connection ..." |
+| VDR file errors | "VLC could not read the file (%s)." / "VLC could not open the file "%s" (%s)." | "Cone could not ..." |
+| MIDI sound font missing | "... from the VLC preferences ..." | "... from the Cone preferences ..." |
+| last.fm errors | "... relaunch VLC." / "... restart VLC." | "... relaunch Cone." / "... restart Cone." |
+| Start failure message box (winvlc) | "VLC media player could not start. ...", title "VLC media player" | "Cone could not start. ...", title "Cone" |
+| Old preferences: Reset / Restart Required | "Are you sure you want to reset your VLC media player preferences?" / "VLC needs to be restarted ..." | "... your Cone preferences?" / "Cone needs to be restarted ..." |
+| Old preferences: Interface | "This is VLC's skinnable interface. ..." and the tooltips "VLC will use custom skin." / "VLC will use a modern / classic layout ..." | "This is Cone's skinnable interface. ..." / "Cone will use ..." |
+| First-run wizard (only without the main window, e.g. skins2; the main window shows the onboarding) | privacy text "VLC media player ... VLC ... the VLC developers", "VLC will automatically ..." / "VLC will use a modern / classic layout ..." | "Cone ..." |
+| Convert profile editor | label "... VLC will autodetect the other ..." and "This muxer is not provided directly by VLC ..." | "... Cone will autodetect ..." / "... directly by Cone ..." |
+| Open Media | tooltip "Complete MRL for VLC internal", Jack "Use VLC pace" | "... for Cone internal", "Use Cone pace" |
+| Add-ons list | "This addon has been installed manually. VLC can't manage it by itself." | "... Cone can't manage it ..." |
+| v4l2 controls (Linux only) | "... opened with VLC and is playing." | "... opened with Cone ..." |
+
+Kept on purpose: texts that name VLC's own catalog, file format or website rather than the app (Settings > Extensions "VLC's add-on catalog", "VLC add-on packages (*.vlp)", the "VLC skins website" link); log-only messages (`msg_Err` / `msg_Warn`, e.g. last.fm "This version of VLC has been banned"); the update dialog and update pane (`src/misc/update.c`, `help.cpp`, `UpdatePane.qml`: the public profile has no update checker); macOS-only dialogs (`avcapture.m`, `avaudiocapture.m`, `disc_helper.h`, `auhal.c`) and `mtp.c` (no libmtp in the Windows build); option descriptions in the preferences ("Start VLC with only a systray icon" and the core / module help texts): they are not dialogs and are a much larger, separate change.
 
 "Local app data equivalent": VLC itself keeps nothing in `%LOCALAPPDATA%`. The only thing there is Qt's own cache, which Qt names after the exe: `%LOCALAPPDATA%\Cone` for Cone.exe, `%LOCALAPPDATA%\vlc` for vlc.exe. So it is already separate and needed no change.
 
@@ -72,20 +106,22 @@ The MSI pages could not be rendered here (no WiX toolset), only its two bitmaps 
 
 **Install Cone next to it**
 6. Run `cone-<version>-win64.exe`. Check every page shows Cone (images, titles, texts) and no VLC cone. Keep the default components.
-7. Check: `C:\Program Files\Cone` exists and `C:\Program Files\VideoLAN\VLC` is untouched; Start menu has a "Sticky" folder with Cone's shortcuts and VLC's "VideoLAN" folder is still there; Settings, Apps lists both "VLC media player" and "Cone"; Default apps lists both.
+7. Check: `C:\Program Files\Cone` exists and `C:\Program Files\VideoLAN\VLC` is untouched; Start menu has a "StickyGonzales" folder with Cone's shortcuts and VLC's "VideoLAN" folder is still there; Settings, Apps lists both "VLC media player" and "Cone" (version 0.1.0, publisher StickyGonzales); Default apps lists both. Cone's Help, About shows "Cone 0.1.0" with "based on VLC 4.0.0-dev" under it.
 8. Start Cone, change a setting, close it. Start VLC: VLC still has its own setting from step 4 and not Cone's. Start Cone again: it still has its own.
 9. Check the folders: `%APPDATA%\vlc` (VLC's) and `%APPDATA%\Cone` (Cone's) both exist; the media library and art cache of each stay in its own folder. In `regedit`: `HKCU\Software\VideoLAN\VLC` (VLC's language) and `HKCU\Software\Cone` (Cone's) are separate.
-10. Right click an `.mp4`: there are separate "Play with VLC media player" and "Play with Cone" entries (if VLC's context menus were installed). Note: like VLC's installer, Cone's takes the file associations ticked on the components page. Windows 10 and 11 keep your own default app choice anyway.
+10. On the components page (step 6) the file associations were unticked, because VLC is installed (Decision 56): `.mp4` still opens with VLC, and right clicking an `.mp4` shows only VLC's entries ("Play with Cone" sits on Cone's own file types, so it appears on a file only when Cone owns its extension). Right click a folder: "Play with Cone" and "Add to Cone's Playlist" are there next to VLC's. Windows 10 and 11 keep your own default app choice anyway. (Optional: reinstall Cone with the associations ticked, then uninstall it: `.mp4` opens with VLC again.)
+10b. Volume mixer (Decision 57): play something in Cone and in VLC at the same time; Windows' volume mixer shows two entries, and changing Cone's volume leaves VLC's alone. Turn on Tools, Preferences, "Allow only one instance" in both; opening a file with Cone never adds it to the running VLC.
 11. Check for updates: Cone has no update menu entry and never shows an update notice.
+11b. Dialog texts (row 10): open a broken AVI (an .avi whose index was cut off, e.g. a truncated download): the "Broken or missing Index" question says "Cone won't repair your file". Open a file with an unknown codec, or a wrong path in Open Network Stream: the error says "Cone could not ..." / "Cone is unable to open the MRL". In the old Tools, Preferences dialog, Reset Preferences asks about "your Cone preferences". The vlc build shows VLC's texts at the same steps, translated as before (switch the interface language to check one).
 
 **Uninstall Cone**
 12. Settings, Apps, Cone, Uninstall (optionally tick "Delete preferences and cache").
 13. Check: VLC still starts with its settings, `%APPDATA%\vlc` is untouched, `C:\Program Files\VideoLAN\VLC` is untouched, `.mp4` opens with VLC again (if it did before), VLC's context menu entries and its Default apps entry are still there, and nothing named Cone is left in `C:\Program Files`, the Start menu, Settings, Apps, or `HKLM\Software\Cone`.
 
-**Your portable test folder** (`<TEST_MEDIA_DIR>\builds\current`): a public build now keeps the Qt interface settings in `portable\Cone\vlc-qt-interface.ini` instead of `portable\vlc\vlc-qt-interface.ini` (vlcrc and the rest stay in `portable`). To keep the old interface settings, copy that one file over once, with the test VLC closed:
+**Your portable test folder** (`<TEST_MEDIA_DIR>\builds\current-public`): a public build now keeps the Qt interface settings in `portable\Cone\vlc-qt-interface.ini` instead of `portable\vlc\vlc-qt-interface.ini` (vlcrc and the rest stay in `portable`). Done on 2026-10-16 for `builds\current-public` (copied, the old file kept). For another public test folder, copy that one file over once, with the test VLC closed:
 
 ```powershell
-$p = "<TEST_MEDIA_DIR>\builds\current\portable"; New-Item -ItemType Directory -Force "$p\Cone" | Out-Null; Copy-Item "$p\vlc\vlc-qt-interface.ini" "$p\Cone\vlc-qt-interface.ini"
+$p = "<TEST_MEDIA_DIR>\builds\current-public\portable"; New-Item -ItemType Directory -Force "$p\Cone" | Out-Null; Copy-Item "$p\vlc\vlc-qt-interface.ini" "$p\Cone\vlc-qt-interface.ini"
 ```
 
 ## 4. Checks done here (not verification)
@@ -100,16 +136,15 @@ $p = "<TEST_MEDIA_DIR>\builds\current\portable"; New-Item -ItemType Directory -F
 
 ## 5. Left as is, or not done
 
-**Clashes in engine code (not changed: player code is out of scope for this task)**
-- Shared audio session: `modules/audio_output/mmdevice.c` and `winstore.c` use one fixed audio session GUID (`GUID_VLC_AUD_OUT`) when "volume-save" is on, so Windows treats Cone and VLC as one session: same entry in the volume mixer, and the saved session volume is shared. Fix: a Cone GUID under `VLC_BRAND_PUBLIC` (two lines).
-- Single instance: `src/win32/specific.c` and `modules/control/win_msg.c` use the mutex / window name "VLC ipc <version>". With "Allow only one instance" on, Cone could hand files to a running VLC **of the same version string**. An installed VLC 3.x has a different version, so this only matters next to a VLC 4 nightly of the same version. Fix: brand that name (two files).
+**Engine code**
+- Shared audio session and single instance: fixed by Decision 57 (rows 6 and 7 above).
 - Crash reporter: `bin/breakpad.cpp` reports as product "VLC" (only built with breakpad; CI does not).
 - `libvlc_set_app_id("org.VideoLAN.VLC")` in `bin/winvlc.c` was kept on purpose by the brand layer.
 
 **Packaging, small, noted**
 - The zip and its folder keep VLC's names (`vlc-<version>-win64.zip`, folder `vlc-<version>`), because the workflow unzips `win64/vlc-*-win64.zip`. Not an install clash.
-- The MSI installs into `Program Files\Sticky\Cone` (WiX layout: company\product); the NSIS installer into `Program Files\Cone`.
-- The Start menu folder is the publisher, "Sticky" (same rule as VLC's "VideoLAN").
+- The MSI installs into `Program Files\StickyGonzales\Cone` (WiX layout: company\product); the NSIS installer into `Program Files\Cone`.
+- The Start menu folder is the publisher, "StickyGonzales" (same rule as VLC's "VideoLAN").
 - "Release Notes" opens VLC's `NEWS.txt` (VLC's own changelog text). "New_Skins.url" still opens VLC's skins page (VLC skins work in Cone's skinned interface).
 - `spad-setup.exe` (the Default Programs show/hide helper) is built but, as in VLC's installer, not installed; its registry entry is Cone's own.
 - HiDPI: the bitmaps are 1x (164 x 314, 150 x 57), like VLC's; at 125 to 150 percent Windows scales them up slightly soft.
@@ -117,5 +152,6 @@ $p = "<TEST_MEDIA_DIR>\builds\current\portable"; New-Item -ItemType Directory -F
 - The MSI is not built by CI, and its pages were not rendered (no WiX here).
 - The meson packaging path (`-Dbrand=public`) was updated but not run.
 
-**Your decision**
-- Should Cone's installer leave the file associations unticked by default when VLC is installed? Today it behaves like VLC's installer (ticked by default, VLC's previous choice backed up and restored on uninstall).
+**Decided**
+- Decision 56: the file associations start unticked when VLC is installed, ticked when it is not (row 8). VLC from the Microsoft Store is not detected (it has no registry install key), so next to it they start ticked.
+- Decision 57: own volume mixer entry, own saved volume, own single-instance identity (rows 6 and 7).

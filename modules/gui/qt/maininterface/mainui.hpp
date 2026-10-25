@@ -22,6 +22,7 @@
 
 class VLCVarChoiceModel;
 class RdSeekThumbnailer;
+class RdFilterPreview;
 
 class MainUI : public QObject
 {
@@ -53,6 +54,8 @@ private:
 
     // redesign: seek bar preview frames (P2-04), shared with the "rdseekthumb" image provider
     RdSeekThumbnailer* m_seekThumbnailer = nullptr;
+    // redesign: video filter preset previews, shared with the "rdfilterpreview" image provider
+    RdFilterPreview* m_filterPreview = nullptr;
 };
 
 namespace vlc {

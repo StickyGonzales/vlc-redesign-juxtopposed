@@ -19,6 +19,86 @@
 
 #include "player/player_controller.hpp"
 
+#include <cstring>
+#include <tuple>
+#include <utility>
+
+#include <QCryptographicHash>
+#include <QTimer>
+#include <QUrl>
+
+#include <vlc_input_item.h>
+#include <vlc_iso_lang.h>
+
+#include "dialogs/redesign/addsubtitles/subtitle_matcher.hpp"
+
+namespace {
+
+// redesign: the tracks of the played file have string ids such as "spu/3"; those of a file added
+// next to it (VLC's "slave": an external subtitle or audio file) start with the MD5 of that
+// file's URI, "<32 hex digits>/spu/0" (src/input/es_out.c, EsOutCreateStrId)
+constexpr int kSlaveIdLength = 32;
+
+// VLC lists a file added during playback on the media just after it creates the file's track:
+// its name is looked up again this many times, this often, until it is there
+constexpr int kFileNameLookups = 10;
+constexpr int kFileNameLookupDelayMs = 100;
+
+bool isExternalTrack(vlc_es_id_t* id)
+{
+    const char* strId = vlc_es_id_GetStrId(id);
+    const char* slash = strId ? std::strchr(strId, '/') : nullptr;
+    return slash && slash - strId == kSlaveIdLength;
+}
+
+// the English name and two letter code of a language code or name, the given text when unknown
+std::pair<QString, QString> languageOf(const QString& language)
+{
+    const iso639_lang_t* lang = vlc_find_iso639(qtu(language), true);
+    if (!lang)
+        return { language, QString() };
+    return { qfu(lang->psz_eng_name), QString::fromLatin1(lang->psz_iso639_1) };
+}
+
+// redesign: an external file's track reads as the video shows it (6:22-6:24, Decision 11, over
+// Figma's "The_Wand_S01_EN.srt"): "The_Wand_S01E04 [English]", the file name without its
+// extension, and the language in brackets: the track's own, else the one at the end of the file
+// name ("_EN"), which then leaves the name
+QString externalTrackName(const QString& fileName, const QString& trackLanguage)
+{
+    QString base = fileName;
+    const qsizetype dot = base.lastIndexOf(QChar('.'));
+    if (dot > 0 && base.size() - dot <= 5)
+        base.truncate(dot);
+
+    qsizetype wordStart = base.size();
+    while (wordStart > 0 && base.at(wordStart - 1).isLetterOrNumber())
+        --wordStart;
+    const QString nameCode = wordStart > 0
+            ? SubtitleMatcher::languageCode(base.mid(wordStart), true) : QString();
+
+    QString language;
+    QString code;
+    if (!trackLanguage.isEmpty())
+        std::tie(language, code) = languageOf(trackLanguage);
+    else if (!nameCode.isEmpty())
+        std::tie(language, code) = languageOf(nameCode);
+
+    if (language.isEmpty())
+        return base;
+    if (!nameCode.isEmpty() && nameCode == code)
+    {
+        base.truncate(wordStart);
+        while (!base.isEmpty() && !base.back().isLetterOrNumber())
+            base.chop(1);
+        if (base.isEmpty())
+            base = fileName;
+    }
+    return QStringLiteral("%1 [%2]").arg(base, language);
+}
+
+} // namespace
+
 //***************************
 //  track list model
 //***************************
@@ -44,11 +124,67 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
     int row = index.row();
     if (row >= m_data.size())
         return QVariant{};
+    const Data& track = m_data[row];
     if (role == Qt::DisplayRole)
-        return m_data[row].m_title;
+    {
+        if (track.m_external)
+        {
+            if (track.m_fileName.isEmpty())
+            {
+                const QByteArray uri = externalUri(track.m_id.get());
+                if (!uri.isEmpty())
+                    track.m_fileName = QUrl(QString::fromUtf8(uri)).fileName();
+                // the row shows the file's name (Figma "Frame 67"), not VLC's "Track 2 - [English]"
+                if (track.m_fileName.isEmpty() && track.m_fileNameLookups++ < kFileNameLookups)
+                    lookUpFileNameLater(track.m_id.get());
+            }
+            if (!track.m_fileName.isEmpty())
+                return externalTrackName(track.m_fileName, track.m_language);
+        }
+        return track.m_title;
+    }
     else if (role == Qt::CheckStateRole)
-        return QVariant::fromValue<bool>(m_data[row].m_selected);
+        return QVariant::fromValue<bool>(track.m_selected);
+    else if (role == ExternalRole)
+        return track.m_external;
+    else if (role == ExternalUriRole)
+        return track.m_external ? QString::fromUtf8(externalUri(track.m_id.get())) : QString();
     return QVariant{};
+}
+
+QByteArray TrackListModel::externalUri(vlc_es_id_t* id) const
+{
+    const QByteArray slaveId = QByteArray(vlc_es_id_GetStrId(id), kSlaveIdLength);
+
+    vlc_player_locker lock{ m_player };
+    input_item_t* item = vlc_player_GetCurrentMedia(m_player);
+    if (!item)
+        return {};
+    vlc_mutex_locker itemLock{ &item->lock };
+    for (int i = 0; i < item->i_slaves; ++i)
+    {
+        const QByteArray uri(item->pp_slaves[i]->psz_uri);
+        if (QCryptographicHash::hash(uri, QCryptographicHash::Md5).toHex() == slaveId)
+            return uri;
+    }
+    return {};
+}
+
+void TrackListModel::lookUpFileNameLater(vlc_es_id_t* id) const
+{
+    // the row asks for its name again; `id` is only compared, never used
+    TrackListModel* self = const_cast<TrackListModel*>(this);
+    QTimer::singleShot(kFileNameLookupDelayMs, self, [self, id]() {
+        for (qsizetype row = 0; row < self->m_data.size(); ++row)
+        {
+            if (self->m_data[row].m_id.get() == id)
+            {
+                const QModelIndex changed = self->index(row);
+                emit self->dataChanged(changed, changed, { Qt::DisplayRole });
+                return;
+            }
+        }
+    });
 }
 
 bool TrackListModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -153,6 +289,8 @@ QHash<int, QByteArray> TrackListModel::roleNames() const
 {
     QHash<int, QByteArray> roleNames = this->QAbstractListModel::roleNames();
     roleNames[Qt::CheckStateRole] = QByteArrayLiteral("checked");
+    roleNames[ExternalRole] = QByteArrayLiteral("external");
+    roleNames[ExternalUriRole] = QByteArrayLiteral("externalUri");
     return roleNames;
 }
 
@@ -186,6 +324,8 @@ TrackListModel::Data::Data(const vlc_player_track *track_info)
     : m_title( qfu(track_info->name) )
     , m_id( track_info->es_id, true )
     , m_selected( track_info->selected )
+    , m_external( isExternalTrack(track_info->es_id) )
+    , m_language( qfu(track_info->fmt.psz_language) )
 {
 }
 
@@ -194,6 +334,8 @@ void TrackListModel::Data::update(const vlc_player_track *track_info)
     m_id.reset(track_info->es_id, true);
     m_title = qfu(track_info->name);
     m_selected = track_info->selected;
+    m_external = isExternalTrack(track_info->es_id);
+    m_language = qfu(track_info->fmt.psz_language);
 }
 
 
@@ -314,6 +456,14 @@ int ChapterListModel::rowCount(const QModelIndex &) const
     return m_title ? m_title->chapter_count : 0;
 }
 
+// redesign: the chapter name as shown in the list and on the seek bar. The Matroska demuxer
+// writes a space (after a "+" per nesting level) in front of every chapter name, which put the
+// titles one space to the right of the Figma "chapters" rows (P7-06)
+static QString chapterName(const vlc_player_chapter& chapter)
+{
+    return qfu(chapter.name).trimmed();
+}
+
 QVariant ChapterListModel::data(const QModelIndex &index, int role) const
 {
     int row = index.row();
@@ -322,11 +472,13 @@ QVariant ChapterListModel::data(const QModelIndex &index, int role) const
     const vlc_player_chapter& chapter = m_title->chapters[row];
 
     if (role == Qt::DisplayRole)
-        return qfu(chapter.name);
+        return chapterName(chapter);
     else if (role == Qt::CheckStateRole)
         return QVariant::fromValue<bool>(row == m_current);
     else if (role == ChapterListRoles::TimeRole )
-        return QVariant::fromValue<VLCTime>(chapter.time);
+        // redesign: the chapter's offset from the start of the title (the first one is 0, which
+        // a VLCTime built from the raw tick would read as invalid: "--:--")
+        return QVariant::fromValue<VLCTime>(VLCTime(VLCDuration(chapter.time)));
     else if (role == ChapterListRoles::StartPositionRole && (m_title->length != 0))
         return QVariant::fromValue<float>(chapter.time / (float) m_title->length);
     else if (role == ChapterListRoles::EndPositionRole && (m_title->length != 0))
@@ -413,10 +565,10 @@ QString ChapterListModel::getNameAtPosition(float pos) const
             vlc_tick_t currentChapterTime = m_title->chapters[i].time;
 
             if(currentChapterTime > posTime)
-                return qfu(m_title->chapters[prevChapterIndex].name);
+                return chapterName(m_title->chapters[prevChapterIndex]);
 
             else if(i == (m_title->chapter_count - 1))
-                return qfu(m_title->chapters[i].name);
+                return chapterName(m_title->chapters[i]);
 
             prevChapterIndex = i;
         }

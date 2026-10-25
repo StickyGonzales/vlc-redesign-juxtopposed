@@ -24,6 +24,7 @@
 #include "qt.hpp"
 
 #include <QDate>
+#include <QRegularExpression>
 
 #include <initializer_list>
 
@@ -99,6 +100,19 @@ QPixmap extensionFallbackIcon()
     return QPixmap( ":/brand/cone-48.png" );
 #else
     return QPixmap( ":/logo/vlc48.png" );
+#endif
+}
+
+QString engineText(const QString& text)
+{
+#ifdef VLC_BRAND_PUBLIC
+    static const QRegularExpression vlcName(
+        QStringLiteral("\\bVLC(?: media player)?+\\b(?!\\s*\\d)"));
+    QString result = text;
+    result.replace(vlcName, qtr(BRAND_SHORT_NAME));
+    return result;
+#else
+    return text;
 #endif
 }
 

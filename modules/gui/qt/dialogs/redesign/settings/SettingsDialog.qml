@@ -21,7 +21,7 @@
 //   aligned with the page content, close button (Icon Wrapper 32x32);
 // - left column 216 px: grouped categories App / Media / System in a BG/A3 95% card
 //   (padding 6, 8 px apart), and "All VLC Settings", which opens VLC's complete preferences;
-// - right: the category's page, scrolling under the fixed header (padding 20,24,100,24).
+// - right: the category's page, scrolling under the fixed header (padding 20,24,40,24).
 // Pages are loaded when first shown (only the open category's page on opening), or all at once
 // on the first search, so the search can hide the categories and rows that do not match.
 // Motion: opening, closing and switching categories are instant, as the Figma prototype wires
@@ -243,13 +243,15 @@ Item {
             p = p.parent
         if (!p)
             return
-        const margin = VLCStyle.dp(20)
+        // the page's own padding around it, so the end of the page reads as when scrolled there
+        const topMargin = VLCStyle.rd_settingsPageTopPadding
+        const bottomMargin = VLCStyle.rd_settingsPageBottomPadding
         const top = item.mapToItem(view.contentItem, 0, 0).y
         const bottom = top + item.height
-        if (top - margin < view.contentY)
-            view.contentY = Math.max(0, top - margin)
-        else if (bottom + margin > view.contentY + view.height)
-            view.contentY = Math.max(0, Math.min(view.contentHeight - view.height, bottom + margin - view.height))
+        if (top - topMargin < view.contentY)
+            view.contentY = Math.max(0, top - topMargin)
+        else if (bottom + bottomMargin > view.contentY + view.height)
+            view.contentY = Math.max(0, Math.min(view.contentHeight - view.height, bottom + bottomMargin - view.height))
     }
 
     onSearchTextChanged: Qt.callLater(_ensureCurrentMatches)
@@ -406,7 +408,7 @@ Item {
                 }
 
                 Text {
-                    x: VLCStyle.rd_settingsNavWidth + VLCStyle.dp(24)
+                    x: VLCStyle.rd_settingsNavWidth + VLCStyle.rd_settingsPageSidePadding
                     anchors.verticalCenter: parent.verticalCenter
                     width: closeButton.x - x - VLCStyle.dp(10)
                     text: root._currentIndex >= 0 ? root.categories[root._currentIndex].title : ""
@@ -564,7 +566,7 @@ Item {
                 }
             }
 
-            // pages (Figma "Frame 123": padding 20,24,100,24)
+            // pages (Figma "Frame 123": padding 20,24,40,24)
             Item {
                 id: pagesArea
 
@@ -600,7 +602,10 @@ Item {
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
                         contentWidth: width
-                        contentHeight: pageLoader.height + VLCStyle.dp(20) + VLCStyle.dp(100)
+                        // the page with its padding: scrolled to the end, its last element (the
+                        // Advanced Options bar, or the last advanced row once open) ends the bottom
+                        // padding above the dialog's edge
+                        contentHeight: pageLoader.y + pageLoader.height + VLCStyle.rd_settingsPageBottomPadding
 
                         // the popup is outside the window's color context: give the scroll bar the palette
                         T.ScrollBar.vertical: Widgets.ScrollBarExt {
@@ -614,12 +619,20 @@ Item {
                             }
                         }
 
+                        // the pages count their matching rows after the search text reached
+                        // them: a current page that turns out to have none moves the dialog to
+                        // the first category that has some (else its pane would stay empty)
+                        onHasMatchesChanged: {
+                            if (current && !hasMatches)
+                                Qt.callLater(root._ensureCurrentMatches)
+                        }
+
                         Loader {
                             id: pageLoader
 
-                            x: VLCStyle.dp(24)
-                            y: VLCStyle.dp(20)
-                            width: pageView.width - 2 * VLCStyle.dp(24)
+                            x: VLCStyle.rd_settingsPageSidePadding
+                            y: VLCStyle.rd_settingsPageTopPadding
+                            width: pageView.width - 2 * VLCStyle.rd_settingsPageSidePadding
                             height: item ? item.implicitHeight : 0
 
                             active: pageView.current || pageView.visited || root._searched
@@ -640,7 +653,7 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    width: parent.width - 2 * VLCStyle.dp(24)
+                    width: parent.width - 2 * VLCStyle.rd_settingsPageSidePadding
                     visible: !root._anyMatch
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap

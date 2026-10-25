@@ -42,6 +42,8 @@
 
 #include "util/vlchotkeyconverter.hpp"
 #include "util/qt_dirs.hpp"                     // toNativeSeparators
+#include "util/quit_watchdog.hpp"
+#include "widgets/native/qvlcframe.hpp"         // QVLCTools::saveWindowPosition
 
 #include "util/color_scheme_model.hpp"
 
@@ -82,6 +84,7 @@
 
 #ifdef _WIN32
 #include <QFileInfo>
+#include <QTimer>
 #endif
 
 #include <vlc_interface.h>
@@ -321,44 +324,7 @@ MainCtx::~MainCtx()
 
     m_threadRunner->destroy();
 
-    if ( !p_intf->preferencesResetPending)
-    {
-        settings->beginGroup("MainWindow");
-        settings->setValue( "ShowRemainingTime", m_showRemainingTime );
-        settings->setValue( "interface-scale", QString::number( m_intfUserScaleFactor ) );
-
-        /* Save playlist state */
-        settings->setValue( "playqueue-panel-docked", m_playqueuePanel->m_docked );
-        settings->setValue( "playqueue-panel-visible", m_playqueuePanel->m_visible );
-        settings->setValue( "playqueue-panel-width", QString::number( m_playqueuePanel->m_width ) );
-
-        settings->setValue( "navigation-panel-visible", m_navigationPanel->m_visible );
-        settings->setValue( "navigation-panel-width", QString::number( m_navigationPanel->m_width ) );
-
-        settings->setValue( "player-playlist-width", QString::number( m_playerPlaylistWidth ) );
-        settings->setValue( "artist-albums-width", QString::number( m_artistAlbumsWidth ) );
-
-        settings->setValue( "grid-view", m_gridView );
-        settings->setValue( "grouping", m_grouping );
-
-        settings->setValue( "color-scheme-index", m_colorScheme->currentIndex() );
-
-        settings->setValue( "album-sections", m_albumSections );
-
-        settings->setValue( "lyrics-mode", m_lyricsMode );
-
-        /* Save the stackCentralW sizes */
-        settings->endGroup();
-    }
-    else
-    {
-        settings->remove("MainWindow");
-    }
-
-    if( !p_intf->preferencesResetPending && var_InheritBool( p_intf, "save-recentplay" ) )
-        getSettings()->setValue( "filedialog-path", m_dialogFilepath );
-    else
-        getSettings()->remove( "filedialog-path" );
+    saveSettings(false);
 
     /* Unregister callbacks */
     libvlc_int_t* libvlc = vlc_object_instance(p_intf);
@@ -463,12 +429,22 @@ void MainCtx::loadPrefs(const bool callSignals)
 
     loadFromVLCOption(m_pinOpacity, "qt-fs-opacity", &MainCtx::pinOpacityChanged);
 
-    // redesign: resolve the accent color once; "default" and "system" stay invalid (palette default)
+    // redesign: resolve the accent color once; "default" and "system" stay invalid (palette default).
+    // Read again after a profile switch or the Settings dialog: the palette follows at once (W8.2)
     {
-        char* accent = var_InheritString(p_intf, "qt-accent-color");
-        if (accent && strcmp(accent, "default") && strcmp(accent, "system"))
-            m_accentColor = QColor(QString::fromUtf8(accent));
-        free(accent);
+        QColor accent;
+        char* value = var_InheritString(p_intf, "qt-accent-color");
+        const QByteArray option(value ? value : "");
+        if (value && strcmp(value, "default") && strcmp(value, "system"))
+            accent = QColor(QString::fromUtf8(value));
+        free(value);
+        if (accent != m_accentColor || option != m_accentOption)
+        {
+            m_accentColor = accent;
+            m_accentOption = option;
+            if (callSignals)
+                emit accentColorChanged();
+        }
     }
 
     loadFromVLCOption(m_safeArea, "qt-safe-area", &MainCtx::safeAreaChanged);
@@ -704,6 +680,7 @@ void MainCtx::setAccentColor(const QColor& color)
         return;
     m_accentColor = color;
     const QByteArray value = color.isValid() ? color.name(QColor::HexRgb).toUtf8() : QByteArray("default");
+    m_accentOption = value;
     config_PutPsz("qt-accent-color", value.constData());
     scheduleConfigSave();
     emit accentColorChanged();
@@ -744,6 +721,16 @@ void MainCtx::setPinOpacity(float pinOpacity)
     m_pinOpacity = pinOpacity;
 
     emit pinOpacityChanged();
+}
+
+void MainCtx::setSystemAnimations(bool enabled)
+{
+    if (m_systemAnimations == enabled)
+        return;
+
+    m_systemAnimations = enabled;
+
+    emit systemAnimationsChanged();
 }
 
 inline void MainCtx::initSystray()
@@ -956,6 +943,53 @@ QJSValue MainCtx::urlListToMimeData(const QJSValue &array) {
     return ret;
 }
 
+void MainCtx::saveSettings(bool withGeometry)
+{
+    if ( !p_intf->preferencesResetPending)
+    {
+        settings->beginGroup("MainWindow");
+        settings->setValue( "ShowRemainingTime", m_showRemainingTime );
+        settings->setValue( "interface-scale", QString::number( m_intfUserScaleFactor ) );
+
+        /* Save playlist state */
+        settings->setValue( "playqueue-panel-docked", m_playqueuePanel->m_docked );
+        settings->setValue( "playqueue-panel-visible", m_playqueuePanel->m_visible );
+        settings->setValue( "playqueue-panel-width", QString::number( m_playqueuePanel->m_width ) );
+
+        settings->setValue( "navigation-panel-visible", m_navigationPanel->m_visible );
+        settings->setValue( "navigation-panel-width", QString::number( m_navigationPanel->m_width ) );
+
+        settings->setValue( "player-playlist-width", QString::number( m_playerPlaylistWidth ) );
+        settings->setValue( "artist-albums-width", QString::number( m_artistAlbumsWidth ) );
+
+        settings->setValue( "grid-view", m_gridView );
+        settings->setValue( "grouping", m_grouping );
+
+        settings->setValue( "color-scheme-index", m_colorScheme->currentIndex() );
+
+        settings->setValue( "album-sections", m_albumSections );
+
+        settings->setValue( "lyrics-mode", m_lyricsMode );
+
+        /* Save the stackCentralW sizes */
+        settings->endGroup();
+    }
+    else
+    {
+        settings->remove("MainWindow");
+    }
+
+    if( !p_intf->preferencesResetPending && var_InheritBool( p_intf, "save-recentplay" ) )
+        getSettings()->setValue( "filedialog-path", m_dialogFilepath );
+    else
+        getSettings()->remove( "filedialog-path" );
+
+    QWindow* const window = intfMainWindow();
+    if (withGeometry && window && !p_intf->preferencesResetPending
+        && var_InheritBool( p_intf, "qt-remember-window" ))
+        QVLCTools::saveWindowPosition(getSettings(), window, nativeFrameMargins(window));
+}
+
 VideoSurfaceProvider* MainCtx::getVideoSurfaceProvider() const
 {
     return m_videoSurfaceProvider;
@@ -965,10 +999,18 @@ VideoSurfaceProvider* MainCtx::getVideoSurfaceProvider() const
  * Events stuff
  ************************************************************************/
 
+namespace {
+// a stop takes well under a second (30 of 30 quits in at most 0.7 s on the PC)
+constexpr int kCloseStopTimeoutMs = 3000;
+}
+
 void MainCtx::onWindowClose( QWindow* )
 {
     PlaylistController* playlistController = p_intf->p_mainPlaylistController;
     PlayerController* playerController = p_intf->p_mainPlayerController;
+
+    // redesign: the quit starts here (the stop below can hang in the core): save and arm
+    QuitWatchdog::arm(p_intf);
 
     if (m_videoSurfaceProvider)
         m_videoSurfaceProvider->onWindowClosed();
@@ -977,11 +1019,16 @@ void MainCtx::onWindowClose( QWindow* )
     //from the main window is still valid.
     //vlc_window_ReportClose is currently stubbed
     if (playerController && playerController->hasVideoOutput()) {
-        connect(playerController, &PlayerController::playingStateChanged, [this](PlayerController::PlayingState state){
+        connect(playerController, &PlayerController::playingStateChanged, this, [this](PlayerController::PlayingState state){
             if (state == PlayerController::PLAYING_STATE_STOPPED) {
                 emit askToQuit();
             }
         });
+        // redesign: the window is already hidden here, so a stop that never reports STOPPED left
+        // Cone running without a window (PC session: after a sidebar slider drag and key
+        // actions, 8 of 8 closes). Quit anyway once a stop has had its time; quitting twice is
+        // harmless (DialogsProvider::quit)
+        QTimer::singleShot(kCloseStopTimeoutMs, this, [this]() { emit askToQuit(); });
         playlistController->stop();
     }
     else

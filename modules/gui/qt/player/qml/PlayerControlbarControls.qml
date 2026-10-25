@@ -71,7 +71,32 @@ QtObject {
         { id: ControlListModel.PLAYER_SWITCH_BUTTON, file: "PlayerSwitchButton.qml", label: VLCIcons.fullscreen, text: qsTr("Switch Player") },
         { id: ControlListModel.ARTWORK_INFO, file: "ArtworkInfoWidget.qml", label: VLCIcons.info, text: qsTr("Artwork Info") },
         { id: ControlListModel.PLAYBACK_SPEED_BUTTON, file: "PlaybackSpeedButton.qml", label: "1x", text: qsTr("Playback Speed") },
-        { id: ControlListModel.HIGH_RESOLUTION_TIME_WIDGET, file: "HighResolutionTimeWidget.qml", label: VLCIcons.time, text: qsTr("High Resolution Time") }
+        { id: ControlListModel.HIGH_RESOLUTION_TIME_WIDGET, file: "HighResolutionTimeWidget.qml", label: VLCIcons.time, text: qsTr("High Resolution Time") },
+
+        // redesign (W8.1b, Figma "Player - customize"): the Customize Player items VLC has no
+        // control for, and the top bar's items (they can go into either bar)
+        { id: ControlListModel.RD_DIVIDER, file: "DividerWidget.qml", label: VLCIcons.space, text: qsTr("Divider") },
+        { id: ControlListModel.RD_SKIP_FW_10_BUTTON, file: "SkipForward10Button.qml", label: VLCIcons.skip_for, text: qsTr("Forward 10s") },
+        { id: ControlListModel.RD_SKIP_BACK_10_BUTTON, file: "SkipBack10Button.qml", label: VLCIcons.skip_back, text: qsTr("Backward 10s") },
+        { id: ControlListModel.RD_HDR_BUTTON, file: "HdrButton.qml", label: VLCIcons.tv, text: qsTr("HDR") },
+        { id: ControlListModel.RD_ZOOM_BUTTON, file: "ZoomButton.qml", label: VLCIcons.aspect_ratio, text: qsTr("Zoom") },
+        { id: ControlListModel.RD_RIGHT_SIDEBAR_BUTTON, file: "RightSidebarButton.qml", label: VLCIcons.panel_left, text: qsTr("Right Sidebar") },
+        { id: ControlListModel.RD_SETTINGS_BUTTON, file: "SettingsButton.qml", label: VLCIcons.settings, text: qsTr("%1 Settings").arg(Brand.shortName) },
+        { id: ControlListModel.RD_HOME_BUTTON, file: "HomeButton.qml", label: VLCIcons.home, text: qsTr("Go Home") },
+        { id: ControlListModel.RD_THUMBNAIL, file: "ThumbnailWidget.qml", label: VLCIcons.album_cover, text: qsTr("Thumbnail") },
+        { id: ControlListModel.RD_FILE_NAME, file: "FileNameWidget.qml", label: VLCIcons.info, text: qsTr("File Name") },
+        { id: ControlListModel.RD_ARTIST_NAME, file: "ArtistNameWidget.qml", label: VLCIcons.info, text: qsTr("Artist Name") },
+        { id: ControlListModel.RD_FOLDER_NAME, file: "FolderNameWidget.qml", label: VLCIcons.info, text: qsTr("Folder Name") },
+        { id: ControlListModel.RD_PLAYLIST_NAME, file: "PlaylistNameWidget.qml", label: VLCIcons.info, text: qsTr("Playlist Name") },
+        { id: ControlListModel.RD_REPLAY_BUTTON, file: "ReplayButton.qml", label: VLCIcons.repeat_one, text: qsTr("Replay") },
+        { id: ControlListModel.RD_CHAPTERS_BUTTON, file: "ChaptersButton.qml", label: VLCIcons.dvd_next, text: qsTr("Chapters") },
+        { id: ControlListModel.RD_FAVORITE_BUTTON, file: "FavoriteButton.qml", label: VLCIcons.bookmark, text: qsTr("Favorite") },
+        { id: ControlListModel.RD_ADD_BOOKMARK_BUTTON, file: "AddBookmarkButton.qml", label: VLCIcons.bookmark, text: qsTr("Bookmark") },
+        { id: ControlListModel.RD_PLAYLISTS_BUTTON, file: "PlaylistsButton.qml", label: VLCIcons.playlist, text: qsTr("Playlists") },
+        { id: ControlListModel.RD_MAIN_MENU_BUTTON, file: "MainMenuButton.qml", label: VLCIcons.more, text: qsTr("Menu") },
+        { id: ControlListModel.RD_LIBRARY_BUTTON, file: "LibraryButton.qml", label: VLCIcons.panel_left, text: qsTr("Library") },
+        { id: ControlListModel.RD_FOLDER_CHIP, file: "FolderChipWidget.qml", label: VLCIcons.home, text: qsTr("Folder") },
+        { id: ControlListModel.RD_MEDIA_TITLE, file: "MediaTitleWidget.qml", label: VLCIcons.info, text: qsTr("Title") }
     ]
 
     function control(id) {

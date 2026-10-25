@@ -235,6 +235,10 @@ SPrefsCatList::SPrefsCatList( qt_intf_t *_p_intf, QWidget *_parent ) :
 
     auto addCategory = [&]( QString label, QString ltooltip, QString icon, int numb) {
         QToolButton * button = new QToolButton( this );
+#ifdef VLC_BRAND_PUBLIC
+        /* redesign (Decision 70): the Cone logo for each of VLC's cone pictures */
+        icon = QStringLiteral( ":/brand/cone-128.png" );
+#endif
         /* Scale icon to non native size outside of toolbutton to avoid widget size */
         /* computation using native size */
         QPixmap scaled = QPixmap( icon )
@@ -725,7 +729,11 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
 //            ui.defaultLabel->setFont( italicFont );
             ui.skinsLabel->setText(
+#ifdef VLC_BRAND_PUBLIC
+                    qtr( "This is Cone's skinnable interface. You can download other skins at" )
+#else
                     qtr( "This is VLC's skinnable interface. You can download other skins at" )
+#endif
                     + QString( " <a href=\"https://www.videolan.org/vlc/skins.php\">" )
                     + qtr( "VLC skins website" ) + QString( "</a>." ) );
             ui.skinsLabel->setFont( italicFont );
@@ -776,6 +784,29 @@ SPrefsPanel::SPrefsPanel( qt_intf_t *_p_intf, QWidget *_parent,
 
             connect( ui.stylesCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &SPrefsPanel::changeStyle );
+
+#ifdef VLC_BRAND_PUBLIC
+            /* brand layer: the .ui tooltips name VLC */
+            {
+                const QString skinTip = qtr( "Cone will use custom skin." );
+                const QString modernTip = qtr( "Cone will use a modern layout with\n"
+                                               "no menubar or pinned controls but\n"
+                                               "with client-side decoration." );
+                const QString classicTip = qtr( "Cone will use a classic layout with\n"
+                                                "a menubar and pinned controls but\n"
+                                                "with no client-side decoration." );
+                ui.skins->setToolTip( skinTip );
+                ui.skinImage->setToolTip( skinTip );
+                ui.modernButton->setToolTip( modernTip );
+                ui.modernImage->setToolTip( modernTip );
+                ui.classicButton->setToolTip( classicTip );
+                ui.classicImage->setToolTip( classicTip );
+
+                /* Decision 70: the layout previews show Cone, not VLC's cone and name */
+                ui.modernImage->setIcon( QIcon( QStringLiteral( ":/brand/prefs-sample-modern.png" ) ) );
+                ui.classicImage->setIcon( QIcon( QStringLiteral( ":/brand/prefs-sample-classic.png" ) ) );
+            }
+#endif
 
             radioGroup = new QButtonGroup(this);
             radioGroup->addButton( ui.modernButton, 0 );

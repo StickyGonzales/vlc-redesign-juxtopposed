@@ -107,12 +107,39 @@ public:
         WIDGET_SPACER = 0x40,
         WIDGET_SPACER_EXTEND,
         WIDGET_MAX,
+
+        // redesign (W8.1b, Figma "Player - customize"): the Customize Player items VLC has no
+        // control for, and the top bar's items, which can go into either bar. Their own range,
+        // so VLC's reserved ids stay free for upstream; append only (saved layouts use the ids)
+        RD_DIVIDER = 0x80,
+        RD_SKIP_BACK_10_BUTTON,
+        RD_SKIP_FW_10_BUTTON,
+        RD_HDR_BUTTON,
+        RD_ZOOM_BUTTON,
+        RD_RIGHT_SIDEBAR_BUTTON,
+        RD_SETTINGS_BUTTON,
+        RD_HOME_BUTTON,
+        RD_THUMBNAIL,
+        RD_FILE_NAME,
+        RD_ARTIST_NAME,
+        RD_FOLDER_NAME,
+        RD_PLAYLIST_NAME,
+        RD_REPLAY_BUTTON,
+        RD_CHAPTERS_BUTTON,
+        RD_FAVORITE_BUTTON,
+        RD_ADD_BOOKMARK_BUTTON,
+        RD_PLAYLISTS_BUTTON,
+        RD_MAIN_MENU_BUTTON,
+        RD_LIBRARY_BUTTON,
+        RD_FOLDER_CHIP,
+        RD_MEDIA_TITLE,
     };
     Q_ENUM(ControlType)
 
     static_assert(RESERVED_0X1F == 0x1F, "missaligned");
     static_assert(AUDIO_TRACKS_BUTTON == 0x2B, "missaligned");
     static_assert(RESERVED_0X3F == 0x3F, "missaligned");
+    static_assert(RD_MEDIA_TITLE == 0x95, "missaligned");
 
     // Basic functionality:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;

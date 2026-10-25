@@ -167,8 +167,10 @@ Rectangle {
         }
     }
 
-    // one vertical slider with its name and value box (Figma "Frame 308")
-    component Band: Column {
+    // one vertical slider with its name and value box (Figma "Frame 308"). Mouse wheel
+    // (Decision 54): in a page that scrolls, a click on the band (the slider or the value box)
+    // hands the slider the wheel until the pointer leaves the band
+    component Band: Item {
         id: band
 
         property alias text: label.text
@@ -177,83 +179,144 @@ Rectangle {
         signal moved(real value)
 
         width: VLCStyle.dp(60)
-        spacing: VLCStyle.dp(12)
+        implicitHeight: bandColumn.implicitHeight
 
-        T.Slider {
-            id: slider
+        Column {
+            id: bandColumn
 
-            anchors.horizontalCenter: parent.horizontalCenter
-            implicitWidth: VLCStyle.dp(24)
-            implicitHeight: VLCStyle.dp(320)
-            orientation: Qt.Vertical
-            from: -20
-            to: 20
-            stepSize: 0.1
-            value: band.value
-            focusPolicy: Qt.StrongFocus
+            width: parent.width
+            spacing: VLCStyle.dp(12)
 
-            Accessible.name: band.text
+            T.Slider {
+                id: slider
 
-            onMoved: band.moved(value)
+                anchors.horizontalCenter: parent.horizontalCenter
+                implicitWidth: VLCStyle.dp(24)
+                implicitHeight: VLCStyle.dp(320)
+                orientation: Qt.Vertical
+                from: -20
+                to: 20
+                stepSize: 0.1
+                value: band.value
+                focusPolicy: Qt.StrongFocus
 
-            background: Rectangle {
-                x: (slider.width - width) / 2
-                width: VLCStyle.dp(16)
-                height: slider.height
-                radius: VLCStyle.rd_radius_normal
-                color: VLCStyle.palette.rdBgB2
-                border.width: slider.visualFocus ? VLCStyle.dp(1) : 0
-                border.color: VLCStyle.palette.rdFgA3
+                Accessible.name: band.text
 
-                // accent background fill from the bottom to the thumb
-                Rectangle {
-                    x: VLCStyle.dp(2)
-                    width: parent.width - 2 * VLCStyle.dp(2)
-                    y: slider.handle.y + slider.handle.height / 2
-                    height: parent.height - VLCStyle.dp(2) - y
+                onMoved: band.moved(value)
+
+                background: Rectangle {
+                    x: (slider.width - width) / 2
+                    width: VLCStyle.dp(16)
+                    height: slider.height
+                    radius: VLCStyle.rd_radius_normal
+                    color: VLCStyle.palette.rdBgB2
+                    // keyboard focus: FG/A3; holding the wheel in a scrolling page: Accent/DIm
+                    border.width: (slider.visualFocus || bandWheel.holding) ? VLCStyle.dp(1) : 0
+                    border.color: slider.visualFocus ? VLCStyle.palette.rdFgA3 : VLCStyle.palette.rdAccentDim
+
+                    // accent background fill from the bottom to the thumb
+                    Rectangle {
+                        x: VLCStyle.dp(2)
+                        width: parent.width - 2 * VLCStyle.dp(2)
+                        y: slider.handle.y + slider.handle.height / 2
+                        height: parent.height - VLCStyle.dp(2) - y
+                        radius: VLCStyle.rd_radius_small
+                        color: VLCStyle.palette.rdBgAccentBright
+                    }
+                }
+
+                handle: Rectangle {
+                    x: (slider.width - width) / 2
+                    y: slider.visualPosition * (slider.height - height)
+                    width: VLCStyle.dp(24)
+                    height: VLCStyle.dp(8)
                     radius: VLCStyle.rd_radius_small
-                    color: VLCStyle.palette.rdBgAccentBright
+                    color: (slider.pressed || bandWheel.holding) ? VLCStyle.palette.rdAccentMain : VLCStyle.palette.rdAccentDim
+                }
+
+                // the wheel over the bar: 0.1 dB a notch, up raises the gain (Decision 54)
+                Widgets.RdSliderWheel {
+                    id: bandWheel
+
+                    anchors.fill: parent
+                    zoneHovered: bandHover.hovered
+                    onStepped: (steps) => {
+                        if (slider.pressed)
+                            return
+                        // after a click on the value box: it shows the new value, so Enter
+                        // never brings the old one back
+                        if (valueBox.editing)
+                            valueBox.cancelEdit()
+                        bandWheel.stepSlider(slider, steps)
+                    }
                 }
             }
 
-            handle: Rectangle {
-                x: (slider.width - width) / 2
-                y: slider.visualPosition * (slider.height - height)
-                width: VLCStyle.dp(24)
-                height: VLCStyle.dp(8)
-                radius: VLCStyle.rd_radius_small
-                color: slider.pressed ? VLCStyle.palette.rdAccentMain : VLCStyle.palette.rdAccentDim
-            }
-        }
-
-        Item {
-            width: parent.width
-            height: VLCStyle.dp(21)
-
-            Text {
-                id: label
-
-                anchors.bottom: parent.bottom
+            Item {
                 width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_label
-                color: VLCStyle.palette.rdFgA3
+                height: VLCStyle.dp(21)
+
+                Text {
+                    id: label
+
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    font.family: VLCStyle.rd_fontFamily
+                    font.pixelSize: VLCStyle.rd_fontSize_label
+                    color: VLCStyle.palette.rdFgA3
+                }
+            }
+
+            Widgets.RdValueBox {
+                id: valueBox
+
+                implicitWidth: VLCStyle.dp(60)
+                implicitHeight: VLCStyle.dp(32)
+                leftPadding: VLCStyle.dp(6)
+                rightPadding: VLCStyle.dp(6)
+                text: (Math.round(band.value * 10) / 10 || 0).toFixed(1) + " " + qsTr("dB")
+                Accessible.name: band.text
+                onEdited: (text) => {
+                    const v = parseFloat(String(text).replace(",", ".").replace(/[^0-9.+-]/g, ""))
+                    if (!isNaN(v))
+                        band.moved(Math.max(-20, Math.min(20, v)))
+                }
             }
         }
 
-        Widgets.RdValueBox {
-            implicitWidth: VLCStyle.dp(60)
-            implicitHeight: VLCStyle.dp(32)
-            leftPadding: VLCStyle.dp(6)
-            rightPadding: VLCStyle.dp(6)
-            text: band.value.toFixed(1) + " " + qsTr("dB")
-            Accessible.name: band.text
-            onEdited: (text) => {
-                const v = parseFloat(String(text).replace(",", ".").replace(/[^0-9.+-]/g, ""))
-                if (!isNaN(v))
-                    band.moved(Math.max(-20, Math.min(20, v)))
+        // the band's wheel zone. The handlers only watch (the slider and the value box still
+        // take the click) and sit on an item above the band: Qt hands a press a control took to
+        // the handlers of the items above it, not to its parents
+        Item {
+            anchors.fill: parent
+
+            HoverHandler {
+                id: bandHover
+            }
+
+            PointHandler {
+                onActiveChanged: {
+                    if (active)
+                        bandWheel.arm()
+                }
+            }
+
+            // while the slider holds the wheel, the wheel over the name, the value box and the
+            // gaps moves it too (else it goes on: to the bar below, or the page). Takes no clicks
+            // and no hover; the handlers above stay off this MouseArea, which would then take
+            // the presses
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+
+                onWheel: (wheel) => {
+                    if (bandWheel.holding)
+                        bandWheel.take(wheel)
+                    else
+                        wheel.accepted = false
+                }
             }
         }
     }

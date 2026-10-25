@@ -28,14 +28,22 @@ Branch `redesign-waveform`, from `origin/redesign` 0a514865de (2026-10-15). Web 
   - Each slice gets the RMS of its samples, scaled so the loudest slice is 255.
   - Stored as 1000 bytes.
 - **How it decodes.** It opens the file a second time with VLC's own modules, the same ones playback uses: access, demuxer, packetizer and audio decoder. There is no audio output and no clock.
-  - The es_out reports only the measured track as selected. Demuxers that can (mp4, mkv) then skip reading the video.
+  - The es_out reports only the measured track as selected. Demuxers that can (mp4, mkv) then skip the video: they do not hand it on, but a read from start to end still passes over its bytes (see "Full or sampled").
   - Passthrough decoders (S/PDIF) are refused through the format callback, the same way the core falls back to a sample decoder.
   - Decoder reloads on a format change follow the core's decoder loop.
   - VLC core itself is unchanged; everything uses exported plugin API.
-- **Full or sampled.**
-  - Files up to 256 MB are decoded from start to end.
-  - Larger files (films, long recordings) are sampled: one seek per slice (by time, else by position), then 0.25 s of audio is decoded there, never more than the slice holds. A 50 GB film costs about 1000 seeks, not a full read.
-  - Without a known size the file is decoded fully. A large file whose demuxer cannot seek gets no waveform (PC review: no full read of a large file).
+- **Full or sampled (rule of 2026-10-16).** The choice follows what a full scan has to read, not the file size alone.
+  - A full scan decodes the file from start to end and gives the exact waveform, but it passes over every byte of the file: the video of an MKV is read through (the demuxer only skips handing it on), and an MP4's audio chunks are spread between the video chunks, so the reads cover most of the file there too. Its cost is the file size, while the audio it needs is a small part of a video file.
+  - **Full scan** (exact) when that read is quick:
+    - any file up to 32 MiB (`kFullScanMaxBytes`): at most about 1.5 s even on a cold disk shared with playback;
+    - a file without video up to 256 MiB (`kAudioFullScanMaxBytes`): music (MP3, AAC, FLAC, WAV, Opus ...), where every byte read is audio the waveform needs and decoding is hundreds of times faster than real time. "Without video" means no video track once the demuxer has opened the file; a still picture track (JPEG, PNG, BMP, GIF, WebP cover or chapter art) does not count. Music files keep the exact waveform, as before.
+  - **Sampled scan** for everything else (videos over 32 MiB, audio files over 256 MiB): 0.25 s of audio is decoded in each slice, never more than the slice holds. A 50 GB film costs at most about 1000 seeks, not a full read. A seek may land early: MP4 moves every track to the video keyframe before the time, even with the video unselected. Audio up to 30 s before the stretch (`kMaxPrerollSeconds`, by its timestamp) is not measured, so neighbouring slices of a short video do not all measure the audio at the same keyframe; audio further away (timestamps that do not follow the duration, MPEG-TS) is taken as it comes.
+    - **Read in order, seek only when it pays (2026-10-16, sweep fix).** The stretches are measured in order. When a stretch is complete and its audio was where its timestamps say, the next stretch is reached by reading on, and the scan seeks only when the gap to it is longer than both where a seek lands before its target on average (measured on the file: about half a keyframe interval for MP4, the audio read last for an MKV without audio cues) and the 0.2 s warm-up, and never reads on across more than 30 s (slices of files over about 8 h); a seek restarts the stretch it targets. Stretches that touch (a file up to 1000 x 0.25 s = 250 s long) are therefore read once from the start, with one seek.
+    - **Dropped before the decoder.** An audio packet that ends more than 0.2 s (`kWarmupSeconds`: AAC overlap and priming, the MP3 bit reservoir, Opus pre-roll) before the stretch never reaches the packetizer: the audio from the keyframe an MP4 seek lands on, and the gap between two stretches read on. Before the first packet decoded after such a gap, the packetizer and decoder are flushed, as after a seek. A packet without a length (MKV SimpleBlock, PES, AVI chunk) is dropped only when it starts 1 s (`kUnknownLengthSeconds`) earlier still. The decoded warm-up is skipped by its timestamp as before.
+    - Log: `waveform sampling: seeks N, audio packets dropped before the decoder N of N` after the scan line.
+  - A demuxer that announces its tracks only while reading (MPEG-PS): when a video track shows up during the full scan of a file over 32 MiB, the scan starts again sampled (log: `sampled, video found while reading`).
+  - Without a known size the file is decoded fully. A file to sample whose demuxer cannot seek gets no waveform (PC review: no full read of a large file).
+  - Why (PC test, build 38810713227): the 249 MiB 1080p MP4 and MKV (2:00, H.264 17 Mbit/s + AAC) took the full path under the old 256 MB limit and were not ready within 12 s on a first scan while playing, although the scan alone took 584 ms once the file was in the system's file cache: the cost is the 249 MiB read from disk next to the player's own reads, at the lowest thread priority. The 302 MB 4K clip took the sampled path: 340 ms. Under the new rule both 249 MiB files are sampled. Accepted limit: a QuickTime Photo-JPEG or PNG video counts as a still picture, so such a file up to 256 MiB still gets the full scan (bounded by the 60 s budget).
 - **Cancel.** `cancel()` works from any thread. The scan stops within one demuxed packet, and its VLC interrupt context also aborts blocking reads.
   - Measured: a 285 MB scan cancelled after 3, 20 and 200 ms returned within 1 ms of the cancel.
 - **No audio.** A file that shows no audio track within 2000 packets stops early.
@@ -51,6 +59,7 @@ Branch `redesign-waveform`, from `origin/redesign` 0a514865de (2026-10-15). Web 
   - The key is the file's absolute path, size and modification time, so an edited file is scanned again.
   - A file with no usable audio is cached as "none", so it is not scanned on every visit.
   - A cache hit refreshes the file's time.
+  - The cache version went to 2 with the full / sampled rule of 2026-10-16: files scanned before are scanned again once.
   - After each new entry, the least recently used files beyond 2000 are deleted. That caps the cache at about 2 MB of data.
 - **Reopening** a cached file shows the waveform as soon as the worker has read 1 KB. There is no scan.
 
@@ -83,7 +92,7 @@ Branch `redesign-waveform`, from `origin/redesign` 0a514865de (2026-10-15). Web 
   - the playhead narrows from 8 to 4 px around the same center (100 ms).
 - **Until then,** the plain bar stays as it is.
 - **Unchanged.** The layer takes no input:
-  - Seeking, dragging, hover, the preview card, the wheel, the keys and the right-click menu are SliderBar's, unchanged.
+  - Seeking, dragging, hover, the preview card, the keys and the right-click menu are SliderBar's, unchanged (the seek bar takes no wheel since Decision 54).
   - The seek to 00:00:00 (417fc21e96) is unchanged: it lives in the FSM and the player, which the patch does not touch.
 
 ## 3. VIDEO_INDEX rows covered
@@ -105,7 +114,7 @@ One line each:
 - P6-06 played bars: Figma's Dark/Accent/DIm (derived from the live accent), not Accent/Main. The playhead stays Accent/Main as in Figma.
 - P6-06 bars: a fixed 5 px grid from 6 px. A live playhead cannot shift the bars the way the static Figma frame does, so the bars it overlaps are hidden whole, and the space beside it is 3 to 7 px instead of exactly 3.
 - P6-06 heights: RMS loudness per slice, the loudest bar 14 px, 7 sizes (Figma's 2 to 14 in steps of 2).
-- P6-06 scans: local files only; files over 256 MB are sampled (0.25 s per 1/1000 of the duration); cache capped at 2000 files.
+- P6-06 scans: local files only; full (exact) scan for files up to 32 MiB and files without video up to 256 MiB, all others sampled (0.25 s per 1/1000 of the duration; section 2); cache capped at 2000 files.
 - P6-06 switch: the bars fade in over 100 ms when the scan is ready and the playhead narrows 8 to 4 px; on a media change the plain bar shows until the next file's waveform is ready.
 - P4-36: the toggle is the Playback tab's first row until the subtitle timeline toggle (P3-16) arrives above it.
 - P6-05: the music layout uses the waveform only when the option is on (P6-06 offers it as an option); with it on, the music bar matches Figma "Player - Music".
@@ -239,14 +248,15 @@ Offscreen render of `RdWaveformItem` (Qt 6.4) with the Figma frame's 244 bar hei
 
 ## 8. Performance risks to measure first (PERF.md)
 
-The marks in VLC's debug log (verbosity 2, added on the PC): `waveform: job started for the playing file` (GUI thread: the option is on and a thick seek bar shows it), `waveform scan (full|sampled|large, not seekable|no duration): levels|no waveform|no waveform, over the time budget|cancelled in N ms` (the scan alone, worker thread; the scan line comes from the libvlc instance, `main libvlc debug`) and `waveform: ready|no waveform from the cache|from the scan, N ms after the job started` (GUI thread: the bars' data arrived). A scan stops after 60 s (`kTimeBudgetSeconds`; the file is then cached as "no waveform"), and quitting waits at most 500 ms for a cancelled one.
+The marks in VLC's debug log (verbosity 2, added on the PC): `waveform: job started for the playing file` (GUI thread: the option is on and a thick seek bar shows it), `waveform scan (full|sampled|sampled, video found while reading|large, not seekable|not seekable, video found while reading|no duration): levels|no waveform|no waveform, over the time budget|cancelled in N ms` (the scan alone, worker thread; the scan line comes from the libvlc instance, `main libvlc debug`) and `waveform: ready|no waveform from the cache|from the scan, N ms after the job started` (GUI thread: the bars' data arrived). A scan stops after 60 s (`kTimeBudgetSeconds`; the file is then cached as "no waveform"), and quitting waits at most 500 ms for a cancelled one.
 
 1. **The scan while playing a large local video.**
    - The sampled scan seeks through the same file the player reads. On a hard disk, the head moves between both, so watch for dropped frames during the first seconds of a 4K file with the option on.
    - Expected: about 1000 short reads at the lowest thread priority. If it shows, delay the scan start until playback has buffered (a few seconds), or lower the sample count.
-2. **A full scan of a 256 MB file** (the upper bound of the full path, e.g. a long FLAC or an episode).
-   - It is CPU bound on one low priority thread. Measure the time to ready, and CPU while playing.
-   - If it takes too long, lower `kFullScanMaxBytes` so more files are sampled.
+2. **The upper bounds of the full path** (section 2): a 32 MiB video and a 256 MiB audio file (a long FLAC or WAV).
+   - Measure the time to ready on a first scan (file not in the system's file cache, e.g. after a restart), and CPU while playing.
+   - Pass limits (2026-10-16): time to ready at most 2 s for an MP4 and 5 s for an MKV on a first scan, cache reopen at most 100 ms, zero extra dropped frames. The 249 MiB 1080p MP4 / MKV test files now take the sampled path.
+   - If a bound is too slow, lower `kFullScanMaxBytes` or `kAudioFullScanMaxBytes`.
 3. **Seek bar frame times while playing and dragging,** with the waveform shown: should be the same as the plain bar.
    - Only the cuts move, and only when the playhead crosses a bar.
    - Check QSG_RENDER_TIMING for texture uploads during playback: there should be none.
@@ -257,6 +267,20 @@ The marks in VLC's debug log (verbosity 2, added on the PC): `waveform: job star
    - With it on, opening a file starts one worker job.
    - Opening a file should stay the same as stock VLC.
 6. **A network share** opened as a local path (a mapped drive) is treated as a local file and read a second time. Check that this is acceptable on a slow share.
+7. **Sampled scan cost per slice (sweep fix of 2026-10-16, estimate, not measured yet).**
+   - The test files (ffprobe): both 2:00, H.264 1080p30 with a keyframe every 8.33 s (x264's default 250 frames), AAC 48 kHz stereo (5 626 packets of 21.3 ms), the audio interleaved every 2 video frames (3 599 audio runs in the file). The 1000 slices are 0.12 s long, so the stretches touch.
+   - A simulation of the scan over the files' real packet tables gave the counts below; the costs come from the sweep's times (build 38829058873) and the cached full scan of 2026-10-16 (584 ms for the whole 249 MiB MKV: every block read, all AAC decoded once).
+
+   | File | Before | After |
+   |---|---|---|
+   | wave_1080p_250MiB.mp4 | 1000 seeks, 198 220 AAC packets decoded (198 per slice: about 4.1 s from the keyframe, 0.12 s kept); about 75 us per packet = about 14 ms per slice; measured 14.9 s / 13.5 s | 1 seek, 5 626 packets decoded once (5.6 per slice): about 0.4 to 0.6 ms per slice, ready in about 0.5 s with the file in the system's file cache (target 2 s) |
+   | wave_1080p_250MiB.mkv | 1000 seeks, 6 625 packets decoded: without audio cues every MKV seek resumes at the last audio block read, so the old scan already read the file once from the start; the cost was the 1000 seeks and decoder restarts, about 4.2 ms each; measured 4.8 s | 1 seek, the same single read without the restarts: about 0.6 ms per slice, ready in about 0.6 s cached (target 5 s) |
+   | wave_4k60_80mbps_remux.mkv (0:30, 0.03 s slices) | 1000 seeks; measured 2.6 s | 1 seek, one read: about 0.3 to 0.4 s cached |
+
+   - Dropping the packets before the decoder alone (without reading on) would have left the MP4 at about 5 to 7 s: the 198 packets per slice are still demuxed (read from the file, about 30 to 40 % of the 75 us), so the scan also reads on instead of seeking when the stretches are close.
+   - Cold disk (file not in the system's file cache): the audio sits every 2 video frames in both files, so reading all of it touches the whole 249 MiB, before and after the fix. The time to ready is then bounded by the disk's read of the file next to the player's reads (seen as more than 12 s once on 2026-10-16 with the old full scan). The fix removes the CPU cost, not this read.
+   - Long files (stretches apart), simulated for a 2 h film with the same layout (7.2 s slices): MP4 still seeks for each slice (the gap of 6.95 s is longer than the 4.1 s average lead); the 207 000 packets from the keyframes are demuxed but only 22 000 are decoded (was all 207 000): about 7 s instead of about 15 s cached, plus 1000 disk seeks on a cold disk. MKV without audio cues reads the whole file either way (the seeks never jump forward past what was read); only 22 000 of 338 000 audio packets are decoded now, but the video blocks are still read, so a large MKV film can still reach the 60 s budget on a slow disk. Its log still shows about 1000 seeks: each lands where the demuxer already is (the average lead stays just under the 6.95 s gap), cheap but not reading on. Possible follow-up (not done, needs a PC test): during a long jump, report the video track as selected so the MKV seeker uses the video cues.
+   - Retest: the three files with the cache moved aside; the `waveform sampling:` line should show 1 seek for each (a few more if the audio starts after the video: the slices before it seek as before); the shape unchanged (the 2 min hill with its 12 dips, no staircase).
 
 ## 9. UX pass and tests for the PC
 

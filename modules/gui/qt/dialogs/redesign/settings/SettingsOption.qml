@@ -40,6 +40,9 @@ SettingsRow {
 
     // VLC's option name ("sub-autodetect-file")
     property string option: ""
+    // a sentence added to the option's own explanation in the info popover ("Applies from the
+    // next file.")
+    property string note: ""
     // empty: from the option's type
     property string kind: ""
     // [{ value, text }], replaces the choices VLC declares
@@ -65,6 +68,8 @@ SettingsRow {
     property real limitFrom: from
     property real limitTo: to
     property real scrollSpeed: (to - from) * VLCStyle.rd_sliderScrollRate
+    // slider: one mouse wheel notch over the slider (Decision 54)
+    property real wheelStep: step
     // slider filled from 0 (delays)
     property bool bipolar: false
     // slider: the value the fill starts from (bipolar) and the edge label points to
@@ -106,7 +111,10 @@ SettingsRow {
     }
 
     readonly property bool _integer: info.type === "integer"
-    readonly property var _choices: choices ?? RdEffects.optionChoices(option)
+    // VLC words "no module" as "Disable" (Visualizer...): Figma and the settings sidebar say
+    // "Disabled"
+    readonly property var _choices: choices ?? RdEffects.optionChoices(option).map((c) =>
+        (info.type === "module" && c.value === "none") ? { value: c.value, text: qsTr("Disabled") } : c)
 
     // options the interface reads into MainCtx (MainCtx::loadPrefs): it reads them again once
     // RdEffects has written the change, so they apply at once (as after VLC's preferences).
@@ -158,11 +166,10 @@ SettingsRow {
 
     text: info.text ?? option
     description: {
-        const text = RdEffects.optionDescription(option)
-        if (!restartRequired)
-            return text
-        const note = qsTr("%1 uses this setting the next time it starts.").arg(Brand.shortName)
-        return text !== "" ? text + "\n\n" + note : note
+        const parts = [RdEffects.optionDescription(option), root.note]
+        if (restartRequired)
+            parts.push(qsTr("%1 uses this setting the next time it starts.").arg(Brand.shortName))
+        return parts.filter((part) => part !== "").join("\n\n")
     }
     keywords: option
     shown: SettingsCatalog.exists(option)
@@ -257,6 +264,7 @@ SettingsRow {
             limitTo: root.limitTo
             step: root.step
             scrollSpeed: root.scrollSpeed
+            wheelStep: root.wheelStep
             labels: root.labels
             labelStep: root.labelStep
             labelAnchor: root.labelAnchor
@@ -309,6 +317,8 @@ SettingsRow {
 
             implicitWidth: root.controlWidth
             implicitHeight: root.controlHeight
+            // at 30 % while its row is not available, like the other redesign controls
+            opacity: enabled ? 1.0 : VLCStyle.rd_disabledRowOpacity
             // Figma "Frame 265": the value in FG/A2
             color: VLCStyle.palette.rdFgA2
             placeholderTextColor: VLCStyle.palette.rdFgA2
@@ -337,6 +347,7 @@ SettingsRow {
 
                 width: root.controlWidth - browseButton.width - parent.spacing
                 height: root.controlHeight
+                opacity: enabled ? 1.0 : VLCStyle.rd_disabledRowOpacity
                 color: VLCStyle.palette.rdFgA2
                 placeholderTextColor: VLCStyle.palette.rdFgA2
                 text: String(root.value ?? "")
@@ -354,6 +365,8 @@ SettingsRow {
                 anchors.verticalCenter: parent.verticalCenter
                 style: Widgets.RdButton.Style.Plain
                 text: qsTr("Browse")
+                // the row's 30 %, not the 50 % of a disabled button on its own
+                opacity: enabled ? 1.0 : VLCStyle.rd_disabledRowOpacity
                 Accessible.name: qsTr("Browse for \"%1\"").arg(root.text)
                 onClicked: {
                     const current = String(root.value ?? "")

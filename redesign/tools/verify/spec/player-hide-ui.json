@@ -1,0 +1,57 @@
+{
+ "format": 1,
+ "node": "3328:11554",
+ "name": "Player - hide UI",
+ "png": "Player - hide UI.png",
+ "png_scale": 2,
+ "kind": "frame",
+ "size": [
+  1920,
+  1080
+ ],
+ "theme": "dark",
+ "rows": [
+  41,
+  42,
+  66,
+  67,
+  82
+ ],
+ "background": [
+  {
+   "color": "#000000"
+  },
+  {
+   "type": "image"
+  }
+ ],
+ "background_mask": "image",
+ "elements": [
+  {
+   "id": "3328:11893",
+   "name": "Frame 312",
+   "type": "frame",
+   "path": "Frame 312",
+   "bounds": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "radius": 19,
+   "strokes": [
+    {
+     "token": "BG/A3",
+     "dark": "#1B1B1B",
+     "light": "#D5D5D5"
+    }
+   ],
+   "stroke_weight": 20,
+   "stroke_align": "center",
+   "effects": {
+    "style": "bg blur"
+   },
+   "translucent": true
+  }
+ ]
+}

@@ -110,7 +110,6 @@ RdSidePanelPage {
     Widgets.RdSettingsSection {
         title: qsTr("Defaults")
         showDivider: false
-        note: qsTr("Applies from the next file")
         // Figma "Frame 92" (845:1597): 10 px under the rows
         bottomPadding: VLCStyle.dp(10)
 
@@ -302,6 +301,8 @@ RdSidePanelPage {
             limitFrom: 10
             limitTo: 500
             stepSize: 25
+            // the wheel fine-tunes in 5 % steps (Decision 54)
+            wheelStep: 5
             value: RdEffects.values.subtitleTextScale
             onMoved: (v) => RdEffects.setSubtitleTextScale(v)
         }

@@ -35,6 +35,14 @@
 
 #include <assert.h>
 
+/* redesign: brand layer, the login prompt of the web interface and of password-protected HTTP
+ * streams names the public profile's app; the vlc profile keeps VLC's realm */
+#ifdef VLC_BRAND_PUBLIC
+# define BRAND_HTTP_REALM "Basic realm=\"Cone\""
+#else
+# define BRAND_HTTP_REALM "Basic realm=\"VLC stream\""
+#endif
+
 #include <vlc_list.h>
 #include <vlc_network.h>
 #include <vlc_tls.h>
@@ -1910,7 +1918,7 @@ static void httpdLoop(httpd_host_t *host)
 
                            if (b_auth_failed) {
                                 httpd_MsgAdd(answer, "WWW-Authenticate",
-                                        "Basic realm=\"VLC stream\"");
+                                        BRAND_HTTP_REALM);
                                 answer->i_status = 401;
                             } else
                                 answer->i_status = 404; /* no url registered */
