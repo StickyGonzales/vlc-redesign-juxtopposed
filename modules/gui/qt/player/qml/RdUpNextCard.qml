@@ -70,9 +70,9 @@ FocusScope {
     }
 
     Accessible.role: Accessible.Dialog
-    Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(RdUpNext.nextLine)
+    Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(RdUpNext.cardLine)
                             : qsTr("Up next: %1, %2. Playing in %3 seconds.")
-                                  .arg(RdUpNext.showName).arg(RdUpNext.nextLine).arg(RdUpNext.secondsLeft)
+                                  .arg(RdUpNext.showName).arg(RdUpNext.cardLine).arg(RdUpNext.secondsLeft)
 
     function _primary() {
         if (root._still)
@@ -214,7 +214,7 @@ FocusScope {
             // two lines, then elided (matrix row 115)
             T.Label {
                 width: parent.width
-                text: RdUpNext.nextLine
+                text: RdUpNext.cardLine
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -360,7 +360,7 @@ FocusScope {
                 id: pillEpisode
 
                 width: parent.width
-                text: RdUpNext.nextLine
+                text: RdUpNext.cardLine
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdFg2
                 font.family: VLCStyle.rd_fontFamily

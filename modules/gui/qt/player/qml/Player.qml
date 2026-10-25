@@ -2232,7 +2232,9 @@ FocusScope {
 
     Shortcut {
         sequences: [StandardKey.Cancel]
-        enabled: RdPanels.current !== "" || rootPlayer._escapeClosesLibrary || RdPanels.uiHidden
+        // a focused Up Next card or show prompt takes Escape itself (it cancels / dismisses)
+        enabled: (RdPanels.current !== "" || rootPlayer._escapeClosesLibrary || RdPanels.uiHidden)
+                 && !upNextCard.activeFocus && !showPrompt.activeFocus
         onActivated: {
             if (RdPanels.current !== "") {
                 // the keyboard focus goes back to the panel's button (onCurrentChanged above)

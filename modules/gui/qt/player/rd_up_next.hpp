@@ -29,6 +29,7 @@
 #include "qt.hpp"
 #include "player/rd_episode_parser.hpp"
 #include "playlist/media.hpp"
+#include "util/shared_input_item.hpp"
 
 class MainCtx;
 class PlayerController;
@@ -78,6 +79,8 @@ class RdUpNext : public QObject
     Q_PROPERTY(QString nextCode READ nextCode NOTIFY nextChanged FINAL)
     Q_PROPERTY(QString nextTitle READ nextTitle NOTIFY nextChanged FINAL)
     Q_PROPERTY(QString nextLine READ nextLine NOTIFY nextChanged FINAL)
+    // the episode the card names: the next one, or with "Still watching?" the one waiting paused
+    Q_PROPERTY(QString cardLine READ cardLine NOTIFY nextChanged FINAL)
     Q_PROPERTY(QUrl nextUrl READ nextUrl NOTIFY nextChanged FINAL)
     Q_PROPERTY(bool nextIsNewSeason READ nextIsNewSeason NOTIFY nextChanged FINAL)
     Q_PROPERTY(int nextSeason READ nextSeason NOTIFY nextChanged FINAL)
@@ -120,6 +123,7 @@ public:
     QString nextCode() const;
     QString nextTitle() const;
     QString nextLine() const;
+    QString cardLine() const;
     QUrl nextUrl() const;
     bool nextIsNewSeason() const;
     int nextSeason() const;
@@ -174,7 +178,8 @@ private:
         QString updated;
     };
 
-    void readSettings();
+    // true when an option changed
+    bool readSettings();
     void onInputChanged(bool hasInput);
     void startDetection();
     void onDetected(int generation, const rdepisode::Show& show);
@@ -193,6 +198,11 @@ private:
     bool queuedPresent() const;
     // forgets the autoplay item (it left the queue, or it is the media playing now)
     void clearQueued();
+    // an item Cone put in the queue (the waiting one or one already played)
+    bool isOwn(input_item_t* input) const;
+    void pruneOwnItems();
+    // the user is there after all: "Still watching?" goes, the next episode is queued playing
+    void leaveStillWatching();
     void refreshQueued();
     QStringList itemOptions(bool startPaused) const;
 
@@ -233,27 +243,29 @@ private:
     int m_generation = 0;
     QThreadPool m_scanPool;
 
-    // the autoplay item: the media handed to the queue (kept to recognise it)
-    vlc::playlist::Media m_queued;
+    // the autoplay item: the media handed to the queue (held to recognise it)
+    SharedInputItem m_queued;
     input_item_t* m_queuedInput = nullptr;
     QUrl m_queuedUrl;
     bool m_queuedPaused = false;
     int m_ownRemovals = 0;
+    // every item Cone inserted that may still be in the queue (held, so no address is reused)
+    QVector<SharedInputItem> m_ownItems;
     // the media playing came from the autoplay item, and how many in a row without the user
     bool m_currentIsAutoplay = false;
     int m_autoStreak = 0;
     // the user built the queue (several items at once, a remove, a move, a sort ...)
     bool m_userQueue = false;
     // the last item the user added alone (a single-file open plays it at once)
-    input_item_t* m_lastSingleAdd = nullptr;
+    SharedInputItem m_lastSingleAdd;
     // Cancel (or the autoplay row removed) for the episode playing
     bool m_cancelled = false;
     // the next episode was queued paused: "Still watching?" stays on it
     bool m_stillPending = false;
-    // the autoplay item was queued from an episode without subtitles; then the next one playing
-    // has them unselected once it starts
-    bool m_queuedSpuOff = false;
-    bool m_carrySpuOff = false;
+    // "Still watching?" shows over the next episode, loaded paused
+    bool m_stillOnPaused = false;
+    // the episode "Still watching?" names (the next one once it is loaded)
+    QString m_stillLine;
     // the options the autoplay item was queued with (refreshed at the card point)
     QStringList m_queuedOptions;
 
@@ -275,6 +287,9 @@ private:
 
     // remembered answers, keyed by the show root folder
     QHash<QString, Answer> m_answers;
+    // rd-shows.json is read; until then nothing is written and Always answers nothing
+    bool m_storeLoaded = false;
+    bool m_storeDirty = false;
     QThreadPool m_storePool;
 
     // the next episode's picture (one-shot thumbnailer request)

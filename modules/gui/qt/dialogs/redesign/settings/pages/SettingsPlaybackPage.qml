@@ -222,8 +222,10 @@ SettingsPage {
                     anchors.verticalCenter: parent.verticalCenter
                     readonly property int total: RdUpNext.rememberedYes + RdUpNext.rememberedNo
                     text: total === 0 ? qsTr("No shows yet")
-                                      : qsTr("%1 shows: %2 autoplay, %3 never", "", total)
-                                            .arg(total).arg(RdUpNext.rememberedYes).arg(RdUpNext.rememberedNo)
+                        : total === 1 ? qsTr("1 show: %1 autoplay, %2 never")
+                                            .arg(RdUpNext.rememberedYes).arg(RdUpNext.rememberedNo)
+                        : qsTr("%1 shows: %2 autoplay, %3 never")
+                              .arg(total).arg(RdUpNext.rememberedYes).arg(RdUpNext.rememberedNo)
                     font.family: VLCStyle.rd_fontFamily
                     font.pixelSize: VLCStyle.rd_fontSize_label
                     color: VLCStyle.palette.rdFgA3
