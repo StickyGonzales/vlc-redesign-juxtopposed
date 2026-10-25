@@ -36,6 +36,9 @@ RdLibraryDialog {
     property var playlist: null
     // MLItemIds or URLs added to the playlist
     property var files: []
+    // the names the library shows for the MLItemIds in files (same index); URLs show their
+    // file name
+    property var fileNames: []
     property url cover: ""
 
     title: playlist ? qsTr("Playlist Properties") : qsTr("New Playlist")
@@ -44,6 +47,7 @@ RdLibraryDialog {
     function openWith(params) {
         playlist = params.playlist ?? null
         files = params.items ?? []
+        fileNames = params.names ?? []
         cover = playlist ? RdLibraryStore.playlistCover(playlist.id) : ""
         nameField.text = playlist ? playlist.title : ""
         open()
@@ -60,12 +64,16 @@ RdLibraryDialog {
         files = list
     }
 
-    function _fileName(entry) {
+    // the name shown for files[index]: the library's name of a library item ("Beta H264 AAC.mp4"),
+    // the file name of a URL (dropped or picked files)
+    function _fileName(index) {
+        const entry = files[index]
         if (typeof entry === "string") {
             const parts = RdLibraryNav.decoded(entry).split("/")
             return parts[parts.length - 1]
         }
-        return qsTr("Library item")
+        const name = fileNames[index] ?? ""
+        return name !== "" ? name : qsTr("Library item")
     }
 
     onSaved: {
@@ -230,7 +238,7 @@ RdLibraryDialog {
                     elide: Text.ElideMiddle
                     text: dialog.files.length === 0
                           ? qsTr("Drag files into the box or click here to select files.")
-                          : dialog.files.length === 1 ? dialog._fileName(dialog.files[0])
+                          : dialog.files.length === 1 ? dialog._fileName(0)
                                                       : qsTr("%1 file selected", "%1 files selected", dialog.files.length).arg(dialog.files.length)
                     font.family: VLCStyle.rd_fontFamily
                     font.pixelSize: VLCStyle.rd_fontSize_label
