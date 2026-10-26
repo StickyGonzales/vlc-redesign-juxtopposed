@@ -669,10 +669,11 @@ bool RdSeekThumbnailer::fastSeekMisses(vlc_tick_t time, vlc_tick_t date)
     bool misses = false;
     if (m_lastFastTime != VLC_TICK_INVALID)
     {
-        const vlc_tick_t far = std::clamp(m_length / 8, kFarMin, kFarMax);
+        // (not "far": Windows' minwindef.h defines it as a macro)
+        const vlc_tick_t farLimit = std::clamp(m_length / 8, kFarMin, kFarMax);
         const vlc_tick_t asked = time - m_lastFastTime;
         const vlc_tick_t got = date - m_lastFastDate;
-        misses = std::llabs(got - asked) > far;
+        misses = std::llabs(got - asked) > farLimit;
     }
     m_lastFastTime = time;
     m_lastFastDate = date;

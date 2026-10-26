@@ -38,6 +38,7 @@ Making that wait interruptible is a core change. It is the same escape STATUS.md
 ## 3. Checks
 - `rd_seek_thumbnailer.cpp` compiles with no new warnings (g++ `-Wall -Wextra -Wconversion`, syntax check against Qt 6 headers).
 - buildlists 0, privacycheck 0. No QML changed.
+- Windows names (2026-10-26): the first version did not compile on Windows (build 40360964324): the local variable `far` is a macro in Windows' `minwindef.h`. It is now `farLimit`. Every identifier the change adds was checked against Windows' header macros (`far`, `near`, `small`, `interface`, `pascal`, `min`, `max`, `ERROR`, `IN`, `OUT`, ...): only `far` clashed. `min` / `max` appear only as `std::min` / `std::max`, which the file already used before. A syntax check with those macros defined (`-Dfar= -Dnear= -Dsmall=char -Dinterface=struct -Dpascal=`) gives the same 2 errors as the Windows build on the old code and none now.
 
 ## 4. Sandbox test (Linux)
 Builds:
