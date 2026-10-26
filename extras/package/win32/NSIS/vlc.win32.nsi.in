@@ -14,7 +14,14 @@
 !define PRODUCT_PUBLISHER "@BRAND_COMPANY@"
 !define PRODUCT_WEB_SITE "@BRAND_WEBSITE@"
 !define PRODUCT_DIR_REGKEY "@BRAND_REGKEY@"
+; redesign: brand layer, the Settings > Apps key keeps the identity name ("Cone" in the public
+; profile, redesign/RENAME_CONE_PLAYER.md R4), so an upgrade from a Cone beta finds and replaces its
+; entry, the shown name being DisplayName
+!if "@BRAND_PROGID@" == "VLC"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!else
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\@BRAND_PROGID@"
+!endif
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 !define PRODUCT_ID "@BRAND_PRODUCT_ID@"
 !define PRODUCT_EXE "@BRAND_EXE@"
@@ -37,12 +44,17 @@
 !else
   !define PRODUCT_SHORT_NAME "${PRODUCT_NAME}"
   !define PRODUCT_DESCRIPTION "${PRODUCT_NAME}, a media player based on VLC media player"
-  !define PRODUCT_APPDATA_DIR "${PRODUCT_NAME}"
+  ; the user settings folder in %APPDATA%: the identity name, the ProgID prefix
+  ; "Cone", which the rename keeps (src/win32/dirs.c APP_DIR_NAME, RENAME_CONE_PLAYER.md R4)
+  !define PRODUCT_APPDATA_DIR "${PRODUCT_PROGID}"
+  ; the name of the 0.x betas: an upgrade removes their shortcuts and website link
+  !define PRODUCT_BETA_NAME "Cone"
   ; the project page holds the documentation; no skins (Decision 63): no skins link
   !define PRODUCT_DOC_URL "${PRODUCT_WEB_SITE}#readme"
   !define PRODUCT_WEBSITE_LINK "${PRODUCT_NAME} Website"
-  ; Decision 58: "Cone 0.1.0" in the window title and on the welcome and finish pages, "based on
-  ; VLC <version>" under every page; the Windows Apps list shows "Cone" with the version 0.1.0
+  ; Decision 58: "Cone Player 1.0.0" in the window title and on the welcome and finish pages,
+  ; "based on VLC <version>" under every page; the Windows Apps list shows "Cone Player" and its
+  ; version
   !define PRODUCT_BRANDING_TEXT "based on VLC ${VLC_VERSION}"
   !define PRODUCT_TITLE "${PRODUCT_NAME} ${PRODUCT_VERSION}"
   !define PRODUCT_DISPLAY_NAME "${PRODUCT_NAME}"
@@ -78,9 +90,9 @@ Var 32bitPath
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Name "${PRODUCT_TITLE}"
-@HAVE_WIN64_FALSE@                   OutFile ..\@BRAND_INTERNAL_NAME@-${VERSION}-win32.exe
-@HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\@BRAND_INTERNAL_NAME@-${VERSION}-win64.exe
-@HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\@BRAND_INTERNAL_NAME@-${VERSION}-winarm64.exe
+@HAVE_WIN64_FALSE@                   OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-win32.exe
+@HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-win64.exe
+@HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-winarm64.exe
 InstallDir "$@PROGRAMFILES@\${PRODUCT_INSTALL_DIR}"
 !ifdef NSIS_LZMA_COMPRESS_WHOLE
 SetCompressor lzma
@@ -346,6 +358,19 @@ skip_uninstall32_cleanup:
     Push "\"
     Call RemoveEmptyDirs
   ${EndIf}
+
+!if "${PRODUCT_PROGID}" != "VLC"
+!if "${PRODUCT_BETA_NAME}" != "${PRODUCT_NAME}"
+  ; redesign: brand layer, an upgrade from a Cone 0.x beta (redesign/RENAME_CONE_PLAYER.md): its
+  ; shortcuts and website link carry the old name; they go whichever sections are picked now
+  Delete "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_BETA_NAME}.lnk"
+  Delete "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_BETA_NAME} skinned.lnk"
+  Delete "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_BETA_NAME} Website.lnk"
+  Delete "$SMPROGRAMS\${PRODUCT_PUBLISHER}\${PRODUCT_BETA_NAME} - reset preferences and cache files.lnk"
+  Delete "$DESKTOP\${PRODUCT_BETA_NAME}.lnk"
+  Delete "$INSTDIR\${PRODUCT_BETA_NAME} Website.url"
+!endif
+!endif
 
   !insertmacro OpenUninstallLog
 
@@ -972,6 +997,12 @@ Section "un.$(Name_Section91)" SEC91
 !endif
 
   Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
+!if "${PRODUCT_PROGID}" != "VLC"
+!if "${PRODUCT_BETA_NAME}" != "${PRODUCT_NAME}"
+  ; redesign: brand layer, a beta's desktop shortcut that an upgrade could not reach
+  Delete "$DESKTOP\${PRODUCT_BETA_NAME}.lnk"
+!endif
+!endif
 
 !if "${PRODUCT_PROGID}" == "VLC"
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"

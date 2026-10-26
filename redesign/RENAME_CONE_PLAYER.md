@@ -1,6 +1,6 @@
 # Rename plan: Cone → Cone Player
 
-Status: **decided, no code changed yet.** StickyGonzales answered R1 to R7 on 2026-10-25 (section 1). The rename ships with **Cone Player 1.0**, the release where Cone leaves beta; nothing of it goes into a 0.x beta. The plan was written against `wip/next-test` at f14c4303f4 (2026-10-25).
+Status: **built on `wip/cone-player`, tested under Wine only, not merged** (section 7). StickyGonzales answered R1 to R7 on 2026-10-25 (section 1, Decision 73). The rename ships with **Cone Player 1.0**, the release where Cone leaves beta; nothing of it goes into a 0.x beta, so the branch waits for 1.0. The plan was written against `wip/next-test` at f14c4303f4 (2026-10-25).
 
 Scope: the **public** brand profile only. The vlc profile (VLC's name and cone) stays as it is.
 
@@ -138,15 +138,73 @@ Uses today: BRAND_NAME is the tray tooltip, tray menu and notification title (`d
 
 The work lives on its own branch until 1.0 and is merged only for the 1.0 release (R6): betas before it keep shipping as Cone.
 
-1. **Build values and brand.hpp** (section 3), plus traps 1 to 4 in NSIS. Qt-side and packaging only, no core: one branch, `wip/rename-cone-player`.
+1. **Build values and brand.hpp** (section 3), plus traps 1 to 4 in NSIS. Qt-side and packaging only, no core: branch `wip/cone-player`.
 2. **Core texts** (VOUT_TITLE, help.c; no sentences, R1 is A): a separate branch and build (CLAUDE.md core rule).
 3. **Images:** `installer-art.js` and `make_prefs_samples.sh` re-run, the PNG / BMP outputs committed.
 4. **Docs:** README, CREDITS, release workflow title (wip/ci-release), Linux package names (wip/linux-build), CLAUDE.md / VIDEO_INDEX Decision line.
-5. **Checks:** `privacycheck.py`, `buildlists.py`, `qmlcheck.py` (if QML changes), makensis of both profiles (warning count unchanged), the vlc profile's preprocessed NSIS script identical apart from line labels, Wine install / upgrade / uninstall like `redesign/INSTALLER_NOTES.md` section 5, with an upgrade from the last Cone 0.x installer.
+5. **Checks:** `privacycheck.py`, `buildlists.py`, `qmlcheck.py` (if QML changes), makensis of both profiles (warning count unchanged), the vlc profile's preprocessed NSIS script identical apart from line labels, Wine install / uninstall like `redesign/INSTALLER_NOTES.md` section 5.
 
 ## 6. Test on Windows (PC session)
 
-- Zip: an existing `portable` folder from the last 0.x beta still has its settings after the update (Qt settings in `portable\Cone\`).
-- About, tray, top bar without media, window and taskbar title, video window title, exe Properties > Details, volume mixer, Task Manager: "Cone Player".
-- Installer: every page and bitmap; Settings > Apps shows one entry "Cone Player" after an upgrade from a Cone installer (no leftover "Cone"); the Start menu has only the new shortcuts; Open with and Default apps show "Cone Player"; a type already set to Cone still opens in Cone Player.
-- Uninstall: nothing named Cone or Cone Player left (INSTALLER_NOTES.md section 6), and "Delete preferences and cache" removes `%APPDATA%\Cone`.
+Needs a Windows build of `wip/cone-player` (Actions, build-windows, Run workflow, branch `wip/cone-player`, brand public; the core commit is part of it, so it is a core build): the installer `coneplayer-<version>-win64.exe` (artifact `cone-installer-win64`) and the zip `ConePlayer-<version>-win64.zip`. Use a throwaway Windows (Windows Sandbox or a VM), as in `redesign/INSTALLER_NOTES.md` section 6. No beta-to-1.0 transition is tested (Decision of StickyGonzales, 2026-10-25: no transition work); the installer's upgrade code stays as it is.
+
+**A. Portable zip**
+1. Unzip `ConePlayer-<version>-win64.zip`: its top folder is `ConePlayer-<version>`. Start `Cone.exe`, change a setting, close and start it again: the setting is kept in the `portable` folder (Qt settings in `portable\Cone\vlc-qt-interface.ini`).
+
+**B. Names in the app**
+2. The top bar without media, the window and taskbar title, About (title "Cone Player <version>", "based on VLC <version>" under it, the About text), the welcome / onboarding title, the tray tooltip and its "Hide Cone Player in taskbar" / "Show Cone Player" items: "Cone Player". The "..." menu still says "About Cone" and "Quit Cone", and error dialogs say "Cone could not ..." (R1).
+3. Smallest window width: the top bar title without media and the About title fit (trap 7).
+4. Settings: a setting whose VLC text says "VLC media player" shows "Cone Player"; one that says "VLC" shows "Cone".
+5. Audio visualizer (or `--no-embedded-video`): the separate video window's title is "Cone Player". `Cone.exe --version` in a console: "Cone Player <version>, based on VLC ...". Task Manager, the volume mixer and `Cone.exe` Properties > Details (Product name, File description): "Cone Player".
+
+**C. Install next to VLC**
+6. Install VLC from videolan.org, then run `coneplayer-<version>-win64.exe` with the desktop shortcut ticked. Every page shows "Cone Player" and the new images (welcome side image "Cone Player / based on VLC", header logo with "Cone Player").
+7. Settings > Apps: one entry, "Cone Player", version <version>, publisher StickyGonzales. VLC media player is still listed.
+8. Start menu, StickyGonzales folder: "Cone Player", "Cone Player Website", "Cone Player - reset preferences and cache files", Documentation, Release Notes. Desktop: "Cone Player". `C:\Program Files\Cone` holds `Cone.exe` and "Cone Player Website.url".
+9. Start Cone Player, change a setting, close and start it again: the setting is kept (`%APPDATA%\Cone`).
+10. Open with on an `.mp4`: "Cone Player" with its logo; Settings > Apps > Default apps lists "Cone Player". Right click a folder: "Play with Cone Player", "Add to Cone Player's Playlist".
+11. VLC still opens its files with its own settings; `C:\Program Files\VideoLAN\VLC` untouched.
+
+**D. Uninstall**
+12. Settings > Apps > Cone Player > Uninstall, tick "Delete preferences and cache": `C:\Program Files\Cone`, the StickyGonzales Start menu folder, the desktop shortcut and every Cone / Cone Player entry in Apps, Default apps and Open with are gone; `%APPDATA%\Cone` is gone (with PR #33 merged also `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone`); regedit finds no `Cone` key under HKLM. VLC still works with its settings.
+
+## 7. Implementation (wip/cone-player, 2026-10-25)
+
+Branch from `wip/next-test` (82bde58b00) with this plan (PR #45) merged in. Not merged anywhere: it waits for 1.0 (R6).
+
+| Commit | What | Build |
+|---|---|---|
+| 3370583821 | Build values (`BRAND_PRODUCT_NAME` "Cone Player", new `BRAND_INSTALLER_NAME` coneplayer and `BRAND_PACKAGE_NAME` ConePlayer in configure.ac; meson has `installer_name` only, it builds no zip), brand.hpp (full name, short name, tray, welcome, About), `engineText()` (VLC's full name → the full name, "VLC" → "Cone"), the zip's README.txt, the CI installer artifact path | non-core |
+| fc1c8ea281 | NSIS upgrade path: `Uninstall\Cone` key kept, `PRODUCT_APPDATA_DIR` pinned to "Cone", the beta's shortcuts and website link removed on install, a leftover desktop shortcut removed on uninstall | non-core |
+| 14e5c149a8 | Installer images and the old preferences' layout previews re-rendered | non-core |
+| 480528344e | VOUT_TITLE, `--version` and help console title, start error box title and audio session name (`bin/winvlc.c`), web interface page title | **core: its own build** |
+
+Differences from section 3, decided while building:
+- `engineText()` also changed (section 3 only listed brand.hpp): it maps "VLC media player" to the full name, like the installer's `brand-languages.sh` already did, and "VLC" to the short name.
+- The side images' second line was "Media player", which repeats the new name; it reads "based on VLC" now. The header and MSI banner moved the logo 12 px left and use 16 px text, because "Cone Player" at 20 px does not fit the 150 px header (R5).
+- The zip's `README.txt` names Cone Player (it is the first thing a zip user reads).
+- `BRAND_INTERNAL_NAME` stays "cone" (the exe's InternalName); the installer files take the new `BRAND_INSTALLER_NAME`. The CI artifact keeps its name `cone-installer-win64`, but the files inside it are named `coneplayer-*`: wip/ci-release's patterns need the update listed below.
+
+Left for the 1.0 release work (other branches, not on this one):
+- wip/ci-release: `release.yml`'s release title (Decision 68 → "Cone Player <version>: ..."), `.github/scripts/release-package.sh` (`cone-*-win64.exe` → `coneplayer-*-win64.exe`, and its zip pattern) and its `build-windows.yml` `cone-release-files` paths, which will also conflict with this branch's artifact path line.
+- wip/linux-build: `linux-package.sh` package names (`ConePlayer-<version>-linux-x86_64`, AppImage), the desktop file's `Name=` and README-LINUX title; `cone.desktop`, `StartupWMClass=cone` and `~/.config/Cone` stay (R4).
+- README.md and CREDITS.md: written with the 1.0 download links.
+- Linux: `bin/vlc.c` sets VLC's user agent name, so the PulseAudio / PipeWire mixer shows VLC's name for Cone on Linux (before and after the rename; Windows uses `bin/winvlc.c`, changed here).
+- PR #33 (installer) merges cleanly with this branch (checked: only `redesign/VIDEO_INDEX.md` conflicts, between #33 and wip/next-test); together they were tested (section 8).
+
+Independent review (fresh agent, no HIGH findings), fixed on this branch:
+- MED: `redesign/tools/test-latest.bat` looks for the zip folder `ConePlayer-*` first, then `Cone-*`.
+- MED: the MSI (not built by CI) keeps the identity name: `NsisUninstallName` "Cone" for its search for an NSIS install (it looked for `Uninstall\Cone Player`), and `ShortProductName` "Cone" (its folder `StickyGonzales\Cone`, Start menu folder and RegisteredApplications value, like the NSIS installer).
+- LOW: the web interface's "VLC can ..." sentence takes the short name (`brand-webintf.sh` gets it as a fifth argument); `BRAND_CORE_GROUP` (the Settings group of the core options) is "Cone", as VLC uses "VLC" there; the X11 / Wayland comments name VOUT_TITLE.
+- Left as is (LOW): the uninstaller's `DeleteRegKey ... Uninstall\${PRODUCT_NAME}` now aims at a key that never exists (harmless, the real key is deleted right after); X11's WM_ICON_NAME is the full name (VLC uses "VLC" there; it is rarely shown).
+
+## 8. Wine test (done here)
+
+Stub payload installers from the real scripts (as in `redesign/INSTALLER_NOTES.md` section 5): VLC (vlc profile of this branch), a Cone 0.2.0 beta from `wip/next-test`'s unchanged installer, and Cone Player 1.0.0 from this branch.
+- makensis: all three compile with 68 warnings (missing translations, the count before the rename). The vlc profile's filled-in script differs from `wip/next-test`'s only inside public-only blocks; its helpers and language files are identical.
+- **Silent upgrade** (VLC, beta, settings in `%APPDATA%\Cone`, `%LOCALAPPDATA%\Cone`, `HKCU\Software\Cone`, then Cone Player `/S`): one Settings > Apps key, `Uninstall\Cone`, with DisplayName "Cone Player" and version 1.0.0 (no other Cone key in either registry view); Start menu and desktop hold only the Cone Player names; "Cone Website.url" replaced by "Cone Player Website.url"; the settings unchanged; no line of the VLC-only registry state changed or removed; VLC's files untouched. After a silent uninstall, HKLM (64 and 32-bit views) is byte-identical to the VLC-only state and the settings are kept ("Delete preferences and cache" starts unticked).
+- **GUI upgrade**: the installer shows "An older version of Cone Player is installed" with the upgrade selected; afterwards the same single entry and new shortcuts. GUI uninstall with "Delete preferences and cache" ticked removes `%APPDATA%\Cone`; `HKCU\Software\Cone` stays on this branch alone (its removal and `%LOCALAPPDATA%\Cone` come from PR #33).
+- **With PR #33 merged on top** (throwaway merge): the same upgrade results, the beta's file type choices kept (`.mp4` stays VLC's), and the GUI uninstall with "Delete preferences and cache" removes `%APPDATA%\Cone`, `%LOCALAPPDATA%\Cone` and `HKCU\Software\Cone`, HKLM byte-identical to the VLC-only state.
+- Installer language strings: no "Player media player"; "Play with Cone Player", "Add to Cone Player's Playlist".
+
+Not testable here: the real app (names in the interface, window titles, Settings texts), the real Windows shell (Apps list icons, Open with, Default apps) and the Windows build itself: section 6.
