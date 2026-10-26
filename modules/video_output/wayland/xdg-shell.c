@@ -729,7 +729,7 @@ static int Open(vlc_window_t *wnd)
 
     char *title = var_InheritString(wnd, "video-title");
 #ifdef VLC_BRAND_PUBLIC
-    /* redesign (brand layer, public profile): the window is named after Cone */
+    /* redesign (brand layer, public profile): the window carries the app's full name (VOUT_TITLE) */
     xdg_toplevel_set_title(toplevel, (title != NULL) ? title : VOUT_TITLE);
 #else
     xdg_toplevel_set_title(toplevel,

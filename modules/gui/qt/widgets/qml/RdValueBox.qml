@@ -140,6 +140,14 @@ T.Control {
                     selectAll()
             }
 
+            // a text written while the box is not being typed in comes from an accessibility tool
+            // (UI Automation's Value pattern sets it directly, without focus or Enter): applied
+            // like a typed value. The Binding above only ever writes control.text
+            onTextChanged: {
+                if (!activeFocus && control.editable && text !== control.text)
+                    control.edited(text)
+            }
+
             onAccepted: {
                 control.edited(text)
                 focus = false

@@ -85,6 +85,7 @@ extern "C" char **environ;
 #include "qt.hpp"
 
 #include "player/player_controller.hpp"    /* THEMIM destruction */
+#include "player/rd_effects.hpp"           /* the hidden Subtitle Duration Factor */
 #include "playlist/playlist_controller.hpp" /* THEMPL creation */
 #include "dialogs/dialogs_provider.hpp" /* THEDP creation */
 #include "dialogs/dialogs/dialogmodel.hpp"
@@ -208,6 +209,12 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 #define UPDATER_LONGTEXT N_( "Activate the automatic notification of new " \
                             "versions of the software. It runs once every " \
                             "two weeks." )
+
+/* redesign: Cone's update notice (util/rd_update_check.cpp) */
+#define CONE_UPDATE_CHECK_TEXT N_( "Check for updates" )
+#define CONE_UPDATE_CHECK_LONGTEXT N_( "Once a day at most, when Cone starts, ask GitHub " \
+                                      "for the latest release of Cone and tell when a newer " \
+                                      "one is available. Nothing is downloaded or installed." )
 
 #define QT_QML_DEBUG_TEXT N_( "set the options for qml debugger" )
 #define QT_QML_DEBUG_LONGTEXT N_( "set the options for qml debugger (see http://doc.qt.io/qt-5/qtquick-debugging.html#starting-applications)" )
@@ -480,6 +487,11 @@ vlc_module_begin ()
     add_integer_with_range( "qt-updates-days", 3, 0, 180,
               UPDATER_DAYS_TEXT, nullptr )
 #endif
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: Cone never builds VLC's checker (configure.ac); it has its own notice */
+    add_bool( "qt-cone-update-check", true, CONE_UPDATE_CHECK_TEXT,
+              CONE_UPDATE_CHECK_LONGTEXT )
+#endif
 
 #ifdef QT_QML_DEBUG
     add_string( "qt-qmljsdebugger", NULL,
@@ -742,6 +754,10 @@ static int OpenInternal( qt_intf_t *p_intf )
     /* set up the playlist to work on */
     p_intf->p_playlist = playlist;
     p_intf->p_player = vlc_playlist_GetPlayer( p_intf->p_playlist );
+
+    /* redesign: a saved Subtitle Duration Factor is reset before VLC can start playback below
+     * (the first video output would start the "subsdelay" filter from the settings) */
+    RdEffects::resetSavedSubtitleDurationFactor(p_intf);
 
     /* */
 #ifdef Q_OS_MAC
@@ -1099,6 +1115,19 @@ static void *Thread( void *obj )
             QSettings::NativeFormat,
 #endif
             QSettings::UserScope, BRAND_CONFIG_DIR, "vlc-qt-interface" );
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+    /* redesign (P8-03): the interface language chosen in Settings > General, as Windows reads
+     * it from the registry when VLC starts (bin/winvlc.c). gettext takes LANGUAGE over the
+     * system locale (unless the locale is "C"); set here, before the interface translates its
+     * first text. It replaces a LANGUAGE the desktop set (Ubuntu sets one for every app). */
+    {
+        const QByteArray language =
+                p_intf->mainSettings->value( "Interface/language" ).toString().toUtf8();
+        if( !language.isEmpty() && language != "auto" )
+            qputenv( "LANGUAGE", language );
+    }
+#endif
 
     // It is guaranteed that the returned format is supported, if a format is returned.
     static const auto createCompatibleOpenGLFormat = []() -> std::optional<QSurfaceFormat> {

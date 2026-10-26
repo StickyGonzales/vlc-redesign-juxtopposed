@@ -95,6 +95,18 @@ T.Slider {
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => Navigation.defaultKeyAction(event)
 
+    // accessibility tools (UI Automation's RangeValue pattern, screen readers) step the value as
+    // an arrow key does, with moved(): T.Slider's own increase / decrease actions only change
+    // the value, so the users of the slider never saved it
+    Accessible.onIncreaseAction: {
+        if (control.enabled)
+            wheelArea.stepSlider(control, 1)
+    }
+    Accessible.onDecreaseAction: {
+        if (control.enabled)
+            wheelArea.stepSlider(control, -1)
+    }
+
     readonly property real _inset: VLCStyle.dp(2)
 
     // Figma draws the marks in BG/Accent Dark with the "screen" blend mode: the color it gives

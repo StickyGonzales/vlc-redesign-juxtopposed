@@ -723,6 +723,16 @@ void MainCtx::setPinOpacity(float pinOpacity)
     emit pinOpacityChanged();
 }
 
+void MainCtx::setSystemAnimations(bool enabled)
+{
+    if (m_systemAnimations == enabled)
+        return;
+
+    m_systemAnimations = enabled;
+
+    emit systemAnimationsChanged();
+}
+
 inline void MainCtx::initSystray()
 {
     bool b_systrayAvailable = QSystemTrayIcon::isSystemTrayAvailable();
