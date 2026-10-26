@@ -85,6 +85,13 @@ jobs:
           path: contrib/linux-ml
           key: contrib-linux-ml-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/medialibrary/*', 'contrib/src/sqlite/*', 'contrib/src/main.mak', 'contrib/bootstrap') }}
 
+      # libpostproc from contrib's recipe (linux-build.sh build_postproc), kept the same way
+      - name: Cache libpostproc
+        uses: actions/cache@v4
+        with:
+          path: contrib/linux-pp
+          key: contrib-linux-pp-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/postproc/*', '.github/scripts/linux-build.sh') }}
+
       # Compiler cache, one per branch, as the Windows build's ("ccache-linux-public:<branch>:<commit>");
       # a branch without one starts from redesign's
       - name: Compiler cache keys
