@@ -62,11 +62,63 @@ So Cone 1.0.x **checks nothing and shows nothing** about updates. VLC's checker 
 - Like OpenSubtitles, the request does not use a proxy. Behind a proxy-only network the check fails silently.
 - A release published as a pre-release (like v1.0.2 today) is not offered: GitHub's "latest" skips it. Today the API answers v1.0.1. To offer an update, publish it as a full release.
 
+Also: a stalled DNS lookup cannot be interrupted on Windows (VLC's `vlc_getaddrinfo_i11e` falls back to plain `getaddrinfo` there). A quit that lands in such a lookup waits for the system's DNS timeout; the quit watchdog (#34) still ends it after 5 s. Connect, TLS and reads are interruptible, so a stalled server or connection does not delay the quit (section 4).
+
 ## 3. Checks
-(filled in below)
+- qmlcheck: errors 1 (the known HighResolutionTimeWidget), crashed 0. buildlists 0, privacycheck 0.
+- C++ syntax check of `rd_update_check.cpp`, `subtitle_web.cpp`, `mainui.cpp`, `qt.cpp`, in both profiles (`VLC_BRAND_PUBLIC` on and off), with g++ (`-Wall -Wextra -Wconversion`) and clang (`-Wunused-private-field -Wunused-function`): no warnings in our code.
+- Windows names: the same check with Windows' header macros defined (`far`, `near`, `small`, `interface`, `pascal`): no errors.
+- Independent review (a fresh agent that did not write the code) of the whole diff. Fixed after it:
+  - GitHub's 404 (only pre-releases, no full release yet) now reads "the latest version", not "Could not reach GitHub".
+  - The notice no longer takes Escape window-wide. It used to, so Escape in fullscreen would close the notice instead of leaving fullscreen. Now Escape works only on its focused buttons.
+  - A quit can no longer count as "Later".
+  - No unused helpers in the vlc profile.
 
 ## 4. Sandbox test (Linux)
-(filled in below)
+Build: build-linux #43 (run 40383196557), test-only branch `wip/update-notice-linux` = wip/linux-build + this branch. A Linux push build is **Cone 0.1.0**, the fake older version.
+
+Setup:
+- Xvfb with openbox, window 1440x900, a fresh profile.
+- `api.github.com` pointed at a local HTTPS server (its own test CA added to the sandbox's trust store). The server logs each request exactly as received and answers like GitHub: a release (`v1.0.1` / `v1.0.2` / `v0.1.0`), 404, 500, or no answer.
+- `xdg-open` replaced by a stub that records the address.
+
+| Test | Result |
+|---|---|
+| Start, switch on (default) | 4 s after the start one GET, the notice "Cone Player 1.0.1 is available" (picture) |
+| What the request carries | `GET /repos/StickyGonzales/vlc-redesign-juxtopposed/releases/latest`, headers `Host`, `Connection: close`, `User-Agent: Cone-Player`, `Accept: application/vnd.github+json`, nothing else |
+| Later | the notice closes; a restart the same day sends no request and shows nothing |
+| The next day (stored dates cleared) | the notice is back at once (remembered version) and one new request goes out |
+| Download | the notice closes, `xdg-open https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v1.0.1` |
+| Check Now, server 500 | "Checking…" (button disabled), then "Could not reach GitHub. Try again later." |
+| Check Now, 404 | "Cone Player 0.1.0 is the latest version." |
+| Check Now, latest v0.1.0 | "Cone Player 0.1.0 is the latest version." |
+| Check Now, no answer | "Checking…" for 15 s, then "Could not reach GitHub. Try again later." |
+| Check Now, v1.0.2, after Download the same day | "Cone Player 1.0.2 is available." and the notice opens again |
+| Fullscreen with the notice shown, Escape | fullscreen ends, the notice stays |
+| Quit (Ctrl+Q) while the request hangs (twice) | 0.16 s, the same as without a request (0.16 s) |
+| Switch off (`--no-qt-cone-update-check`), next day | no request, no notice |
+| First run (`--qt-privacy-ask`, onboarding) | no request |
+| Settings > General | "Check for updates" (ON) and "Check now"; VLC's "Check for updates automatically" row stays hidden |
+
+Found and fixed in the sandbox (commit dd96095f8a, checked on the rebuilt AppImage, see below):
+- The sentence was cut ("Cone Player 1.0.2 is availa..."): the layout rounded the label's fractional width down. It now rounds it up.
+- In the library, which has no control bar, the notice floated a bar's height above the bottom. It now sits 18 px above the window's bottom there.
+
+Not testable in the sandbox: the real GitHub API (the sandbox reaches GitHub only through its proxy, which this request, like OpenSubtitles', does not use), a real browser, Windows.
 
 ## 5. Windows retest (PC session)
-(filled in below)
+Build this branch: `gh workflow run build-windows.yml --ref wip/update-notice`, then the asset `wip-update-notice--win64-public.zip` from the `test-builds` draft (redesign/TEST_BUILDS.md). A manual Windows build is **Cone 0.1.0** (no version tag), so it is older than every release: the real GitHub answer is the test.
+
+1. **First start on the test folder** (portable, the usual `builds/current`). Answer the onboarding. Close Cone and start it again.
+   - Expected: about 4 s after the start, "Cone Player 1.0.1 is available" (or whatever the newest full release is then), bottom centre of the library, 18 px above the window's bottom, the whole sentence visible.
+   - Pre-releases (v1.0.2 today) are never offered.
+2. **Download.** The release page opens in the default browser, the notice closes.
+3. **Restart the same day.** No notice. (Settings > General > Check now shows the result.)
+4. **Later.** Settings > General > **Check Now**: "Checking…", then "Cone Player 1.0.1 is available." and the notice again. Click **Later**: it closes, a restart the same day shows nothing.
+5. **Player and fullscreen.** Clear the day (delete the `[RdUpdateCheck]` lines `CheckedOn` and `DismissedOn` from `portable\Cone\vlc-qt-interface.ini`, or wait a day), open a video and press F at once.
+   - The notice shows above the control bar.
+   - Escape leaves fullscreen and the notice stays.
+   - Tab to its buttons, then Escape on a button = Later.
+6. **Offline.** Unplug or disable the network, Check Now: "Could not reach GitHub. Try again later." within 15 s. Quit while it checks: Cone closes at once (the 5 s quit watchdog must not be needed).
+7. **Switch off.** Settings > General > Check for updates OFF. The next day's start sends nothing (Windows Resource Monitor > Network, or no notice with a remembered version).
+8. **vlc profile** (`build-windows.yml` with brand vlc): VLC's own "Check for updates automatically" row and Help > Check for Updates are there as before; Cone's two rows and the notice are not.
