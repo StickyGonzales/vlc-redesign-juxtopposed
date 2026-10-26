@@ -10,9 +10,9 @@ This redesign of VLC's interface is based on **"VLC Redesign" by Juxtopposed**.
 The Figma design is used under the Creative Commons Attribution 4.0 International license
 (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/). Changes were made to adapt it to VLC.
 
-## Cone
+## Cone Player
 
-Cone is built by **[StickyGonzales](https://github.com/StickyGonzales)** on top of VLC media player.
+Cone Player (called Cone during its betas) is built by **[StickyGonzales](https://github.com/StickyGonzales)** on top of VLC media player.
 
 ## VLC
 

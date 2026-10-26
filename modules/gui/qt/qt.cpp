@@ -85,6 +85,7 @@ extern "C" char **environ;
 #include "qt.hpp"
 
 #include "player/player_controller.hpp"    /* THEMIM destruction */
+#include "player/rd_effects.hpp"           /* the hidden Subtitle Duration Factor */
 #include "playlist/playlist_controller.hpp" /* THEMPL creation */
 #include "dialogs/dialogs_provider.hpp" /* THEDP creation */
 #include "dialogs/dialogs/dialogmodel.hpp"
@@ -740,6 +741,10 @@ static int OpenInternal( qt_intf_t *p_intf )
     /* set up the playlist to work on */
     p_intf->p_playlist = playlist;
     p_intf->p_player = vlc_playlist_GetPlayer( p_intf->p_playlist );
+
+    /* redesign: a saved Subtitle Duration Factor is reset before VLC can start playback below
+     * (the first video output would start the "subsdelay" filter from the settings) */
+    RdEffects::resetSavedSubtitleDurationFactor(p_intf);
 
     /* */
 #ifdef Q_OS_MAC
