@@ -135,8 +135,8 @@ FocusScope {
 
     // redesign (Decision 30): in a window both bars show while the mouse moves over the player and
     // fade out a few seconds after it stops; in fullscreen each bar shows while the mouse is near
-    // it (video 3:46-3:55). Menus, panels, keyboard use and audio mode show both bars (in
-    // fullscreen except the far one while the mouse is in the other bar's zone).
+    // it (video 3:46-3:55). Menus, keyboard use and audio mode show both bars (in fullscreen
+    // except the far one while the mouse is in the other bar's zone); an open panel shows both.
     // how near the edge: Settings > Interface "Fullscreen controls sensitivity" (40 by default)
     readonly property real _barHoverZone: VLCStyle.dp(MainCtx.fsSensitivity, VLCStyle.scale)
     readonly property bool _mouseNearTop: !_windowed && _cursorY >= 0 && _cursorY <= topBar.height + _barHoverZone
@@ -146,14 +146,16 @@ FocusScope {
                                           && (_windowed || !MainCtx.hasEmbededVideo
                                               || playerToolbarVisibilityFSM.keyboardShown)
     // Hide UI (W4.10, Ctrl + \) hides both bars whatever the mouse does
-    // (the compact library sits between both bars and keeps them, also in fullscreen)
+    // (the compact library sits between both bars and keeps them, also in fullscreen; so does an
+    // open panel: the settings sidebar's tabs lie in the top bar's zone, and pointing at them must
+    // not hide the control bar the panel was opened from)
     readonly property bool _topBarVisible: !RdPanels.uiHidden
                                            && (_controlsUnderVideo || _showBothBars || _mouseNearTop
-                                               || _libraryShown
+                                               || _libraryShown || _panelLocked
                                                || (playerToolbarVisibilityFSM.isLocked && !_mouseNearBottom))
     readonly property bool _controlBarVisible: !RdPanels.uiHidden
                                                && (_controlsUnderVideo || _showBothBars || _mouseNearBottom
-                                                   || _libraryShown
+                                                   || _libraryShown || _panelLocked
                                                    || (playerToolbarVisibilityFSM.isLocked && !_mouseNearTop))
 
     // cursor height inside the player, -1 outside, from mouse events (no polling): the hover
