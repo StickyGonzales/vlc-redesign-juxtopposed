@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 #include <vlc_common.h>
@@ -59,9 +60,18 @@ constexpr int kMaxBuckets = 300;
 constexpr vlc_tick_t kMinBucket = VLC_TICK_FROM_SEC(1);
 // a stuck request (slow disk, broken file) gives up after this long
 constexpr vlc_tick_t kTimeout = VLC_TICK_FROM_SEC(3);
+// a precise request decodes every frame from the keyframe before the position: it may take
+// this long before it gives up
+constexpr vlc_tick_t kTimeoutPrecise = VLC_TICK_FROM_SEC(8);
 // failed requests in a row after which the media counts as not previewable; a timeout counts
 // twice (each one kept the thumbnailer busy for kTimeout)
 constexpr int kMaxFailures = 3;
+// two fast-seek frames whose times differ from the hovered times' difference by more than this
+// came from keyframes far from the positions: the media's keyframes are too sparse for fast
+// seeks (a screen recording, a stream recorded with one keyframe). Between the bounds, an
+// eighth of the length: GOPs of normal files stay under 10 s
+constexpr vlc_tick_t kFarMin = VLC_TICK_FROM_SEC(4);
+constexpr vlc_tick_t kFarMax = VLC_TICK_FROM_SEC(12);
 
 } // namespace
 
@@ -111,6 +121,9 @@ struct Job
     qint64 bucket;
     int generation;
     QSize box;
+    // the media time asked for, and whether the request was a fast (keyframe) seek
+    vlc_tick_t time;
+    bool fast;
 };
 
 // the image mirrored along `orientation`: QImage::flipped() from Qt 6.9 (mirrored() is deprecated
@@ -387,6 +400,9 @@ void RdSeekThumbnailer::resetMedia()
     m_length = 0;
     m_bucketLength = 0;
     m_failures = 0;
+    m_precise = false;
+    m_lastFastTime = VLC_TICK_INVALID;
+    m_lastFastDate = VLC_TICK_INVALID;
     ++m_generation;
     m_cache->clear();
 }
@@ -409,19 +425,8 @@ void RdSeekThumbnailer::request(double position)
     if (!m_supported || m_frameSize.isEmpty() || m_length <= 0)
         return;
 
-    if (!m_item)
-    {
-        // a copy of the playing item: the thumbnailer's input never touches the item the
-        // player shows (its meta and track info), and its decoder uses 2 threads instead of
-        // one per core, so a preview neither competes with playback nor waits for a full
-        // frame-thread pipeline
-        input_item_t* copy = input_item_NewFile(m_uri.constData(), nullptr, m_length, ITEM_LOCAL);
-        if (!copy)
-            return;
-        input_item_AddOption(copy, ":avcodec-threads=2", VLC_INPUT_OPTION_TRUSTED);
-        m_item = SharedInputItem(copy, false);
-        m_bucketLength = std::max(kMinBucket, m_length / kMaxBuckets);
-    }
+    if (!m_item && !makeItem())
+        return;
 
     position = std::clamp(position, 0.0, 1.0);
     const qint64 lastBucket = (m_length - 1) / m_bucketLength;
@@ -439,6 +444,47 @@ void RdSeekThumbnailer::request(double position)
     m_wanted = bucket;
 
     startNext();
+}
+
+bool RdSeekThumbnailer::makeItem()
+{
+    // a copy of the playing item: the thumbnailer's input never touches the item the player
+    // shows (its meta and track info), and its decoder uses 2 threads instead of one per core,
+    // so a preview neither competes with playback nor waits for a full frame-thread pipeline.
+    // A precise seek decodes every frame from the keyframe before the position: 4 threads and
+    // no loop filter (invisible at the card's size) roughly double the frames it gets through
+    input_item_t* copy = input_item_NewFile(m_uri.constData(), nullptr, m_length, ITEM_LOCAL);
+    if (!copy)
+        return false;
+    input_item_AddOption(copy, m_precise ? ":avcodec-threads=4" : ":avcodec-threads=2",
+                         VLC_INPUT_OPTION_TRUSTED);
+    if (m_precise)
+        input_item_AddOption(copy, ":avcodec-skiploopfilter=4", VLC_INPUT_OPTION_TRUSTED);
+    m_item = SharedInputItem(copy, false);
+    m_bucketLength = std::max(kMinBucket, m_length / kMaxBuckets);
+    return true;
+}
+
+// the frames of fast seeks do not follow the pointer (see kFarMin): from now on the media is
+// previewed with precise seeks, which decode up to the position itself. The frames shown so far
+// are dropped (they may all be the same keyframe)
+void RdSeekThumbnailer::switchToPrecise()
+{
+    msg_Dbg(m_intf, "seek preview: the keyframes are too sparse for fast seeks, "
+                    "using precise seeks for this media");
+    m_precise = true;
+    ++m_generation;
+    m_cache->clear();
+    setSource(-1);
+    // the thumbnailer and the item are made again with the precise settings (no request runs:
+    // this is called once the last one ended)
+    if (m_preparser)
+    {
+        vlc_preparser_Delete(m_preparser);
+        m_preparser = nullptr;
+    }
+    m_item = SharedInputItem();
+    makeItem();
 }
 
 void RdSeekThumbnailer::stop()
@@ -505,7 +551,7 @@ void RdSeekThumbnailer::startNext()
         cfg.types = VLC_PREPARSER_TYPE_THUMBNAIL;
         cfg.max_parser_threads = 0;
         cfg.max_thumbnailer_threads = 1;
-        cfg.timeout = kTimeout;
+        cfg.timeout = m_precise ? kTimeoutPrecise : kTimeout;
         cfg.external_process = false;
         m_preparser = vlc_preparser_New(VLC_OBJECT(vlc_object_instance(m_intf)), &cfg);
         if (!m_preparser)
@@ -526,12 +572,13 @@ void RdSeekThumbnailer::startNext()
     struct vlc_thumbnailer_arg arg{};
     arg.seek.type = vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_TIME;
     arg.seek.time = time; // media time; 0 decodes the first frame without a seek
-    arg.seek.speed = vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_FAST;
+    arg.seek.speed = m_precise ? vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_PRECISE
+                               : vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_FAST;
     arg.hw_dec = false;
 
     static const struct vlc_thumbnailer_cbs cbs = { &RdSeekThumbnailer::onThumbnailEnded };
 
-    Job* job = new Job{ this, m_converter.get(), bucket, m_generation, m_frameSize };
+    Job* job = new Job{ this, m_converter.get(), bucket, m_generation, m_frameSize, time, !m_precise };
     vlc_preparser_req* req = vlc_preparser_req_NewThumbnail(m_preparser, m_item.get(), &arg, &cbs, job);
     if (!req)
     {
@@ -562,17 +609,42 @@ void RdSeekThumbnailer::onThumbnailEnded(vlc_preparser_req* req, int status, pic
     delete static_cast<Job*>(data);
 
     QImage image;
+    // the frame's timestamp, in the stream's own time base (not always 0 at the start: an
+    // MPEG-TS starts anywhere), so only differences between frames are compared
+    vlc_tick_t date = VLC_TICK_INVALID;
     if (status == VLC_SUCCESS && picture)
+    {
         image = frameToImage(*job.converter, picture, job.box);
+        date = picture->date;
+    }
 
     RdSeekThumbnailer* self = job.self;
-    QMetaObject::invokeMethod(self, [self, req, job, status, image]() {
-        self->onRequestEnded(req, job.bucket, job.generation, status, image);
+    QMetaObject::invokeMethod(self, [self, req, job, status, image, date]() {
+        self->onRequestEnded(req, job.bucket, job.generation, status, image,
+                             job.fast ? job.time : VLC_TICK_INVALID, date);
     }, Qt::QueuedConnection);
 }
 
+bool RdSeekThumbnailer::fastSeekMisses(vlc_tick_t time, vlc_tick_t date)
+{
+    if (time == VLC_TICK_INVALID || date == VLC_TICK_INVALID)
+        return false;
+    bool misses = false;
+    if (m_lastFastTime != VLC_TICK_INVALID)
+    {
+        const vlc_tick_t far = std::clamp(m_length / 8, kFarMin, kFarMax);
+        const vlc_tick_t asked = time - m_lastFastTime;
+        const vlc_tick_t got = date - m_lastFastDate;
+        misses = std::llabs(got - asked) > far;
+    }
+    m_lastFastTime = time;
+    m_lastFastDate = date;
+    return misses;
+}
+
 void RdSeekThumbnailer::onRequestEnded(vlc_preparser_req* req, qint64 bucket, int generation,
-                                       int status, const QImage& image)
+                                       int status, const QImage& image, vlc_tick_t fastTime,
+                                       vlc_tick_t date)
 {
     if (req == m_inflight)
         m_inflight = nullptr;
@@ -582,12 +654,29 @@ void RdSeekThumbnailer::onRequestEnded(vlc_preparser_req* req, qint64 bucket, in
     // (the pointer came back to it): it is started again below
     const bool cancelled = (status == -EINTR);
 
+    if (generation == m_generation && !cancelled && !image.isNull() && !m_precise
+        && fastSeekMisses(fastTime, date))
+    {
+        // the pointer's position is asked for again, with a precise seek
+        const bool wanted = (bucket == m_wanted);
+        switchToPrecise();
+        if (wanted)
+            m_wanted = bucket;
+        startNext();
+        return;
+    }
+
     if (generation == m_generation && !cancelled)
     {
         if (!image.isNull())
         {
             m_failures = 0;
             m_cache->insert(generation, bucket, image);
+        }
+        else if (status == VLC_ETIMEOUT && m_precise)
+        {
+            // too many frames to decode from the keyframe before this position: no frame here,
+            // but the media itself previews fine elsewhere
         }
         else
         {

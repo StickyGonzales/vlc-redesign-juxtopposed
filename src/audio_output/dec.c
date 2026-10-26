@@ -945,34 +945,40 @@ void vlc_aout_stream_ChangePause(vlc_aout_stream *stream, bool paused, vlc_tick_
             assert(stream->timing.pause_date == VLC_TICK_INVALID);
             stream->timing.pause_date = date;
         }
-        else if (stream->timing.pause_date != VLC_TICK_INVALID)
+        else
         {
-            /* Delay the last timing with the pause duration. This will be used
-             * by stream_GetDelay() until the module updates its next point
-             * after being resumed. */
             vlc_mutex_lock(&stream->timing.lock);
-            if (stream->timing.system_ts != VLC_TICK_INVALID)
-                stream->timing.system_ts += date - stream->timing.pause_date;
+            if (stream->timing.pause_date != VLC_TICK_INVALID)
+            {
+                /* Delay the last timing with the pause duration. This will be
+                 * used by stream_GetDelay() until the module updates its next
+                 * point after being resumed. */
+                if (stream->timing.system_ts != VLC_TICK_INVALID)
+                    stream->timing.system_ts += date - stream->timing.pause_date;
+                stream->timing.pause_date = VLC_TICK_INVALID;
+            }
+
+            /* Update the rate point after the pause, before resuming the
+             * module: a module can report its next timing point from its pause
+             * callback (WASAPI does), and vlc_aout_stream_NotifyTiming() would
+             * convert it with the rate point of before the pause, moving the
+             * clock ahead by the pause duration times the rate. */
+            if (stream->timing.rate_audio_ts != VLC_TICK_INVALID)
+            {
+                vlc_clock_Lock(stream->sync.clock);
+                stream->timing.rate_system_ts =
+                    vlc_clock_ConvertToSystem(stream->sync.clock, date,
+                                              stream->timing.rate_audio_ts,
+                                              stream->sync.rate, NULL);
+                vlc_clock_Unlock(stream->sync.clock);
+            }
             vlc_mutex_unlock(&stream->timing.lock);
-            stream->timing.pause_date = VLC_TICK_INVALID;
         }
 
         if (aout->pause != NULL)
             aout->pause(aout, paused, date);
         else if (paused)
             vlc_aout_stream_Flush(stream);
-
-        /* Update the rate point after the pause */
-        if (!paused && stream->timing.rate_audio_ts != VLC_TICK_INVALID)
-        {
-            vlc_clock_Lock(stream->sync.clock);
-            vlc_tick_t play_date =
-                vlc_clock_ConvertToSystem(stream->sync.clock, date,
-                                          stream->timing.rate_audio_ts,
-                                          stream->sync.rate, NULL);
-            vlc_clock_Unlock(stream->sync.clock);
-            stream->timing.rate_system_ts = play_date;
-        }
     }
 }
 

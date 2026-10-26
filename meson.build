@@ -44,12 +44,13 @@ vlc_build_root = meson.current_build_dir()
 cdata = configuration_data()
 
 # redesign: brand layer (modules/gui/qt/util/brand.hpp, redesign/BUILD_NOTES.md)
-# vlc: VLC's name and cone; public: "Cone" and its logo. Mirrors configure.ac --with-brand.
+# vlc: VLC's name and cone; public: "Cone Player" and its logo. Mirrors configure.ac --with-brand.
 brand_profiles = {
     'vlc': {
         'product_name': 'VLC media player',
         'company': 'VideoLAN',
         'internal_name': 'vlc',
+        'installer_name': 'vlc',
         'exe_name': 'vlc',
         'icon_src': 'share/icons/vlc.ico',
         'icon_rc': 'vlc.ico',
@@ -63,9 +64,13 @@ brand_profiles = {
         'progid': 'VLC',
     },
     'public': {
-        'product_name': 'Cone',
+        # the shown name is "Cone Player" (redesign/RENAME_CONE_PLAYER.md, R1); the exe, the settings
+        # folders, registry keys, ProgIDs and GUIDs keep the identity name "Cone" (R3, R4)
+        'product_name': 'Cone Player',
         'company': 'StickyGonzales',
         'internal_name': 'cone',
+        # the installer's file name, never with a space (R2)
+        'installer_name': 'coneplayer',
         'exe_name': 'Cone',
         'icon_src': 'extras/package/win32/brand/public/cone.ico',
         'icon_rc': 'brand/public/cone.ico',

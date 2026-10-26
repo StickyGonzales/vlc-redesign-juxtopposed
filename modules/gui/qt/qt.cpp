@@ -85,6 +85,7 @@ extern "C" char **environ;
 #include "qt.hpp"
 
 #include "player/player_controller.hpp"    /* THEMIM destruction */
+#include "player/rd_effects.hpp"           /* the hidden Subtitle Duration Factor */
 #include "playlist/playlist_controller.hpp" /* THEMPL creation */
 #include "dialogs/dialogs_provider.hpp" /* THEDP creation */
 #include "dialogs/dialogs/dialogmodel.hpp"
@@ -743,6 +744,10 @@ static int OpenInternal( qt_intf_t *p_intf )
     p_intf->p_playlist = playlist;
     p_intf->p_player = vlc_playlist_GetPlayer( p_intf->p_playlist );
 
+    /* redesign: a saved Subtitle Duration Factor is reset before VLC can start playback below
+     * (the first video output would start the "subsdelay" filter from the settings) */
+    RdEffects::resetSavedSubtitleDurationFactor(p_intf);
+
     /* */
 #ifdef Q_OS_MAC
     /* Run mainloop on the main thread as Cocoa requires */
@@ -1099,6 +1104,19 @@ static void *Thread( void *obj )
             QSettings::NativeFormat,
 #endif
             QSettings::UserScope, BRAND_CONFIG_DIR, "vlc-qt-interface" );
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+    /* redesign (P8-03): the interface language chosen in Settings > General, as Windows reads
+     * it from the registry when VLC starts (bin/winvlc.c). gettext takes LANGUAGE over the
+     * system locale (unless the locale is "C"); set here, before the interface translates its
+     * first text. It replaces a LANGUAGE the desktop set (Ubuntu sets one for every app). */
+    {
+        const QByteArray language =
+                p_intf->mainSettings->value( "Interface/language" ).toString().toUtf8();
+        if( !language.isEmpty() && language != "auto" )
+            qputenv( "LANGUAGE", language );
+    }
+#endif
 
     // It is guaranteed that the returned format is supported, if a format is returned.
     static const auto createCompatibleOpenGLFormat = []() -> std::optional<QSurfaceFormat> {

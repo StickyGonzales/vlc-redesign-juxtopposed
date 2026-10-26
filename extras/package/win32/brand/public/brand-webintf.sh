@@ -4,23 +4,25 @@
 # Rewrites the packaged copy of share/lua/http in place; the sources stay VLC's, so the vlc
 # profile is unchanged. The page titles become new English texts (their VLC wording is
 # translated through the web interface's gettext; the Cone wording has no translation yet).
-# usage: brand-webintf.sh <packaged lua/http folder> <product name> <brand pixmaps folder> <ico>
+# usage: brand-webintf.sh <packaged lua/http folder> <product name> <brand pixmaps folder> <ico> <short name>
+# (the full name where VLC writes "VLC media player", the short one in sentences, RENAME_CONE_PLAYER.md R1)
 set -e
 
 dir=$1
 name=$2
 pixmaps=$3
 ico=$4
+short=${5:-$2}
 
 test -d "$dir" || exit 0
 
 for f in "$dir"/*.html "$dir"/dialogs/*.html; do
     test -f "$f" || continue
-    LC_ALL=C BRAND_NAME="$name" perl -pi -e '
+    LC_ALL=C BRAND_NAME="$name" BRAND_SHORT="$short" perl -pi -e '
         # footer of the main page: "VLC <version> - Lua Web Interface" keeps the attribution
         s/^(\s*)VLC (<\?vlc print\(vlc\.misc\.version\(\))/$1$ENV{BRAND_NAME}, based on VLC $2/;
         s/VLC media player/$ENV{BRAND_NAME}/g;
-        s/(?<![\w.\/-])VLC(?= can )/$ENV{BRAND_NAME}/g;
+        s/(?<![\w.\/-])VLC(?= can )/$ENV{BRAND_SHORT}/g;
     ' "$f"
 done
 

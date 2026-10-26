@@ -106,9 +106,13 @@ QPixmap extensionFallbackIcon()
 QString engineText(const QString& text)
 {
 #ifdef VLC_BRAND_PUBLIC
+    /* the full name for VLC's full name, the short one for "VLC" (RENAME_CONE_PLAYER.md, R1) */
+    static const QRegularExpression vlcFullName(
+        QStringLiteral("\\bVLC media player\\b(?!\\s*\\d)"));
     static const QRegularExpression vlcName(
-        QStringLiteral("\\bVLC(?: media player)?+\\b(?!\\s*\\d)"));
+        QStringLiteral("\\bVLC\\b(?!\\s*\\d)(?! media player)"));
     QString result = text;
+    result.replace(vlcFullName, qtr(BRAND_NAME));
     result.replace(vlcName, qtr(BRAND_SHORT_NAME));
     return result;
 #else

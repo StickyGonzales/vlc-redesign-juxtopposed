@@ -10,6 +10,12 @@ ${StrCase}
 
 ;; Function that associates one extension with VLC
 Function AssociateExtension
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer (INSTALLER_NOTES.md): the app is offered for the type in Open with and
+  ; Default apps; it never takes the type over, the user picks the default in Windows. Written to
+  ; HKLM\Software\Classes and recorded (registry.nsh), never to the user's own HKCU key
+  !insertmacro RegClassesSharedStr "$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0" ""
+!else
   ; back up old value for extension $R0 (eg. ".opt")
   ReadRegStr $1 HKCR "$R0" ""
   StrCmp $1 "" NoBackup
@@ -17,6 +23,7 @@ Function AssociateExtension
     WriteRegStr HKCR "$R0" "${PRODUCT_PROGID}.backup" $1
 NoBackup:
   WriteRegStr HKCR "$R0" "" "${PRODUCT_PROGID}$R0"
+!endif
 FunctionEnd
 
 ;; Function that registers one extension for VLC
@@ -27,34 +34,86 @@ Function RegisterExtension
   ; And capitalize the extension
   ${StrCase} $R2 $R2 "U"
   ; for instance: MKV Video File (VLC)
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0" "" "$R2 $R1 File (${PRODUCT_SHORT_NAME})"
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "" "$(ShellAssociation_Play)"
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "MultiSelectModel" "Player"
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+  ; redesign: brand layer, the public profile writes HKLM\Software\Classes (registry.nsh)
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "" "" "$R2 $R1 File (${PRODUCT_SHORT_NAME})"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell" "" "Open"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell\Open" "" "$(ShellAssociation_Play)"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell\Open" "MultiSelectModel" "Player"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file "%1"'
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the extension itself (VLC writes $0, one stray value), so the app is
+  ; listed in Open with for each of its types
+  !insertmacro RegClassesOwnStr "Applications\${PRODUCT_EXE}" "SupportedTypes" "$R0" ""
+!else
   WriteRegStr HKCR "Applications\${PRODUCT_EXE}\SupportedTypes" $0 ""
+!endif
 
   ${If} ${AtLeastWinVista}
-    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
+    !insertmacro RegOwnStr "Software\Clients\Media\${PRODUCT_PROGID}" "Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
   ${EndIf}
 FunctionEnd
 
 ;; Function that registers one skin extension for VLC
 Function RegisterSkinExtension
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0" "" "${PRODUCT_SHORT_NAME} skin file ($R0)"
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell" "" "Open"
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open" "" ""
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" -Iskins --skins2-last "%1"'
-  WriteRegStr HKCR "${PRODUCT_PROGID}$R0\DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "" "" "${PRODUCT_SHORT_NAME} skin file ($R0)"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell" "" "Open"
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell\Open" "" ""
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "shell\Open\command" "" '"$INSTDIR\${PRODUCT_EXE}" -Iskins --skins2-last "%1"'
+  !insertmacro RegClassesOwnStr "${PRODUCT_PROGID}$R0" "DefaultIcon" "" '"$INSTDIR\${PRODUCT_EXE}",0'
 
   ${If} ${AtLeastWinVista}
-    WriteRegStr HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
+    !insertmacro RegOwnStr "Software\Clients\Media\${PRODUCT_PROGID}" "Capabilities\FileAssociations" "$R0" "${PRODUCT_PROGID}$R0"
   ${EndIf}
 FunctionEnd
 
+!if "${PRODUCT_PROGID}" != "VLC"
+;; redesign: brand layer, the type's default value an older Cone build took over (0.1 betas set
+;; HKCR\.<ext> to Cone.<ext> and kept the previous handler in Cone.backup), in the HKLM or HKCU
+;; class key it landed in: given back while that handler's ProgID still exists, else only the
+;; value goes; the key always stays. Uses $1 and $2
+!macro ConeUnRestoreDefault ROOT
+  ReadRegStr $1 ${ROOT} "Software\Classes\$R0" ""
+  ${If} $1 == "${PRODUCT_PROGID}$R0"
+    ReadRegStr $1 ${ROOT} "Software\Classes\$R0" "${PRODUCT_PROGID}.backup"
+    StrCpy $2 0
+    ${If} $1 != ""
+      ClearErrors
+      EnumRegKey $2 HKCR "$1" 0
+      ${If} ${Errors}
+        StrCpy $2 0
+      ${Else}
+        StrCpy $2 1
+      ${EndIf}
+    ${EndIf}
+    ${If} $2 == 1
+      WriteRegStr ${ROOT} "Software\Classes\$R0" "" $1
+    ${Else}
+      DeleteRegValue ${ROOT} "Software\Classes\$R0" ""
+    ${EndIf}
+  ${EndIf}
+  DeleteRegValue ${ROOT} "Software\Classes\$R0" "${PRODUCT_PROGID}.backup"
+!macroend
+!endif
+
 ;; Function that removes one extension that VLC owns.
 Function un.RegisterExtension
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the keys and values this installer added are in its record
+  ; (un.ConeRegRemove, registry.nsh); here only the values older Cone installers left without a
+  ; record, and never a key
+  Push $1
+  Push $2
+  ; 1.0: HKCR's merged view put the Open with value into the user's own .<ext>\OpenWithProgids
+  ; when that key existed
+  DeleteRegValue HKCU "Software\Classes\$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0"
+  ; and the HKLM one of a type an older install had ticked and this one did not
+  DeleteRegValue HKLM "Software\Classes\$R0\OpenWithProgids" "${PRODUCT_PROGID}$R0"
+  !insertmacro ConeUnRestoreDefault HKLM
+  !insertmacro ConeUnRestoreDefault HKCU
+  Pop $2
+  Pop $1
+!else
   ;start of restore script
   ReadRegStr $1 HKCR "$R0" ""
   StrCmp $1 "${PRODUCT_PROGID}$R0" 0 NoOwn ; only do this if we own it
@@ -64,31 +123,12 @@ Function un.RegisterExtension
       DeleteRegKey HKCR "$R0"
     Goto NoOwn
 Restore:
-!if "${PRODUCT_PROGID}" != "VLC"
-      ; redesign: brand layer, give the extension back to the previous handler only while its
-      ; ProgID still exists (an uninstalled VLC leaves a dangling VLC.<ext>); never write a
-      ; handler that is gone
-      Push $2
-      ClearErrors
-      EnumRegKey $2 HKCR "$1" 0
-      ${If} ${Errors}
-        DeleteRegValue HKCR "$R0" ""
-      ${Else}
-        WriteRegStr HKCR "$R0" "" $1
-      ${EndIf}
-      Pop $2
-!else
       WriteRegStr HKCR "$R0" "" $1
-!endif
       DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
 NoOwn:
-!if "${PRODUCT_PROGID}" != "VLC"
-    ; redesign: brand layer, another player took the extension after this app: drop only this
-    ; app's own backup value
-    DeleteRegValue HKCR "$R0" "${PRODUCT_PROGID}.backup"
-!endif
     DeleteRegKey HKCR "${PRODUCT_PROGID}$R0" ;Delete key with association settings
     DeleteRegKey HKLM "Software\Clients\Media\${PRODUCT_PROGID}\Capabilities\FileAssociations\${PRODUCT_PROGID}$R0" ; for vista
+!endif
 FunctionEnd
 
 !macro AssociateExtensionSection TYPE EXT
@@ -322,9 +362,43 @@ FunctionEnd
   WriteRegStr HKCR ${EXT}\shell\AddToPlaylist${PRODUCT_PROGID}\command "" '"$INSTDIR\${PRODUCT_EXE}" --started-from-file --playlist-enqueue "%1"'
 !macroend
 
+!if "${PRODUCT_PROGID}" != "VLC"
+; redesign: brand layer, one context menu verb in own class key TREE (SUBKEY: the verb's key
+; inside it, "" when the verb key is TREE), written to HKLM\Software\Classes and recorded
+!macro ConeContextMenuVerb TREE SUBKEY LABEL ARGS
+  !insertmacro RegClassesOwnStr "${TREE}" "${SUBKEY}" "" "${LABEL}"
+  !insertmacro RegClassesOwnStr "${TREE}" "${SUBKEY}" "Icon" '"$INSTDIR\${PRODUCT_EXE}",0'
+  !insertmacro RegClassesOwnStr "${TREE}" "${SUBKEY}" "MultiSelectModel" "Player"
+!if "${SUBKEY}" == ""
+  !insertmacro RegClassesOwnStr "${TREE}" "command" "" '"$INSTDIR\${PRODUCT_EXE}" ${ARGS} "%1"'
+!else
+  !insertmacro RegClassesOwnStr "${TREE}" "${SUBKEY}\command" "" '"$INSTDIR\${PRODUCT_EXE}" ${ARGS} "%1"'
+!endif
+!macroend
+
+; the two verbs of the ProgID of extension $R0
+Function ConeAddContextMenu
+  !insertmacro ConeContextMenuVerb "${PRODUCT_PROGID}$R0" "shell\PlayWith${PRODUCT_PROGID}" "$(ContextMenuEntry_PlayWith)" "--started-from-file --no-playlist-enqueue"
+  !insertmacro ConeContextMenuVerb "${PRODUCT_PROGID}$R0" "shell\AddToPlaylist${PRODUCT_PROGID}" "$(ContextMenuEntry_AddToPlaylist)" "--started-from-file --playlist-enqueue"
+FunctionEnd
+
+; the folder verbs: each is an own key under the shared Directory\shell
+!macro ConeAddDirectoryContextMenu
+  !insertmacro ConeContextMenuVerb "Directory\shell\PlayWith${PRODUCT_PROGID}" "" "$(ContextMenuEntry_PlayWith)" "--started-from-file --no-playlist-enqueue"
+  !insertmacro ConeContextMenuVerb "Directory\shell\AddToPlaylist${PRODUCT_PROGID}" "" "$(ContextMenuEntry_AddToPlaylist)" "--started-from-file --playlist-enqueue"
+!macroend
+
+!macro AddContextMenu TYPE EXT
+  Push $R0
+  StrCpy $R0 ${EXT}
+  Call ConeAddContextMenu
+  Pop $R0
+!macroend
+!else
 !macro AddContextMenu TYPE EXT
   !insertmacro AddContextMenuExt ${PRODUCT_PROGID}${EXT}
 !macroend
+!endif
 
 !macro DeleteContextMenuExt EXT
   DeleteRegKey HKCR ${EXT}\shell\PlayWith${PRODUCT_PROGID}
