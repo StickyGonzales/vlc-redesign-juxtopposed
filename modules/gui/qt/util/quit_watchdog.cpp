@@ -147,7 +147,8 @@ void logFired(long long seconds)
  * instance would lose them (a double-click while the quit waits for the core, up to the
  * watchdog's 5 s): its window loses that name when the quit starts, so a new start finds no
  * running instance and opens the file itself. The window stays, for win_msg to close it; its
- * thread gets the new name as a message, so a busy thread cannot hold the quit for long */
+ * thread gets the new name as a message, so a busy thread cannot hold the quit for long; logged
+ * at the level of the core's own "one instance mode" lines, which a default log shows */
 void releaseOneInstance(qt_intf_t *p_intf)
 {
 #ifdef _WIN32
@@ -161,10 +162,10 @@ void releaseOneInstance(qt_intf_t *p_intf)
         DWORD_PTR result = 0;
         if (SendMessageTimeoutW(window, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""),
                                 SMTO_ABORTIFHUNG, 500, &result) && result)
-            msg_Dbg(p_intf, "quit watchdog: one-instance handoff released, a new start opens "
-                            "its own window");
+            msg_Info(p_intf, "quit watchdog: one-instance handoff released, a new start opens "
+                             "its own window");
         else
-            msg_Warn(p_intf, "quit watchdog: could not release the one-instance handoff");
+            msg_Err(p_intf, "quit watchdog: could not release the one-instance handoff");
         return;
     }
 #else
