@@ -42,6 +42,7 @@ public static class RdSmoke {
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint dx, uint dy, int d, IntPtr e);
   [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, IntPtr extra);
+  [DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint mapType);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid);
   [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
@@ -141,11 +142,12 @@ function Focus-Window($h) {
     }
     if ([RdSmoke]::GetForegroundWindow() -ne $h) { throw 'Cone is not the foreground window, no input sent' }
 }
-# a key with modifiers: virtual-key codes, e.g. Keys 0x11 0x50 = Ctrl+P
+# a key with modifiers: virtual-key codes, e.g. Keys 0x11 0x50 = Ctrl+P. With the hardware scan
+# code, as a keyboard sends it: Qt's shortcuts (Ctrl+P) ignore a key event without one
 function Keys([byte[]]$vks) {
-    foreach ($k in $vks) { [RdSmoke]::keybd_event($k, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
+    foreach ($k in $vks) { [RdSmoke]::keybd_event($k, [byte][RdSmoke]::MapVirtualKey($k, 0), 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
     [array]::Reverse($vks)
-    foreach ($k in $vks) { [RdSmoke]::keybd_event($k, 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
+    foreach ($k in $vks) { [RdSmoke]::keybd_event($k, [byte][RdSmoke]::MapVirtualKey($k, 0), 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
 }
 function Click([int]$x, [int]$y) {
     [RdSmoke]::SetCursorPos($x, $y) | Out-Null; Start-Sleep -Milliseconds 80
@@ -182,13 +184,16 @@ function Wait-Rc([int]$seconds) {
     }
     throw "Cone's cli interface did not open port $RcPort within $seconds s"
 }
+# an element of Cone's window by its accessible name, shown on screen (a closed dialog's items can
+# stay in the tree, off screen)
 function Uia-Find($hwnd, [string]$name, [int]$timeoutMs) {
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
     $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $name)
     $sw = [Diagnostics.Stopwatch]::StartNew()
     do {
-        $e = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
-        if ($e) { return $e }
+        foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+            try { if (-not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { return $e } } catch {}
+        }
         Start-Sleep -Milliseconds 250
     } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
     return $null
@@ -275,17 +280,22 @@ function Check-Seek($s) {
 }
 function Open-Settings($s) {
     Focus-Window $s.hwnd
+    # the dialog's search field (its "Global Settings" title is a plain text without an
+    # accessible name)
+    $field = 'Search settings'
     # Ctrl+P toggles the dialog: a retry closes what the first attempt opened
-    if (Uia-Find $s.hwnd 'Global Settings' 500) { Keys @(0x1B); Start-Sleep -Milliseconds 500 }
+    if (Uia-Find $s.hwnd $field 300) { Keys @(0x1B); Start-Sleep -Milliseconds 500 }
     Keys @(0x11, 0x50)   # Ctrl+P
-    Start-Sleep -Milliseconds 1000
-    Shot "$($s.tag)-settings-1s"
-    $title = Uia-Find $s.hwnd 'Global Settings' 8000
+    $search = Uia-Find $s.hwnd $field 8000
+    Start-Sleep -Milliseconds 300
     Shot "$($s.tag)-settings"
-    if (-not $title) { throw 'Ctrl+P: no "Global Settings" page within 8 s' }
+    if (-not $search) { throw 'Ctrl+P: the Settings dialog (its "Search settings" field) did not appear within 8 s' }
+    if (-not (Uia-Find $s.hwnd 'General' 1000)) { throw 'the Settings dialog has no "General" category' }
     Keys @(0x1B)         # Escape closes it
-    Start-Sleep -Milliseconds 500
-    'Ctrl+P shows "Global Settings"; Escape closes it'
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    while ((Uia-Find $s.hwnd $field 0) -and $sw.ElapsedMilliseconds -lt 3000) { Start-Sleep -Milliseconds 200 }
+    if (Uia-Find $s.hwnd $field 0) { throw 'Escape did not close the Settings dialog' }
+    'Ctrl+P opens the Settings dialog (General); Escape closes it'
 }
 function Check-Settings($s) {
     Check "$($s.tag): Settings opens" { Open-Settings $s }
@@ -329,26 +339,6 @@ function Check-Quit($s, [bool]$hevc, [string]$exe, [string]$video, [string]$subs
     }
 }
 
-# TEMPORARY diagnostic (CI iteration): which keyboard paths reach Cone on the runner
-function Diag($s) {
-    try {
-        Focus-Window $s.hwnd
-        Log "diag: foreground ok=$([RdSmoke]::GetForegroundWindow() -eq $s.hwnd)"
-        Keys @(0x20); Start-Sleep -Milliseconds 1200
-        Log "diag: after Space: $((Rc 'status') -replace '\s+', ' ')"
-        Keys @(0x20); Start-Sleep -Milliseconds 800
-        Keys @(0x11, 0x4C); Start-Sleep -Milliseconds 1200; Shot "diag-ctrl-l"
-        Keys @(0x11, 0x4C); Start-Sleep -Milliseconds 800
-        [System.Windows.Forms.SendKeys]::SendWait('^p'); Start-Sleep -Milliseconds 2000; Shot "diag-sendkeys-ctrl-p"
-        Log "diag: Global Settings after SendKeys ^p: $([bool](Uia-Find $s.hwnd 'Global Settings' 1000))"
-        $root = [System.Windows.Automation.AutomationElement]::FromHandle($s.hwnd)
-        $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-        $lines = foreach ($e in $all) { try { "$($e.Current.ControlType.ProgrammaticName) | $($e.Current.Name) | $($e.Current.BoundingRectangle)" } catch {} }
-        $lines | Set-Content (Join-Path $Out 'diag-uia-tree.txt')
-        Log "diag: $($all.Count) UIA elements"
-    } catch { Log "diag failed: $($_.Exception.Message)" }
-}
-
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -359,12 +349,11 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Start-Sleep -Seconds 2
         Shot "$tag-start"
         Check-Time $s | Out-Null
-        if ($tag -eq 'zip-h264') { Diag $s }
         if ($full) {
             Check-Subtitle $s | Out-Null
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
-            # the same shortcut once the seek bar has had the click (diagnostic for now)
+            # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
             Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
         }
         Check-Quit $s ($codec -eq 'hevc') $exe $video $subs | Out-Null
