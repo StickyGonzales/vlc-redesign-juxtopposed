@@ -328,6 +328,7 @@ Extra decisions made during the build, one line each (date, row IDs, decision, r
 
 ## Core changes (status)
 Approved by Decision 27 (minimal and isolated); reverse playback postponed (Decision 29).
+- A second running Cone can start its helper processes (wip/fix-quit-handoff, redesign/FIX_QUIT_HANDOFF_NOTES.md): `src/win32/filesystem.c` `vlc_pipe()` puts the process id in its pipe names, which were the same in every process (`AnonPipe_<n>`), so a second Cone lost the file it was started with. Also upstream VLC 4. Written, not yet built (own build).
 - OSD showing the pressed shortcut (P7-08, P8-13, IB-38): `src/misc/actions.c` and `src/video_output/video_text.c` (see "Must-haves 2" below).
 - Subtitle timeline cue times (P3-16, P4-35): external text subtitle files parsed in the Qt interface (no core change, wip/musthaves-2); embedded tracks later if feasible.
 - Profiles that switch every setting plus the layout (P8-27): restart notice where needed (Decision 29).

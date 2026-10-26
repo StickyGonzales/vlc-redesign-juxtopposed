@@ -43,6 +43,7 @@
 #include "player/rd_subtitle_timeline.hpp"
 #include "player/rd_subtitle_timeline_item.hpp"
 #include "player/rd_now_playing.hpp"
+#include "player/rd_up_next.hpp"
 #include "dialogs/toolbar/rd_profiles.hpp"
 #include "player/rd_media_info.hpp"
 
@@ -57,6 +58,7 @@
 #include "playlist/playlist_controller.hpp"
 
 #include "util/brand.hpp"
+#include "util/rd_update_check.hpp"
 #include "util/csdmenu.hpp"
 #include "util/item_key_event_filter.hpp"
 #include "util/imageluminanceextractor.hpp"
@@ -306,6 +308,9 @@ void MainUI::registerQMLTypes()
         qmlRegisterSingletonInstance<MainCtx>(uri, versionMajor, versionMinor, "MainCtx", m_mainCtx);
         // redesign: brand layer (util/brand.hpp)
         qmlRegisterSingletonInstance<BrandInfo>(uri, versionMajor, versionMinor, "Brand", new BrandInfo(this));
+        // redesign: Cone's update notice (idle in the vlc profile)
+        qmlRegisterSingletonInstance<RdUpdateCheck>(uri, versionMajor, versionMinor, "RdUpdateCheck",
+                                                    new RdUpdateCheck(m_intf, this));
 #ifdef _WIN32
         assert(dynamic_cast<MainCtxWin32*>(m_mainCtx));
         qmlRegisterAnonymousType<MainCtxWin32>(uri, versionMajor);
@@ -435,8 +440,13 @@ void MainUI::registerQMLTypes()
         // media, and the profiles (top bar layout, settings)
         qmlRegisterSingletonInstance<RdNowPlaying>(uri, versionMajor, versionMinor, "RdNowPlaying",
                                                    new RdNowPlaying(m_mainCtx, m_intf->p_mainPlayerController, this));
-        qmlRegisterSingletonInstance<RdProfiles>(uri, versionMajor, versionMinor, "RdProfiles",
-                                                 new RdProfiles(m_intf, m_mainCtx, this));
+        // Cone extra (Decision 71): autoplay of the next episode of a show folder
+        RdUpNext* upNext = new RdUpNext(m_intf, m_mainCtx, effects, this);
+        qmlRegisterSingletonInstance<RdUpNext>(uri, versionMajor, versionMinor, "RdUpNext", upNext);
+        RdProfiles* profiles = new RdProfiles(m_intf, m_mainCtx, this);
+        // a profile switch brings its autoplay options (UP_NEXT_PLAN.md Q5)
+        connect(profiles, &RdProfiles::applied, upNext, &RdUpNext::reloadSettings);
+        qmlRegisterSingletonInstance<RdProfiles>(uri, versionMajor, versionMinor, "RdProfiles", profiles);
         // redesign: the Show Statistics and Show Metadata panels of the player (W4.3b)
         qmlRegisterType<RdInputStats>(uri, versionMajor, versionMinor, "RdInputStats");
         qmlRegisterType<RdMediaMeta>(uri, versionMajor, versionMinor, "RdMediaMeta");

@@ -9,7 +9,7 @@
 | File | What it is | SHA-256 |
 |---|---|---|
 | `{{EXE}}` | Installer for Windows 10 and 11 (64-bit) | `{{EXE_SHA256}}` |
-| `{{ZIP}}` | Zip: unpack anywhere and run `Cone.exe`, no installation (settings go to `%APPDATA%\Cone`; create an empty folder named `portable` next to `Cone.exe` to keep them there instead) | `{{ZIP_SHA256}}` |
+| `{{ZIP}}` | Zip: unpack anywhere and run `Cone.exe`, no installation. Settings stay next to `Cone.exe` in the `portable` folder, so you can carry the folder around; delete that folder to use `%APPDATA%\Cone` instead, shared with an installed Cone Player | `{{ZIP_SHA256}}` |
 
 `SHA256SUMS.txt` holds both checksums. To check a download in PowerShell, run `Get-FileHash .\{{EXE}} -Algorithm SHA256` and compare the result with the table above.
 
