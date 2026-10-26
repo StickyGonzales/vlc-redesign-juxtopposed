@@ -94,4 +94,46 @@ Input: real Windows input events (keybd_event with the keys' hardware scan codes
 The PC session's on-PC tests stay for all of these; the smoke checks replace only its routine start / play / seek / settings / quit / install round.
 
 ## 4. Runs
-(filled in below)
+**End to end:** build-windows #132 (run 40414530392). A manual public build of this branch: the `win64` build, then `smoke / smoke-media` and `smoke / smoke` (2.5 minutes after the build: 50 s for the media, 1 min 5 s for the checks). **All 19 checks passed, no retries, no warnings.**
+
+| Check | zip H.264 | zip HEVC | installed H.264 |
+|---|---|---|---|
+| main window | 4.3 s | 0.9 s | 0.4 s |
+| time advances | 2 s, then 6 s | 2 s, then 5 s | 2 s, then 5 s |
+| subtitle file | track 1 selected | track 1 selected | - |
+| Settings (Ctrl+P), Escape | pass | pass | - |
+| seek bar click at 75 % | 24 s of 30 s | 24 s of 30 s | - |
+| Settings after the seek bar click | pass | pass | - |
+| quit | 1.46 s | 1.64 s | 1.52 s |
+
+Also passed:
+- **Portable folder:** `rd-presets.json`, `vlcrc`, `Cone\vlc-qt-interface.ini` and `ml\ml.db` landed there, and nothing in `%APPDATA%\Cone`.
+- **Installer:** the silent install gave Cone Player 0.1.0 in `C:\Program Files\Cone`; the silent uninstall removed it, uninstall entry included.
+
+**Iterations:** `smoke-windows-manual` on the artifacts of build-windows #127 (`redesign`, run 40371807007), through a temporary push trigger that is removed again:
+
+| Run | Result | What changed after it |
+|---|---|---|
+| 1 | Settings failed, the rest passed | - |
+| 2 | Settings failed before the seek bar click too | a diagnostic run |
+| 3 | the Settings dialog was open on screen and in the UI Automation tree | - |
+| 4 | cancelled: apt stalled on the Ubuntu runner for 15 minutes | apt time limit and retries |
+| 5 | all passed | - |
+
+What runs 1 to 3 showed:
+- The dialog's "Global Settings" title has no accessible name, so the check never found it.
+- Key events sent without a hardware scan code do not trigger Qt's shortcuts (Ctrl+P). Ctrl+Q worked through VLC's own hotkeys.
+
+Both are fixed in the script; Cone itself was fine.
+
+**Not yet seen on a real run:**
+- **HEVC quit stall:** the HEVC quit took 1.6 s on the runner and the stall did not happen. The "watchdog: warning" path (log line, warning in the summary) and the fail-after-10-s path have not fired on GitHub yet.
+- **Retries and the release path:** no check needed a retry yet. A release run (release.yml) has not run with the smoke job yet. It should work: the smoke jobs ask for no permissions, so release.yml's `contents: write` grant is enough.
+
+**Side finding (not this branch's, for the PC session):** Cone's log on the runner shows four plug-ins that cannot load ("The specified module could not be found", error 126):
+- `libaccess_srt_plugin`
+- `libaccess_output_srt_plugin`
+- `libx265_plugin` (the HEVC encoder; decoding is not affected)
+- `libgme_plugin`
+
+A DLL they depend on is missing from the package. Check whether the same happens on a PC (Settings > Diagnostics > Save a log, start Cone, look for "cannot load plug-in").
