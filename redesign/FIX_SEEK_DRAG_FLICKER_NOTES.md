@@ -38,7 +38,7 @@ Setup: AppImage, Xvfb 1600x1000, window 1440x900, openbox. Generated episode (25
 
 | | Frames | Frames with the lighter block |
 |---|---|---|
-| Before (#38) | 150 | 33 (brightness 50-51 against 35, scattered over the whole drag) |
+| Before (#38) | 150 | 59 (brightness 50-52 against 35, scattered over the whole drag) |
 | After (#39) | 150 | 0 (35 in every frame of the drag) |
 
 Pictures: `redesign/fix-shots/seek_drag_flicker_before_after.png` (two frames of the drag from each build, at 1.5x).
