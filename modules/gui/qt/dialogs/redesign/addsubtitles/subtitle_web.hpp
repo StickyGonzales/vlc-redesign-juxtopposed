@@ -55,7 +55,8 @@ public:
     // the User-Agent of every request (OpenSubtitles asks for the application's name)
     static QByteArray userAgent();
 
-    // an HTTPS request ("GET", "POST") with a body of at most a few megabytes
+    // an HTTPS request ("GET", "POST") with a body of at most a few megabytes; `headers`
+    // may replace the default User-Agent and Accept
     static Reply request(vlc_object_t* obj, const QByteArray& method, const QUrl& url,
                          const Headers& headers = {}, const QByteArray& body = {});
 

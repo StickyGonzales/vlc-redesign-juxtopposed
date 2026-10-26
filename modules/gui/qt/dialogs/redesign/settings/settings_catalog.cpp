@@ -65,7 +65,7 @@ const QSet<QString>& curatedOptions()
 {
     static const QSet<QString> names {
         // General
-        "interact", "qt-updates-notif", "file-logging", "logfile", "log-verbose",
+        "interact", "qt-updates-notif", "qt-cone-update-check", "file-logging", "logfile", "log-verbose",
         "qt-error-dialogs", "logmode", "stats", "syslog", "syslog-debug", "syslog-ident",
         "syslog-facility", "qt-verbose", "qt-accent-color", "extra-options",
         // Interface

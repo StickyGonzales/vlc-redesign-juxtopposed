@@ -468,6 +468,14 @@ Item {
         // file or after a restart, over every view
         RdProfileNotice { }
 
+        // redesign: "Cone Player X.Y.Z is available" (public brand only), over every view
+        Loader {
+            active: Brand.isPublic
+            sourceComponent: Component {
+                RdUpdateNotice { }
+            }
+        }
+
         // redesign (W8.1a): Customize Player (VLC's toolbar editor, video 19:12-19:28), over every
         // view so a view switch does not lose unsaved edits; created on its first open
         Loader {
