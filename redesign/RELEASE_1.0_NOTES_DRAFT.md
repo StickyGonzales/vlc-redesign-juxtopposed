@@ -40,7 +40,7 @@ Uninstall it from Settings > Apps like any app. It asks before deleting your set
 
 **Portable zip: `ConePlayer-1.0.0-win64.zip`**
 1. Unzip it anywhere and run `Cone.exe` in the `ConePlayer-1.0.0` folder. Nothing gets installed.
-2. Settings stay in the `portable` folder next to `Cone.exe`. SmartScreen may warn the same way: **More info**, **Run anyway**.
+2. Settings go to `%APPDATA%\Cone`, shared with an installed Cone Player. To keep them next to `Cone.exe` instead, create an empty folder named `portable` there. SmartScreen may warn the same way: **More info**, **Run anyway**.
 
 ## New since 0.2.0 beta
 
