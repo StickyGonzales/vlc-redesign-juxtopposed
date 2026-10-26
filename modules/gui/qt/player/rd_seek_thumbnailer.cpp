@@ -62,12 +62,15 @@ constexpr vlc_tick_t kMinBucket = VLC_TICK_FROM_SEC(1);
 constexpr vlc_tick_t kTimeout = VLC_TICK_FROM_SEC(3);
 // a precise request decodes every frame from the keyframe before the position, and VLC only
 // lets it stop once it reached the position (a cancel or a quit waits for it too): it is only
-// started when that work fits this budget, in pixels decoded (width x height x frames; about
-// 1.5 s of software decoding on a 4-core PC: 16 s of 1080p30, 4 s of 4K30). A precise request
-// that took longer than kSlowMs halves the budget for the media (a slower PC)
+// started when that work fits a budget, in pixels decoded (width x height x frames). The budget
+// is kPreciseSeconds of decoding at the speed the last precise request measured; before the
+// first one, kPreciseBudget (about 1.5 s on a 4-core PC: 16 s of 1080p30, 4 s of 4K30)
+constexpr double kPreciseSeconds = 1.5;
 constexpr double kPreciseBudget = 1.0e9;
 constexpr double kPreciseBudgetMin = 2.5e8;
-constexpr qint64 kSlowMs = 2500;
+constexpr double kPreciseBudgetMax = 4.0e9;
+// a precise request shorter than this says little about the decoding speed (ms)
+constexpr qint64 kMeasureMinMs = 300;
 // the frame of a fast seek this close to the position is shown as it is
 constexpr vlc_tick_t kCloseEnough = VLC_TICK_FROM_SEC(1);
 // failed requests in a row after which the media counts as not previewable; a timeout counts
@@ -759,7 +762,7 @@ void RdSeekThumbnailer::onRequestEnded(vlc_preparser_req* req, qint64 bucket, in
         else if (m_pixelRate > 0. && cost <= m_budget)
         {
             // the precise request follows while the position is still wanted
-            m_probed.insert(bucket);
+            m_probed.insert(bucket, cost);
             startNext();
             return;
         }
@@ -778,8 +781,13 @@ void RdSeekThumbnailer::onRequestEnded(vlc_preparser_req* req, qint64 bucket, in
         return;
     }
 
-    if (kind == Kind::Precise && elapsed > kSlowMs)
-        m_budget = std::max(kPreciseBudgetMin, m_budget / 2);
+    if (kind == Kind::Precise && !image.isNull() && elapsed >= kMeasureMinMs)
+    {
+        // the decoding speed of this PC for this media sets the budget of the next ones
+        const double pixelsPerSecond = m_probed.value(bucket) * 1000. / double(elapsed);
+        m_budget = std::clamp(pixelsPerSecond * kPreciseSeconds, kPreciseBudgetMin,
+                              kPreciseBudgetMax);
+    }
 
     if (!image.isNull())
     {
