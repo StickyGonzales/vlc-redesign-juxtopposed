@@ -15,7 +15,7 @@ Each runs a `smoke` job on a GitHub **Windows runner**. A failed check fails the
 | `.github/workflows/build-windows.yml` | new `smoke` job after `win64`, calls the reusable workflow below |
 | `.github/workflows/smoke-windows.yml` | the reusable workflow: `smoke-media` (Linux, makes the test media) and `smoke` (Windows, runs the checks) |
 | `.github/workflows/smoke-windows-manual.yml` | the same checks by hand on an earlier build run's artifacts (they last one day): Actions > smoke-windows-manual > Run workflow > the build run's id |
-| `.github/scripts/smoke-media.sh` | the test media: 30 s 480p30 with a tone, as **H.264** and **HEVC** MP4, plus a 10-cue SRT; generated, nothing personal or copyrighted |
+| `.github/scripts/smoke-media.sh` | the test media: 30 s 480p30 with a tone, as **H.264** and **HEVC** MP4 (a keyframe every 2 s), plus a 10-cue SRT; generated, nothing personal or copyrighted. ffmpeg comes from apt on the Ubuntu runner: each install attempt is cut after 4 minutes, at most 3 attempts (one stalled for 15 minutes during the work on this branch) |
 | `.github/scripts/win64-smoke.ps1` | the checks (UI Automation and Win32 input, like `redesign/tools/perf/vlcperf.ps1`; playback state from VLC's cli interface on 127.0.0.1) |
 
 **Results artifact:** `cone-smoke-results`, one day. It holds:
@@ -27,7 +27,7 @@ Each runs a `smoke` job on a GitHub **Windows runner**. A failed check fails the
 On a release run the checks gate the release: `release.yml`'s release job waits for the whole build workflow, the smoke job included.
 
 ## 2. The checks
-Each check that fails runs once more. Every retry is listed under "Retries" in the summary, with the first attempt's error.
+Input: real Windows input events (keybd_event with the keys' hardware scan codes, which Qt's shortcuts need; SetCursorPos / mouse_event), only after Cone's window is in front. Each check that fails runs once more. Every retry is listed under "Retries" in the summary, with the first attempt's error.
 
 **Portable zip.** The zip from the build gets a `portable` folder next to `Cone.exe`, as a user would make one. Then two sessions run, one per codec (H.264, HEVC). Each starts Cone with the video and `--sub-file`, then checks:
 
@@ -37,7 +37,8 @@ Each check that fails runs once more. Every retry is listed under "Retries" in t
 | playback time advances | cli `get_time`, 3 s apart | the second time is later |
 | subtitle file loads | cli `strack` | a subtitle track is selected (`*`) |
 | seek bar responds | the "Progress" slider found through UI Automation, a real mouse click at 75 % of its width | the time is 75 % of the length (within 3 s or 10 %) |
-| Settings opens | Ctrl+P | the "Global Settings" page appears in the UI Automation tree within 8 s; Escape closes it |
+| Settings opens | Ctrl+P | the Settings dialog's "Search settings" field and its "General" category are on screen within 8 s (its "Global Settings" title is a plain text without an accessible name); Escape closes it within 3 s |
+| Settings opens after a seek bar click | Ctrl+P again, after the seek bar's click | the same; the clicked seek bar holds the keyboard focus, and the shortcut must still work |
 | quit | Ctrl+Q | see below |
 
 **Quit, H.264:**
