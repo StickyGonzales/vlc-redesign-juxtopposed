@@ -133,6 +133,45 @@ void logFired(long long seconds)
     _exit(0);
 }
 
+#ifdef _WIN32
+/* must be the same as in modules/control/win_msg.c and src/win32/specific.c */
+# ifdef VLC_BRAND_PUBLIC
+#  define IPC_NAME L"Cone ipc " VERSION
+# else
+#  define IPC_NAME L"VLC ipc " VERSION
+# endif
+#endif
+
+/* the one-instance handoff (Windows, "Allow only one instance"): a new start finds the running
+ * instance by the name of its IPC window (win_msg) and hands its files to it. A quitting
+ * instance would lose them (a double-click while the quit waits for the core, up to the
+ * watchdog's 5 s): its window loses that name when the quit starts, so a new start finds no
+ * running instance and opens the file itself. The window stays, for win_msg to close it; its
+ * thread gets the new name as a message, so a busy thread cannot hold the quit for long */
+void releaseOneInstance(qt_intf_t *p_intf)
+{
+#ifdef _WIN32
+    HWND window = nullptr;
+    while ((window = FindWindowExW(nullptr, window, nullptr, IPC_NAME)) != nullptr)
+    {
+        DWORD process = 0;
+        GetWindowThreadProcessId(window, &process);
+        if (process != GetCurrentProcessId())
+            continue;
+        DWORD_PTR result = 0;
+        if (SendMessageTimeoutW(window, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""),
+                                SMTO_ABORTIFHUNG, 500, &result) && result)
+            msg_Dbg(p_intf, "quit watchdog: one-instance handoff released, a new start opens "
+                            "its own window");
+        else
+            msg_Warn(p_intf, "quit watchdog: could not release the one-instance handoff");
+        return;
+    }
+#else
+    VLC_UNUSED(p_intf);
+#endif
+}
+
 void startTimer(std::chrono::seconds timeout)
 {
     std::thread([timeout]() {
@@ -163,6 +202,7 @@ void QuitWatchdog::arm(qt_intf_t *p_intf)
     }
     /* the timer runs before anything else, so a save that blocks cannot keep Cone alive */
     startTimer(recording ? kQuitTimeoutRecording : kQuitTimeout);
+    releaseOneInstance(p_intf);
     msg_Dbg(p_intf, "quit watchdog: armed, Cone ends itself if it is still running in %lld s",
             static_cast<long long>((recording ? kQuitTimeoutRecording : kQuitTimeout).count()));
 
@@ -179,6 +219,7 @@ void QuitWatchdog::armWithoutSaving(qt_intf_t *p_intf)
     if (s_armed.exchange(true))
         return;
     startTimer(kQuitTimeout);
+    releaseOneInstance(p_intf);
 }
 
 void QuitWatchdog::interfaceClosing(qt_intf_t *p_intf)
