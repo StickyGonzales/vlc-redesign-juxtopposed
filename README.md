@@ -14,9 +14,11 @@
   <img src="https://img.shields.io/badge/status-active-2ea44f" alt="Status: active">
 </p>
 
+<p align="center"><img src="docs/images/hero.png" alt="Cone Player playing Sintel"></p>
+
 | | |
 |---|---|
-| <img src="docs/images/cone-player.png" alt="The player"><br>**Player.** Thin floating bars that get out of the way. | <img src="docs/images/cone-settings-sidebar.png" alt="The settings sidebar"><br>**Settings sidebar.** Video, audio, subtitles and playback, next to the picture. |
+| <img src="docs/images/cone-player.png" alt="The player with subtitles"><br>**Player.** Thin floating bars that get out of the way, and subtitles that stay readable. | <img src="docs/images/cone-settings-sidebar.png" alt="The settings sidebar"><br>**Settings sidebar.** Video, audio, subtitles and playback, next to the picture. |
 | <img src="docs/images/cone-library.png" alt="The library and mini player"><br>**Library.** Home, videos, music and playlists, with a mini player. | <img src="docs/images/cone-settings.png" alt="Settings"><br>**Settings.** Plain categories instead of VLC's preference tree. |
 
 ## Why Cone Player
@@ -25,6 +27,12 @@
 - **Her whole design, checked.** Every screen and control is built from Juxtopposed's Figma file and video, and compared with them side by side on Windows.
 - **Fixes bugs in VLC 4 itself**, such as the time jumping ahead after a pause at a changed speed, a start-up freeze with some MKV files and a crash when picking the Spectrometer visualizer.
 - **Installs next to your VLC** instead of replacing it: its own settings, its own file associations, and your VLC stays as it is.
+
+## Themes and accent colors
+
+Dark and light themes and nine accent colors: the default orange and eight more. Pick them in the first start or in Settings > General; the whole player changes at once.
+
+<p align="center"><img src="docs/images/cone-accents.png" alt="Cone Player in its nine accent colors"></p>
 
 ## Download
 
@@ -153,6 +161,10 @@ Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxt
 - **Design:** ["VLC Redesign" by Juxtopposed](https://www.figma.com/community/file/1691465999134370980/vlc-redesign) ([video](https://youtu.be/ERFeOgqk324)), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Changes were made to fit it to VLC.
 - **Based on [VLC media player](https://www.videolan.org/vlc/)** by VideoLAN and its contributors. Cone Player is GPLv2 or later like VLC (libVLC LGPLv2.1 or later), and all its source is here.
 - **Fonts:** Inter and DM Mono, SIL Open Font License.
+- **Films in the screenshots** (Blender Foundation open movies, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)):
+  - *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org/)
+  - *Big Buck Bunny*, © copyright 2008, Blender Foundation | [www.bigbuckbunny.org](https://peach.blender.org/)
+  - *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org/)
 - **Built by [StickyGonzales](https://github.com/StickyGonzales)** with [Claude](https://claude.ai/code).
 
 Cone Player is an independent project, not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, VLC media player and VideoLAN are trademarks of the VideoLAN non-profit. Details in [CREDITS.md](CREDITS.md).
