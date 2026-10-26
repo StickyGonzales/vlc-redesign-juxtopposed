@@ -22,6 +22,7 @@
 #include <QElapsedTimer>
 #include <QImage>
 #include <QObject>
+#include <QSet>
 #include <QSize>
 #include <QTimer>
 #include <QUrl>
@@ -51,7 +52,9 @@ struct vlc_preparser_req;
  * Fast seeks land on the keyframe before the position. When a media's keyframes are too sparse
  * for that (a screen recording, a file with one keyframe), every position shows the same frame:
  * once two fast frames show it, the media switches to precise seeks, which decode up to the
- * position itself (slower, with a longer timeout).
+ * position itself. A fast seek first finds the keyframe before the position; the precise seek
+ * runs only when decoding from there fits a budget, otherwise the card shows the time only (a
+ * precise seek cannot be stopped before it reached the position).
  *
  * Only local files are previewed (`supported`); streams and other media keep the time-only
  * tooltip. The frames reach QML through the "rdseekthumb" image provider: `source` is the
@@ -88,6 +91,23 @@ public:
     struct Cache;
     struct Converter;
 
+    // what a thumbnailer request is for
+    enum class Kind
+    {
+        Fast,    // a fast seek's frame
+        Start,   // the first frame: its timestamp is the time base of the precise mode
+        Probe,   // a fast seek, to find the keyframe before the position
+        Precise, // a precise seek's frame
+    };
+
+    struct Result
+    {
+        int status = VLC_EGENERIC;
+        QImage image;
+        vlc_tick_t date = VLC_TICK_INVALID;
+        double pixelRate = 0.;
+    };
+
 signals:
     void supportedChanged();
     void sourceChanged();
@@ -101,13 +121,14 @@ private:
     void resetMedia();
     bool makeItem();
     void switchToPrecise();
+    void resetPrecise();
     bool fastSeekMisses(vlc_tick_t time, vlc_tick_t date);
     void setSource(qint64 bucket);
     void startNext();
     void armTimer(int ms);
     void cancelInflight();
-    void onRequestEnded(vlc_preparser_req* req, qint64 bucket, int generation, int status,
-                        const QImage& image, vlc_tick_t fastTime, vlc_tick_t date);
+    void onRequestEnded(vlc_preparser_req* req, qint64 bucket, int generation, vlc_tick_t time,
+                        Kind kind, const Result& result);
 
     static void onThumbnailEnded(vlc_preparser_req* req, int status, picture_t* picture, void* data);
 
@@ -140,6 +161,13 @@ private:
     // the last fast-seek frame: the time asked for and the frame's timestamp
     vlc_tick_t m_lastFastTime = VLC_TICK_INVALID;
     vlc_tick_t m_lastFastDate = VLC_TICK_INVALID;
+    // precise mode: the first frame's timestamp, the buckets whose keyframe is near enough for
+    // a precise seek, the buckets too far from one, pixels per second of video, the budget
+    vlc_tick_t m_startDate = VLC_TICK_INVALID;
+    QSet<qint64> m_probed;
+    QSet<qint64> m_tooFar;
+    double m_pixelRate = 0.;
+    double m_budget = 0.;
 
     // the position under the pointer, as a time bucket (-1: none waiting)
     qint64 m_wanted = -1;
@@ -147,6 +175,7 @@ private:
     // the single request in flight
     vlc_preparser_req* m_inflight = nullptr;
     qint64 m_inflightBucket = -1;
+    Kind m_inflightKind = Kind::Fast;
     bool m_inflightCancelled = false;
     QElapsedTimer m_inflightAge;
 
