@@ -51,7 +51,6 @@ const QString releasePagePrefix = QStringLiteral("https://github.com/");
 constexpr int startupDelay = 4000;
 // the request gives up after this long (a stalled connection or DNS lookup)
 constexpr int requestTimeout = 15000;
-#endif
 
 // "1.2.3" out of "1.2.3", "v1.2.3" or "v1.2.3-beta"; empty when there is none
 QString versionOf(const QString& text)
@@ -75,6 +74,7 @@ bool isNewer(const QString& version, const QString& current)
     }
     return false;
 }
+#endif
 
 } // namespace
 
@@ -111,6 +111,9 @@ RdUpdateCheck::RdUpdateCheck(qt_intf_t* intf, QObject* parent)
     }
 
     QTimer::singleShot(startupDelay, this, &RdUpdateCheck::startupCheck);
+#else
+    Q_UNUSED(m_intf);
+    Q_UNUSED(m_explicitCheck);
 #endif
 }
 
@@ -228,6 +231,15 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     m_job.reset();
     const bool explicitCheck = m_explicitCheck;
     m_explicitCheck = false;
+
+    // 404: GitHub has no release that is not a pre-release yet, so nothing newer either
+    if (httpStatus == 404)
+    {
+        msg_Dbg(m_intf, "update check: no release yet");
+        setNoticeVisible(false);
+        setStatus(UpToDate);
+        return;
+    }
 
     const QJsonObject release = QJsonDocument::fromJson(body).object();
     const QString version = versionOf(release.value(QStringLiteral("tag_name")).toString());

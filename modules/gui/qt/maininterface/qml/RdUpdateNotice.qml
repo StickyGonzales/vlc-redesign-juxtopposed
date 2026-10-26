@@ -20,8 +20,8 @@
 // No Figma frame (Decision 21): the style of the profile notice (RdProfileNotice.qml, after the
 // Figma "continue" toast: 52 high pill, radius 16, BG/A3, Inter 16 FG/2, a primary button),
 // centered over the bottom of the window, 18 px above the control bar. "Download" opens the
-// release page in the browser, "Later" (and Escape) hides it until the next day. It never takes
-// the keyboard focus from the player.
+// release page in the browser, "Later" (and Escape on its buttons) hides it until the next day.
+// It never takes the keyboard focus from the player, nor its Escape (fullscreen).
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Templates as T
@@ -48,13 +48,8 @@ T.Popup {
     modal: false
     dim: false
     focus: false
-    closePolicy: T.Popup.CloseOnEscape
-
-    // Escape answers "Later"
-    onClosed: {
-        if (RdUpdateCheck.noticeVisible)
-            RdUpdateCheck.later()
-    }
+    // a window-wide Escape would leave the player's fullscreen no more: only the buttons take it
+    closePolicy: T.Popup.NoAutoClose
 
     Component.onCompleted: {
         if (RdUpdateCheck.noticeVisible)
@@ -111,6 +106,7 @@ T.Popup {
             focusPolicy: Qt.TabFocus
 
             onClicked: RdUpdateCheck.download()
+            Keys.onEscapePressed: RdUpdateCheck.later()
         }
 
         Widgets.RdButton {
@@ -122,6 +118,7 @@ T.Popup {
             focusPolicy: Qt.TabFocus
 
             onClicked: RdUpdateCheck.later()
+            Keys.onEscapePressed: RdUpdateCheck.later()
         }
     }
 }
