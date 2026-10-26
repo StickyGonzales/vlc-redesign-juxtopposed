@@ -329,6 +329,26 @@ function Check-Quit($s, [bool]$hevc, [string]$exe, [string]$video, [string]$subs
     }
 }
 
+# TEMPORARY diagnostic (CI iteration): which keyboard paths reach Cone on the runner
+function Diag($s) {
+    try {
+        Focus-Window $s.hwnd
+        Log "diag: foreground ok=$([RdSmoke]::GetForegroundWindow() -eq $s.hwnd)"
+        Keys @(0x20); Start-Sleep -Milliseconds 1200
+        Log "diag: after Space: $((Rc 'status') -replace '\s+', ' ')"
+        Keys @(0x20); Start-Sleep -Milliseconds 800
+        Keys @(0x11, 0x4C); Start-Sleep -Milliseconds 1200; Shot "diag-ctrl-l"
+        Keys @(0x11, 0x4C); Start-Sleep -Milliseconds 800
+        [System.Windows.Forms.SendKeys]::SendWait('^p'); Start-Sleep -Milliseconds 2000; Shot "diag-sendkeys-ctrl-p"
+        Log "diag: Global Settings after SendKeys ^p: $([bool](Uia-Find $s.hwnd 'Global Settings' 1000))"
+        $root = [System.Windows.Automation.AutomationElement]::FromHandle($s.hwnd)
+        $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+        $lines = foreach ($e in $all) { try { "$($e.Current.ControlType.ProgrammaticName) | $($e.Current.Name) | $($e.Current.BoundingRectangle)" } catch {} }
+        $lines | Set-Content (Join-Path $Out 'diag-uia-tree.txt')
+        Log "diag: $($all.Count) UIA elements"
+    } catch { Log "diag failed: $($_.Exception.Message)" }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -339,6 +359,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Start-Sleep -Seconds 2
         Shot "$tag-start"
         Check-Time $s | Out-Null
+        if ($tag -eq 'zip-h264') { Diag $s }
         if ($full) {
             Check-Subtitle $s | Out-Null
             Check-Settings $s | Out-Null
