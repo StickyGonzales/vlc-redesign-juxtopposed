@@ -43,6 +43,7 @@
 #include "player/rd_subtitle_timeline.hpp"
 #include "player/rd_subtitle_timeline_item.hpp"
 #include "player/rd_now_playing.hpp"
+#include "player/rd_up_next.hpp"
 #include "dialogs/toolbar/rd_profiles.hpp"
 #include "player/rd_media_info.hpp"
 
@@ -439,8 +440,13 @@ void MainUI::registerQMLTypes()
         // media, and the profiles (top bar layout, settings)
         qmlRegisterSingletonInstance<RdNowPlaying>(uri, versionMajor, versionMinor, "RdNowPlaying",
                                                    new RdNowPlaying(m_mainCtx, m_intf->p_mainPlayerController, this));
-        qmlRegisterSingletonInstance<RdProfiles>(uri, versionMajor, versionMinor, "RdProfiles",
-                                                 new RdProfiles(m_intf, m_mainCtx, this));
+        // Cone extra (Decision 71): autoplay of the next episode of a show folder
+        RdUpNext* upNext = new RdUpNext(m_intf, m_mainCtx, effects, this);
+        qmlRegisterSingletonInstance<RdUpNext>(uri, versionMajor, versionMinor, "RdUpNext", upNext);
+        RdProfiles* profiles = new RdProfiles(m_intf, m_mainCtx, this);
+        // a profile switch brings its autoplay options (UP_NEXT_PLAN.md Q5)
+        connect(profiles, &RdProfiles::applied, upNext, &RdUpNext::reloadSettings);
+        qmlRegisterSingletonInstance<RdProfiles>(uri, versionMajor, versionMinor, "RdProfiles", profiles);
         // redesign: the Show Statistics and Show Metadata panels of the player (W4.3b)
         qmlRegisterType<RdInputStats>(uri, versionMajor, versionMinor, "RdInputStats");
         qmlRegisterType<RdMediaMeta>(uri, versionMajor, versionMinor, "RdMediaMeta");

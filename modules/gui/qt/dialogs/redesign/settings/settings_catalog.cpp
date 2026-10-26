@@ -86,6 +86,9 @@ const QSet<QString>& curatedOptions()
         "audio-track", "sub-track", "loop", "repeat", "random", "play-and-stop", "play-and-exit",
         "play-and-pause", "input-fast-seek", "qt-seek-thumbnails", "dvd", "avi-index", "mkv-preload-local-dir",
         "input-timeshift-path", "input-timeshift-granularity",
+        // Playback > Episodes (Cone extra, UP_NEXT_PLAN.md 5.1)
+        "qt-autoplay-next", "qt-autoplay-countdown", "qt-autoplay-card-point",
+        "qt-autoplay-still-watching",
         // Video
         "video", "fullscreen", "disable-screensaver", "video-wallpaper", "deinterlace",
         "deinterlace-mode", "aspect-ratio", "crop", "autoscale", "fit", "align", "snapshot-path",

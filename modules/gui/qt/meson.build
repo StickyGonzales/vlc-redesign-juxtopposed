@@ -143,6 +143,7 @@ moc_headers = files(
     'dialogs/toolbar/rd_profiles.hpp',
     'player/rd_media_info.hpp',
     'player/rd_presets.hpp',
+    'player/rd_up_next.hpp',
     'player/player_controller.hpp',
     'player/player_controlbar_model.hpp',
     'player/control_list_model.hpp',
@@ -503,6 +504,10 @@ qt_plugin_sources = files(
     'player/rd_media_info.hpp',
     'player/rd_presets.cpp',
     'player/rd_presets.hpp',
+    'player/rd_episode_parser.cpp',
+    'player/rd_episode_parser.hpp',
+    'player/rd_up_next.cpp',
+    'player/rd_up_next.hpp',
     'player/input_models.hpp',
     'player/player_controller.cpp',
     'player/player_controller.hpp',
@@ -960,6 +965,8 @@ qml_modules += {
        'player/qml/RdMiniQueue.qml',
        'player/qml/RdMiniPlayer.qml',
        'player/qml/RdInfoPanel.qml',
+       'player/qml/RdUpNextCard.qml',
+       'player/qml/RdShowPrompt.qml',
    ),
    'singletons' : files(
        'player/qml/PlayerControlbarControls.qml',
@@ -1662,6 +1669,22 @@ if qt6_dep.found()
             'dependencies': [qt6_dep, qtest_qt6_dep]
         }
 
+
+        # Cone extra (Up Next): the episode parser, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_episode_parser',
+            'sources': files(
+                'tests/test_rd_episode_parser.cpp',
+                'player/rd_episode_parser.cpp',
+                'player/rd_episode_parser.hpp',
+                'dialogs/redesign/addsubtitles/subtitle_matcher.cpp',
+                'dialogs/redesign/addsubtitles/subtitle_matcher.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
 
         vlc_tests += {
             'name': 'test_qt_dialog_model',

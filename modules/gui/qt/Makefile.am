@@ -351,6 +351,10 @@ libqt_plugin_la_SOURCES = \
 	player/rd_media_info.hpp \
 	player/rd_presets.cpp \
 	player/rd_presets.hpp \
+	player/rd_episode_parser.cpp \
+	player/rd_episode_parser.hpp \
+	player/rd_up_next.cpp \
+	player/rd_up_next.hpp \
 	player/player_controller.cpp player/player_controller.hpp player/player_controller_p.hpp \
 	player/player_controlbar_model.cpp player/player_controlbar_model.hpp \
 	player/control_list_model.cpp player/control_list_model.hpp \
@@ -583,6 +587,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	dialogs/toolbar/rd_profiles.moc.cpp \
 	player/rd_media_info.moc.cpp \
 	player/rd_presets.moc.cpp \
+	player/rd_up_next.moc.cpp \
 	player/input_models.moc.cpp \
 	player/player_controller.moc.cpp \
 	player/player_controlbar_model.moc.cpp \
@@ -1597,7 +1602,9 @@ libqml_module_player_a_QML = \
 	player/qml/RdPlayerMenu.qml \
 	player/qml/RdMiniQueue.qml \
 	player/qml/RdMiniPlayer.qml \
-	player/qml/RdInfoPanel.qml
+	player/qml/RdInfoPanel.qml \
+	player/qml/RdUpNextCard.qml \
+	player/qml/RdShowPrompt.qml
 
 libqml_module_player_a_Singleton_QML = \
 	player/qml/PlayerControlbarControls.qml \
@@ -2330,6 +2337,21 @@ test_thread_runner_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_thread_runner_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_thread_runner
 TESTS += test_thread_runner
+
+# test_rd_episode_parser (Cone extra, Up Next): QtCore only
+
+test_rd_episode_parser_SOURCES = \
+	tests/test_rd_episode_parser.cpp \
+	player/rd_episode_parser.cpp player/rd_episode_parser.hpp \
+	dialogs/redesign/addsubtitles/subtitle_matcher.cpp \
+	dialogs/redesign/addsubtitles/subtitle_matcher.hpp
+
+test_rd_episode_parser_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_episode_parser_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_episode_parser_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_episode_parser_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_episode_parser
+TESTS += test_rd_episode_parser
 
 # test_vlc_dialog_model
 
