@@ -1545,6 +1545,12 @@ SyncControls::SyncControls( qt_intf_t *_p_intf, QWidget *_parent )
     subDurationSpin->setButtonSymbols( QDoubleSpinBox::PlusMinus );
     subsLayout->addWidget( subDurationSpin, 3, 2, 1, 1 );
 
+    /* redesign: hidden for 1.0 like the sidebar's Subtitle Duration Factor (StickyGonzales,
+     * 2026-10-25, redesign/SUBSDELAY_FACTOR_NOTES.md): in VLC 4 the "subsdelay" filter hides
+     * ASS / SSA subtitles and lengthens no other */
+    subDurationLabel->hide();
+    subDurationSpin->hide();
+
     mainLayout->addWidget( subsBox, 2, 0, 2, 5 );
 
     updateButton = new QToolButton;
