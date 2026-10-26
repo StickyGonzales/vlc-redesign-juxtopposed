@@ -65,6 +65,7 @@ Uninstall it from Settings > Apps like any app. It asks before deleting your set
 ## Known issues
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
+- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds is not opened: open it again once Cone Player has closed. Starting Cone Player from the Start menu works as usual.
 - Pressing M (mute) shows only the mute icon, without "Pressed M".
 - The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. A factor saved by a beta is reset to 0 at start, so those subtitles show again. The slider comes back once it works.
 - Rarely, Windows may log a background error after closing Settings; nothing visible happens.

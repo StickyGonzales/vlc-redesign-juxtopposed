@@ -41,6 +41,7 @@ Full list: [release notes](https://github.com/StickyGonzales/vlc-redesign-juxtop
 ## Known issues (1.0.0)
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
+- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds is not opened: open it again once Cone Player has closed. Starting Cone Player from the Start menu works as usual.
 - Pressing M (mute) shows only the mute icon, without "Pressed M".
 - New Cone Player texts are in English in every language for now.
 - The portable zip doesn't show up in Windows' "Open with" menu: use the installer for that, or drag files onto Cone Player.
@@ -48,7 +49,7 @@ Full list: [release notes](https://github.com/StickyGonzales/vlc-redesign-juxtop
 
 ## Screenshots
 
-Cone 0.1.0 beta on Windows, with generated test media and the purple accent.
+Cone Player 1.0 on Windows, with generated test media and the purple accent.
 
 | | |
 |---|---|
