@@ -57,6 +57,7 @@
 #include "playlist/playlist_controller.hpp"
 
 #include "util/brand.hpp"
+#include "util/rd_update_check.hpp"
 #include "util/csdmenu.hpp"
 #include "util/item_key_event_filter.hpp"
 #include "util/imageluminanceextractor.hpp"
@@ -306,6 +307,9 @@ void MainUI::registerQMLTypes()
         qmlRegisterSingletonInstance<MainCtx>(uri, versionMajor, versionMinor, "MainCtx", m_mainCtx);
         // redesign: brand layer (util/brand.hpp)
         qmlRegisterSingletonInstance<BrandInfo>(uri, versionMajor, versionMinor, "Brand", new BrandInfo(this));
+        // redesign: Cone's update notice (idle in the vlc profile)
+        qmlRegisterSingletonInstance<RdUpdateCheck>(uri, versionMajor, versionMinor, "RdUpdateCheck",
+                                                    new RdUpdateCheck(m_intf, this));
 #ifdef _WIN32
         assert(dynamic_cast<MainCtxWin32*>(m_mainCtx));
         qmlRegisterAnonymousType<MainCtxWin32>(uri, versionMajor);

@@ -162,6 +162,7 @@ moc_headers = files(
     'util/vlcaccess_image_provider.hpp',
     'util/csdbuttonmodel.hpp',
     'util/csdmenu.hpp',
+    'util/rd_update_check.hpp',
     'util/imageluminanceextractor.hpp',
     'util/keyhelper.hpp',
     'util/listcache.hpp',
@@ -550,6 +551,8 @@ qt_plugin_sources = files(
     'util/csdbuttonmodel.hpp',
     'util/csdmenu.cpp',
     'util/csdmenu.hpp',
+    'util/rd_update_check.cpp',
+    'util/rd_update_check.hpp',
     'util/imageluminanceextractor.cpp',
     'util/imageluminanceextractor.hpp',
     'util/imagehelper.cpp',
@@ -798,6 +801,7 @@ qml_modules += {
         'maininterface/qml/SideNavigationPane.qml',
         'maininterface/qml/SideNavigationDelegate.qml',
         'maininterface/qml/TrayPopup.qml',
+        'maininterface/qml/RdUpdateNotice.qml',
     ),
 }
 qml_modules += {

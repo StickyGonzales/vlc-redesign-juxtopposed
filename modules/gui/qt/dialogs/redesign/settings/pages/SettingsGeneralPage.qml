@@ -113,6 +113,56 @@ SettingsPage {
             option: "qt-updates-notif"
             text: qsTr("Check for updates automatically")
         }
+
+        // Cone's own update notice (util/rd_update_check.cpp); the vlc profile has VLC's row
+        // above instead, and neither exists in the other profile
+        SettingsOption {
+            option: "qt-cone-update-check"
+            text: qsTr("Check for updates")
+        }
+
+        SettingsRow {
+            id: checkNowRow
+
+            text: qsTr("Check now")
+            description: qsTr("Asks GitHub for the latest release of %1 at once. Nothing is downloaded or installed.").arg(Brand.shortName)
+            keywords: "update version release new"
+            shown: RdUpdateCheck.supported
+            belowShown: checkNowStatus.text !== ""
+
+            Widgets.RdButton {
+                style: Widgets.RdButton.Style.Plain
+                implicitWidth: VLCStyle.dp(320)
+                text: qsTr("Check Now")
+                enabled: RdUpdateCheck.status !== RdUpdateCheck.Checking
+                onClicked: RdUpdateCheck.checkNow()
+            }
+
+            below: Text {
+                id: checkNowStatus
+
+                x: checkNowRow.width - width
+                width: VLCStyle.dp(320)
+                wrapMode: Text.WordWrap
+                text: {
+                    switch (RdUpdateCheck.status) {
+                    case RdUpdateCheck.Checking:
+                        return qsTr("Checking…")
+                    case RdUpdateCheck.UpToDate:
+                        return qsTr("%1 %2 is the latest version.").arg(Brand.name).arg(RdUpdateCheck.currentVersion)
+                    case RdUpdateCheck.UpdateAvailable:
+                        return qsTr("%1 %2 is available.").arg(Brand.name).arg(RdUpdateCheck.latestVersion)
+                    case RdUpdateCheck.CheckFailed:
+                        return qsTr("Could not reach GitHub. Try again later.")
+                    default:
+                        return ""
+                    }
+                }
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.rd_fontSize_label
+                color: VLCStyle.palette.rdFgA3
+            }
+        }
     }
 
     SettingsSection {

@@ -210,6 +210,12 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
                             "versions of the software. It runs once every " \
                             "two weeks." )
 
+/* redesign: Cone's update notice (util/rd_update_check.cpp) */
+#define CONE_UPDATE_CHECK_TEXT N_( "Check for updates" )
+#define CONE_UPDATE_CHECK_LONGTEXT N_( "Once a day at most, when Cone starts, ask GitHub " \
+                                      "for the latest release of Cone and tell when a newer " \
+                                      "one is available. Nothing is downloaded or installed." )
+
 #define QT_QML_DEBUG_TEXT N_( "set the options for qml debugger" )
 #define QT_QML_DEBUG_LONGTEXT N_( "set the options for qml debugger (see http://doc.qt.io/qt-5/qtquick-debugging.html#starting-applications)" )
 
@@ -480,6 +486,11 @@ vlc_module_begin ()
               UPDATER_LONGTEXT )
     add_integer_with_range( "qt-updates-days", 3, 0, 180,
               UPDATER_DAYS_TEXT, nullptr )
+#endif
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: Cone never builds VLC's checker (configure.ac); it has its own notice */
+    add_bool( "qt-cone-update-check", true, CONE_UPDATE_CHECK_TEXT,
+              CONE_UPDATE_CHECK_LONGTEXT )
 #endif
 
 #ifdef QT_QML_DEBUG

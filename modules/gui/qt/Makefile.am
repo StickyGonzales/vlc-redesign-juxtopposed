@@ -384,6 +384,7 @@ libqt_plugin_la_SOURCES = \
 	util/imageluminanceextractor.cpp util/imageluminanceextractor.hpp \
 	util/csdbuttonmodel.cpp util/csdbuttonmodel.hpp \
 	util/csdmenu.cpp util/csdmenu.hpp \
+	util/rd_update_check.cpp util/rd_update_check.hpp \
 	util/imagehelper.cpp util/imagehelper.hpp \
 	util/keyhelper.cpp util/keyhelper.hpp \
 	util/listcache.hxx util/listcache.hpp \
@@ -603,6 +604,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/imageluminanceextractor.moc.cpp \
 	util/csdbuttonmodel.moc.cpp \
 	util/csdmenu.moc.cpp \
+	util/rd_update_check.moc.cpp \
 	util/keyhelper.moc.cpp \
 	util/listcache.moc.cpp \
 	util/locallistcacheloader.moc.cpp \
@@ -1424,7 +1426,8 @@ libqml_module_maininterface_a_QML = \
 	maininterface/qml/SideNavigationPane.qml \
 	maininterface/qml/SideNavigationDelegate.qml \
 	maininterface/qml/NoMedialibHome.qml \
-	maininterface/qml/TrayPopup.qml
+	maininterface/qml/TrayPopup.qml \
+	maininterface/qml/RdUpdateNotice.qml
 
 if UPDATE_CHECK
 libqml_module_maininterface_a_QML += maininterface/qml/UpdatePane.qml
