@@ -273,19 +273,22 @@ function Check-Seek($s) {
         "clicked at 75 % of $len s, the time is $t s"
     }
 }
+function Open-Settings($s) {
+    Focus-Window $s.hwnd
+    # Ctrl+P toggles the dialog: a retry closes what the first attempt opened
+    if (Uia-Find $s.hwnd 'Global Settings' 500) { Keys @(0x1B); Start-Sleep -Milliseconds 500 }
+    Keys @(0x11, 0x50)   # Ctrl+P
+    Start-Sleep -Milliseconds 1000
+    Shot "$($s.tag)-settings-1s"
+    $title = Uia-Find $s.hwnd 'Global Settings' 8000
+    Shot "$($s.tag)-settings"
+    if (-not $title) { throw 'Ctrl+P: no "Global Settings" page within 8 s' }
+    Keys @(0x1B)         # Escape closes it
+    Start-Sleep -Milliseconds 500
+    'Ctrl+P shows "Global Settings"; Escape closes it'
+}
 function Check-Settings($s) {
-    Check "$($s.tag): Settings opens" {
-        Focus-Window $s.hwnd
-        # Ctrl+P toggles the dialog: a retry closes what the first attempt opened
-        if (Uia-Find $s.hwnd 'Global Settings' 500) { Keys @(0x1B); Start-Sleep -Milliseconds 500 }
-        Keys @(0x11, 0x50)   # Ctrl+P
-        $title = Uia-Find $s.hwnd 'Global Settings' 8000
-        Shot "$($s.tag)-settings"
-        if (-not $title) { throw 'Ctrl+P: no "Global Settings" page within 8 s' }
-        Keys @(0x1B)         # Escape closes it
-        Start-Sleep -Milliseconds 500
-        'Ctrl+P shows "Global Settings"; Escape closes it'
-    }
+    Check "$($s.tag): Settings opens" { Open-Settings $s }
 }
 # Ctrl+Q; $hevc: a quit the watchdog ends is a warning (known HEVC quit stall), otherwise a failure
 function Quit-Cone($s, [bool]$hevc) {
@@ -338,8 +341,10 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Check-Time $s | Out-Null
         if ($full) {
             Check-Subtitle $s | Out-Null
-            Check-Seek $s | Out-Null
             Check-Settings $s | Out-Null
+            Check-Seek $s | Out-Null
+            # the same shortcut once the seek bar has had the click (diagnostic for now)
+            Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
         }
         Check-Quit $s ($codec -eq 'hevc') $exe $video $subs | Out-Null
     } catch {
