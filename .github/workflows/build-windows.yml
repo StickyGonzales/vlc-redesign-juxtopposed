@@ -244,12 +244,10 @@ jobs:
           path: dist/
           retention-days: 1
 
-      # brand layer: Cone's NSIS installer, built so its screens and texts can be checked
-      # (redesign/CONE_RELEASE_NOTES.md); not published with the beta (Decision 61: portable zip
-      # first); a failure here keeps the build green
+      # brand layer: Cone's NSIS installer next to the zip (redesign/INSTALLER_NOTES.md); the zip
+      # is uploaded first, so a failing installer still leaves it, but the run turns red
       - name: Cone installer
         if: env.VLC_BRAND == 'public'
-        continue-on-error: true
         run: |
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             "$VLC_IMAGE" .github/scripts/win64-build.sh installer
