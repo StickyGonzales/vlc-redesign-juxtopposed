@@ -48,6 +48,11 @@ struct vlc_preparser_req;
  * going back over the bar shows them at once. stop() (pointer gone) cancels everything; the
  * thumbnailer itself is created on the first request, so nothing runs before the first hover.
  *
+ * Fast seeks land on the keyframe before the position. When a media's keyframes are too sparse
+ * for that (a screen recording, a file with one keyframe), every position shows the same frame:
+ * once two fast frames show it, the media switches to precise seeks, which decode up to the
+ * position itself (slower, with a longer timeout).
+ *
  * Only local files are previewed (`supported`); streams and other media keep the time-only
  * tooltip. The frames reach QML through the "rdseekthumb" image provider: `source` is the
  * URL of the frame to show, empty while none is ready.
@@ -94,12 +99,15 @@ private:
     void setSupported(bool supported);
     void setUnavailable();
     void resetMedia();
+    bool makeItem();
+    void switchToPrecise();
+    bool fastSeekMisses(vlc_tick_t time, vlc_tick_t date);
     void setSource(qint64 bucket);
     void startNext();
     void armTimer(int ms);
     void cancelInflight();
     void onRequestEnded(vlc_preparser_req* req, qint64 bucket, int generation, int status,
-                        const QImage& image);
+                        const QImage& image, vlc_tick_t fastTime, vlc_tick_t date);
 
     static void onThumbnailEnded(vlc_preparser_req* req, int status, picture_t* picture, void* data);
 
@@ -127,6 +135,11 @@ private:
     int m_generation = 0;
     // failed requests in a row for this media (a timeout counts twice)
     int m_failures = 0;
+    // the media's keyframes are too sparse for fast seeks: precise seeks only
+    bool m_precise = false;
+    // the last fast-seek frame: the time asked for and the frame's timestamp
+    vlc_tick_t m_lastFastTime = VLC_TICK_INVALID;
+    vlc_tick_t m_lastFastDate = VLC_TICK_INVALID;
 
     // the position under the pointer, as a time bucket (-1: none waiting)
     qint64 m_wanted = -1;
