@@ -25,8 +25,8 @@ on:
         options: [vlc, public]
         default: public
       package-suffix:
-        # brand layer: appended to the public profile's package names only (e.g. "-beta":
-        # Cone-0.1.0-beta-win64.zip), never to the app's version
+        # brand layer: appended to the public profile's package names only (e.g. "-rc1":
+        # ConePlayer-1.0.0-rc1-win64.zip), never to the app's version
         description: 'Package name suffix (public profile, e.g. -beta)'
         type: string
         default: ''
@@ -43,6 +43,11 @@ on:
         default: false
       cache-branch:
         # the branch whose compiler cache the build starts from (a tag run has no branch)
+        type: string
+        default: ''
+      version:
+        # the release's version tag (v1.0.0, v1.0.0-rc1): sets the public profile's version and
+        # package names like a pushed tag does; a manual release run builds a branch, not the tag
         type: string
         default: ''
 
@@ -180,22 +185,24 @@ jobs:
       - name: Build in VideoLAN's image
         env:
           PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
+          VERSION_INPUT: ${{ inputs.version }}
         run: |
           # run as the runner's user so the checkout, caches and build output have one owner
           mkdir -p .ccache
           # the public profile's own version (Decision 58): a vX.Y.Z tag sets it, otherwise 0.1.0;
           # a vX.Y.Z-<label> tag (v0.1.0-beta) sets X.Y.Z and puts "-<label>" into the package
           # names only (BRAND_PACKAGE_SUFFIX, extras/package/win32/package.mak), like the
-          # workflow_dispatch input package-suffix
+          # workflow_dispatch input package-suffix; release.yml passes its tag as the input version
           BRAND_VERSION=""
           BRAND_PACKAGE_SUFFIX="$PACKAGE_SUFFIX_INPUT"
           case "$GITHUB_REF" in refs/tags/v*) BRAND_VERSION="${GITHUB_REF_NAME#v}" ;; esac
+          if [ -n "$VERSION_INPUT" ]; then BRAND_VERSION="${VERSION_INPUT#v}"; fi
           if echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-[A-Za-z0-9.]+$'; then
             BRAND_PACKAGE_SUFFIX="-${BRAND_VERSION#*-}"
             BRAND_VERSION="${BRAND_VERSION%%-*}"
           fi
           if [ -n "$BRAND_VERSION" ] && ! echo "$BRAND_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::warning::tag $GITHUB_REF_NAME is not vX.Y.Z: the build uses the default version"
+            echo "::warning::tag ${VERSION_INPUT:-$GITHUB_REF_NAME} is not vX.Y.Z: the build uses the default version"
             BRAND_VERSION=""
           fi
           if [ -n "$BRAND_PACKAGE_SUFFIX" ] && ! echo "$BRAND_PACKAGE_SUFFIX" | grep -Eq '^-[A-Za-z0-9.]+$'; then
@@ -230,7 +237,7 @@ jobs:
         run: |
           ls -la win64/*.zip
           mkdir dist
-          # vlc-<version>-win64.zip, or Cone-<version><suffix>-win64.zip in the public profile
+          # vlc-<version>-win64.zip, or ConePlayer-<version><suffix>-win64.zip in the public profile
           unzip -q "$(ls win64/*-win64.zip | head -n 1)" -d dist
           ls dist dist/*
 
@@ -244,23 +251,23 @@ jobs:
           path: dist/
           retention-days: 1
 
-      # brand layer: Cone's NSIS installer, built so its screens and texts can be checked
-      # (redesign/CONE_RELEASE_NOTES.md); not published with the beta (Decision 61: portable zip
-      # first); a failure here keeps the build green
+      # brand layer: Cone's NSIS installer next to the zip (redesign/INSTALLER_NOTES.md); the zip is
+      # uploaded first, so a failing installer still leaves it; a failure here keeps a test build
+      # green, a release fails
       - name: Cone installer
         if: env.VLC_BRAND == 'public'
-        continue-on-error: true
+        continue-on-error: ${{ !inputs.release }}
         run: |
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             "$VLC_IMAGE" .github/scripts/win64-build.sh installer
           ls -la win64/*.exe
 
       - uses: actions/upload-artifact@v4
-        if: env.VLC_BRAND == 'public' && hashFiles('win64/cone-*-win64.exe') != ''
+        if: env.VLC_BRAND == 'public' && hashFiles('win64/coneplayer-*-win64.exe') != ''
         continue-on-error: true
         with:
           name: cone-installer-win64
-          path: win64/cone-*-win64.exe
+          path: win64/coneplayer-*-win64.exe
           retention-days: 1
 
       # test builds only (a run of this workflow itself, not a release workflow calling it): the
@@ -274,3 +281,16 @@ jobs:
           .github/scripts/test-build-assets.sh \
             "win64-$VLC_BRAND.zip=$(ls win64/*-win64.zip 2>/dev/null | head -n 1)" \
             "win64-installer.exe=$(ls win64/*-win64.exe 2>/dev/null | head -n 1)"
+
+      # release.yml: both packages exactly as built (ConePlayer-<version>-win64.zip and
+      # coneplayer-<version>-win64.exe, redesign/RENAME_CONE_PLAYER.md), for the release job of the
+      # same run only; release-package.sh checks the names
+      - uses: actions/upload-artifact@v4
+        if: inputs.release
+        with:
+          name: cone-release-files
+          path: |
+            win64/ConePlayer-*-win64.zip
+            win64/coneplayer-*-win64.exe
+          if-no-files-found: error
+          retention-days: 1

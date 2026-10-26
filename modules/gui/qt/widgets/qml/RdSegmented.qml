@@ -88,6 +88,20 @@ Rectangle {
                 width: (row.width - row.spacing * (root.model.length - 1)) / Math.max(1, root.model.length)
                 height: row.height
                 radius: VLCStyle.rd_radius_small
+
+                // each segment is a tab accessibility tools can pick (UI Automation's Invoke and
+                // SelectionItem patterns) as a click does; the segments had no action
+                Accessible.role: Accessible.PageTab
+                Accessible.name: segment.modelData
+                Accessible.selectable: true
+                Accessible.selected: segment.selected
+                Accessible.onPressAction: segment.pick()
+                Accessible.onToggleAction: segment.pick()
+
+                function pick() {
+                    if (root.enabled && !segment.selected)
+                        root.activated(segment.index)
+                }
                 color: selected ? (root.rdPalette.isDark ? root.rdPalette.rdBgAccentBright : root.rdPalette.rdAccentMain)
                                 : (mouse.containsMouse ? root.rdPalette.rdBgA2 : root.rdPalette.rdBgA4)
 

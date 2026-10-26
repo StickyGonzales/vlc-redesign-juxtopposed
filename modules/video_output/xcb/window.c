@@ -909,7 +909,7 @@ static int OpenCommon(vlc_window_t *wnd, char *display, xcb_connection_t *conn,
     /* ICCCM */
     /* No cut&paste nor drag&drop, only Window Manager communication. */
 #ifdef VLC_BRAND_PUBLIC
-    /* redesign (brand layer, public profile): the window is named after Cone */
+    /* redesign (brand layer, public profile): the window carries the app's full name (VOUT_TITLE) */
     set_ascii_prop(conn, window, XA_WM_NAME, VOUT_TITLE);
     set_ascii_prop(conn, window, XA_WM_ICON_NAME, VOUT_TITLE);
 #else

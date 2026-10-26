@@ -20,6 +20,14 @@
     ReadRegStr $2 HKU "$1\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" AppData
     StrCmp $2 "" "${Index}-Loop"
     RMDir /r "$2\${PRODUCT_APPDATA_DIR}"
+!if "${PRODUCT_PROGID}" != "VLC"
+    ; redesign: brand layer, the rest the app keeps for a user: Qt's cache folder and the
+    ; interface language (Software\Cone\Lang); both carry the app's own name
+    ReadRegStr $2 HKU "$1\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" "Local AppData"
+    StrCmp $2 "" +2
+    RMDir /r "$2\${PRODUCT_APPDATA_DIR}"
+    DeleteRegKey HKU "$1\${PRODUCT_DIR_REGKEY}"
+!endif
     Goto "${Index}-Loop"
   "${Index}-End:"
   !undef Index

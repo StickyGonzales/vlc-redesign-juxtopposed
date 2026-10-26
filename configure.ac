@@ -5254,7 +5254,7 @@ AC_SUBST([COPYRIGHT_YEARS])
 
 dnl
 dnl  redesign: brand layer (modules/gui/qt/util/brand.hpp, redesign/BUILD_NOTES.md)
-dnl  vlc: VLC's name and cone; public: "Cone" and its logo
+dnl  vlc: VLC's name and cone; public: "Cone Player" and its logo
 dnl
 AC_ARG_WITH([brand],
   AS_HELP_STRING([--with-brand=PROFILE],
@@ -5269,6 +5269,8 @@ AS_CASE(["${with_brand}"],
     BRAND_PRODUCT_NAME="VLC media player"
     BRAND_COMPANY="VideoLAN"
     BRAND_INTERNAL_NAME="vlc"
+    BRAND_INSTALLER_NAME="vlc"
+    BRAND_PACKAGE_NAME="vlc"
     BRAND_EXE="vlc.exe"
     BRAND_ICON_SRC="share/icons/vlc.ico"
     BRAND_ICON_RC="vlc.ico"
@@ -5312,9 +5314,14 @@ AS_CASE(["${with_brand}"],
         AC_MSG_ERROR([modules/gui/qt/pixmaps/brand/public/${brand_file} must fill the logo with the color FF8800 (the accent slot of the SVG colorizer)])
       ])
     done
-    BRAND_PRODUCT_NAME="Cone"
+    dnl the shown name is "Cone Player" (redesign/RENAME_CONE_PLAYER.md, R1); the exe, the settings
+    dnl folders, registry keys, ProgIDs and GUIDs keep the identity name "Cone" (R3, R4)
+    BRAND_PRODUCT_NAME="Cone Player"
     BRAND_COMPANY="StickyGonzales"
     BRAND_INTERNAL_NAME="cone"
+    dnl file names of the installer and the portable package, never with a space (R2)
+    BRAND_INSTALLER_NAME="coneplayer"
+    BRAND_PACKAGE_NAME="ConePlayer"
     BRAND_EXE="Cone.exe"
     BRAND_ICON_SRC="extras/package/win32/brand/public/cone.ico"
     BRAND_ICON_RC="brand/public/cone.ico"
@@ -5349,6 +5356,8 @@ AM_CONDITIONAL([BRAND_PUBLIC], [test "${with_brand}" = "public"])
 AC_SUBST([BRAND_PRODUCT_NAME])
 AC_SUBST([BRAND_COMPANY])
 AC_SUBST([BRAND_INTERNAL_NAME])
+AC_SUBST([BRAND_INSTALLER_NAME])
+AC_SUBST([BRAND_PACKAGE_NAME])
 AC_SUBST([BRAND_EXE])
 AC_SUBST([BRAND_ICON_SRC])
 AC_SUBST([BRAND_ICON_RC])

@@ -542,8 +542,14 @@ int vlc_pipe (int fds[2])
 
     uint_least64_t c = atomic_fetch_add(&count, 1);
 
+    /* redesign (quit handoff, redesign/FIX_QUIT_HANDOFF_NOTES.md): pipe names are shared by
+     * every process of the machine and the counter starts at 0 in each one, so a second
+     * running instance could not create the pipes the first one still holds (its preparser
+     * failed to start, and with it its main playlist, which dropped the files of its command
+     * line): the process id makes the name unique */
     TCHAR pipeName[MAX_PATH] = {0};
-    if (wsprintf(pipeName, TEXT("\\\\.\\pipe\\AnonPipe_%lu"), c) < 0) {
+    if (wsprintf(pipeName, TEXT("\\\\.\\pipe\\AnonPipe_%lu_%lu"),
+                 (unsigned long)GetCurrentProcessId(), (unsigned long)c) < 0) {
         return -1;
     }
 

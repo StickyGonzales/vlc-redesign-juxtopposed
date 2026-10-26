@@ -1,0 +1,57 @@
+# A double-click during a slow quit was lost (branch wip/fix-quit-handoff)
+
+Branch `wip/fix-quit-handoff`, made from `origin/wip/next-test` (a5aacbe668), draft pull request into `wip/next-test`. Windows only. Two parts: the interface (`modules/gui/qt/util/quit_watchdog.cpp`) and, since the first Windows retest failed, a one-line **core change** in `src/win32/filesystem.c` (Decision 27): build this branch on its own (Decision 55, build rounds rule).
+
+## The bug (PC, 2026-10-26, STATUS.md 13:05)
+MED. Cone in one-instance mode, as a double-click in Explorer starts it ("one-instance-when-started-from-file"). When a quit stalls in the core, the window disappears at once (0.0 to 0.2 s), but the process keeps running until the quit watchdog ends it, up to 5 s later. A file double-clicked during those 5 s was lost. The new copy handed the file to the quitting one and exited within a second, the quitting one did nothing with it, and no window ever appeared (observer run quitux-20261026-124952). Starting Cone without a file during the wait worked: there was nothing to hand over, so the new copy opened its own start screen.
+
+## Cause
+VLC's one-instance mode on Windows has two parts:
+- **The new start** (`src/win32/specific.c`, `system_Configure`). It opens the named mutex "Cone ipc <version>". When the mutex already exists, it waits for it, looks for a window with that same name, sends its files there (`WM_COPYDATA`) and exits. When it finds no such window, it logs "one instance mode DISABLED (couldn't find 1st instance of program)" and starts normally.
+- **The running instance** (`modules/control/win_msg.c`). It owns that window on a helper thread and adds each file it receives to its play queue.
+
+The running instance keeps both for its whole life, including the seconds of a stalled quit. So a new start found it and handed the file to an instance whose play queue was shutting down.
+
+## Fix
+At the very start of a quit (`QuitWatchdog::arm`: the window's close, Quit, Ctrl+Q; and `armWithoutSaving` for quits that do not start in the interface), Cone takes the name off its own IPC window. A new start then finds no running instance and opens the file in a fresh Cone. The window itself stays, so `win_msg` still closes it as before. The new name is sent with `SendMessageTimeoutW` (at most 500 ms, `SMTO_ABORTIFHUNG`), after the watchdog timer has started, so a busy helper thread cannot hold the quit. Only a window of this process is renamed (`GetWindowThreadProcessId`). The log says "quit watchdog: one-instance handoff released, a new start opens its own window" (at the info level since the second commit, like the core's "one instance mode ENABLED" line, so a default `--file-logging` log shows it; it was a debug line before, which is why the first Windows retest's log had no such line).
+
+## Windows retest 1 (PC, 2026-10-26): failed, second cause found
+Build 40329375833, quit recipe in one-instance mode, a double-click on another file 1 s after the close (pr57-20261026-143822 try 2). The new copy stayed and opened a window (before this branch it handed the file over and exited), so the handoff was released. But the window showed the empty start screen and the file did not play, and the quitting copy's log had no "handoff released" line (a debug line, not in a default log: now an info line).
+
+**Cause: a second running Cone could not create its first pipes.** `vlc_pipe()` (`src/win32/filesystem.c`) makes a named pipe `\\.\pipe\AnonPipe_<n>`, where n is a counter that starts at 0 in every process, and pipe names are shared by the whole machine. The running Cone's preparser helper (`vlc-preparser.exe`, started through `vlc_spawn` with two of those pipes) keeps `AnonPipe_0` and `AnonPipe_1` open for as long as it runs. In a second Cone, the first two `vlc_pipe()` calls ask for the same names and fail (ERROR_PIPE_BUSY), so its preparser cannot start ("Fail to create Process in process_pool", twice, in its log). The main playlist needs the preparser (`vlc_playlist_New` returns NULL when `vlc_preparser_New` fails), so `libvlc_GetMainPlaylist` returns NULL, and `intf_InsertItem` drops the files of the command line without a word (`src/interface/interface.c`). The interface asks for the playlist again a moment later. By then the counter is past the taken names, so it gets a new, empty playlist: the start screen. The same happens to any second Cone that runs next to another one (`--no-one-instance`, or the known limit below): it does not play the file it was started with. Upstream VLC 4 master has the same `vlc_pipe()` (checked 2026-10-26).
+
+**Fix (core, one line):** the pipe name also holds the process id (`AnonPipe_<pid>_<n>`), so two processes never ask for the same name. The pipes are still made and opened only by the process itself and handed to a child as handles, so nothing else uses the name. In the `#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)` branch only; the other builds do not have named pipes.
+
+### Wine test of the real app (sandbox, 2026-10-26)
+Cone Player 1.0.0's release zip under Wine 10 (64-bit, Xvfb), a portable folder, generated test clips (a counter clip A, a test pattern clip B). Where a playing Cone's window is named "<file> - Cone Player" (`xdotool`).
+1. **Reproduced.** A double-clicked (`--started-from-file A.mp4`). Its IPC window renamed from outside with a small tool, the way `releaseOneInstance()` does (the quit itself cannot be stalled on demand). Then B double-clicked from the same folder: "one instance mode DISABLED (couldn't find 1st instance of program)", then "Fail to create Process in process_pool" twice, and the start screen without B, as on the PC. Also with `--no-one-instance`, and also without the media library (`--no-media-library`): the handoff is not involved. B alone plays.
+2. **The pipe names.** A small probe that creates each `AnonPipe_0`..`_39` the way `vlc_pipe()` does: with the 1.0.0 Cone running, `AnonPipe_0` and `_1` are busy (error 231); with nothing running, none.
+3. **The cause confirmed.** The same 1.0.0 folder with only the pipe name's text changed in `libvlccore.dll` (`AnonPipe_` to `AnonPipB_`, a copy; the unpatched copy as control): next to a running A, the patched copy plays B, the control shows the start screen.
+4. **The fix.** `libvlccore.dll` (plus the matching `libvlc.dll` and `vlc-preparser.exe`) built for win64 in VideoLAN's win64 image from v1.0.0 with this change, and once without it, both into copies of the 1.0.0 folder. A: the 1.0.0 release, double-clicked (holds `AnonPipe_0` and `_1`), its handoff released as in 1. B double-clicked from the copy: **without the change the start screen and no B window; with it "B.mp4 - Cone Player"**, Cone's player view. With the fixed core running, the probe finds no `AnonPipe_<n>` name taken. `src/win32/filesystem.c` compiles without warnings. (Under Wine a `vlc-preparser.exe` crash handler shows up with every build, the release included; it does not change these results.)
+
+Independent review of the second commit (fresh agent): no findings. It checked the format on win64 (the old code passed the 64-bit counter to `%lu` without a cast), that nothing else uses these names (children get the pipe ends as inherited handles, `src/win32/spawn.c`), the cause chain above, and the UWP and vlc profiles. Noted, not changed (older than this fix): the names are still guessable, so another program of the same user could create one first; `FILE_FLAG_FIRST_PIPE_INSTANCE` would make that fail cleanly.
+
+## Known limit (not changed)
+The fresh Cone starts as a normal instance without the handoff of its own. VLC only makes the first instance the owner, and the quitting one still holds the mutex while it runs. So while that fresh Cone runs, a further double-click opens another window instead of handing over (with the pipe fix that window plays its file). Once every Cone has closed, one-instance mode works as before. A full fix is a small core change: `src/win32/specific.c` would take over the handoff (start `win_msg`) when it finds no first instance's window. It needs StickyGonzales's OK (Decision 27) and its own build.
+
+## Sandbox test (Wine, protocol level)
+This sandbox cannot run Cone for Windows, so the protocol was tested with a small Windows program built with VideoLAN's win64 toolchain (MinGW g++, C++17, `-Wall -Wextra`: no warnings) and run under Wine 10 (64-bit). It contains `system_Configure`'s new-start code, `win_msg`'s IPC window thread and this branch's release function, the same code as here. The first copy "quits" 2 s after starting and waits 5 s like a stalled quit; the second copy is started 4 s in, during the wait.
+
+| Scenario | Result |
+|---|---|
+| First copy running, not quitting: a double-click | handed over: "received a file through the handoff", the new copy exits (as before) |
+| Quit without the release (the bug) | the quitting copy receives the file and ends: lost |
+| Quit with the release (this branch) | "one instance mode DISABLED (couldn't find 1st instance): starts normally with C:\media\film.mkv" |
+| With the release, two more starts while that fresh copy runs | both start normally (the known limit above) |
+
+The Linux build of the branch compiles clean (the code is Windows only), and Cone still quits normally there ("quit watchdog: armed ..." in the log, exit 0).
+
+## Retest on Windows
+Build this branch on its own (`gh workflow run build-windows.yml --ref wip/fix-quit-handoff`, a core change) and deploy it. Cone must start by a double-click, the one-instance mode the bug needs. Use two test films A and B; start Cone with `--file-logging --logfile=<TEST_MEDIA_DIR>\cone-handoff.log` (a default log is enough now).
+1. **The bug's case.** Double-click A, then run the quit recipe that makes the watchdog wait (as pr57-20261026-143822). Close the window, and within 1 to 2 s double-click B in Explorer: a new Cone window opens and **plays B** (this failed on build 40329375833: the start screen). The old process ends on its own (watchdog, about 5 s), and B keeps playing. The old run's log has "quit watchdog: one-instance handoff released"; the new copy's has "one instance mode DISABLED (couldn't find 1st instance of program)" and no "Fail to create Process in process_pool".
+2. **Two Cones side by side (the pipe fix on its own).** With Cone playing A, start a second one with a file: `Cone.exe --no-one-instance <B>`. It opens and plays B (on 1.0.0 and the first build of this branch it shows the start screen), and both keep playing; the second can open a further file from its menu.
+3. **The handoff still works normally.** With Cone running and not quitting, double-click B: B opens in that same window, and no second window appears.
+4. **A clean quit:** close Cone after a short play: it ends in under a second as before, with no watchdog message.
+5. **Starting without a file during the wait** (Start menu or desktop icon), as in step 1: it opens its start screen, as before.
+6. **The known limit,** for the record: after step 1, while B's window runs, double-click another file: it opens a second window, which plays it. Close every Cone, double-click once more: the handoff works again.
+7. **Regression (the pipes are used by every helper process):** a file's duration and thumbnail show in the library and the queue (the preparser), the seek bar thumbnails work, Settings > Rescan plugins finishes, and a network stream opens.

@@ -36,7 +36,8 @@ SettingsSection {
     title: qsTr("OpenSubtitles")
     keywords: qsTr("opensubtitles api key account download subtitles online")
 
-    // SettingsOption's text field
+    // SettingsOption's text field (committedText: a text an accessibility tool writes is applied
+    // too, by onEditingFinished)
     component AccountField: Widgets.RdTextField {
         implicitWidth: VLCStyle.dp(320)
         implicitHeight: VLCStyle.dp(36)
@@ -55,6 +56,7 @@ SettingsSection {
 
         AccountField {
             text: AddSubtitles.apiKey
+            committedText: AddSubtitles.apiKey
             echoMode: TextInput.Password
             Accessible.name: qsTr("OpenSubtitles API key")
             onEditingFinished: AddSubtitles.apiKey = text.trim()
@@ -69,6 +71,7 @@ SettingsSection {
 
         AccountField {
             text: AddSubtitles.username
+            committedText: AddSubtitles.username
             Accessible.name: qsTr("OpenSubtitles username")
             onEditingFinished: AddSubtitles.username = text.trim()
         }
@@ -82,6 +85,7 @@ SettingsSection {
 
         AccountField {
             text: AddSubtitles.password
+            committedText: AddSubtitles.password
             echoMode: TextInput.Password
             Accessible.name: qsTr("OpenSubtitles password")
             onEditingFinished: AddSubtitles.password = text

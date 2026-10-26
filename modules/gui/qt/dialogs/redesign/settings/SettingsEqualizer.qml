@@ -178,6 +178,9 @@ Rectangle {
 
         signal moved(real value)
 
+        // VLC's value arrived: the one passed on is no longer pending
+        onValueChanged: slider._passedValue = NaN
+
         width: VLCStyle.dp(60)
         implicitHeight: bandColumn.implicitHeight
 
@@ -201,8 +204,34 @@ Rectangle {
                 focusPolicy: Qt.StrongFocus
 
                 Accessible.name: band.text
+                // accessibility tools (UI Automation's RangeValue pattern) move the band as the
+                // arrow keys do (T.Slider's own actions only change the value, with no moved())
+                Accessible.onIncreaseAction: bandWheel.stepSlider(slider, 1)
+                Accessible.onDecreaseAction: bandWheel.stepSlider(slider, -1)
 
-                onMoved: band.moved(value)
+                // the value last passed on (VLC may report it back later)
+                property real _passedValue: NaN
+
+                function _pass(v) {
+                    _passedValue = v
+                    band.moved(v)
+                }
+
+                // a value written from outside the slider (RangeValue SetValue writes `value`
+                // itself): once the bindings have settled it is neither the band's value nor
+                // the one just passed on
+                function _takeOutsideValue() {
+                    const eps = stepSize * 1e-3
+                    const shown = Math.max(from, Math.min(to, band.value))
+                    if (!pressed && Math.abs(value - shown) > eps && !(Math.abs(value - _passedValue) <= eps))
+                        _pass(value)
+                }
+
+                onValueChanged: {
+                    if (!pressed)
+                        Qt.callLater(_takeOutsideValue)
+                }
+                onMoved: _pass(value)
 
                 background: Rectangle {
                     x: (slider.width - width) / 2

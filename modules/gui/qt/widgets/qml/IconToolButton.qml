@@ -80,7 +80,22 @@ T.ToolButton {
 
     // Accessible
 
-    Accessible.onPressAction: control.clicked()
+    // redesign: a checkable button (the crop link of the video sidebar) is flipped first, as by
+    // a click: clicked() alone left `checked` as it was, and T.ToolButton's own toggle action
+    // (UI Automation's Toggle pattern) only flips `checked`, without toggled() or clicked()
+    Accessible.onPressAction: control._clickByUser()
+    Accessible.onToggleAction: {
+        if (control.checkable)
+            control._clickByUser()
+    }
+
+    function _clickByUser() {
+        if (control.checkable) {
+            control.toggle()
+            control.toggled()
+        }
+        control.clicked()
+    }
 
     Accessible.name: description
 

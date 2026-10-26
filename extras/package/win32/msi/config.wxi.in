@@ -6,6 +6,7 @@
     <?if "@BRAND_PROGID@" = "VLC" ?>
     <?define ShortProductName = "VLC" ?>
     <?define ProductName = "VLC media player" ?>
+    <?define NsisUninstallName = "VLC media player" ?>
     <?define Manufacturer = "VideoLAN" ?>
     <?define AboutURL = "https://www.videolan.org/vlc/" ?>
     <?define SupportURL = "https://www.videolan.org/support/" ?>
@@ -33,7 +34,11 @@
     <?define GuidCompVideoFileAssociation = "869e8d63-30fe-47a0-bb36-0f98ae80a9d0" ?>
     <?define GuidCompOtherFileAssociation = "da4482a9-c3bd-4fcc-84eb-e5cf9e09b65e" ?>
     <?else ?>
-    <?define ShortProductName = "@BRAND_PRODUCT_NAME@" ?>
+    <!-- the short name, which is also the identity name "Cone" (the folder, the Start menu folder,
+         the RegisteredApplications value), and the NSIS installer's Settings > Apps key: both
+         stay "Cone" with the full name "Cone Player" (redesign/RENAME_CONE_PLAYER.md R1, R4) -->
+    <?define ShortProductName = "@BRAND_PROGID@" ?>
+    <?define NsisUninstallName = "@BRAND_PROGID@" ?>
     <?define ProductName = "@BRAND_PRODUCT_NAME@" ?>
     <?define Manufacturer = "@BRAND_COMPANY@" ?>
     <?define AboutURL = "@BRAND_WEBSITE@" ?>

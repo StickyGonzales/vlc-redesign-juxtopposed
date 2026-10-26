@@ -25,6 +25,7 @@
 #include <vlc_stream.h>
 #include <vlc_tls.h>
 
+#include <algorithm>
 #include <memory>
 
 namespace {
@@ -104,11 +105,19 @@ SubtitleWeb::Reply requestOnce(vlc_object_t* obj, const QByteArray& method, cons
     if (url.hasQuery())
         target += '?' + url.query(QUrl::FullyEncoded).toUtf8();
 
+    // the caller's User-Agent and Accept replace the defaults (the update check sends its own)
+    const auto hasHeader = [&headers](const QByteArray& name) {
+        return std::any_of(headers.cbegin(), headers.cend(), [&name](const auto& header) {
+            return header.first.compare(name, Qt::CaseInsensitive) == 0;
+        });
+    };
     QByteArray head = method + ' ' + target + " HTTP/1.1\r\n"
-                      "Host: " + host + "\r\n"
-                      "User-Agent: " + SubtitleWeb::userAgent() + "\r\n"
-                      "Accept: application/json\r\n"
-                      "Connection: close\r\n";
+                      "Host: " + host + "\r\n";
+    if (!hasHeader("User-Agent"))
+        head += "User-Agent: " + SubtitleWeb::userAgent() + "\r\n";
+    if (!hasHeader("Accept"))
+        head += "Accept: application/json\r\n";
+    head += "Connection: close\r\n";
     for (const auto& header : headers)
         head += header.first + ": " + header.second + "\r\n";
     if (!body.isEmpty() || method == "POST")

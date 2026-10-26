@@ -52,11 +52,12 @@
 #endif
 
 /* redesign: brand layer, --version and the help console's title name the public profile's app
- * ("Cone 0.1.0, based on VLC <version>"); the vlc profile keeps VLC's texts */
+ * ("Cone Player 1.0.0, based on VLC <version>", RENAME_CONE_PLAYER.md R1); the vlc profile keeps
+ * VLC's texts */
 #ifdef VLC_BRAND_PUBLIC
 # define BRAND_TEXT_VERSION \
-    _("Cone %s, based on VLC %s (%s)\n"), BRAND_VERSION, VERSION_MESSAGE
-# define BRAND_CONSOLE_TITLE TEXT("Cone ") TEXT(BRAND_VERSION)
+    _("Cone Player %s, based on VLC %s (%s)\n"), BRAND_VERSION, VERSION_MESSAGE
+# define BRAND_CONSOLE_TITLE TEXT("Cone Player ") TEXT(BRAND_VERSION)
 #else
 # define BRAND_TEXT_VERSION _("VLC version %s (%s)\n"), VERSION_MESSAGE
 # define BRAND_CONSOLE_TITLE TEXT("VLC media player version ") TEXT(PACKAGE_VERSION)
