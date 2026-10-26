@@ -1015,7 +1015,7 @@ void RdPresets::load(const QJsonObject& data)
     }
     stripPerFile(find(defaultId)->values, false);
 
-    // the Subtitle Duration Factor is hidden for 1.0 (RdEffects::resetSubtitleDurationFactor):
+    // the Subtitle Duration Factor is hidden for 1.0 (RdEffects::resetSavedSubtitleDurationFactor):
     // a preset that kept one would turn the "subsdelay" filter on again for its files
     const QString durationKey = keyOf({ Kind::SubDuration, "sub-duration-factor", false });
     bool reset = false;

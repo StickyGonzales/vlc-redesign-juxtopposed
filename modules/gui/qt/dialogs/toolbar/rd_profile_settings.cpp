@@ -211,7 +211,7 @@ void putValue(const Option& option, const QVariant& value)
     }
 }
 
-// the Subtitle Duration Factor is hidden for 1.0 (RdEffects::resetSubtitleDurationFactor): a
+// the Subtitle Duration Factor is hidden for 1.0 (RdEffects::resetSavedSubtitleDurationFactor): a
 // profile saved with it does not turn the "subsdelay" filter on again
 QVariant withoutSubtitleDuration(const Option& option, const QVariant& value)
 {

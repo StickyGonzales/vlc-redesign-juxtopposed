@@ -206,8 +206,6 @@ RdEffects::RdEffects(qt_intf_t* intf, PlayerController* player, QObject* parent)
 
     readKeys({ equalizerPresetKey(), equalizerBandsKey(), subtitleTextScaleKey(),
                subtitleDurationFactorKey() });
-
-    resetSubtitleDurationFactor();
 }
 
 RdEffects::~RdEffects()
@@ -1038,15 +1036,36 @@ void RdEffects::setSubtitleTextScale(int percent)
 
 // the Subtitle Duration Factor is hidden for 1.0 (StickyGonzales, 2026-10-25,
 // redesign/SUBSDELAY_FACTOR_NOTES.md): in VLC 4 the "subsdelay" filter hides ASS / SSA
-// subtitles and lengthens no other, so a factor saved before turns it off at start
-void RdEffects::resetSubtitleDurationFactor()
+// subtitles and lengthens no other, so a factor saved before turns it off. Done before the
+// first video output starts: on Windows the main view, and this object with it, is built
+// after playback can start
+void RdEffects::resetSavedSubtitleDurationFactor(qt_intf_t* intf)
 {
-    const bool inChain = splitChain(readConfigString("sub-filter")).contains(QStringLiteral("subsdelay"));
-    const bool saved = config_FindConfig("subsdelay-factor") && config_GetFloat("subsdelay-factor") != 0.f;
-    if (!inChain && !saved)
-        return;
-    setSubtitleDurationFactor(0.);
-    setVideoFilterEnabled(QStringLiteral("subsdelay"), false);
+    const QString module = QStringLiteral("subsdelay");
+    QStringList chain = splitChain(readConfigString("sub-filter"));
+    if (chain.removeAll(module) > 0)
+    {
+        config_PutPsz("sub-filter", qtu(chain.join(':')));
+
+        // the player's dummy video output read the settings when the player was made, and the
+        // first real output inherits its variables instead of reading them again
+        // (src/input/resource.c): it gets the list without the filter too
+        if (vout_thread_t* vout = vlc_player_vout_Hold(intf->p_player))
+        {
+            char* value = var_GetString(vout, "sub-filter");
+            QStringList voutChain = splitChain(qfu(value ? value : ""));
+            free(value);
+            if (voutChain.removeAll(module) > 0)
+                var_SetString(vout, "sub-filter", qtu(voutChain.join(':')));
+            vout_Release(vout);
+        }
+        msg_Dbg(intf, "subtitle duration factor hidden: subsdelay taken out of the saved sub-filter");
+    }
+    if (config_FindConfig("subsdelay-factor") && config_GetFloat("subsdelay-factor") != 0.f)
+    {
+        config_PutFloat("subsdelay-factor", 0.f);
+        msg_Dbg(intf, "subtitle duration factor hidden: saved factor reset to 0");
+    }
 }
 
 double RdEffects::subtitleDurationFactor()

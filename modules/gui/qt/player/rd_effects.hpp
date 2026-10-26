@@ -134,6 +134,9 @@ public:
     // subtitle duration factor ("subsdelay" sub filter, 0 disables it)
     Q_INVOKABLE double subtitleDurationFactor();
     Q_INVOKABLE void setSubtitleDurationFactor(double factor);
+    // takes a saved factor and the filter out of VLC's settings and the player's first video
+    // output; called when the interface opens, before VLC plays anything (qt.cpp)
+    static void resetSavedSubtitleDurationFactor(qt_intf_t* intf);
 
 signals:
     void changed();
@@ -165,7 +168,6 @@ private:
     void applyPending();
     void putConfig(const char* name, const QVariant& value);
     void applyVideoFilter(const QString& module, const QString& type, bool enabled);
-    void resetSubtitleDurationFactor();
 
     // configuration file, written on a worker thread
     void save();
