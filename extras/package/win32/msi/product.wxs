@@ -45,7 +45,7 @@
 
         <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit."/>
         <Property Id="NSISLOCATION">
-            <RegistrySearch Id="NSISLOCATION" Type="raw" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\$(var.ProductName)" Name="UninstallString" />
+            <RegistrySearch Id="NSISLOCATION" Type="raw" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\$(var.NsisUninstallName)" Name="UninstallString" />
         </Property>
 
         <Icon Id="vlc.ico" SourceFile="$(var.VlcInstallPrefix)$(var.IconFile)"/>
