@@ -21,6 +21,16 @@ RENAME_CONE_PLAYER.md R6) is:
 
 ## Release text
 
+## 1.0.1 (2026-10-26)
+
+**Fixed**
+- Dragging the seek bar no longer makes a lighter block flicker at the start of the bar.
+
+**Still open, coming in the next update**
+- Hovering the seek bar on some MP4 files (for example screen recordings) shows the same preview picture everywhere.
+- A file double-clicked while Cone Player is still closing is not opened (#57).
+- The portable zip will keep its settings in its own folder.
+
 # Cone Player 1.0.0: Juxtopposed's redesign on a real VLC 4 fork, not a skin
 
 **Cone Player 1.0.0** is the first full release of Cone Player, a media player for Windows based on VLC media player, with Juxtopposed's "VLC Redesign" as its interface. It was called **Cone** during the betas.
