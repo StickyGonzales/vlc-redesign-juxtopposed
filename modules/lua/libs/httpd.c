@@ -80,7 +80,7 @@ static const char no_password_body[] = N_(
 /* redesign: brand layer, the title of the web interface's "no password" page names the public
  * profile's app; the vlc profile keeps VLC's text */
 #ifdef VLC_BRAND_PUBLIC
-static const char no_password_title[] = N_("Cone");
+static const char no_password_title[] = N_("Cone Player");
 #else
 static const char no_password_title[] = N_("VLC media player");
 #endif

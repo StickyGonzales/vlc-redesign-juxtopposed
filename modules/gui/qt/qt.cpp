@@ -1093,6 +1093,19 @@ static void *Thread( void *obj )
 #endif
             QSettings::UserScope, BRAND_CONFIG_DIR, "vlc-qt-interface" );
 
+#if !defined(_WIN32) && !defined(__APPLE__)
+    /* redesign (P8-03): the interface language chosen in Settings > General, as Windows reads
+     * it from the registry when VLC starts (bin/winvlc.c). gettext takes LANGUAGE over the
+     * system locale (unless the locale is "C"); set here, before the interface translates its
+     * first text. It replaces a LANGUAGE the desktop set (Ubuntu sets one for every app). */
+    {
+        const QByteArray language =
+                p_intf->mainSettings->value( "Interface/language" ).toString().toUtf8();
+        if( !language.isEmpty() && language != "auto" )
+            qputenv( "LANGUAGE", language );
+    }
+#endif
+
     // It is guaranteed that the returned format is supported, if a format is returned.
     static const auto createCompatibleOpenGLFormat = []() -> std::optional<QSurfaceFormat> {
         QOpenGLContext defaultCtx;

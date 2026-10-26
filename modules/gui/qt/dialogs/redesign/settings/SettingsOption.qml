@@ -323,6 +323,8 @@ SettingsRow {
             color: VLCStyle.palette.rdFgA2
             placeholderTextColor: VLCStyle.palette.rdFgA2
             text: String(root.value ?? "")
+            // a text an accessibility tool writes is applied too (onEditingFinished)
+            committedText: String(root.value ?? "")
             placeholderText: root.placeholder
             echoMode: root.resolvedKind === "password" ? TextInput.Password : TextInput.Normal
             Accessible.name: root.text
@@ -351,6 +353,7 @@ SettingsRow {
                 color: VLCStyle.palette.rdFgA2
                 placeholderTextColor: VLCStyle.palette.rdFgA2
                 text: String(root.value ?? "")
+                committedText: String(root.value ?? "")
                 placeholderText: root.placeholder
                 Accessible.name: root.text
                 onEditingFinished: {
