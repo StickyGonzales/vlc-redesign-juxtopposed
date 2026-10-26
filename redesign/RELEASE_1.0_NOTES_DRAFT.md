@@ -40,7 +40,7 @@ Uninstall it from Settings > Apps like any app. It asks before deleting your set
 
 **Portable zip: `ConePlayer-1.0.0-win64.zip`**
 1. Unzip it anywhere and run `Cone.exe` in the `ConePlayer-1.0.0` folder. Nothing gets installed.
-2. Settings stay in the `portable` folder next to `Cone.exe`. SmartScreen may warn the same way: **More info**, **Run anyway**.
+2. Settings go to `%APPDATA%\Cone`, shared with an installed Cone Player. To keep them next to `Cone.exe` instead, create an empty folder named `portable` there. SmartScreen may warn the same way: **More info**, **Run anyway**.
 
 ## New since 0.2.0 beta
 
@@ -65,6 +65,7 @@ Uninstall it from Settings > Apps like any app. It asks before deleting your set
 ## Known issues
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
+- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds is not opened: open it again once Cone Player has closed. Starting Cone Player from the Start menu works as usual.
 - Pressing M (mute) shows only the mute icon, without "Pressed M".
 - The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. A factor saved by a beta is reset to 0 at start, so those subtitles show again. The slider comes back once it works.
 - Rarely, Windows may log a background error after closing Settings; nothing visible happens.

@@ -33,7 +33,7 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 | Download | File | How |
 |---|---|---|
 | **Installer** (recommended) | `coneplayer-1.0.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
-| **Portable zip** | `ConePlayer-1.0.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed. |
+| **Portable zip** | `ConePlayer-1.0.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed. Settings go to `%APPDATA%\Cone`; an empty folder named `portable` next to `Cone.exe` keeps them there instead. |
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
@@ -120,6 +120,7 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 <summary>Known issues (1.0.0)</summary>
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
+- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds is not opened: open it again once Cone Player has closed. Starting Cone Player from the Start menu works as usual.
 - Pressing M (mute) shows only the mute icon, without "Pressed M".
 - The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. It comes back once it works.
 - Rarely, Windows may log a background error after closing Settings. Nothing visible happens.
