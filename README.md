@@ -11,7 +11,7 @@
 **[Cone Player 1.0.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v1.0.0)** for Windows 10 / 11, 64-bit. Pick one of the two downloads:
 
 - **Installer (recommended): `coneplayer-1.0.0-win64.exe`.** Run it and follow the pages. Cone Player gets a Start menu entry, an optional desktop shortcut, an entry in Settings > Apps with an uninstaller, and shows up in "Open with" and Default apps for your videos and music. It never takes a file type away from VLC or another player: you choose.
-- **Portable zip: `ConePlayer-1.0.0-win64.zip`.** Unzip it anywhere and run `Cone.exe`. Nothing gets installed; settings stay in the `portable` folder next to it.
+- **Portable zip: `ConePlayer-1.0.0-win64.zip`.** Unzip it anywhere and run `Cone.exe`. Nothing gets installed; settings go to `%APPDATA%\Cone` (create an empty folder named `portable` next to `Cone.exe` to keep them there).
 
 The files are not code-signed yet, so Windows SmartScreen may warn the first time: choose **More info**, then **Run anyway**.
 
