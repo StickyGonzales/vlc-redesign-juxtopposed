@@ -21,6 +21,15 @@ RENAME_CONE_PLAYER.md R6) is:
 
 ## Release text
 
+## 1.0.2 (2026-10-26)
+
+**Fixed**
+- Hovering the seek bar on files with few keyframes (for example screen recordings) now shows the picture at each point instead of the same one everywhere. Where a point is too far from a keyframe to load quickly, the preview shows its time only.
+
+**Still open, fixed in the next update**
+- A file double-clicked while Cone Player is still closing is not opened (#57).
+- The portable zip will keep its settings in its own folder.
+
 ## 1.0.1 (2026-10-26)
 
 **Fixed**
