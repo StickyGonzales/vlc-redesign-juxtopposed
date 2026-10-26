@@ -40,8 +40,8 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 
 | Download | File | How |
 |---|---|---|
-| **Installer** (recommended) | `coneplayer-1.0.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
-| **Portable zip** | `ConePlayer-1.0.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
+| **Installer** (recommended) | `coneplayer-1.1.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
+| **Portable zip** | `ConePlayer-1.1.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
@@ -58,6 +58,7 @@ The files are not code-signed yet, so Windows SmartScreen may warn the first tim
 - **Cone volume.** A volume slider shaped like the cone, up to 200 %.
 - **Queue, bookmarks and chapters** in one sidebar. Ctrl+B adds a bookmark at once.
 - **On-screen messages** name the key you pressed, so a stray key is easy to spot.
+- **Autoplay next episode** (a Cone extra, not part of Juxtopposed's design). In a show folder an Up Next card counts down to the next episode. Off, ask for each show, or always, in Settings > Playback.
 
 **Subtitles**
 - **Tracks popup** for audio and subtitle tracks, embedded and external.
@@ -116,7 +117,7 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 
 **Does it replace my VLC?** No. Both run side by side, each with its own settings. Cone Player never takes a file type away from VLC: you choose in "Open with".
 
-**Does it update itself?** No. New versions show up on the [Releases page](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases). A newer installer updates an installed Cone Player and keeps its settings.
+**Does it update itself?** No, but it tells you. Once a day Cone Player asks GitHub for the latest release and shows a small notice when a newer one is out (Settings > General > Check for updates turns it off). New versions are on the [Releases page](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases). A newer installer updates an installed Cone Player and keeps its settings.
 
 **How do I remove it?** Settings > Apps > Cone Player > Uninstall. It asks before deleting your settings. For the zip, delete its folder.
 
@@ -125,10 +126,10 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 </details>
 
 <details>
-<summary>Known issues (1.0.0)</summary>
+<summary>Known issues (1.1.0)</summary>
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
-- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds is not opened: open it again once Cone Player has closed. Starting Cone Player from the Start menu works as usual.
+- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds now opens in a new window.
 - Pressing M (mute) shows only the mute icon, without "Pressed M".
 - The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. It comes back once it works.
 - Rarely, Windows may log a background error after closing Settings. Nothing visible happens.
