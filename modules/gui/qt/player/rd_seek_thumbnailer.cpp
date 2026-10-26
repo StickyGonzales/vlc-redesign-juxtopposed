@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 #include <vlc_common.h>
@@ -59,9 +60,28 @@ constexpr int kMaxBuckets = 300;
 constexpr vlc_tick_t kMinBucket = VLC_TICK_FROM_SEC(1);
 // a stuck request (slow disk, broken file) gives up after this long
 constexpr vlc_tick_t kTimeout = VLC_TICK_FROM_SEC(3);
+// a precise request decodes every frame from the keyframe before the position, and VLC only
+// lets it stop once it reached the position (a cancel or a quit waits for it too): it is only
+// started when that work fits a budget, in pixels decoded (width x height x frames). The budget
+// is kPreciseSeconds of decoding at the speed the last precise request measured; before the
+// first one, kPreciseBudget (about 1.5 s on a 4-core PC: 16 s of 1080p30, 4 s of 4K30)
+constexpr double kPreciseSeconds = 1.5;
+constexpr double kPreciseBudget = 1.0e9;
+constexpr double kPreciseBudgetMin = 2.5e8;
+constexpr double kPreciseBudgetMax = 4.0e9;
+// a precise request shorter than this says little about the decoding speed (ms)
+constexpr qint64 kMeasureMinMs = 300;
+// the frame of a fast seek this close to the position is shown as it is
+constexpr vlc_tick_t kCloseEnough = VLC_TICK_FROM_SEC(1);
 // failed requests in a row after which the media counts as not previewable; a timeout counts
 // twice (each one kept the thumbnailer busy for kTimeout)
 constexpr int kMaxFailures = 3;
+// two fast-seek frames whose times differ from the hovered times' difference by more than this
+// came from keyframes far from the positions: the media's keyframes are too sparse for fast
+// seeks (a screen recording, a stream recorded with one keyframe). Between the bounds, an
+// eighth of the length: GOPs of normal files stay under 10 s
+constexpr vlc_tick_t kFarMin = VLC_TICK_FROM_SEC(4);
+constexpr vlc_tick_t kFarMax = VLC_TICK_FROM_SEC(12);
 
 } // namespace
 
@@ -111,6 +131,9 @@ struct Job
     qint64 bucket;
     int generation;
     QSize box;
+    // the media time asked for and what the request is for
+    vlc_tick_t time;
+    RdSeekThumbnailer::Kind kind;
 };
 
 // the decoded frame, scaled to fit `box` with its display aspect and orientation, as RGBA
@@ -376,6 +399,10 @@ void RdSeekThumbnailer::resetMedia()
     m_length = 0;
     m_bucketLength = 0;
     m_failures = 0;
+    m_precise = false;
+    m_lastFastTime = VLC_TICK_INVALID;
+    m_lastFastDate = VLC_TICK_INVALID;
+    resetPrecise();
     ++m_generation;
     m_cache->clear();
 }
@@ -398,19 +425,8 @@ void RdSeekThumbnailer::request(double position)
     if (!m_supported || m_frameSize.isEmpty() || m_length <= 0)
         return;
 
-    if (!m_item)
-    {
-        // a copy of the playing item: the thumbnailer's input never touches the item the
-        // player shows (its meta and track info), and its decoder uses 2 threads instead of
-        // one per core, so a preview neither competes with playback nor waits for a full
-        // frame-thread pipeline
-        input_item_t* copy = input_item_NewFile(m_uri.constData(), nullptr, m_length, ITEM_LOCAL);
-        if (!copy)
-            return;
-        input_item_AddOption(copy, ":avcodec-threads=2", VLC_INPUT_OPTION_TRUSTED);
-        m_item = SharedInputItem(copy, false);
-        m_bucketLength = std::max(kMinBucket, m_length / kMaxBuckets);
-    }
+    if (!m_item && !makeItem())
+        return;
 
     position = std::clamp(position, 0.0, 1.0);
     const qint64 lastBucket = (m_length - 1) / m_bucketLength;
@@ -423,11 +439,64 @@ void RdSeekThumbnailer::request(double position)
         return;
     }
 
+    if (m_tooFar.contains(bucket))
+    {
+        // too far from a keyframe to decode in time: the card shows the time only
+        m_wanted = -1;
+        setSource(-1);
+        return;
+    }
+
     if (bucket == m_wanted)
         return;
     m_wanted = bucket;
 
     startNext();
+}
+
+bool RdSeekThumbnailer::makeItem()
+{
+    // a copy of the playing item: the thumbnailer's input never touches the item the player
+    // shows (its meta and track info), and its decoder uses 2 threads instead of one per core,
+    // so a preview neither competes with playback nor waits for a full frame-thread pipeline.
+    // A precise seek decodes every frame from the keyframe before the position: 4 threads and
+    // no loop filter (invisible at the card's size) roughly double the frames it gets through
+    input_item_t* copy = input_item_NewFile(m_uri.constData(), nullptr, m_length, ITEM_LOCAL);
+    if (!copy)
+        return false;
+    input_item_AddOption(copy, m_precise ? ":avcodec-threads=4" : ":avcodec-threads=2",
+                         VLC_INPUT_OPTION_TRUSTED);
+    if (m_precise)
+        input_item_AddOption(copy, ":avcodec-skiploopfilter=4", VLC_INPUT_OPTION_TRUSTED);
+    m_item = SharedInputItem(copy, false);
+    m_bucketLength = std::max(kMinBucket, m_length / kMaxBuckets);
+    return true;
+}
+
+// the frames of fast seeks do not follow the pointer (see kFarMin): from now on the media is
+// previewed with precise seeks, which decode up to the position itself. The frames shown so far
+// are dropped (they may all be the same keyframe)
+void RdSeekThumbnailer::switchToPrecise()
+{
+    msg_Dbg(m_intf, "seek preview: the keyframes are too sparse for fast seeks, "
+                    "using precise seeks for this media");
+    m_precise = true;
+    resetPrecise();
+    ++m_generation;
+    m_cache->clear();
+    setSource(-1);
+    // the item is made again with the decoder settings of precise seeks
+    m_item = SharedInputItem();
+    makeItem();
+}
+
+void RdSeekThumbnailer::resetPrecise()
+{
+    m_startDate = VLC_TICK_INVALID;
+    m_probed.clear();
+    m_tooFar.clear();
+    m_pixelRate = 0.;
+    m_budget = kPreciseBudget;
 }
 
 void RdSeekThumbnailer::stop()
@@ -471,7 +540,9 @@ void RdSeekThumbnailer::startNext()
         // the running request is for a position the pointer has left: once it is stale, cancel
         // it so the wanted position starts sooner; until then, check again when it gets stale
         // (the pointer may not move any more)
-        if (!m_inflightCancelled && m_inflightBucket != m_wanted)
+        // (a precise request is left to end: it runs up to its position even when cancelled,
+        // and its frame is kept)
+        if (!m_inflightCancelled && m_inflightBucket != m_wanted && m_inflightKind != Kind::Precise)
         {
             const qint64 age = m_inflightAge.elapsed();
             if (age >= kStaleMs)
@@ -508,19 +579,36 @@ void RdSeekThumbnailer::startNext()
     const qint64 bucket = m_wanted;
     // the start of the bar is the first frame (no seek, the card reads 00:00:00 there);
     // otherwise the middle of the bucket, a little before the end for the last one
-    const vlc_tick_t time = (bucket == 0) ? 0
-                          : std::min<vlc_tick_t>(bucket * m_bucketLength + m_bucketLength / 2,
-                                                 std::max<vlc_tick_t>(0, m_length - VLC_TICK_FROM_MS(500)));
+    vlc_tick_t time = (bucket == 0) ? 0
+                    : std::min<vlc_tick_t>(bucket * m_bucketLength + m_bucketLength / 2,
+                                           std::max<vlc_tick_t>(0, m_length - VLC_TICK_FROM_MS(500)));
+
+    // with sparse keyframes: the first frame's timestamp (the time base), then a fast seek to
+    // find the keyframe before the position, then the precise seek if its work fits the budget
+    Kind kind = Kind::Fast;
+    if (m_precise)
+    {
+        if (m_startDate == VLC_TICK_INVALID)
+        {
+            kind = Kind::Start;
+            time = 0;
+        }
+        else if (bucket != 0 && !m_probed.contains(bucket))
+            kind = Kind::Probe;
+        else if (bucket != 0)
+            kind = Kind::Precise;
+    }
 
     struct vlc_thumbnailer_arg arg{};
     arg.seek.type = vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_TIME;
     arg.seek.time = time; // media time; 0 decodes the first frame without a seek
-    arg.seek.speed = vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_FAST;
+    arg.seek.speed = (kind == Kind::Precise) ? vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_PRECISE
+                                             : vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_FAST;
     arg.hw_dec = false;
 
     static const struct vlc_thumbnailer_cbs cbs = { &RdSeekThumbnailer::onThumbnailEnded };
 
-    Job* job = new Job{ this, m_converter.get(), bucket, m_generation, m_frameSize };
+    Job* job = new Job{ this, m_converter.get(), bucket, m_generation, m_frameSize, time, kind };
     vlc_preparser_req* req = vlc_preparser_req_NewThumbnail(m_preparser, m_item.get(), &arg, &cbs, job);
     if (!req)
     {
@@ -538,6 +626,7 @@ void RdSeekThumbnailer::startNext()
 
     m_inflight = req;
     m_inflightBucket = bucket;
+    m_inflightKind = kind;
     m_inflightCancelled = false;
     m_inflightAge.start();
     m_lastStart.start();
@@ -550,53 +639,174 @@ void RdSeekThumbnailer::onThumbnailEnded(vlc_preparser_req* req, int status, pic
     const Job job = *static_cast<Job*>(data);
     delete static_cast<Job*>(data);
 
-    QImage image;
+    Result result;
+    result.status = status;
     if (status == VLC_SUCCESS && picture)
-        image = frameToImage(*job.converter, picture, job.box);
+    {
+        result.image = frameToImage(*job.converter, picture, job.box);
+        // the frame's timestamp, in the stream's own time base (not always 0 at the start: an
+        // MPEG-TS starts anywhere), so only differences between frames are used
+        result.date = picture->date;
+        // pixels per second of video, for the cost of a precise seek
+        const video_format_t& fmt = picture->format;
+        const double fps = (fmt.i_frame_rate && fmt.i_frame_rate_base)
+                         ? double(fmt.i_frame_rate) / fmt.i_frame_rate_base : 30.;
+        const unsigned width = fmt.i_visible_width ? fmt.i_visible_width : fmt.i_width;
+        const unsigned height = fmt.i_visible_height ? fmt.i_visible_height : fmt.i_height;
+        result.pixelRate = double(width) * height * fps;
+    }
 
     RdSeekThumbnailer* self = job.self;
-    QMetaObject::invokeMethod(self, [self, req, job, status, image]() {
-        self->onRequestEnded(req, job.bucket, job.generation, status, image);
+    QMetaObject::invokeMethod(self, [self, req, job, result]() {
+        self->onRequestEnded(req, job.bucket, job.generation, job.time, job.kind, result);
     }, Qt::QueuedConnection);
 }
 
-void RdSeekThumbnailer::onRequestEnded(vlc_preparser_req* req, qint64 bucket, int generation,
-                                       int status, const QImage& image)
+bool RdSeekThumbnailer::fastSeekMisses(vlc_tick_t time, vlc_tick_t date)
 {
+    if (time == VLC_TICK_INVALID || date == VLC_TICK_INVALID)
+        return false;
+    bool misses = false;
+    if (m_lastFastTime != VLC_TICK_INVALID)
+    {
+        // (not "far": Windows' minwindef.h defines it as a macro)
+        const vlc_tick_t farLimit = std::clamp(m_length / 8, kFarMin, kFarMax);
+        const vlc_tick_t asked = time - m_lastFastTime;
+        const vlc_tick_t got = date - m_lastFastDate;
+        misses = std::llabs(got - asked) > farLimit;
+    }
+    m_lastFastTime = time;
+    m_lastFastDate = date;
+    return misses;
+}
+
+void RdSeekThumbnailer::onRequestEnded(vlc_preparser_req* req, qint64 bucket, int generation,
+                                       vlc_tick_t time, Kind kind, const Result& result)
+{
+    const qint64 elapsed = m_inflightAge.elapsed();
     if (req == m_inflight)
         m_inflight = nullptr;
     vlc_preparser_req_Release(req);
 
     // a cancelled request says nothing about the media, and its position may be wanted again
     // (the pointer came back to it): it is started again below
+    const int status = result.status;
     const bool cancelled = (status == -EINTR);
-
-    if (generation == m_generation && !cancelled)
+    if (generation != m_generation || cancelled)
     {
-        if (!image.isNull())
+        startNext();
+        return;
+    }
+
+    const QImage& image = result.image;
+    if (!image.isNull() && result.pixelRate > 0.)
+        m_pixelRate = result.pixelRate;
+
+    if (kind == Kind::Fast && !m_precise && !image.isNull() && fastSeekMisses(time, result.date))
+    {
+        // the pointer's position is asked for again, the precise way
+        const bool wanted = (bucket == m_wanted);
+        switchToPrecise();
+        if (wanted)
+            m_wanted = bucket;
+        startNext();
+        return;
+    }
+
+    if ((kind == Kind::Start || kind == Kind::Probe) && !image.isNull())
+    {
+        if (result.date == VLC_TICK_INVALID)
         {
-            m_failures = 0;
+            // no timestamps: the distance to a keyframe cannot be known, no precise seeks
+            setUnavailable();
+            return;
+        }
+    }
+
+    if (kind == Kind::Start && !image.isNull())
+    {
+        // the first frame is also the frame of the start of the bar
+        m_startDate = result.date;
+        m_failures = 0;
+        m_cache->insert(generation, 0, image);
+        if (m_wanted == 0)
+        {
+            m_wanted = -1;
+            setSource(0);
+        }
+        startNext();
+        return;
+    }
+
+    if (kind == Kind::Probe && !image.isNull())
+    {
+        m_failures = 0;
+        const vlc_tick_t keyframe = result.date - m_startDate;
+        const vlc_tick_t distance = std::max<vlc_tick_t>(0, time - keyframe);
+        const double cost = secf_from_vlc_tick(distance) * m_pixelRate;
+        if (distance <= std::max(kCloseEnough, m_bucketLength / 2))
+        {
+            // the keyframe is (nearly) the position itself
             m_cache->insert(generation, bucket, image);
+        }
+        else if (m_pixelRate > 0. && cost <= m_budget)
+        {
+            // the precise request follows while the position is still wanted
+            m_probed.insert(bucket, cost);
+            startNext();
+            return;
         }
         else
         {
-            m_failures += (status == VLC_ETIMEOUT) ? 2 : 1;
-            if (m_failures >= kMaxFailures)
-            {
-                // VLC cannot make frames of this media (codec, damaged file, too slow): the
-                // seek bar falls back to the time-only tooltip until another media plays
-                stop();
-                updateSupported();
-                return;
-            }
+            msg_Dbg(m_intf, "seek preview: %.1f s from a keyframe, too far to decode in time",
+                    secf_from_vlc_tick(distance));
+            m_tooFar.insert(bucket);
         }
         if (bucket == m_wanted)
         {
-            // shown when it arrived, given up when it failed (no endless retries)
             m_wanted = -1;
-            if (!image.isNull())
-                setSource(bucket);
+            setSource(m_cache->contains(generation, bucket) ? bucket : -1);
         }
+        startNext();
+        return;
+    }
+
+    if (kind == Kind::Precise && !image.isNull() && elapsed >= kMeasureMinMs)
+    {
+        // the decoding speed of this PC for this media sets the budget of the next ones
+        const double pixelsPerSecond = m_probed.value(bucket) * 1000. / double(elapsed);
+        m_budget = std::clamp(pixelsPerSecond * kPreciseSeconds, kPreciseBudgetMin,
+                              kPreciseBudgetMax);
+    }
+
+    if (!image.isNull())
+    {
+        m_failures = 0;
+        m_cache->insert(generation, bucket, image);
+    }
+    else if (status == VLC_ETIMEOUT && kind == Kind::Precise)
+    {
+        // slower than the budget assumed: no frame here, but the media previews fine elsewhere
+        m_tooFar.insert(bucket);
+    }
+    else
+    {
+        m_failures += (status == VLC_ETIMEOUT) ? 2 : 1;
+        if (m_failures >= kMaxFailures)
+        {
+            // VLC cannot make frames of this media (codec, damaged file, too slow): the seek
+            // bar falls back to the time-only tooltip until another media plays
+            stop();
+            updateSupported();
+            return;
+        }
+    }
+    if (bucket == m_wanted)
+    {
+        // shown when it arrived, given up when it failed (no endless retries)
+        m_wanted = -1;
+        if (!image.isNull())
+            setSource(bucket);
     }
 
     startNext();
