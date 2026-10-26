@@ -34,8 +34,10 @@ on:
 
 concurrency:
   # github.workflow is the caller's name when release-linux.yml calls this: a release never
-  # cancels a normal build
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # cancels a normal build. The build- prefix keeps the group apart from the caller's own group
+  # (release-linux-<ref>): the same group in caller and callee is a deadlock, and GitHub cancels
+  # the build before it starts (linux-v1.1.0-beta, run 40422992624)
+  group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
