@@ -37,7 +37,7 @@ Recommendation: **B for 1.0** (with a release note line that it comes back once 
 ## Decision and change (branch `wip/hide-subsdelay-factor`)
 StickyGonzales, 2026-10-25: hide the Subtitle Duration Factor slider for 1.0; at start, reset any saved factor (presets and settings) to 0 so the `subsdelay` filter is off and ASS subtitles show again; one line in the release notes; the real fix after 1.0. Interface only (`modules/gui/qt`), no core change:
 - `player/qml/SubtitleSettingsPage.qml`: the slider row is hidden (`visible: false`, kept for the real fix).
-- `player/rd_effects.cpp`: at start (`RdEffects::resetSubtitleDurationFactor`), when VLC's settings have `subsdelay` in `sub-filter` or a `subsdelay-factor` other than 0, the factor goes to 0 and the filter is taken out of the running video outputs and the settings (saved to vlcrc). VLC's own default factor is 2 (the filter off), so a fresh settings file gets 0 once.
+- `player/rd_effects.cpp` + `qt.cpp`: when the interface opens, before VLC can start playback (`RdEffects::resetSavedSubtitleDurationFactor`, called from `OpenInternal`), `subsdelay` is taken out of the saved `sub-filter` and out of the player's dummy video output, and a `subsdelay-factor` other than 0 goes to 0 (saved to vlcrc when Cone quits). VLC's own default factor is 2 (the filter off), so a fresh settings file gets 0 once. The log says "subtitle duration factor hidden: ..." when it reset something.
 - `player/rd_presets.cpp`: when the presets load, every preset (the Default Preset and each show's) with a factor other than 0 gets 0, and the file is saved.
 - `dialogs/toolbar/rd_profile_settings.cpp`: a profile's settings are written without `subsdelay` in `sub-filter` and with factor 0, so switching to a profile saved before cannot turn it on again.
 - `dialogs/extended/extended_panels.cpp`: VLC's old Adjustments and Effects dialog (Ctrl+E, and "..." > More Settings > Effects and Filters / Track Synchronization) had its own "Subtitle duration factor" box on the Synchronization tab, a second way to switch the filter on (found by the review): hidden too, both profiles, like the sidebar row.
@@ -57,10 +57,25 @@ Factor 0 in vlcrc (the review asked whether it is a trap: with the filter's defa
 
 Independent review (fresh agent, the whole diff): construction order, the one apply per change, the saves, the presets' load path and the profile write checked, no HIGH. Its two MED: the old dialog's box (fixed above) and the factor 0 trap (measured above, does not happen). LOW, left as is: the command-line chain and `subsdelay{...}` (above); a config chain naming subsdelay while the module is missing logs "Unable to find filter module" at start (noise only).
 
+## First start after upgrading (PC 2026-10-26, build 40316779162)
+The PC test of the first version: on the first start with the bad state the ASS line stayed hidden for the whole session ("using sub filter module subsdelay ... appended to chain" in the log); from the second start on it showed. The first version reset the settings from `RdEffects`, which lives in the main view. Two things made that too late:
+- **The dummy video output.** The player makes a dummy video output when it is created, before any interface opens (`src/input/resource.c`, `input_resource_New`), and that output reads `sub-filter` from the settings then. The first real output is created as its child and inherits its variables ("pre-configured on this dummy vout"), so it got `subsdelay` whatever the settings said later.
+- **Windows builds the main view later.** Its compositor (`compositor_dcomp.cpp`) sets the main view up after the interface has told VLC it is ready, so the first file can start before `RdEffects` exists; on Linux the main view, and the first version's reset, came first, which is why the sandbox passed.
+
+Fix: the reset moved to the interface's `OpenInternal()`, which runs before VLC may start playback (it waits for the interface to be ready). It cleans the saved settings and the dummy output's `sub-filter` (`vlc_player_vout_Hold()` returns the dummy while no real output exists). The dummy is only cleaned when the saved settings had the filter, so `--sub-filter=subsdelay` given on purpose on the command line still applies.
+
+Sandbox (same bad state, verbose log):
+
+| Build | First start: ASS line in the shots | `subsdelay` in the log |
+|---|---|---|
+| Settings reset in `OpenInternal()` only (an intermediate version, not pushed) | 0 of 13 | loads when the subtitle track starts, after "subtitle duration factor hidden" (line 38) and the first video output (line 421): the dummy output's inherited value (the PC's failure, reproduced) |
+| This version (settings + dummy output) | **10 of 13** (the other 3 in gaps) | never loads; the reset lines (38-39) come before the input (50) and the first video output (421) |
+| Clean settings, `--sub-filter=subsdelay` on the command line | 0 of 13 | loads, as asked on the command line (left alone on purpose) |
+
 ## Retest on Windows (PC task 4a)
 Build this branch on its own (`gh workflow run build-windows.yml --ref wip/hide-subsdelay-factor`), deploy to the test folder. Test files: an MKV with an ASS / SSA track (the test film, or a generated one) and an MP4 with an external SRT.
 1. The bad state: in the test folder's portable vlcrc set `sub-filter=subsdelay` and `subsdelay-factor=10.000000`; in rd-presets.json set `"subDuration:sub-duration-factor": 10` in the Default Preset. (Before the fix, 0.2.0 or the last `wip/next-test` build shows no ASS line with this state, optional.)
-2. Start this build, open the ASS file, pick its subtitle track: the lines show and change on time.
+2. **The first start** of this build with that state (double-click the ASS file, or open it): pick its subtitle track; the lines show and change on time in this first session. With a log (`--file-logging --logfile=<TEST_MEDIA_DIR>\cone-4a.log --log-verbose=2`): "subtitle duration factor hidden: subsdelay taken out of the saved sub-filter" near the start, and no "using sub filter module \"subsdelay\"".
 3. Quit, open vlcrc and rd-presets.json: `sub-filter` without `subsdelay`, `subsdelay-factor=0`, every preset's factor 0.
 4. Settings sidebar > Subtitles: no Subtitle Duration Factor row, no gap under Subtitle Speed; Tab moves from the Subtitle Speed slider to the next control without stopping on a hidden one. Ctrl+E > Synchronization (and "..." > More Settings > Track Synchronization): no "Subtitle duration factor" box; the delays and Subtitle speed still work.
 5. Profiles: with the previous build (0.2.0 or the last `wip/next-test` build) and the bad state of step 1, make a profile ("..." menu > Profile > + New): it keeps `sub-filter=subsdelay` and factor 10 in rd-profiles.json. Then start this build, switch to that profile and back: the ASS line still shows, and vlcrc has no `subsdelay` afterwards.
