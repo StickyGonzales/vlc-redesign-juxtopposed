@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="modules/gui/qt/pixmaps/brand/public/cone-256.png" width="128" height="128" alt="Cone Player logo">
+  <img src="docs/images/cone-player-icon.png" width="96" height="96" alt="Cone Player">
 </p>
 
 <h1 align="center">Cone Player</h1>
@@ -12,11 +12,6 @@
   <a href="COPYING"><img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License: GPL-2.0 or later"></a>
   <a href="https://creativecommons.org/licenses/by/4.0/"><img src="https://img.shields.io/badge/design-CC%20BY%204.0-lightgrey" alt="Design: CC BY 4.0"></a>
   <img src="https://img.shields.io/badge/status-active-2ea44f" alt="Status: active">
-</p>
-
-<p align="center">
-  <img src="docs/images/hero.png" alt="Cone Player: the library with the mini player">
-  <br><sub>From Juxtopposed's Figma design, which Cone Player implements. Screenshots of the app are below.</sub>
 </p>
 
 | | |
@@ -137,14 +132,11 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 <details>
 <summary>Juxtopposed's Figma design</summary>
 
-Her Figma frames, the source for every size, color and spacing in Cone Player.
+Cone Player is built from Juxtopposed's [VLC Redesign Figma file](https://www.figma.com/community/file/1691465999134370980/vlc-redesign) and her [video](https://youtu.be/ERFeOgqk324): every size, color and spacing comes from her frames. Two of them:
 
 | | |
 |---|---|
-| **Player**<br><img src="docs/images/figma-player.png" alt="Player"> | **Home**<br><img src="docs/images/figma-home.png" alt="Home"> |
-| **Library and mini player**<br><img src="docs/images/figma-library.png" alt="Library and mini player"> | **Compact library**<br><img src="docs/images/figma-sidebar.png" alt="Compact library"> |
-| **Settings**<br><img src="docs/images/figma-settings.png" alt="Settings"> | **Customize Player**<br><img src="docs/images/figma-customize.png" alt="Customize Player"> |
-| **Onboarding**<br><img src="docs/images/figma-onboarding.png" alt="Onboarding"> | **Keyboard Shortcuts**<br><img src="docs/images/figma-shortcuts.png" alt="Keyboard Shortcuts"> |
+| **Settings**<br><img src="docs/images/figma-settings.png" alt="Settings in the Figma design"> | **Keyboard Shortcuts**<br><img src="docs/images/figma-shortcuts.png" alt="Keyboard Shortcuts in the Figma design"> |
 
 </details>
 
