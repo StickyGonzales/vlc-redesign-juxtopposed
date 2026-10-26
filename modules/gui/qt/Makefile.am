@@ -957,6 +957,8 @@ libqt_plugin_la_RES = \
 	pixmaps/redesign/eq_eq-soft.svg \
 	pixmaps/redesign/eq_eq-techno.svg \
 	pixmaps/redesign/expand-sidebar.svg \
+	pixmaps/redesign/eye.svg \
+	pixmaps/redesign/eye_state-off.svg \
 	pixmaps/redesign/favorite.svg \
 	pixmaps/redesign/favorite_state-active.svg \
 	pixmaps/redesign/favorite_two-tone-yes.svg \
