@@ -100,9 +100,16 @@ Setup:
 | First run (`--qt-privacy-ask`, onboarding) | no request |
 | Settings > General | "Check for updates" (ON) and "Check now"; VLC's "Check for updates automatically" row stays hidden |
 
-Found and fixed in the sandbox (commit dd96095f8a, checked on the rebuilt AppImage, see below):
+Found and fixed in the sandbox (commit dd96095f8a):
 - The sentence was cut ("Cone Player 1.0.2 is availa..."): the layout rounded the label's fractional width down. It now rounds it up.
 - In the library, which has no control bar, the notice floated a bar's height above the bottom. It now sits 18 px above the window's bottom there.
+
+Checked on the rebuild, build-linux #44 (run 40388540602):
+- "Cone Player 1.0.2 is available" is whole.
+- In the library the pill takes rows 830 to 881 of the 900 px window, 18 px above its bottom.
+- In the player it sits above the control bar.
+
+Picture: `redesign/fix-shots/update_notice.jpg` (library, player, Settings rows, the Check Now answers).
 
 Not testable in the sandbox: the real GitHub API (the sandbox reaches GitHub only through its proxy, which this request, like OpenSubtitles', does not use), a real browser, Windows.
 
