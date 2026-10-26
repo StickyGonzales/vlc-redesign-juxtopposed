@@ -71,7 +71,7 @@ New branches therefore start warm from redesign.
 
 | File | What |
 |---|---|
-| `ConePlayer-<version>-win64.zip` | the build's zip as built (top folder `ConePlayer-<version>`); `release-package.sh` checks its name and folder |
+| `ConePlayer-<version>-win64.zip` | the build's zip (top folder `ConePlayer-<version>`) plus an empty `ConePlayer-<version>/portable` folder, so the unzipped Cone Player keeps its settings next to `Cone.exe` as the betas did (added 2026-10-26, after 1.0.0, whose zip wrote them to `%APPDATA%\Cone`); `release-package.sh` checks its name and folder, adds the folder to the zip only (the installer is built from the same files and must keep `%APPDATA%\Cone`) and stops if the build's zip already has one |
 | `coneplayer-<version>-win64.exe` | the build's installer; renamed only for a suffixed tag (the build names it `coneplayer-1.0.0-win64.exe` for `v1.0.0-rc1`) |
 | `SHA256SUMS.txt` | SHA-256 of both |
 

@@ -33,7 +33,7 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 | Download | File | How |
 |---|---|---|
 | **Installer** (recommended) | `coneplayer-1.0.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
-| **Portable zip** | `ConePlayer-1.0.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed. Settings go to `%APPDATA%\Cone`; an empty folder named `portable` next to `Cone.exe` keeps them there instead. |
+| **Portable zip** | `ConePlayer-1.0.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
