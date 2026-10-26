@@ -4,9 +4,6 @@
 name: smoke-windows-manual
 
 on:
-  # TEMPORARY (removed before the PR is ready): iterations on the checks
-  push:
-    branches: [wip/ci-smoke]
   workflow_dispatch:
     inputs:
       build-run-id:
@@ -23,4 +20,4 @@ jobs:
   smoke:
     uses: ./.github/workflows/smoke-windows.yml
     with:
-      build-run-id: ${{ inputs.build-run-id || '40371807007' }}
+      build-run-id: ${{ inputs.build-run-id }}
