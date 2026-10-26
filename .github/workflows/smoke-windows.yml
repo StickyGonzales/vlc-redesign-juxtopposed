@@ -1,0 +1,98 @@
+# Smoke checks of a public (Cone) Windows build on a GitHub Windows runner, after every public
+# build (build-windows.yml calls it) or by hand on an earlier build run's artifacts
+# (smoke-windows-manual.yml); redesign/CI_SMOKE_NOTES.md. The checks: .github/scripts/win64-smoke.ps1.
+# No job here asks for permissions: a release run (release.yml -> build-windows.yml) grants
+# contents only, and a called workflow may not ask for more than its caller grants.
+# Software rendering on the runner: no picture quality or sound checks.
+name: smoke-windows
+
+on:
+  workflow_call:
+    inputs:
+      build-run-id:
+        # another run whose artifacts are checked (smoke-windows-manual.yml); empty: the caller's
+        type: string
+        default: ''
+
+jobs:
+  # the media are generated while the build runs
+  smoke-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Generate the test media
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          .github/scripts/smoke-media.sh smoke-media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-smoke-media
+          path: smoke-media/
+          retention-days: 1
+
+  smoke:
+    needs: smoke-media
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      # empty when called by build-windows: that run's own artifacts
+      BUILD_RUN_ID: ${{ inputs.build-run-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      # the build uploads both with continue-on-error (Actions storage can be full): a missing
+      # one stops the smoke checks with a clear message
+      - name: Download the portable build
+        id: zip
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: vlc-redesign-win64-public
+          path: smoke-in/zip
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - name: Download the installer
+        id: installer
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-installer-win64
+          path: smoke-in/installer
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-smoke-media
+          path: smoke-in/media
+      - name: Build files present
+        shell: pwsh
+        env:
+          ZIP_OK: ${{ steps.zip.outcome }}
+          INSTALLER_OK: ${{ steps.installer.outcome }}
+        run: |
+          if ($env:ZIP_OK -ne 'success') { Write-Host "::error title=Cone smoke checks::the build's portable zip artifact (vlc-redesign-win64-public) could not be downloaded: its upload failed (Actions storage full?) or it expired"; exit 1 }
+          if ($env:INSTALLER_OK -ne 'success') { Write-Host "::error title=Cone smoke checks::the build's installer artifact (cone-installer-win64) could not be downloaded: the installer step or its upload failed, or it expired"; exit 1 }
+          if ($env:BUILD_RUN_ID) { "Checking the artifacts of build-windows run $env:BUILD_RUN_ID" | Tee-Object -Append -FilePath $env:GITHUB_STEP_SUMMARY }
+          Get-ChildItem smoke-in -Recurse -Depth 1 | Select-Object FullName, Length | Format-Table -AutoSize
+
+      - name: Smoke checks
+        shell: powershell
+        run: |
+          $installer = (Get-ChildItem smoke-in\installer -Filter *.exe | Select-Object -First 1).FullName
+          powershell -NoProfile -ExecutionPolicy Bypass -File .github\scripts\win64-smoke.ps1 `
+            -ZipDir "$PWD\smoke-in\zip" -Installer "$installer" -Media "$PWD\smoke-in\media" -Out "$PWD\smoke-out"
+          exit $LASTEXITCODE
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          name: cone-smoke-results
+          path: smoke-out/
+          retention-days: 1

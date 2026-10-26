@@ -294,3 +294,11 @@ jobs:
             win64/coneplayer-*-win64.exe
           if-no-files-found: error
           retention-days: 1
+
+
+  # after every public build: smoke checks of the portable zip and the installer on a Windows
+  # runner (smoke-windows.yml, redesign/CI_SMOKE_NOTES.md); a failed check fails the run
+  smoke:
+    needs: win64
+    if: (inputs.brand || 'public') == 'public'
+    uses: ./.github/workflows/smoke-windows.yml

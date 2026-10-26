@@ -1,0 +1,26 @@
+# The Windows smoke checks (smoke-windows.yml) on the artifacts of an earlier build-windows run of
+# the public profile, by hand: to check a build again, or to work on the checks themselves without
+# a new build. The artifacts last one day.
+name: smoke-windows-manual
+
+on:
+  # TEMPORARY (removed before the PR is ready): iterations on the checks
+  push:
+    branches: [wip/ci-smoke]
+  workflow_dispatch:
+    inputs:
+      build-run-id:
+        description: 'build-windows run id (public profile, artifacts at most one day old)'
+        type: string
+        required: true
+
+permissions:
+  # reading another run's artifacts
+  actions: read
+  contents: read
+
+jobs:
+  smoke:
+    uses: ./.github/workflows/smoke-windows.yml
+    with:
+      build-run-id: ${{ inputs.build-run-id || '40371807007' }}
