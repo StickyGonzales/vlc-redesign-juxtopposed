@@ -21,6 +21,7 @@
 #include <QByteArray>
 #include <QElapsedTimer>
 #include <QImage>
+#include <QHash>
 #include <QObject>
 #include <QSet>
 #include <QSize>
@@ -162,9 +163,10 @@ private:
     vlc_tick_t m_lastFastTime = VLC_TICK_INVALID;
     vlc_tick_t m_lastFastDate = VLC_TICK_INVALID;
     // precise mode: the first frame's timestamp, the buckets whose keyframe is near enough for
-    // a precise seek, the buckets too far from one, pixels per second of video, the budget
+    // a precise seek (with that seek's work in pixels), the buckets too far from one, pixels per
+    // second of video, the budget
     vlc_tick_t m_startDate = VLC_TICK_INVALID;
-    QSet<qint64> m_probed;
+    QHash<qint64, double> m_probed;
     QSet<qint64> m_tooFar;
     double m_pixelRate = 0.;
     double m_budget = 0.;
