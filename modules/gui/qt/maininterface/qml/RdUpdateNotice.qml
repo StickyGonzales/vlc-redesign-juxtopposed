@@ -19,9 +19,10 @@
 // redesign: Cone's update notice (util/rd_update_check.cpp, redesign/UPDATE_NOTICE_NOTES.md).
 // No Figma frame (Decision 21): the style of the profile notice (RdProfileNotice.qml, after the
 // Figma "continue" toast: 52 high pill, radius 16, BG/A3, Inter 16 FG/2, a primary button),
-// centered over the bottom of the window, 18 px above the control bar. "Download" opens the
-// release page in the browser, "Later" (and Escape on its buttons) hides it until the next day.
-// It never takes the keyboard focus from the player, nor its Escape (fullscreen).
+// centered over the bottom of the window, 18 px above the control bar (above the window's
+// bottom in the library). "Download" opens the release page in the browser, "Later" (and Escape
+// on its buttons) hides it until the next day. It never takes the keyboard focus from the
+// player, nor its Escape (fullscreen).
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Templates as T
@@ -37,8 +38,10 @@ T.Popup {
     parent: T.Overlay.overlay
 
     x: Math.round(((parent ? parent.width : 0) - width) / 2)
-    readonly property real _barHeight: (RdPanels.controlBarHeight > 0) ? RdPanels.controlBarHeight
-                                                                       : VLCStyle.rd_controlBarHeight
+    // the library has no control bar: the notice sits 18 px above the window's bottom there
+    readonly property real _barHeight: (MainCtx.effectiveMainInterfaceMode !== MainCtx.MAININTERFACE_MODE_PLAYER) ? 0
+                                       : (RdPanels.controlBarHeight > 0) ? RdPanels.controlBarHeight
+                                                                         : VLCStyle.rd_controlBarHeight
 
     y: (parent ? parent.height : 0) - height - _barHeight - VLCStyle.dp(18, VLCStyle.scale)
     width: Math.min(content.implicitWidth, (parent ? parent.width : 0) - 2 * VLCStyle.margin_large)
@@ -88,7 +91,9 @@ T.Popup {
             Layout.fillWidth: true
             Layout.leftMargin: VLCStyle.dp(20, VLCStyle.scale)
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: implicitWidth
+            // rounded up: the layout rounds a fractional text width down, which elided the last
+            // letters ("Cone Player 1.0.2 is availa...")
+            Layout.preferredWidth: Math.ceil(implicitWidth)
 
             text: qsTr("%1 %2 is available").arg(Brand.name).arg(RdUpdateCheck.latestVersion)
             elide: Text.ElideRight
