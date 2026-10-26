@@ -73,5 +73,6 @@ Dropped (StickyGonzales, 2026-10-25): Rescan plugins from Program Files.
 | Subtitle Duration Factor, the real fix: the `subsdelay` filter under VLC 4's timing (core module), then the slider back | `modules/spu/subsdelay.c`; SUBSDELAY_FACTOR_NOTES.md option A | After 1.0 (StickyGonzales, 2026-10-25); hidden for 1.0 (line 4a) |
 | Brightness slider's range for screen readers (0 to 0); "Pressed M" for mute | STATUS.md 2026-10-25 | LOWs, after 1.0 (StickyGonzales, 2026-10-25) |
 | Pixel subtitle sizes with live style changes (P3-23); on-screen messages clear of the top bar (#22) | MUSTHAVES_2_NOTES.md section 9.5, VIDEO_INDEX | Core changes, after 1.0 (StickyGonzales, 2026-10-25) |
+| `Cone.exe --version` prints no version and does not exit (with its output redirected; the same before the Cone Player rename) | STATUS.md 2026-10-26 | LOW, known issue (StickyGonzales, 2026-10-26) |
 | WASAPI may log "stream failed to start: 0x88890005" on a pause / resume | STATUS.md 17:45 | LOW, harmless, upstream timing |
 | Windows checklist | PR #29 (`wip/windows-checklist`) | Its rows are sorted in section 1 of this file; it can be closed |
