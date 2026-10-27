@@ -42,7 +42,7 @@ A real leave still clears the zones:
 | Build | Result |
 |---|---|
 | **old**, build #137 (smoke-windows-manual run 40546156961) | fails for both codecs, also on the retry: "the top bar hid while the pointer rested on its "..." button (65, 20)" |
-| **fixed**, build-windows run 40546161841 (test-only branch `wip/test-fs-topbar` = this branch + `wip/fix-smoke-media`) | see below |
+| **fixed**, build-windows #138 (run 40546161841; test-only branch `wip/test-fs-topbar` = this branch + `wip/fix-smoke-media`) | passes for both codecs, first try: "still shown 1.5 s after the pointer came to rest on "..." (65, 20)". All 22 checks passed, no retries |
 
 ## Checks
 - qmlcheck: errors 1 (the known HighResolutionTimeWidget), crashed 0. privacycheck 0. No C++ change.
