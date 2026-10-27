@@ -339,6 +339,61 @@ function Check-Quit($s, [bool]$hevc, [string]$exe, [string]$video, [string]$subs
     }
 }
 
+# TEMPORARY probe (wip/fs-topbar-probe): fullscreen top bar while the pointer moves down from the
+# top edge onto the bar
+function Px([int]$x, [int]$y) {
+    $bmp = New-Object System.Drawing.Bitmap 1, 1
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen($x, $y, 0, 0, $bmp.Size)
+    $c = $bmp.GetPixel(0, 0); $g.Dispose(); $bmp.Dispose()
+    return "$($c.R),$($c.G),$($c.B)"
+}
+function Probe-FsTopBar($s) {
+    try {
+        Focus-Window $s.hwnd
+        Keys @(0x46)   # F: fullscreen
+        Start-Sleep -Seconds 2
+        $r = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$r) | Out-Null
+        Log "probe: window $($r.Left),$($r.Top)-$($r.Right),$($r.Bottom)"
+        $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $cx = [int]($b.Width / 2)
+        [RdSmoke]::SetCursorPos($cx, 400) | Out-Null; Start-Sleep -Milliseconds 100
+        [RdSmoke]::SetCursorPos($cx + 5, 405) | Out-Null
+        Start-Sleep -Seconds 5
+        Shot 'probe-hidden'
+        Log "probe: hidden, pixel at y=10: $(Px 500 10), y=30: $(Px 500 30)"
+        $menu = Uia-Find $s.hwnd 'Menu' 0
+        if ($menu) { Log "probe: Menu button (shown) at $($menu.Current.BoundingRectangle)" } else { Log 'probe: Menu button not shown' }
+        foreach ($x in 300, 70) {
+            [RdSmoke]::SetCursorPos($x, 0) | Out-Null
+            Start-Sleep -Milliseconds 500
+            Log "probe x=$x y=0: pixel y=10 $(Px 500 10); y=30 $(Px 500 30)"
+            for ($y = 2; $y -le 70; $y += 2) {
+                [RdSmoke]::SetCursorPos($x, $y) | Out-Null
+                Start-Sleep -Milliseconds 60
+                $line = "probe x=$x y=$y`: y=10 $(Px 500 10) y=30 $(Px 500 30)"
+                if ($y % 10 -eq 0) {
+                    $m = Uia-Find $s.hwnd 'Menu' 0
+                    $line += "  Menu shown=$([bool]$m)"
+                }
+                Log $line
+                if ($y -eq 20) { Shot "probe-x$x-y20" }
+            }
+            Start-Sleep -Milliseconds 800
+            Log "probe x=$x held at y=70 0.8 s: y=10 $(Px 500 10)"
+            [RdSmoke]::SetCursorPos($cx, 400) | Out-Null
+            Start-Sleep -Seconds 4
+        }
+        # hold still on the bar after reaching it from the top
+        [RdSmoke]::SetCursorPos(70, 0) | Out-Null; Start-Sleep -Milliseconds 500
+        [RdSmoke]::SetCursorPos(70, 20) | Out-Null
+        for ($i = 0; $i -lt 10; $i++) { Start-Sleep -Milliseconds 200; Log "probe still at 70,20 t=$(($i+1)*200) ms: y=10 $(Px 500 10)" }
+        Shot 'probe-still'
+        Keys @(0x46)   # F: back to the window
+        Start-Sleep -Seconds 1
+    } catch { Log "probe failed: $($_.Exception.Message)" }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -349,6 +404,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Start-Sleep -Seconds 2
         Shot "$tag-start"
         Check-Time $s | Out-Null
+        if ($tag -eq 'zip-h264') { Probe-FsTopBar $s }
         if ($full) {
             Check-Subtitle $s | Out-Null
             Check-Settings $s | Out-Null
