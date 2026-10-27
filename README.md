@@ -43,6 +43,8 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 | **Installer** (recommended) | `coneplayer-1.1.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
 | **Portable zip** | `ConePlayer-1.1.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
+**Linux (beta):** [Cone Player 1.1.0 for Linux](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.1.0-beta) as an AppImage or a portable tarball (64-bit, glibc 2.39 or newer). It was tested in a Linux sandbox only: real sound and GPU video have not been tested on real Linux hardware yet.
+
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
 
