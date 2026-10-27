@@ -27,7 +27,13 @@ T.ToolTip {
     id: control
 
     x: 0
-    y: -implicitHeight - VLCStyle.margin_xxxsmall
+    // redesign: above its item, below it when the window has no room above. The fullscreen top
+    // bar touches the top of the screen: a tooltip pushed down onto its button lay under the
+    // pointer, and on Windows (Popup.Window, a native window) the main window then saw the
+    // pointer leave, so the player hid the bar under it
+    y: (parent && parent.mapToItem(null, 0, 0).y < implicitHeight + VLCStyle.margin_xxxsmall)
+       ? parent.height + VLCStyle.margin_xxxsmall
+       : -implicitHeight - VLCStyle.margin_xxxsmall
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
