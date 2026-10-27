@@ -23,20 +23,26 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: .github/scripts
-      # apt on the runner can stall (a slow mirror): each attempt is cut after 4 minutes
-      - name: Install ffmpeg
-        run: |
-          for i in 1 2 3; do
-            if timeout 240 sh -c 'sudo apt-get update -qq -o Acquire::Retries=3 && sudo apt-get install -y -qq -o Acquire::Retries=3 ffmpeg > /dev/null'; then
-              [ "$i" -gt 1 ] && echo "::warning title=Cone smoke media::ffmpeg installed on attempt $i"
-              exit 0
-            fi
-            echo "apt attempt $i failed or stalled"
-          done
-          echo "::error title=Cone smoke media::ffmpeg could not be installed (apt failed 3 times)"
-          exit 1
+      # the media change only with the script that makes them: restored from the cache, made
+      # again only when the script changes
+      - name: Cached test media
+        id: media-cache
+        uses: actions/cache@v4
+        with:
+          path: smoke-media
+          key: cone-smoke-media-${{ hashFiles('.github/scripts/smoke-media.sh') }}
+      # ffmpeg from PyPI (imageio-ffmpeg: a static build with libx264 and libx265), not apt, which
+      # stalled for 12 minutes on the Ubuntu runner (3 attempts) twice in two days
+      - uses: actions/setup-python@v5
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        with:
+          python-version: '3.12'
       - name: Generate the test media
-        run: .github/scripts/smoke-media.sh smoke-media
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --disable-pip-version-check -q imageio-ffmpeg==0.6.0
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" \
+            .github/scripts/smoke-media.sh smoke-media
       - uses: actions/upload-artifact@v4
         with:
           name: cone-smoke-media
