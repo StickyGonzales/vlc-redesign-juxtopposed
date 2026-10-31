@@ -299,6 +299,84 @@ function Check-FsTopBar($s) {
     }
 }
 
+# the top bar's "..." opens the main menu with a real click, in a window and in fullscreen (the
+# menu is a Qt Quick overlay of the main window; its first row is "Open File(s)")
+function Open-MainMenu($s, [bool]$fullscreen) {
+    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $cx = [int]($b.Left + $b.Width / 2); $cy = [int]($b.Top + $b.Height / 2)
+    $mode = if ($fullscreen) { 'fs' } else { 'win' }
+    Focus-Window $s.hwnd
+    if ($fullscreen) {
+        # the bars hide while the pointer rests over the video, the top edge shows the top bar
+        [RdSmoke]::SetCursorPos($cx, $cy) | Out-Null; Start-Sleep -Milliseconds 100
+        [RdSmoke]::SetCursorPos($cx + 5, $cy + 5) | Out-Null
+        Start-Sleep -Seconds 5
+        [RdSmoke]::SetCursorPos($cx, $b.Top) | Out-Null
+        $button = Uia-Find $s.hwnd 'Menu' 3000
+        if (-not $button) { throw 'the top edge did not show the top bar' }
+        $r = $button.Current.BoundingRectangle
+        $mx = [int]($r.Left + $r.Width / 2); $my = [int]($r.Top + $r.Height / 2)
+        # down onto "..." as a hand does, then a short rest, as before a click
+        for ($y = $b.Top; $y -le $my; $y += 2) { [RdSmoke]::SetCursorPos($mx, $y) | Out-Null; Start-Sleep -Milliseconds 20 }
+        Start-Sleep -Milliseconds 600
+    } else {
+        Show-Bars $s.hwnd
+        $button = Uia-Find $s.hwnd 'Menu' 3000
+        if (-not $button) { throw 'the top bar''s "..." button is not shown' }
+        $r = $button.Current.BoundingRectangle
+        $mx = [int]($r.Left + $r.Width / 2); $my = [int]($r.Top + $r.Height / 2)
+        [RdSmoke]::SetCursorPos($mx, $my) | Out-Null
+        Start-Sleep -Milliseconds 600
+    }
+    if (-not (Uia-Find $s.hwnd 'Menu' 0)) { throw "the top bar hid before the click ($mx, $my)" }
+    [RdSmoke]::mouse_event(0x0002, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 80
+    [RdSmoke]::mouse_event(0x0004, 0, 0, 0, [IntPtr]::Zero)
+    Start-Sleep -Milliseconds 300
+    Shot "$($s.tag)-menu-$mode-0.3s"
+    $row = Uia-Find $s.hwnd 'Open File(s)' 2000
+    if (-not $row) {
+        Shot "$($s.tag)-menu-$mode-fail"
+        throw "a click on ""..."" ($mx, $my) did not open the main menu (no ""Open File(s)"" row within 2 s)"
+    }
+    # it stays open while the pointer rests on "..."
+    Start-Sleep -Milliseconds 1500
+    Shot "$($s.tag)-menu-$mode-1.8s"
+    if (-not (Uia-Find $s.hwnd 'Open File(s)' 0)) { throw "the main menu opened, then closed by itself within 1.8 s" }
+    $rr = $row.Current.BoundingRectangle
+    if ($rr.Left -lt $b.Left -or $rr.Top -lt $b.Top -or $rr.Right -gt $b.Right -or $rr.Bottom -gt $b.Bottom) {
+        throw "the main menu opened off the screen (""Open File(s)"" at $rr)"
+    }
+    # Escape closes it
+    Keys @(0x1B)
+    Start-Sleep -Milliseconds 500
+    if (Uia-Find $s.hwnd 'Open File(s)' 0) { throw 'Escape did not close the main menu' }
+    "a click on ""..."" ($mx, $my) opened the main menu (""Open File(s)"" at $([int]$rr.Left), $([int]$rr.Top)); still open 1.8 s later; Escape closed it"
+}
+function Check-MenuClick($s) {
+    Check "$($s.tag): ""..."" opens the main menu in a window" { Open-MainMenu $s $false }
+}
+function Check-FsMenuClick($s) {
+    Check "$($s.tag): ""..."" opens the main menu in fullscreen" {
+        $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        Focus-Window $s.hwnd
+        try {
+            Keys @(0x46)   # F: fullscreen
+            Start-Sleep -Seconds 2
+            Open-MainMenu $s $true
+        } finally {
+            [RdSmoke]::SetCursorPos([int]($b.Left + $b.Width / 2), [int]($b.Top + $b.Height / 2)) | Out-Null
+            # a menu left open takes an Escape first (Escape also leaves fullscreen, so the window is
+            # measured again before F)
+            if (Uia-Find $s.hwnd 'Open File(s)' 0) { Keys @(0x1B); Start-Sleep -Milliseconds 400 }
+            $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+            if ($w.Left -le $b.Left -and $w.Top -le $b.Top -and $w.Right -ge $b.Right -and $w.Bottom -ge $b.Bottom) {
+                Keys @(0x46)
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
+}
+
 function Check-Seek($s) {
     Check "$($s.tag): seek bar responds" {
         Focus-Window $s.hwnd
@@ -394,6 +472,8 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
             Check-FsTopBar $s | Out-Null
+            Check-MenuClick $s | Out-Null
+            Check-FsMenuClick $s | Out-Null
             # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
             Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
         }
