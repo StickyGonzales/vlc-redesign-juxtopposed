@@ -546,19 +546,21 @@ bool RdUpNext::queueIsCones() const
 
 // ------------------------------------------------------------------------------- decision
 
+bool RdUpNext::longEnough() const
+{
+    // a short clip or a weak pattern on a short file is not an episode (plan 3.3)
+    if (m_show.minDurationSec <= 0)
+        return true;
+    const VLCDuration length = m_player->getLength();
+    return !length.valid() || length.toSeconds() >= m_show.minDurationSec;
+}
+
 void RdUpNext::evaluate()
 {
     const QString oldReason = m_blockedReason;
     const int oldNext = m_nextIndex;
 
-    bool active = showActive();
-    // a short clip or a weak pattern on a short file is not an episode (plan 3.3)
-    if (active && m_show.minDurationSec > 0)
-    {
-        const VLCDuration length = m_player->getLength();
-        if (length.valid() && length.toSeconds() < m_show.minDurationSec)
-            active = false;
-    }
+    const bool active = showActive() && longEnough();
 
     // Always remembers "yes" for a new show, once the stored answers are known (a stored "no" wins)
     if (active && m_mode == ModeAlways && m_storeLoaded && !hasAnswer())
@@ -604,8 +606,9 @@ void RdUpNext::updateCard()
     const bool started = m_player->isStarted();
 
     // the prompt, early in the first episode of an unanswered show and after the resume toast
-    if (showActive() && m_mode == ModeAsk && m_storeLoaded && !hasAnswer() && !m_promptDone && !m_promptVisible
-            && started)
+    // (never for a file too short to be autoplayed: under 2 minutes, 10 for a weak name pattern)
+    if (showActive() && longEnough() && m_mode == ModeAsk && m_storeLoaded && !hasAnswer() && !m_promptDone
+            && !m_promptVisible && started)
     {
         const VLCTime time = m_player->getTime();
         // not canRestorePlayback: a toast that times out leaves it set
