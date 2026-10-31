@@ -259,6 +259,46 @@ function Check-Subtitle($s) {
         "selected: $(($sel | Select-Object -First 1).Trim())"
     }
 }
+# fullscreen: a bar shown by its edge zone stays while the pointer rests on its buttons (the top
+# bar hid under the pointer on Windows when a button's tooltip, a native window pushed onto the
+# button at the top of the screen, made the window report a leave)
+function Check-FsTopBar($s) {
+    Check "$($s.tag): fullscreen top bar stays under the pointer" {
+        Focus-Window $s.hwnd
+        $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $cx = [int]($b.Left + $b.Width / 2); $cy = [int]($b.Top + $b.Height / 2)
+        try {
+            Keys @(0x46)   # F: fullscreen
+            Start-Sleep -Seconds 2
+            # the bars hide while the pointer rests over the middle of the video
+            [RdSmoke]::SetCursorPos($cx, $cy) | Out-Null; Start-Sleep -Milliseconds 100
+            [RdSmoke]::SetCursorPos($cx + 5, $cy + 5) | Out-Null
+            Start-Sleep -Seconds 5
+            if (Uia-Find $s.hwnd 'Menu' 0) { throw 'the top bar did not hide in fullscreen' }
+            # the top edge shows it
+            [RdSmoke]::SetCursorPos($cx, $b.Top) | Out-Null
+            $menu = Uia-Find $s.hwnd 'Menu' 3000
+            if (-not $menu) { throw 'the top edge did not show the top bar' }
+            $r = $menu.Current.BoundingRectangle
+            $mx = [int]($r.Left + $r.Width / 2); $my = [int]($r.Top + $r.Height / 2)
+            # down onto the "..." button, as a hand does, then rest there
+            for ($y = $b.Top; $y -le $my; $y += 2) { [RdSmoke]::SetCursorPos($mx, $y) | Out-Null; Start-Sleep -Milliseconds 20 }
+            Start-Sleep -Milliseconds 1500
+            Shot "$($s.tag)-fs-topbar"
+            if (-not (Uia-Find $s.hwnd 'Menu' 0)) { throw "the top bar hid while the pointer rested on its ""..."" button ($mx, $my)" }
+            "shown at the top edge, still shown 1.5 s after the pointer came to rest on ""..."" ($mx, $my)"
+        } finally {
+            [RdSmoke]::SetCursorPos($cx, $cy) | Out-Null
+            # back to the window, only if it is fullscreen (a retry starts from the window)
+            $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+            if ($w.Left -le $b.Left -and $w.Top -le $b.Top -and $w.Right -ge $b.Right -and $w.Bottom -ge $b.Bottom) {
+                Keys @(0x46)
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
+}
+
 function Check-Seek($s) {
     Check "$($s.tag): seek bar responds" {
         Focus-Window $s.hwnd
@@ -368,6 +408,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
             Check-Subtitle $s | Out-Null
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
+            Check-FsTopBar $s | Out-Null
             # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
             Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
         }

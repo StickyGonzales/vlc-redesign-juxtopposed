@@ -170,8 +170,16 @@ FocusScope {
     // the cursor left the player only when neither the player nor the video is hovered (moving
     // from a bar onto the video unhovers the player handler)
     function _cursorMaybeLeft() {
-        if (!playerHover.hovered && !_videoHovered)
+        if (!playerHover.hovered && !_videoHovered && !_pointerStillOverPlayer())
             _cursorY = -1
+    }
+
+    // the pointer is still over the player while its window is the active one, for example over
+    // one of Cone's own popup windows (a tooltip is a native window on Windows, Popup.Window):
+    // the window and its hover handlers report a leave, but the pointer did not leave. Without this, a top bar button's tooltip, pushed
+    // onto the button at the top of the screen, hid the fullscreen top bar under the pointer
+    function _pointerStillOverPlayer() {
+        return MainCtx.intfMainWindow.active && cursorTracker.inside(MainCtx.cursorPosition(rootPlayer))
     }
 
     HoverHandler {
@@ -208,7 +216,8 @@ FocusScope {
             cursorTracker.track(scenePos.x, scenePos.y)
         }
         function onIntfMouseLeft() {
-            rootPlayer._cursorY = -1
+            if (!rootPlayer._pointerStillOverPlayer())
+                rootPlayer._cursorY = -1
         }
     }
 
