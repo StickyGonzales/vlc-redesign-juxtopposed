@@ -62,7 +62,9 @@ Picture: `redesign/fix-shots/installer_polish.jpg` (before and after).
 Not testable under Wine: how Windows' own theme draws the boxes (Wine draws its own controls), and Windows scaling at 125 / 150 %.
 
 ## 3. Runs
-(below)
+| Run | Result |
+|---|---|
+| build-windows #141 (41247457291), this branch | the installer builds; **all smoke checks pass**, the silent install (`/S`, the same components as before) and the silent uninstall included |
 
 ## 4. Windows retest (PC session)
 1. **Fresh install** (uninstall Cone first). Welcome page: "Create a desktop shortcut" ticked, "Customize the installation" unticked. Next, Next (License), the folder page, Install. A desktop shortcut exists.
