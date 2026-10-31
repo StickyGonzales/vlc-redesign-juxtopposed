@@ -47,7 +47,10 @@ What that costs users:
 - The zip ships no plug-in cache, so its sessions load every plug-in at start.
 
 ## Runs
-(below)
+| Run | Build | Result |
+|---|---|---|
+| smoke-windows-manual 41245616412 | build-windows #139 (run 41243837748), before this fix | the new check **fails** in all 3 sessions: the 4 plug-ins, error 126 |
+| build-windows 41245608068 | test branch `wip/test-plugin-dlls` (this fix plus the smoke-media fix, since merged) | **all checks pass**, "every plug-in loads" in all 3 sessions (zip H.264, zip HEVC, installed H.264), no retries |
 
 ## Windows retest (PC session)
 1. **The package.** The zip and the installed folder have `libgcc_s_seh-1.dll` and `libwinpthread-1.dll` next to `Cone.exe`.
