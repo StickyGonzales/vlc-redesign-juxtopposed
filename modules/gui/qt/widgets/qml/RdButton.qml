@@ -28,6 +28,8 @@
 // - Plain: Standard on BG/A4, the Settings pages' buttons (Figma "Settings - *" "Frame 141":
 //   Browse, Open, Reset picture, Edit Keyboard Shortcuts)
 // - Destructive: red text on a red-tinted fill (Settings > General "Reset all settings")
+// - Toast: Standard on a BG/A3 toast or card, BG/A1 like the resume toast's close button
+//   (Up Next Cancel, the show prompt's No)
 import QtQuick
 import QtQuick.Templates as T
 
@@ -42,7 +44,7 @@ T.Button {
         cursorShape: Qt.PointingHandCursor
     }
 
-    enum Style { Standard, Save, Primary, Bar, Plain, Destructive, Link }
+    enum Style { Standard, Save, Primary, Bar, Plain, Destructive, Link, Toast }
 
     property int style: RdButton.Style.Standard
     property string rdIcon: ""            // optional Figma icon (Widgets.RdIcon) shown before the text
@@ -82,6 +84,8 @@ T.Button {
         default:
             if (!rdPalette.isDark)
                 return hovered ? rdPalette.rdFgA1 : rdPalette.rdFgA2
+            if (style === RdButton.Style.Toast)
+                return hovered ? rdPalette.rdBgA2 : rdPalette.rdBgA1
             return hovered ? rdPalette.rdBgA1
                            : (style === RdButton.Style.Plain ? rdPalette.rdBgA4 : rdPalette.rdBgA3)
         }
@@ -105,7 +109,8 @@ T.Button {
         border.width: control.visualFocus ? VLCStyle.dp(1) : 0
         // the light Standard button is dark itself: its focus ring is the accent
         border.color: (control.rdPalette.isDark || (control.style !== RdButton.Style.Standard
-                                                     && control.style !== RdButton.Style.Plain))
+                                                     && control.style !== RdButton.Style.Plain
+                                                     && control.style !== RdButton.Style.Toast))
                       ? control.rdPalette.rdFg2 : control.rdPalette.rdAccentMain
     }
 

@@ -110,3 +110,39 @@ Deleted from GitHub after a recheck (merged ones still ancestors of `wip/next-te
 | wip/web-fixes-2 | bedec2f0d61fdeab276c29ad394183178014a7b1 |
 | wip/next-batch | 332c42836e0d911786153c3d66b86646eff35fcb |
 | wip/fix-quit-deadlock | 76f8ab7b1752179ee535f419c23f8674280c41f0 |
+
+## Done (PC session, 2026-10-26, after the 1.0.0 release)
+
+StickyGonzales's post-release cleanup: deleted every branch fully merged into `redesign` (tip an ancestor of `origin/redesign`) with no open PR, the test-only branches (`wip/test-*`, `*-linux`) whose PR is merged or closed, and the leftover `wip/test-installer-1.0`. Kept: `redesign`, `wip/next-test`, `master`, `wip/linux-build`, `wip/ci-release`, every head of an open PR (#29, #44, #47, #50, #53, #57), every branch pushed in the 24 hours before (GitHub activity: e.g. `wip/test-installer-1.0-ownkeys`, `wip/test-pr48-49`, the merged fix branches of 2026-10-25, the 1.0.1 seek fix branches), and unmerged branches that are not test branches (`wip/beta-gate`, `wip/verify-*`, `wip/code-audit`, `wip/diag-hevc-stall`, `wip/fix-pause-rate-clock`, `wip/fix-visualizer`, `wip/quit-hang-cause`, `wip/a839e9d9ddb97595a`). Each delete used a lease on the tip below, so a branch with newer commits would not have been deleted. To restore one: `git push origin <sha>:refs/heads/<branch>`.
+
+PRs closed: #36 (title part merged as `wip/cone-window-title`; the visualizer crash fixed by the mmdevice change on `wip/fix-visualizer-pc`; its ICC timer part did not fix the white window), #38 (analysis notes only; the fix they led to, `wip/fix-hevc-surfaces-2n`, is merged; the remaining quit stall is a known issue in STATUS). Kept open: #29 (WINDOWS_CHECKLIST.md is not in `redesign` or `wip/next-test` and CLAUDE.md still points to it), #44 (the plan of #47).
+
+| Branch | Why | Tip |
+|---|---|---|
+| claude/zen-mendel-p1anpd | merged into redesign | c3604b875554a38df37f8c4f50a0fe7412941769 |
+| wip/fix-hevc-surfaces | merged into redesign | 9323061a32806f05ae4d626a9765e87c9241657a |
+| wip/fix-hevc-surfaces-2n | merged into redesign | 883156a0ad5960cfb3ea3d21719dea0d431a7615 |
+| wip/fix-network-playlist-name | merged into redesign | 1eadd46c99efd04f4cd4ac8c4eb6b57691d14826 |
+| wip/fix-new-playlist-names | merged into redesign | f4c52f154b61b518e6a26bf79f9d13de5a786e7f |
+| wip/fix-visualizer-pc | merged into redesign | f5a1fc15cc6db09b9c10714024d96d2bc5e2ffe7 |
+| wip/motion-polish | merged into redesign | 91e51c3f0906d4e2f023f2b3f3e2ac4673f17353 |
+| wip/subsdelay-bitmap | merged into redesign | 7c1a1ea7b2734a354c92a139d78a4067a8daf2f4 |
+| wip/test-pr10 | merged into redesign | b04efc4af965d15e95eca86154ae7bb1bc64ee01 |
+| wip/test-pr20 | merged into redesign | 554ac7e1c65812013188a73e89a7cdad78c45314 |
+| wip/test-pr22 | merged into redesign | bd5d66d9d335abcf12b037939f95cddb4052cfd5 |
+| wip/test-pr22b | merged into redesign | 6cf348ab0c8efda0b56c1ec5ab2992d42326d764 |
+| wip/test-pr37 | merged into redesign | dcf4606b8284177fee42f57479a38dd89d1b54ed |
+| wip/test-pr23-26 | test only, #23, #26 merged | eef6c172eccf1ba810c9ee680ddaec306249c2a6 |
+| wip/test-pr2326b | test only, #23, #26 merged | 2e5872c468e8461bfa995d036b4f11e1e1ccc73e |
+| wip/test-pr25 | test only, #25 merged | 742392bdcb4fd28a963a5234641495c4e1fa2bd6 |
+| wip/test-pr25b | test only, #25 merged | 0b7b636637abfbe356be07e30e4cef5460524ab3 |
+| wip/test-pr25c | test only, #25 merged | 54972104702aec643118cb26cb06d199e1e28f83 |
+| wip/test-pr32 | test only, #32 closed | cbaf986c46c70a4843ca87a92b6da4fc59f02a4b |
+| wip/test-pr32-dbg | test only, #32 closed | 1c94fd80cc68a32f755f1b28051370c1e61e1dab |
+| wip/test-pr35 | test only, #35 merged | 92d5d4dd6e6688615da450564ba9e8d3730987b3 |
+| wip/test-pr39-41-42 | test only, #39, #41, #42 merged | 63d6e1d0c5a9b84e39738189a3f9fa70e9f0ea25 |
+| wip/test-pr40 | test only, #40 merged | ed65a4fe0491ffbad04a254f786e5f699a9136de |
+| wip/motion-polish-linux | test only, #37 merged | cfff8e0e1bce215485dbeb2deebbb2b5fd10bb6c |
+| wip/test-installer-1.0 | test only, #33 merged (leftover installer test) | 07fba89b8d89bd59c3390b7a466e17a3abc9a557 |
+| wip/test-pr36 | test only, #36 closed (replaced) | 59f0e12427c64938cacfc23de809ceafd7f1dd15 |
+| wip/fix-visualizer-linux | test only, #36 closed (replaced) | e77572d44ad09f30cb85af65544e683da59a4afe |

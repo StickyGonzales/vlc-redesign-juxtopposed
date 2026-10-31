@@ -24,6 +24,7 @@
 //   RdSidePanelPageLoader { key: "audioSettings"; sourceComponent: AudioSettingsPage { } }
 import QtQuick
 
+import VLC.MainInterface
 import VLC.Style
 
 Loader {
@@ -45,10 +46,14 @@ Loader {
     visible: opacity > 0
     enabled: current
 
+    // the tab icons and underlines fade with the same timing (RdSidePanel); instant when the
+    // system's animations are off
     Behavior on opacity {
+        enabled: MainCtx.systemAnimations
+
         NumberAnimation {
-            duration: VLCStyle.duration_short
-            easing.type: Easing.InOutSine
+            duration: VLCStyle.rd_tabSwitchDuration
+            easing.type: Easing.Linear
         }
     }
 

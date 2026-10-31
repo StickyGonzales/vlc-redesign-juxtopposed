@@ -50,6 +50,10 @@ jobs:
   build:
     needs: guard
     uses: ./.github/workflows/build-linux.yml
+    # build-linux.yml's job asks for contents: write (the test builds' draft pre-release, which a
+    # release build never touches); a called workflow gets no more than its caller grants
+    permissions:
+      contents: write
 
   release:
     needs: build

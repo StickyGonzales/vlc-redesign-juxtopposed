@@ -85,6 +85,7 @@ extern "C" char **environ;
 #include "qt.hpp"
 
 #include "player/player_controller.hpp"    /* THEMIM destruction */
+#include "player/rd_effects.hpp"           /* the hidden Subtitle Duration Factor */
 #include "playlist/playlist_controller.hpp" /* THEMPL creation */
 #include "dialogs/dialogs_provider.hpp" /* THEDP creation */
 #include "dialogs/dialogs/dialogmodel.hpp"
@@ -208,6 +209,12 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 #define UPDATER_LONGTEXT N_( "Activate the automatic notification of new " \
                             "versions of the software. It runs once every " \
                             "two weeks." )
+
+/* redesign: Cone's update notice (util/rd_update_check.cpp) */
+#define CONE_UPDATE_CHECK_TEXT N_( "Check for updates" )
+#define CONE_UPDATE_CHECK_LONGTEXT N_( "Once a day at most, when Cone starts, ask GitHub " \
+                                      "for the latest release of Cone and tell when a newer " \
+                                      "one is available. Nothing is downloaded or installed." )
 
 #define QT_QML_DEBUG_TEXT N_( "set the options for qml debugger" )
 #define QT_QML_DEBUG_LONGTEXT N_( "set the options for qml debugger (see http://doc.qt.io/qt-5/qtquick-debugging.html#starting-applications)" )
@@ -383,6 +390,30 @@ static const int i_process_priority_list[] = { -2, -1, 0, 1, 2 };
 static const char *const psz_process_priority_text[] =
     { N_( "Lowest" ), N_( "Low" ), N_( "Normal" ), N_( "High" ), N_( "Highest" ) };
 
+/* Cone extra (Decision 71, redesign/UP_NEXT_PLAN.md): RdUpNext */
+#define AUTOPLAY_NEXT_TEXT N_( "Autoplay next episode" )
+#define AUTOPLAY_NEXT_LONGTEXT N_( "Plays the next episode of a show folder when one ends. " \
+    "Single videos, clips and music are never treated as shows." )
+#define AUTOPLAY_COUNTDOWN_TEXT N_( "Countdown" )
+#define AUTOPLAY_COUNTDOWN_LONGTEXT N_( "How long the Up Next card counts down before the next " \
+    "episode starts." )
+#define AUTOPLAY_CARD_POINT_TEXT N_( "Show Up Next" )
+#define AUTOPLAY_CARD_POINT_LONGTEXT N_( "When the Up Next card appears: in the last seconds of " \
+    "the episode, or at its credits chapter when it has one." )
+#define AUTOPLAY_STILL_WATCHING_TEXT N_( "Ask if I'm still watching after 3 episodes" )
+#define AUTOPLAY_STILL_WATCHING_LONGTEXT N_( "After 3 episodes in a row without a key press or " \
+    "a click, the next episode waits paused until you answer." )
+
+static const int i_autoplay_next_list[] = { 0, 1, 2 };
+static const char *const psz_autoplay_next_text[] =
+    { N_( "Off" ), N_( "Ask for each show" ), N_( "Always" ) };
+static const int i_autoplay_countdown_list[] = { 5, 10, 15 };
+static const char *const psz_autoplay_countdown_text[] =
+    { N_( "5 seconds" ), N_( "10 seconds" ), N_( "15 seconds" ) };
+static const int i_autoplay_card_point_list[] = { 0, 1 };
+static const char *const psz_autoplay_card_point_text[] =
+    { N_( "At the end of the episode" ), N_( "When the credits start" ) };
+
 static const char *const compositor_vlc[] = {
     "auto",
 #ifdef _WIN32
@@ -479,6 +510,11 @@ vlc_module_begin ()
               UPDATER_LONGTEXT )
     add_integer_with_range( "qt-updates-days", 3, 0, 180,
               UPDATER_DAYS_TEXT, nullptr )
+#endif
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: Cone never builds VLC's checker (configure.ac); it has its own notice */
+    add_bool( "qt-cone-update-check", true, CONE_UPDATE_CHECK_TEXT,
+              CONE_UPDATE_CHECK_LONGTEXT )
 #endif
 
 #ifdef QT_QML_DEBUG
@@ -590,6 +626,21 @@ vlc_module_begin ()
      * Seekbar", P4-35: off) */
     add_bool( "qt-seek-subtitle-timeline", false, SEEK_SUBTITLE_TIMELINE_TEXT,
               SEEK_SUBTITLE_TIMELINE_LONGTEXT )
+
+    /* Cone extra (Decision 71): autoplay next episode; the vlc profile behaves like stock VLC
+     * (Off), Cone asks for each show (UP_NEXT_PLAN.md Q6) */
+#ifdef VLC_BRAND_PUBLIC
+    add_integer( "qt-autoplay-next", 1, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+#else
+    add_integer( "qt-autoplay-next", 0, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+#endif
+        change_integer_list( i_autoplay_next_list, psz_autoplay_next_text )
+    add_integer( "qt-autoplay-countdown", 10, AUTOPLAY_COUNTDOWN_TEXT, AUTOPLAY_COUNTDOWN_LONGTEXT )
+        change_integer_list( i_autoplay_countdown_list, psz_autoplay_countdown_text )
+    add_integer( "qt-autoplay-card-point", 0, AUTOPLAY_CARD_POINT_TEXT, AUTOPLAY_CARD_POINT_LONGTEXT )
+        change_integer_list( i_autoplay_card_point_list, psz_autoplay_card_point_text )
+    add_bool( "qt-autoplay-still-watching", true, AUTOPLAY_STILL_WATCHING_TEXT,
+              AUTOPLAY_STILL_WATCHING_LONGTEXT )
 
     cannot_unload_broken_library()
 
@@ -742,6 +793,10 @@ static int OpenInternal( qt_intf_t *p_intf )
     /* set up the playlist to work on */
     p_intf->p_playlist = playlist;
     p_intf->p_player = vlc_playlist_GetPlayer( p_intf->p_playlist );
+
+    /* redesign: a saved Subtitle Duration Factor is reset before VLC can start playback below
+     * (the first video output would start the "subsdelay" filter from the settings) */
+    RdEffects::resetSavedSubtitleDurationFactor(p_intf);
 
     /* */
 #ifdef Q_OS_MAC
@@ -1099,6 +1154,19 @@ static void *Thread( void *obj )
             QSettings::NativeFormat,
 #endif
             QSettings::UserScope, BRAND_CONFIG_DIR, "vlc-qt-interface" );
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+    /* redesign (P8-03): the interface language chosen in Settings > General, as Windows reads
+     * it from the registry when VLC starts (bin/winvlc.c). gettext takes LANGUAGE over the
+     * system locale (unless the locale is "C"); set here, before the interface translates its
+     * first text. It replaces a LANGUAGE the desktop set (Ubuntu sets one for every app). */
+    {
+        const QByteArray language =
+                p_intf->mainSettings->value( "Interface/language" ).toString().toUtf8();
+        if( !language.isEmpty() && language != "auto" )
+            qputenv( "LANGUAGE", language );
+    }
+#endif
 
     // It is guaranteed that the returned format is supported, if a format is returned.
     static const auto createCompatibleOpenGLFormat = []() -> std::optional<QSurfaceFormat> {

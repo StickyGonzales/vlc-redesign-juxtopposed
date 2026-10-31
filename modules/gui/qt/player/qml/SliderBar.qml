@@ -769,6 +769,12 @@ T.ProgressBar {
             property alias animateLoading: loadingAnim.running
             property bool display: false
             property bool buffering: Player.buffering > 0 && Player.buffering < 1
+            // redesign: the loading animation is for a media still opening (a stream that sent
+            // nothing yet). Every seek sets the buffering back to 0 for a moment: shown at once,
+            // the animation flickered at the start of the bar on each seek of a drag. It shows
+            // once the buffering stayed at 0 for a moment, never while the bar is dragged
+            property bool loadingDisplay: false
+            readonly property bool _notStarted: Player.buffering === 0 && !dragHandler.active
 
             height: control.barHeight
             opacity: 0.4
@@ -806,6 +812,26 @@ T.ProgressBar {
                 }
             }
 
+            Timer {
+                id: loadingTimer
+                interval: VLCStyle.duration_humanMoment
+                onTriggered: bufferRect.loadingDisplay = true
+            }
+
+            on_NotStartedChanged: {
+                if (_notStarted) {
+                    loadingTimer.restart()
+                } else {
+                    loadingTimer.stop()
+                    bufferRect.loadingDisplay = false
+                }
+            }
+
+            Component.onCompleted: {
+                if (_notStarted)
+                    loadingTimer.start()
+            }
+
             states: [
                 State {
                     name: "hidden"
@@ -820,7 +846,7 @@ T.ProgressBar {
                 },
                 State {
                     name: "buffering not started"
-                    when: control.visible && Player.buffering === 0
+                    when: control.visible && bufferRect.loadingDisplay
                     PropertyChanges {
                         target: bufferRect
                         width: bufferAnimWidth

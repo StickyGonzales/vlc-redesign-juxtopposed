@@ -1,0 +1,125 @@
+# Cone Player release: builds the "public" profile and publishes a GitHub Release (pre-release by default)
+# with the portable zip, the installer, their SHA-256 checksums and notes from
+# .github/release/release-notes.md (redesign/CI_RELEASE_NOTES.md).
+#
+# Runs on a pushed version tag (v0.1.0, v0.2.0-beta.1, ...) or by hand from the Actions tab. Only
+# verified code is released: a tag must point at a commit of the redesign branch, a manual run must
+# be started from redesign.
+name: release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to create on the head of redesign, like v0.1.0'
+        type: string
+        required: true
+      prerelease:
+        description: 'Publish as a pre-release'
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Only verified code (redesign)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the redesign branch and the tags, to check where the commit comes from
+
+      - name: Check branch, commit and version
+        id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+        run: .github/scripts/release-guard.sh
+
+  build:
+    needs: guard
+    uses: ./.github/workflows/build-windows.yml
+    # build-windows.yml's job asks for contents: write (the test builds' draft pre-release, which a
+    # release build never touches); a called workflow gets no more than its caller grants
+    permissions:
+      contents: write
+    with:
+      brand: public
+      release: true
+      # a tag has no branch: start from redesign's compiler cache, the code it was checked against
+      cache-branch: redesign
+      # the version and package names come from the tag, also on a manual run (which builds the
+      # redesign branch, the tag is only created when publishing)
+      version: ${{ needs.guard.outputs.version }}
+
+  release:
+    needs: [guard, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # create the tag (manual run) and the release
+    env:
+      VERSION: ${{ needs.guard.outputs.version }}
+      PRERELEASE: ${{ needs.guard.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-release-files
+          path: built
+
+      - name: Release files and checksums
+        id: package
+        run: .github/scripts/release-package.sh built out "$VERSION"
+
+      - name: Release notes
+        env:
+          RN_VERSION: ${{ steps.package.outputs.version }}
+          RN_COMMIT: ${{ github.sha }}
+          RN_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RN_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RN_ZIP: ${{ steps.package.outputs.zip }}
+          RN_ZIP_SHA256: ${{ steps.package.outputs.zip_sha256 }}
+          RN_EXE: ${{ steps.package.outputs.exe }}
+          RN_EXE_SHA256: ${{ steps.package.outputs.exe_sha256 }}
+          RN_VLC_VERSION: ${{ steps.package.outputs.vlc_version }}
+        run: |
+          python3 .github/scripts/release-notes.py .github/release/release-notes.md out/release-notes.md
+          cat out/release-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          ARGS=(--title "Cone Player ${VERSION#v}: Juxtopposed's redesign on a real VLC 4 fork, not a skin" --notes-file out/release-notes.md)
+          if [ "$EVENT" = push ]; then
+            ARGS+=(--verify-tag)
+          else
+            # manual run: the tag is created on the commit this run built
+            ARGS+=(--target "$GITHUB_SHA")
+          fi
+          if [ "$PRERELEASE" = true ]; then
+            ARGS+=(--prerelease)
+          fi
+          gh release create "$VERSION" \
+            "out/${{ steps.package.outputs.zip }}" \
+            "out/${{ steps.package.outputs.exe }}" \
+            out/SHA256SUMS.txt \
+            "${ARGS[@]}"
+          echo "Published: $(gh release view "$VERSION" --json url --jq .url)" | tee -a "$GITHUB_STEP_SUMMARY"

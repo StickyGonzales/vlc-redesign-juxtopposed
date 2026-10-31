@@ -209,6 +209,25 @@ RdSlider {
         valueMoved(v)
     }
 
+    // a value written from outside the slider: an accessibility tool (UI Automation's RangeValue
+    // SetValue writes `value` itself, with no moved()) is a user move. Checked once the bindings
+    // have settled: the value the slider shows (its binding to _shown, T.Slider clamping it when
+    // the window moves) then matches _shown again, and only an outside value differs
+    function _takeOutsideValue() {
+        if (pressed || snapBack.running)
+            return
+        const v = endless ? _limit(value) : value
+        if (Math.abs(v - _clamped(from, to)) <= _eps / 2)
+            return
+        _show(v)
+        valueMoved(v)
+    }
+
+    onValueChanged: {
+        if (_ready && !pressed && !snapBack.running)
+            Qt.callLater(_takeOutsideValue)
+    }
+
     onMoved: {
         const v = endless ? _limit(value) : value
         _shown = v

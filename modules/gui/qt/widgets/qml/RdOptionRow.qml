@@ -62,6 +62,10 @@ T.ItemDelegate {
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => Navigation.defaultKeyAction(event)
 
+    // accessibility tools (UI Automation's Invoke pattern) choose the row as a click does: a
+    // list item has no press action of its own (the dropdown takes the row's clicked())
+    Accessible.onPressAction: control.clicked()
+
     background: Rectangle {
         radius: control.radius
         color: (control.hovered || control.visualFocus || control.selected || control.active)
