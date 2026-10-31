@@ -169,7 +169,7 @@ FocusScope {
 
     // the cursor left the player only when neither the player nor the video is hovered (moving
     // from a bar onto the video unhovers the player handler)
-    on_TopBarVisibleChanged: console.warn("DIAGMENU topBarVisible=" + _topBarVisible + " cursorY=" + _cursorY)
+    on_TopBarVisibleChanged: console.warn("DIAGMENU " + Date.now() + " topBarVisible=" + _topBarVisible + " cursorY=" + _cursorY)
     function _cursorMaybeLeft() {
         if (!playerHover.hovered && !_videoHovered && !_pointerStillOverPlayer())
             _cursorY = -1
@@ -394,10 +394,10 @@ FocusScope {
         // controller" preference (mouse-hide-timeout)
         hideDelay: rootPlayer._windowed ? VLCStyle.rd_barsHideDelay : MainCtx.mouseHideTimeout
 
-        onIsVisibleChanged: console.warn("DIAGMENU fsm visible=" + isVisible + " locked=" + isLocked)
-        onIsLockedChanged: console.warn("DIAGMENU fsm locked=" + isLocked + " count=" + lockCount)
+        onIsVisibleChanged: console.warn("DIAGMENU " + Date.now() + " fsm visible=" + isVisible + " locked=" + isLocked)
+        onIsLockedChanged: console.warn("DIAGMENU " + Date.now() + " fsm locked=" + isLocked + " count=" + lockCount)
         onForceUnlock:{
-            console.warn("DIAGMENU fsm forceUnlock")
+            console.warn("DIAGMENU " + Date.now() + " fsm forceUnlock")
             controlBar.forceUnlock()
 
             topBar.forceUnlock()

@@ -38,7 +38,15 @@ Widgets.IconToolButton {
 
     checked: mainMenu.visible
 
+    onPressed: console.warn("DIAGMENU " + Date.now() + " mmb pressed")
+    onReleased: console.warn("DIAGMENU " + Date.now() + " mmb released")
+    onCanceled: console.warn("DIAGMENU " + Date.now() + " mmb canceled")
+    onHoveredChanged: console.warn("DIAGMENU " + Date.now() + " mmb hovered=" + hovered)
+    onVisibleChanged: console.warn("DIAGMENU " + Date.now() + " mmb visible=" + visible)
+    Component.onDestruction: console.warn("DIAGMENU " + Date.now() + " mmb destroyed")
+    Component.onCompleted: console.warn("DIAGMENU " + Date.now() + " mmb created")
     onClicked: {
+        console.warn("DIAGMENU " + Date.now() + " mmb clicked y=" + root.mapToItem(null, 0, 0).y)
         const window = root.Window.window
         if (!!window && root.mapToItem(null, 0, 0).y > window.height / 2)
             mainMenu.popupAbove(root, visualFocus)
@@ -47,6 +55,7 @@ Widgets.IconToolButton {
     }
 
     function forceUnlock() {
+        console.warn("DIAGMENU " + Date.now() + " mmb forceUnlock")
         // called while the bar is torn down too, when the menu is already gone
         mainMenu?.close()
     }
@@ -54,8 +63,10 @@ Widgets.IconToolButton {
     Menus.RdMainMenu {
         id: mainMenu
 
-        onAboutToShow: root.requestLockUnlockAutoHide(true)
-        onAboutToHide: root.requestLockUnlockAutoHide(false)
+        onAboutToShow: { console.warn("DIAGMENU " + Date.now() + " mmb menu aboutToShow"); root.requestLockUnlockAutoHide(true) }
+        onAboutToHide: { console.warn("DIAGMENU " + Date.now() + " mmb menu aboutToHide"); console.trace(); root.requestLockUnlockAutoHide(false) }
+        onOpened: console.warn("DIAGMENU " + Date.now() + " mmb menu opened")
+        onClosed: console.warn("DIAGMENU " + Date.now() + " mmb menu closed")
     }
 
     AccessibleCompat.id: "topBarMenuButton"

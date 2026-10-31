@@ -76,6 +76,7 @@ T.Popup {
     // opens the menu with its top left corner at (px, py) in `item` coordinates, kept inside the
     // window; `keyboard` puts the focus on the first row
     function popupAt(item, px, py, keyboard) {
+        console.warn("DIAGMENU " + Date.now() + " popupAt model=" + !!root.model + " parent=" + !!root.parent + " item=" + !!item)
         if (!root.model || !root.parent || !item)
             return
 
@@ -271,7 +272,7 @@ T.Popup {
 
         // like a native menu, the menu closes when the application loses the focus
         function onStateChanged() {
-            console.warn("DIAGMENU appState=" + Qt.application.state)
+            console.warn("DIAGMENU " + Date.now() + " appState=" + Qt.application.state)
             if (Qt.application.state !== Qt.ApplicationActive)
                 root.close()
         }
@@ -282,7 +283,7 @@ T.Popup {
         target: DialogsProvider
 
         function onDialogOpening() {
-            console.warn("DIAGMENU dialogOpening")
+            console.warn("DIAGMENU " + Date.now() + " dialogOpening")
             root.close()
         }
     }
@@ -316,7 +317,7 @@ T.Popup {
             // the player may have hidden the cursor over the video
             cursorShape: Qt.ArrowCursor
             onPressed: (mouse) => {
-                console.warn("DIAGMENU outside press at " + mouse.x + "," + mouse.y)
+                console.warn("DIAGMENU " + Date.now() + " outside press at " + mouse.x + "," + mouse.y)
                 root.close()
                 if (mouse.button === Qt.RightButton)
                     root.rightPressedOutside()
