@@ -105,6 +105,9 @@ endif
 # BD-J JAR
 	-cp $(CONTRIB_DIR)/share/java/libbluray*.jar $(win32_destdir)/plugins/access/
 
+# redesign: the GCC runtime DLLs the packaged modules import (copy-gcc-runtime.sh)
+	$(SHELL) "$(srcdir)/extras/package/win32/copy-gcc-runtime.sh" "$(win32_destdir)" "$(OBJDUMP)" "$(CC)"
+
 if BUILD_LUA
 	mkdir -p $(win32_destdir)/lua/
 	cp -r $(pkglibexecdir)/lua/* $(win32_destdir)/lua/
