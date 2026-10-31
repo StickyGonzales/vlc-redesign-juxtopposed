@@ -923,6 +923,8 @@ static void Close( vlc_object_t *p_this )
 
         //cleanup the interface
         QMetaObject::invokeMethod( p_intf->p_mi, [p_intf] () {
+            // redesign: a quit that started outside the interface (vlc://quit, play-and-exit)
+            QuitWatchdog::discardForQuit();
             ThreadCleanup(p_intf, CLEANUP_INTF_CLOSED);
         }, Qt::BlockingQueuedConnection);
 
@@ -1498,6 +1500,13 @@ static void *Thread( void *obj )
                                                                               mpc.get());
         } catch (...){ }
     }, Qt::QueuedConnection);
+#ifdef VLC_BRAND_PUBLIC
+    // redesign: a quit drops the queue's crash recovery at once (QuitWatchdog::setDiscardOnQuit):
+    // a quit the watchdog ends must not offer "restore the playlist" at the next start
+    QuitWatchdog::setDiscardOnQuit([&playlistModelRecoveryAgent]() {
+        playlistModelRecoveryAgent.reset();
+    });
+#endif
 
     /* Create the normal interface in non-DP mode */
 #ifdef _WIN32
@@ -1662,6 +1671,7 @@ static void *Thread( void *obj )
 
     msg_Dbg( p_intf, "QApp exec() finished" );
 
+    QuitWatchdog::setDiscardOnQuit({});
     playlistModelRecoveryAgent.reset();
     return ThreadCleanup( p_intf, CLEANUP_APP_TERMINATED );
 }

@@ -18,6 +18,8 @@
 #ifndef QUIT_WATCHDOG_HPP
 #define QUIT_WATCHDOG_HPP
 
+#include <functional>
+
 struct qt_intf_t;
 
 namespace QuitWatchdog
@@ -37,6 +39,15 @@ void armWithoutSaving(qt_intf_t *p_intf);
 /* Called from the interface module's Close: the interface object goes away, the watchdog
  * logs through the libvlc instance from then on. */
 void interfaceClosing(qt_intf_t *p_intf);
+
+/* redesign: what a forced end of a quit would wrongly leave for the next start. A quit is not a
+ * crash: qt.cpp registers the queue's crash recovery (ModelRecoveryAgent) here in the Cone
+ * build; it is dropped when a quit starts (arm, and the interface module's Close for a quit
+ * that started elsewhere), so a quit the watchdog ends offers no "restore the playlist" at the
+ * next start. A crash outside a quit still offers it. Interface thread only; an empty function
+ * unregisters. */
+void setDiscardOnQuit(std::function<void()> discard);
+void discardForQuit();
 
 }
 
