@@ -286,7 +286,12 @@ RdSidePanel {
                     width: queueView.contentWidth
 
                     title: model.title ?? ""
-                    detail: model.duration && model.duration.valid() ? model.duration.formatHMS() : ""
+                    // Cone extra (Decision 71): the autoplay item is labelled (UP_NEXT_PLAN.md rows 64, 86)
+                    readonly property bool _autoplay: RdUpNext.queuedUrl.toString() !== ""
+                                                     && String(model.url) === RdUpNext.queuedUrl.toString()
+                    readonly property string _duration: model.duration && model.duration.valid() ? model.duration.formatHMS() : ""
+                    detail: _autoplay ? (_duration !== "" ? qsTr("Autoplay · %1").arg(_duration) : qsTr("Autoplay"))
+                                      : _duration
                     current: !!model.isCurrent
                     selected: queuePage.selectedIndex === index || dragHandler.active
                     // Figma "Frame 39" (463:848): the 32 px handle icon, 10 px, then the title at

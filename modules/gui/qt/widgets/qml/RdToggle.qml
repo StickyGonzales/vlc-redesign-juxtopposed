@@ -40,11 +40,25 @@ T.AbstractButton {
 
     Accessible.role: Accessible.CheckBox
     Accessible.checked: control.checked
+    // accessibility tools (UI Automation's Toggle and Invoke patterns, screen readers) toggle it
+    // like a click: T.AbstractButton's own toggle action only flips `checked` (no toggled(), so
+    // the users of the toggle never save the change) and its press action only emits clicked()
+    Accessible.onToggleAction: control._toggleByUser()
+    Accessible.onPressAction: control._toggleByUser()
 
     Keys.priority: Keys.AfterItem
     Keys.onPressed: (event) => Navigation.defaultKeyAction(event)
 
     readonly property SystemPalette rdPalette: VLCStyle.palette
+
+    // what a mouse click or Space does: flip, then toggled() and clicked()
+    function _toggleByUser() {
+        if (!control.enabled)
+            return
+        control.toggle()
+        control.toggled()
+        control.clicked()
+    }
 
     // the pointing hand over the clickable controls
     HoverHandler {

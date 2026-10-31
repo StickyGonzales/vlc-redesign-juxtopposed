@@ -124,6 +124,9 @@ class MainCtx : public QObject
     Q_PROPERTY(bool canShowVideoPIP READ canShowVideoPIP CONSTANT FINAL)
     Q_PROPERTY(bool pinVideoControls READ pinVideoControls WRITE setPinVideoControls NOTIFY pinVideoControlsChanged FINAL)
     Q_PROPERTY(float pinOpacity READ pinOpacity WRITE setPinOpacity NOTIFY pinOpacityChanged FINAL)
+    // redesign: false when the system asks for no animations (Windows: Settings > Accessibility >
+    // Visual effects > Animation effects); the redesign's transitions are then instant
+    Q_PROPERTY(bool systemAnimations READ systemAnimations NOTIFY systemAnimationsChanged FINAL)
     Q_PROPERTY(ControlbarProfileModel* controlbarProfileModel READ controlbarProfileModel CONSTANT FINAL)
     Q_PROPERTY(bool hasAcrylicSurface READ hasAcrylicSurface NOTIFY hasAcrylicSurfaceChanged FINAL)
     Q_PROPERTY(bool smoothScroll READ smoothScroll NOTIFY smoothScrollChanged FINAL)
@@ -256,6 +259,7 @@ public:
 
     inline bool pinVideoControls() const { return m_pinVideoControls; }
     inline float pinOpacity() const { return m_pinOpacity; }
+    inline bool systemAnimations() const { return m_systemAnimations; }
 
     inline ControlbarProfileModel* controlbarProfileModel() const { return m_controlbarProfileModel; }
     inline QUrl getDialogFilePath() const { return m_dialogFilepath; }
@@ -481,6 +485,9 @@ protected:
     bool                 m_pinVideoControls = false;
     float                m_pinOpacity       = 1.0f;
 
+    bool                 m_systemAnimations = true;
+    void setSystemAnimations(bool enabled);
+
     bool                 m_useGlobalShortcuts = true;
     QUrl                 m_dialogFilepath; /* Last path used in dialogs */
 
@@ -638,6 +645,7 @@ signals:
 
     void pinVideoControlsChanged();
     void pinOpacityChanged();
+    void systemAnimationsChanged();
 
     void hasAcrylicSurfaceChanged(bool);
 

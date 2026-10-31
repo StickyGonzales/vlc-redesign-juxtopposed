@@ -34,8 +34,10 @@ on:
 
 concurrency:
   # github.workflow is the caller's name when release-linux.yml calls this: a release never
-  # cancels a normal build
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # cancels a normal build. The build- prefix keeps the group apart from the caller's own group
+  # (release-linux-<ref>): the same group in caller and callee is a deadlock, and GitHub cancels
+  # the build before it starts (linux-v1.1.0-beta, run 40422992624)
+  group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -65,6 +67,10 @@ jobs:
   linux64:
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    # contents: write for the test builds' draft pre-release (.github/scripts/test-build-assets.sh);
+    # a calling workflow (release-linux.yml) must grant it to its build job
+    permissions:
+      contents: write
     steps:
       - name: Free disk space
         run: |
@@ -201,13 +207,18 @@ jobs:
           grep -h "glibc" linux/*/README-LINUX.txt | head -n 1 >> "$GITHUB_STEP_SUMMARY" || true
 
       # the tarball first: a change of the AppImage runtime (its "continuous" release is replaced
-      # from time to time, so its checksum below goes stale) does not lose the build
+      # from time to time, so its checksum below goes stale) does not lose the build.
+      # Actions artifact storage is small (500 MB for the account): every artifact lives one day;
+      # a test build does not fail on a full storage (it is also attached to the "test-builds"
+      # draft pre-release below, redesign/TEST_BUILDS.md), a release build (release-linux.yml,
+      # which downloads these) does
       - uses: actions/upload-artifact@v4
+        continue-on-error: ${{ github.workflow == 'build-linux' }}
         with:
           name: cone-linux-x86_64
           path: linux/*.tar.xz
           compression-level: 0
-          retention-days: 14
+          retention-days: 1
 
       # the AppImage of the same folder (Decision (Sticky) 2): runtime + SquashFS image
       - name: AppImage
@@ -225,8 +236,21 @@ jobs:
       # the AppImage itself (an artifact zip drops the files' execute permission: after
       # unzipping, chmod +x the AppImage)
       - uses: actions/upload-artifact@v4
+        continue-on-error: ${{ github.workflow == 'build-linux' }}
         with:
           name: cone-linux-appimage-x86_64
           path: linux/*.AppImage
           compression-level: 0
-          retention-days: 14
+          retention-days: 1
+
+      # test builds only (a run of this workflow itself, not release-linux.yml calling it): the
+      # tarball and the AppImage on the "test-builds" draft pre-release, replacing this branch's
+      # previous ones; also after a failed AppImage step, with the tarball alone
+      - name: Attach to the test-builds draft pre-release
+        if: ${{ !cancelled() && github.workflow == 'build-linux' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/test-build-assets.sh \
+            "linux-x86_64.tar.xz=$(ls linux/*-linux-x86_64.tar.xz 2>/dev/null | head -n 1)" \
+            "x86_64.AppImage=$(ls linux/*.AppImage 2>/dev/null | head -n 1)"

@@ -41,6 +41,8 @@
 #include <vlc_dialog.h>
 #include <vlc_stream.h>
 #include <vlc_messages.h>
+#include <vlc_configuration.h>
+#include <vlc_text_style.h>
 
 #include <ass/ass.h>
 
@@ -59,6 +61,12 @@ static int  Create ( vlc_object_t * );
 static void Destroy( vlc_object_t * );
 
 #define TEXT_SSA_FONTSDIR   N_("Additional fonts directory")
+#define TEXT_SSA_IGNORE_STYLING N_("Ignore styling in ASS and SSA subtitles")
+#define LONGTEXT_SSA_IGNORE_STYLING N_("Draw the dialogue of ASS and SSA " \
+    "subtitles with your subtitle style (font, size, colors, outline and " \
+    "shadow) instead of the styles in the file. Lines the file places " \
+    "itself, such as signs, keep their own look. Applies from the next " \
+    "file or subtitle track.")
 
 vlc_module_begin ()
     set_shortname( N_("Subtitles (advanced)"))
@@ -67,6 +75,9 @@ vlc_module_begin ()
     set_subcategory( SUBCAT_INPUT_SCODEC )
     set_callbacks( Create, Destroy )
     add_string("ssa-fontsdir", NULL, TEXT_SSA_FONTSDIR, NULL)
+    add_bool("ssa-ignore-styling", false, TEXT_SSA_IGNORE_STYLING,
+             LONGTEXT_SSA_IGNORE_STYLING)
+        change_safe()
 vlc_module_end ()
 
 /*****************************************************************************
@@ -116,6 +127,8 @@ typedef struct
 static int BuildRegions( rectangle_t *p_region, int i_max_region, ASS_Image *p_img_list, int i_width, int i_height );
 static void RegionDraw( subpicture_region_t *p_region, ASS_Image *p_img );
 static void OldEngineClunkyRollInfoPatch( decoder_t *p_dec, ASS_Track * );
+static void SetUserStyleOverride( decoder_t *p_dec, ASS_Renderer *,
+                                  const char *psz_default_family );
 
 //#define DEBUG_REGION
 
@@ -270,6 +283,9 @@ static int Create( vlc_object_t *p_this )
     /* Anything else than NONE will break smooth img updating.
        TODO: List and force ASS_HINTING_LIGHT for known problematic fonts */
     ass_set_hinting( p_renderer, ASS_HINTING_NONE );
+
+    if( var_InheritBool( p_dec, "ssa-ignore-styling" ) )
+        SetUserStyleOverride( p_dec, p_renderer, psz_family );
 
     /* Add a track */
     ASS_Track *p_track = p_sys->p_track = ass_new_track( p_sys->p_library );
@@ -761,6 +777,89 @@ static void RegionDraw( subpicture_region_t *p_region, ASS_Image *p_img )
     for( int x = 0; x < p->i_visible_pitch; x++ )
         *P(x/4,0) = *P(x/4,p->i_visible_lines-1) = 0xff000000;
 #undef P
+#endif
+}
+
+#if LIBASS_VERSION >= 0x01400000
+/* ASS colors are 0xRRGGBBAA with an inverted alpha (0 is opaque) */
+static uint32_t AssColor( int64_t i_rgb, int64_t i_alpha )
+{
+    const uint32_t i_opacity = VLC_CLIP( i_alpha, 0, 255 );
+    return ( (uint32_t)( i_rgb & 0xFFFFFF ) << 8 ) | ( 255 - i_opacity );
+}
+#endif
+
+/* "ssa-ignore-styling": draw the dialogue events with the user's subtitle
+ * style (the text renderer's style options and the subtitle text scale)
+ * instead of the styles of the script. libass leaves positioned and other
+ * typeset events as they are. */
+static void SetUserStyleOverride( decoder_t *p_dec, ASS_Renderer *p_renderer,
+                                  const char *psz_default_family )
+{
+#if LIBASS_VERSION >= 0x01400000
+    /* the style options belong to the freetype text renderer */
+    if( config_GetType( "freetype-color" ) == 0 )
+    {
+        msg_Warn( p_dec, "no subtitle style options, keeping the script styles" );
+        return;
+    }
+
+    /* a font file path (platforms without font lookup by name) is no family */
+    char *psz_font = var_InheritString( p_dec, "freetype-font" );
+    if( !psz_font || !*psz_font || strpbrk( psz_font, "/\\" ) )
+    {
+        free( psz_font );
+        psz_font = strdup( psz_default_family );
+        if( !psz_font )
+            return;
+    }
+
+    /* libass reads this style as made for a script 288 pixels high and
+     * scales it to the script. VLC's default font size is a share of the
+     * video height; the outline and the shadow are shares of the font size,
+     * as in the freetype text renderer. ASS has no shadow angle. */
+    const double f_font_size = 288. * STYLE_DEFAULT_REL_FONT_SIZE / 100.;
+    const int64_t i_outline = var_InheritInteger( p_dec, "freetype-outline-thickness" );
+    const float f_shadow = var_InheritFloat( p_dec, "freetype-shadow-distance" );
+    const uint32_t i_text_color =
+        AssColor( var_InheritInteger( p_dec, "freetype-color" ),
+                  var_InheritInteger( p_dec, "freetype-opacity" ) );
+    char psz_name[] = "Default";
+
+    ASS_Style style = {
+        .Name = psz_name,
+        .FontName = psz_font,
+        .FontSize = f_font_size,
+        .PrimaryColour = i_text_color,
+        .SecondaryColour = i_text_color,
+        .OutlineColour =
+            AssColor( var_InheritInteger( p_dec, "freetype-outline-color" ),
+                      var_InheritInteger( p_dec, "freetype-outline-opacity" ) ),
+        .BackColour =
+            AssColor( var_InheritInteger( p_dec, "freetype-shadow-color" ),
+                      var_InheritInteger( p_dec, "freetype-shadow-opacity" ) ),
+        .Bold = var_InheritBool( p_dec, "freetype-bold" ),
+        .ScaleX = 1.,
+        .ScaleY = 1.,
+        .BorderStyle = 1,
+        .Outline = f_font_size * VLC_CLIP( i_outline / 100., 0., .5 ),
+        .Shadow = f_font_size * VLC_CLIP( f_shadow, 0.f, 1.f ),
+        .Alignment = VALIGN_SUB | HALIGN_CENTER,
+    };
+
+    /* libass copies the strings */
+    ass_set_selective_style_override( p_renderer, &style );
+    ass_set_selective_style_override_enabled( p_renderer,
+        ASS_OVERRIDE_BIT_STYLE | ASS_OVERRIDE_BIT_SELECTIVE_FONT_SCALE );
+    free( psz_font );
+
+    /* the subtitle text scale, on the dialogue events only */
+    const int64_t i_scale = var_InheritInteger( p_dec, "sub-text-scale" );
+    ass_set_font_scale( p_renderer, VLC_CLIP( i_scale, 10, 500 ) / 100. );
+#else
+    VLC_UNUSED( p_renderer );
+    VLC_UNUSED( psz_default_family );
+    msg_Warn( p_dec, "libass is too old to override the script styles" );
 #endif
 }
 

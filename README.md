@@ -1,104 +1,174 @@
-# Cone
+<p align="center">
+  <img src="docs/images/cone-player-icon.png" width="96" height="96" alt="Cone Player">
+</p>
 
-**Juxtopposed's redesign on a real VLC 4 fork, not a skin.** Cone is VLC media player with her whole redesign on top: new player, sidebars, library, settings and onboarding. Same VLC engine underneath, under its own name so it can sit next to your regular VLC.
+<h1 align="center">Cone Player</h1>
 
-![Cone: the library with the mini player (Figma design by Juxtopposed)](docs/images/hero.png)
+<p align="center"><strong>Juxtopposed's VLC redesign, built on a real VLC 4 fork. Not a skin.</strong></p>
 
-<sub>This image is a frame of Juxtopposed's Figma design, which Cone implements. Screenshots of Cone itself are below.</sub>
+<p align="center">
+  <a href="https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/latest"><img src="https://img.shields.io/github/v/release/StickyGonzales/vlc-redesign-juxtopposed?label=release&color=D37918" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4" alt="Windows 10 and 11">
+  <a href="COPYING"><img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License: GPL-2.0 or later"></a>
+  <a href="https://creativecommons.org/licenses/by/4.0/"><img src="https://img.shields.io/badge/design-CC%20BY%204.0-lightgrey" alt="Design: CC BY 4.0"></a>
+  <img src="https://img.shields.io/badge/status-active-2ea44f" alt="Status: active">
+</p>
+
+<p align="center"><img src="docs/images/hero.png" alt="Cone Player playing Sintel"></p>
+
+| | |
+|---|---|
+| <img src="docs/images/cone-player.png" alt="The player with subtitles"><br>**Player.** Thin floating bars that get out of the way, and subtitles that stay readable. | <img src="docs/images/cone-settings-sidebar.png" alt="The settings sidebar"><br>**Settings sidebar.** Video, audio, subtitles and playback, next to the picture. |
+| <img src="docs/images/cone-library.png" alt="The library and mini player"><br>**Library.** Home, videos, music and playlists, with a mini player. | <img src="docs/images/cone-settings.png" alt="Settings"><br>**Settings.** Plain categories instead of VLC's preference tree. |
+
+## Why Cone Player
+
+- **A real VLC 4 fork.** VLC's own engine, codecs and formats, with a new interface. Not a skin or a theme.
+- **Her whole design, checked.** Every screen and control is built from Juxtopposed's Figma file and video, and compared with them side by side on Windows.
+- **Fixes bugs in VLC 4 itself**, such as the time jumping ahead after a pause at a changed speed, a start-up freeze with some MKV files and a crash when picking the Spectrometer visualizer.
+- **Installs next to your VLC** instead of replacing it: its own settings, its own file associations, and your VLC stays as it is.
+
+## Themes and accent colors
+
+Dark and light themes and nine accent colors: the default orange and eight more. Pick them in the first start or in Settings > General; the whole player changes at once.
+
+<p align="center"><img src="docs/images/cone-accents.png" alt="Cone Player in its nine accent colors"></p>
 
 ## Download
 
-**[Cone 0.2.0 beta](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.2.0-beta)** is out.
+Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/latest) (Windows 10 and 11, 64-bit). What changed: [release notes](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/latest).
 
-1. Grab `Cone-0.2.0-beta-win64.zip` (Windows 10 / 11, 64-bit).
-2. Unzip it anywhere and run `Cone.exe`. Nothing gets installed.
-3. Your settings stay in the `portable` folder next to `Cone.exe`. Your installed VLC isn't touched, and both can run side by side. Coming from 0.1.0 beta? Copy its `portable` folder over to keep your settings.
-
-It's a beta built on VLC 4 development code, so expect rough edges. Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues).
-
-**Linux:** coming. An installer for Windows comes later too.
-
-## What's in it
-
-- The redesigned player: floating control bar and top bar, seek bar with thumbnails, cone volume up to 200 %, tracks popup with embedded and external tracks
-- A settings sidebar (Playback, Video, Audio, Subtitles) with per-show presets, sleep timer, speed and subtitle sync sliders
-- Queue, bookmarks (Ctrl+B) and chapters, the new main and right-click menus, Keyboard Shortcuts and the new Settings
-- A library with Home, Videos, Music, Playlists and Recent, a music view and a mini player
-- Customize Player and profiles, onboarding, dark and light themes, 9 accent colors
-- Subtitles move above the control bar while it shows
-- Its own settings folder, its own entry in the Windows volume mixer and its own single-instance name, so it never takes over an installed VLC
-
-## New in 0.2.0 beta
-
-- A subtitle timeline on the seek bar: every subtitle line is a block you can drag to sync subtitles by eye
-- On-screen messages show the key you pressed ("Pressed C")
-- An "Additional command line options" field in Settings
-- Equalizer preset icons drawn like the Figma design, and a link button for the crop filter
-- "All Cone Settings" (VLC's full preferences) in Cone's look, and no file name over the video when a film starts
-- Fixes: a video freeze with subtitles, Cone sometimes not quitting (a stuck quit now ends by itself after 5 s, with your settings saved), Escape closes the library, and the beta 1 issues with the About dialog, the light theme line and external subtitle names
-
-Full list: [release notes](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v0.2.0-beta).
-
-## Known issues (0.2.0 beta)
-
-- With an audio visualizer on (for example Spectrometer), switching the audio track turns the visualizer window white.
-- Picking the Spectrometer visualizer can, rarely, crash Cone.
-- After a long session with many seeks and track switches on some HEVC (x265) videos, quitting can take 5 seconds. Settings and the resume position are kept.
-- Pressing M (mute) shows only the mute icon, without "Pressed M".
-- Rarely, Windows logs a background error after closing Settings. Nothing visible happens.
-- New Cone texts are in English in every language for now.
-- The app says 0.2.0; "beta" is only in the file names.
-- The installer comes later; this beta is the portable zip only.
-- The portable zip doesn't show up in Windows' "Open with" menu yet. Drag files onto Cone, or use "Choose another app" and browse to `Cone.exe`.
-- Like VLC, Cone keeps a small graphics cache in `%LOCALAPPDATA%\Cone\cache`, even when run from the zip.
-
-## Screenshots
-
-Cone 0.1.0 beta on Windows, with generated test media and the purple accent.
-
-| | |
-|---|---|
-| **Player**<br><img src="docs/images/cone-player.png" alt="Cone player"> | **Settings sidebar**<br><img src="docs/images/cone-settings-sidebar.png" alt="Cone settings sidebar"> |
-| **Library and mini player**<br><img src="docs/images/cone-library.png" alt="Cone library and mini player"> | **Settings**<br><img src="docs/images/cone-settings.png" alt="Cone Settings"> |
-
-### The design being built
-
-Juxtopposed's Figma frames, the source for every size, color and spacing in Cone.
-
-| | |
-|---|---|
-| **Player**<br><img src="docs/images/figma-player.png" alt="Player"> | **Home**<br><img src="docs/images/figma-home.png" alt="Home"> |
-| **Library and mini player**<br><img src="docs/images/figma-library.png" alt="Library and mini player"> | **Compact library**<br><img src="docs/images/figma-sidebar.png" alt="Compact library"> |
-| **Settings**<br><img src="docs/images/figma-settings.png" alt="Settings"> | **Customize Player**<br><img src="docs/images/figma-customize.png" alt="Customize Player"> |
-| **Onboarding**<br><img src="docs/images/figma-onboarding.png" alt="Onboarding"> | **Keyboard Shortcuts**<br><img src="docs/images/figma-shortcuts.png" alt="Keyboard Shortcuts"> |
-| **Light theme**<br><img src="docs/images/figma-light.png" alt="Light theme"> | |
-
-## Cone extras (not part of Juxtopposed's design)
-
-Features Cone adds beyond Juxtopposed's design (in neither her video nor her Figma file) are listed here, each marked as a Cone extra. They are not part of the betas or 1.0: each is built on its own branch and arrives after 1.0, starting with 1.1.
-
-| Cone extra | Status | What it does |
+| Download | File | How |
 |---|---|---|
-| Autoplay next episode ("Up Next") | Planned for 1.1 | When an episode of a show folder ends, an "Up next" card counts down to the next episode. Off / Ask for each show / Always in Settings > Playback; single videos, recordings, clips and music are never treated as shows. Plan and designs: [UP_NEXT_PLAN.md](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/blob/wip/up-next-plan/redesign/UP_NEXT_PLAN.md) (branch wip/up-next-plan) |
+| **Installer** (recommended) | `coneplayer-1.1.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
+| **Portable zip** | `ConePlayer-1.1.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
-## FAQ
+<details>
+<summary>Windows says "Windows protected your PC"</summary>
 
-**Why "Cone" and not VLC?** "VLC" and the traffic cone icon are VideoLAN's trademarks, so this build has its own name and icon. Under the hood it's VLC.
+The files are not code-signed yet, so Windows SmartScreen may warn the first time you run them. Choose **More info**, then **Run anyway**. Each release lists the SHA-256 of both files, so you can check a download with `Get-FileHash` in PowerShell.
 
-**Does it change how media plays?** No. Playback, codecs and the engine are VLC's own; the work is in VLC's Qt interface, plus a few small, separate core changes where a feature needs them.
+</details>
 
-**Does it update itself?** No. New versions show up on the [Releases page](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases).
+## Features
+
+**Player**
+- **Floating bars.** The top bar and the control bar float over the video and hide when the mouse rests. Ctrl+\ hides them on demand.
+- **Seek bar.** Thumbnails while you hover, an optional audio waveform, and the subtitle timeline for timing subtitles by eye.
+- **Cone volume.** A volume slider shaped like the cone, up to 200 %.
+- **Queue, bookmarks and chapters** in one sidebar. Ctrl+B adds a bookmark at once.
+- **On-screen messages** name the key you pressed, so a stray key is easy to spot.
+- **Autoplay next episode** (a Cone extra, not part of Juxtopposed's design). In a show folder an Up Next card counts down to the next episode. Off, ask for each show, or always, in Settings > Playback.
+
+**Subtitles**
+- **Tracks popup** for audio and subtitle tracks, embedded and external.
+- **Add Subtitles** for a whole folder at once, matched to each episode, from your computer or from OpenSubtitles.
+- **Sync sliders** for subtitle delay and speed, and subtitles that move above the control bar while it shows.
+
+**Library**
+- **Home, Videos, Music, Playlists, Network and Recent**, with real thumbnails and watched state.
+- **Mini player** with the queue attached. Drag files from the library into the queue.
+- **Network streams.** Paste an IPTV m3u link and it becomes a playlist.
+- **Pins** in the library sidebar for quick access.
+
+**Settings**
+- **Settings sidebar** with Playback, Video, Audio and Subtitles tabs, including speed, sleep timer, equalizer and audio visualizers.
+- **Per-show presets.** One preset per show keeps its subtitle, audio, video and playback settings.
+- **A new Settings window** with plain categories, search and short explanations behind the info icons.
+- **Dark and light themes** and 9 accent colors, picked during the first start and changed live.
+
+**Customize**
+- **Customize Player.** Drag buttons into, out of and around the bars.
+- **Profiles** keep a layout together with its settings. Switch between them from the main menu.
+
+<details>
+<summary>Keyboard shortcuts</summary>
+
+VLC's default shortcuts all work. The most used ones, and the ones Cone Player adds:
+
+| Key | Action |
+|---|---|
+| Space | Play / pause |
+| F, Esc | Fullscreen, leave fullscreen |
+| Shift / Alt / Ctrl + Left or Right | Jump back or ahead (very short, short, medium) |
+| Ctrl+Up, Ctrl+Down, M | Volume up, down, mute |
+| N, P, S | Next, previous, stop |
+| +, -, = | Faster, slower, normal speed |
+| V, B | Next subtitle track, next audio track |
+| G, H | Subtitle delay down, up |
+| J, K | Audio delay down, up |
+| E | Next frame |
+| Ctrl+B | Add a bookmark (Cone Player) |
+| Ctrl+\ | Hide or show the bars (Cone Player) |
+| Ctrl+O, Ctrl+N | Open a file, open a network stream |
+| Ctrl+P | Settings |
+| Ctrl+Q | Quit |
+
+Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
+
+</details>
+
+<details>
+<summary>FAQ</summary>
+
+**Why "Cone Player" and not VLC?** "VLC" and the traffic cone icon are VideoLAN's trademarks, so this app has its own name and icon. Underneath it's VLC.
+
+**Does it change how media plays?** No. Playback and codecs are VLC's own. The work is in VLC's interface, plus a few small, separate fixes in VLC's core.
+
+**Does it replace my VLC?** No. Both run side by side, each with its own settings. Cone Player never takes a file type away from VLC: you choose in "Open with".
+
+**Does it update itself?** No, but it tells you. Once a day Cone Player asks GitHub for the latest release and shows a small notice when a newer one is out (Settings > General > Check for updates turns it off). New versions are on the [Releases page](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases). A newer installer updates an installed Cone Player and keeps its settings.
+
+**How do I remove it?** Settings > Apps > Cone Player > Uninstall. It asks before deleting your settings. For the zip, delete its folder.
 
 **How do I build it?** Fork this repository, enable Actions and run the **build-windows** workflow with the brand set to `public`. It uses VideoLAN's own Windows toolchain image and build script.
+
+</details>
+
+<details>
+<summary>Known issues (1.1.0)</summary>
+
+- On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
+- Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds now opens in a new window.
+- Pressing M (mute) shows only the mute icon, without "Pressed M".
+- The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. It comes back once it works.
+- Rarely, Windows may log a background error after closing Settings. Nothing visible happens.
+- New Cone Player texts are in English in every language for now.
+- The portable zip doesn't show up in Windows' "Open with" menu. Use the installer for that, or drag files onto Cone Player.
+- Like VLC, Cone Player keeps a small graphics cache in `%LOCALAPPDATA%\Cone\cache`, also when run from the zip.
+
+</details>
+
+<details>
+<summary>Juxtopposed's Figma design</summary>
+
+Cone Player is built from Juxtopposed's [VLC Redesign Figma file](https://www.figma.com/community/file/1691465999134370980/vlc-redesign) and her [video](https://youtu.be/ERFeOgqk324): every size, color and spacing comes from her frames. Two of them:
+
+| | |
+|---|---|
+| **Settings**<br><img src="docs/images/figma-settings.png" alt="Settings in the Figma design"> | **Keyboard Shortcuts**<br><img src="docs/images/figma-shortcuts.png" alt="Keyboard Shortcuts in the Figma design"> |
+
+</details>
+
+## Coming next
+
+- **Linux.** A Linux build follows as its own release.
+- **1.1** brings **Autoplay next episode**, a Cone extra: when an episode of a show folder ends, an "Up next" card counts down to the next one. Cone extras are features beyond Juxtopposed's design, and they are always marked that way.
+
+Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues).
 
 ## Credits
 
 - **Design:** ["VLC Redesign" by Juxtopposed](https://www.figma.com/community/file/1691465999134370980/vlc-redesign) ([video](https://youtu.be/ERFeOgqk324)), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Changes were made to fit it to VLC.
-- **Based on [VLC media player](https://www.videolan.org/vlc/)** by VideoLAN and its contributors. Cone is GPLv2 or later like VLC (libVLC LGPLv2.1 or later), and all its source is here.
+- **Based on [VLC media player](https://www.videolan.org/vlc/)** by VideoLAN and its contributors. Cone Player is GPLv2 or later like VLC (libVLC LGPLv2.1 or later), and all its source is here.
 - **Fonts:** Inter and DM Mono, SIL Open Font License.
+- **Films in the screenshots** (Blender Foundation open movies, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)):
+  - *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org/)
+  - *Big Buck Bunny*, © copyright 2008, Blender Foundation | [www.bigbuckbunny.org](https://peach.blender.org/)
+  - *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org/)
 - **Built by [StickyGonzales](https://github.com/StickyGonzales)** with [Claude](https://claude.ai/code).
 
-Cone is an independent project, not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, VLC media player and VideoLAN are trademarks of the VideoLAN non-profit. Details in [CREDITS.md](CREDITS.md).
+Cone Player is an independent project, not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, VLC media player and VideoLAN are trademarks of the VideoLAN non-profit. Details in [CREDITS.md](CREDITS.md).
 
 ---
 

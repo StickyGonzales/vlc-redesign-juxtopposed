@@ -312,8 +312,13 @@ SettingsRow {
         id: textControl
 
         Widgets.RdTextField {
+            id: textField
+
             // typed text not written to VLC yet (the dialog keeps it from an outside click)
             readonly property bool dirty: activeFocus && text !== String(root.value ?? "")
+            readonly property bool isPassword: root.resolvedKind === "password"
+            // a password or key (the OpenSubtitles API key) shown in plain text by the eye button
+            property bool revealed: false
 
             implicitWidth: root.controlWidth
             implicitHeight: root.controlHeight
@@ -323,12 +328,88 @@ SettingsRow {
             color: VLCStyle.palette.rdFgA2
             placeholderTextColor: VLCStyle.palette.rdFgA2
             text: String(root.value ?? "")
+            // a text an accessibility tool writes is applied too (onEditingFinished)
+            committedText: String(root.value ?? "")
             placeholderText: root.placeholder
-            echoMode: root.resolvedKind === "password" ? TextInput.Password : TextInput.Normal
+            echoMode: isPassword && !revealed ? TextInput.Password : TextInput.Normal
+            // room for the "Saved" note and the eye button at the field's right end
+            rightPadding: isPassword ? VLCStyle.dp(12) + passwordTools.width : VLCStyle.dp(20)
             Accessible.name: root.text
             onEditingFinished: {
-                if (text !== String(root.value ?? ""))
+                if (text !== String(root.value ?? "")) {
                     root.apply(text)
+                    // the value is stored at once: say so, a key field gives no other sign
+                    if (isPassword && text !== "")
+                        savedNote.restart()
+                }
+            }
+
+            Row {
+                id: passwordTools
+
+                visible: textField.isPassword
+                anchors.right: parent.right
+                anchors.rightMargin: VLCStyle.dp(8)
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: VLCStyle.dp(6)
+
+                Row {
+                    // shown for a moment after the value was stored, hidden again while typing
+                    visible: savedNote.running && !textField.dirty
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: VLCStyle.dp(2)
+
+                    Widgets.RdIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "check_state-active"
+                        size: VLCStyle.dp(16)
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Saved")
+                        color: VLCStyle.palette.rdFgA2
+                        font.family: VLCStyle.rd_fontFamily
+                        font.pixelSize: VLCStyle.dp(12)
+                        Accessible.role: Accessible.StaticText
+                        Accessible.name: qsTr("%1 saved").arg(root.text)
+                    }
+                }
+
+                Item {
+                    id: eyeButton
+
+                    width: VLCStyle.dp(24)
+                    height: VLCStyle.dp(24)
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: textField.revealed ? qsTr("Hide %1").arg(root.text)
+                                                        : qsTr("Show %1").arg(root.text)
+                    Accessible.onPressAction: textField.revealed = !textField.revealed
+
+                    Widgets.RdIcon {
+                        anchors.centerIn: parent
+                        name: textField.revealed ? "eye_state-off" : "eye"
+                        size: VLCStyle.dp(20)
+                        color: eyeMouse.containsMouse ? VLCStyle.palette.rdFg2 : VLCStyle.palette.rdFgA2
+                    }
+
+                    MouseArea {
+                        id: eyeMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: textField.revealed = !textField.revealed
+                    }
+                }
+            }
+
+            Timer {
+                id: savedNote
+
+                interval: 2500
             }
         }
     }
@@ -351,6 +432,7 @@ SettingsRow {
                 color: VLCStyle.palette.rdFgA2
                 placeholderTextColor: VLCStyle.palette.rdFgA2
                 text: String(root.value ?? "")
+                committedText: String(root.value ?? "")
                 placeholderText: root.placeholder
                 Accessible.name: root.text
                 onEditingFinished: {

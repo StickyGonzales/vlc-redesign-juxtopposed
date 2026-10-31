@@ -54,6 +54,9 @@ const QSet<QByteArray>& liveOptions()
         "qt-accent-color", "qt-fs-sensitivity", "qt-pin-controls", "qt-fs-opacity",
         "qt-smooth-scrolling", "qt-max-volume", "qt-safe-area", "qt-video-double-click",
         "qt-cast-discovery", "qt-seek-thumbnails", "qt-seek-waveform", "qt-seek-subtitle-timeline",
+        // RdUpNext reads them again on RdProfiles::applied
+        "qt-autoplay-next", "qt-autoplay-countdown", "qt-autoplay-card-point",
+        "qt-autoplay-still-watching",
         "mouse-hide-timeout",
         // read for every on-screen message (src/video_output/video_text.c, Cone build)
         "osd-duration",
@@ -211,6 +214,21 @@ void putValue(const Option& option, const QVariant& value)
     }
 }
 
+// the Subtitle Duration Factor is hidden for 1.0 (RdEffects::resetSavedSubtitleDurationFactor): a
+// profile saved with it does not turn the "subsdelay" filter on again
+QVariant withoutSubtitleDuration(const Option& option, const QVariant& value)
+{
+    if (option.name == "subsdelay-factor")
+        return QVariant(0.);
+    if (option.name == "sub-filter")
+    {
+        QStringList chain = value.toString().split(QLatin1Char(':'), Qt::SkipEmptyParts);
+        chain.removeAll(QStringLiteral("subsdelay"));
+        return QVariant(chain.join(QLatin1Char(':')));
+    }
+    return value;
+}
+
 } // namespace
 
 // the options that differ from VLC's defaults, as VLC has them now
@@ -233,7 +251,8 @@ RdProfileSettings::ApplyResult RdProfileSettings::write(libvlc_int_t* libvlc, co
     for (const Option& option : catalog())
     {
         const QString key = QString::fromLatin1(option.name);
-        const QVariant wanted = target.contains(key) ? typed(option, target.value(key)) : option.fallback;
+        const QVariant wanted = withoutSubtitleDuration(option,
+            target.contains(key) ? typed(option, target.value(key)) : option.fallback);
         if (currentValue(option) == wanted)
             continue;
         putValue(option, wanted);

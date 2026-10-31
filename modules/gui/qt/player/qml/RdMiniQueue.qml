@@ -25,6 +25,7 @@ import QtQuick
 
 import VLC.MainInterface
 import VLC.Style
+import VLC.Player
 import VLC.Playlist
 import VLC.Dialogs
 import VLC.Widgets as Widgets
@@ -183,7 +184,12 @@ Item {
 
             width: list.width
             title: model.title ?? ""
-            detail: model.duration && model.duration.valid() ? model.duration.formatHMS() : ""
+            // Cone extra (Decision 71): the autoplay item is labelled (UP_NEXT_PLAN.md rows 64, 86)
+            readonly property bool _autoplay: RdUpNext.queuedUrl.toString() !== ""
+                                             && String(model.url) === RdUpNext.queuedUrl.toString()
+            readonly property string _duration: model.duration && model.duration.valid() ? model.duration.formatHMS() : ""
+            detail: _autoplay ? (_duration !== "" ? qsTr("Autoplay · %1").arg(_duration) : qsTr("Autoplay"))
+                              : _duration
             current: !!model.isCurrent
             selected: root.selectedIndex === index || drag.active
             // Figma: the 32 px move icon wrapper and a gap of 10 before the title

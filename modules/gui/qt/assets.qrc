@@ -163,6 +163,8 @@
         <file alias="eq_eq-soft.svg">pixmaps/redesign/eq_eq-soft.svg</file>
         <file alias="eq_eq-techno.svg">pixmaps/redesign/eq_eq-techno.svg</file>
         <file alias="expand-sidebar.svg">pixmaps/redesign/expand-sidebar.svg</file>
+        <file alias="eye.svg">pixmaps/redesign/eye.svg</file>
+        <file alias="eye_state-off.svg">pixmaps/redesign/eye_state-off.svg</file>
         <file alias="favorite.svg">pixmaps/redesign/favorite.svg</file>
         <file alias="favorite_state-active.svg">pixmaps/redesign/favorite_state-active.svg</file>
         <file alias="favorite_two-tone-yes.svg">pixmaps/redesign/favorite_two-tone-yes.svg</file>
