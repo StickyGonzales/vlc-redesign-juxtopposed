@@ -8,7 +8,9 @@
 #
 # Layout of the folder:
 #   cone (or vlc)       launcher: portable mode, then usr/bin/vlc
-#   cone.desktop, cone.png, README-LINUX.txt
+#   cone-player.desktop, cone-player.png, install.sh, uninstall.sh (Cone; vlc.desktop and vlc.png
+#                       for the vlc profile), README-LINUX.txt
+#   usr/share/applications, usr/share/icons/hicolor   Cone Player's menu entry and icons
 #   usr/                the installed tree (bin, lib, lib/vlc/plugins, share)
 #   usr/lib/deps/       the image's libraries VLC and Qt need, except the ones every desktop
 #                       system has (C library, graphics drivers, X11, sound servers, fonts)
@@ -170,8 +172,57 @@ exec "\$HERE/usr/bin/vlc" "\$@"
 EOF
 chmod +x "$DIR/$NAME"
 
-cp "$ICON_SRC" "$DIR/$NAME.png"
-cat > "$DIR/$NAME.desktop" <<EOF
+# the file types offered in "Open with": VLC's own list (share/vlc.desktop.mimetypes) without its
+# URL schemes, plus the subtitle formats; listing them never makes the app the default one
+MIMETYPES=$(sed -e 's/#.*//' -e 's/[[:space:]]//g' /build/share/vlc.desktop.mimetypes \
+            | grep -v -e '^$' -e '^x-scheme-handler/' | tr '\n' ';')
+SUBTITLE_TYPES='application/x-subrip;text/x-ssa;text/vtt;text/x-microdvd;text/x-mpsub;text/x-subviewer;application/x-sami;'
+
+if [ "$NAME" = cone ]; then
+    # Cone Player's desktop integration: the desktop ID cone-player (VLC's is vlc), the same entry
+    # and icons for the folder (install.sh), the AppImage (its integration tools read the top-level
+    # .desktop and icon, and usr/share inside) and the .deb (linux-deb.sh)
+    ID=cone-player
+    BRAND_ICONS=/build/modules/gui/qt/pixmaps/brand/public
+    for size in 16 24 32 48 64 128 256; do
+        mkdir -p "$U/share/icons/hicolor/${size}x${size}/apps"
+        cp "$BRAND_ICONS/cone-$size.png" "$U/share/icons/hicolor/${size}x${size}/apps/$ID.png"
+    done
+    # VLC's own menu entries, icons and AppStream file would show VLC in the AppImage's and the
+    # .deb's integration
+    rm -rf "$U/share/applications" "$U/share/metainfo"
+    find "$U/share/icons" -name 'vlc*' -delete
+    mkdir -p "$U/share/applications"
+    {
+        echo '[Desktop Entry]'
+        echo 'Type=Application'
+        echo 'Version=1.0'
+        echo 'Name=Cone Player'
+        echo 'GenericName=Media Player'
+        echo 'Comment=Play your videos and music (based on VLC media player)'
+        echo "Exec=$NAME %U"
+        echo "Icon=$ID"
+        echo 'Terminal=false'
+        echo 'Categories=AudioVideo;Player;Video;Audio;'
+        echo 'Keywords=Player;Video;Audio;Music;Movie;Subtitles;'
+        echo 'StartupNotify=true'
+        echo "StartupWMClass=$NAME"
+        echo "MimeType=$MIMETYPES$SUBTITLE_TYPES"
+    } > "$U/share/applications/$ID.desktop"
+    cp "$U/share/applications/$ID.desktop" "$DIR/$ID.desktop"
+    cp "$BRAND_ICONS/cone-256.png" "$DIR/$ID.png"
+    cp /build/extras/package/linux/install.sh /build/extras/package/linux/uninstall.sh "$DIR/"
+    chmod +x "$DIR/install.sh" "$DIR/uninstall.sh"
+    INSTALL_TEXT='Install for your user (no sudo): ./install.sh
+  The program goes to ~/.local/share/cone-player, the command to ~/.local/bin/cone-player, and
+  Cone Player appears in the applications menu and in "Open with" for video, audio and subtitle
+  files. It does not make itself the default player. Run install.sh again from a newer folder to
+  update.
+Remove it: ~/.local/share/cone-player/uninstall.sh  (add --purge to also delete the settings,
+  media library and caches)'
+else
+    cp "$ICON_SRC" "$DIR/$NAME.png"
+    cat > "$DIR/$NAME.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=$TITLE
@@ -184,6 +235,9 @@ Categories=AudioVideo;Player;Video;Audio;
 StartupWMClass=$NAME
 MimeType=video/mp4;video/x-matroska;video/webm;video/quicktime;video/x-msvideo;video/mpeg;audio/mpeg;audio/flac;audio/ogg;audio/x-wav;audio/mp4;
 EOF
+    INSTALL_TEXT="Menu entry (optional): copy $NAME.desktop to ~/.local/share/applications/ and change its
+Exec= line to the full path of \"$NAME\"; copy $NAME.png to ~/.local/share/icons/hicolor/256x256/apps/."
+fi
 
 cat > "$DIR/README-LINUX.txt" <<EOF
 $TITLE $VERSION for Linux (x86_64), portable
@@ -196,8 +250,7 @@ X11 libraries (libX11, libxcb) and PulseAudio, PipeWire or ALSA.
 Settings: ~/.config/$( [ "$NAME" = cone ] && echo Cone || echo vlc ), media library and data: ~/.local/share/$( [ "$NAME" = cone ] && echo Cone || echo vlc ), caches: ~/.cache/$( [ "$NAME" = cone ] && echo Cone || echo vlc ).
 Portable mode: create a folder named "portable" next to "$NAME"; everything then stays in it.
 
-Menu entry (optional): copy $NAME.desktop to ~/.local/share/applications/ and change its
-Exec= line to the full path of "$NAME"; copy $NAME.png to ~/.local/share/icons/hicolor/256x256/apps/.
+$INSTALL_TEXT
 EOF
 
 cd "$OUT"
