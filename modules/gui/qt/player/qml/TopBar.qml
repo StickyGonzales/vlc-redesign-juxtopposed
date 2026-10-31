@@ -184,22 +184,27 @@ FocusScope{
 
                 Navigation.parentItem: root
 
-                onClicked: contextMenu.popupBelow(menuSelector, visualFocus)
+                onClicked: { console.warn("DIAGMENU clicked visible=" + root.visible + " opacity=" + root.opacity); contextMenu.popupBelow(menuSelector, visualFocus) }
+                onPressed: console.warn("DIAGMENU pressed")
+                onReleased: console.warn("DIAGMENU released")
+                onCanceled: console.warn("DIAGMENU canceled")
 
-                onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
+                onHoveredChanged: { console.warn("DIAGMENU hovered=" + hovered); root.requestLockUnlockAutoHide(hovered) }
 
                 // redesign: the main menu in the Figma style (W4.9)
                 Menus.RdMainMenu {
                     id: contextMenu
 
-                    onAboutToShow: root.requestLockUnlockAutoHide(true)
-                    onAboutToHide: root.requestLockUnlockAutoHide(false)
+                    onAboutToShow: { console.warn("DIAGMENU aboutToShow"); root.requestLockUnlockAutoHide(true) }
+                    onAboutToHide: { console.warn("DIAGMENU aboutToHide"); console.trace(); root.requestLockUnlockAutoHide(false) }
+                    onOpened: console.warn("DIAGMENU opened")
                 }
 
                 Connections {
                     target: root
 
                     function onForceUnlock() {
+                        console.warn("DIAGMENU forceUnlock")
                         contextMenu.close()
                     }
                 }

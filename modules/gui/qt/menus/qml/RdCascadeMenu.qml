@@ -271,6 +271,7 @@ T.Popup {
 
         // like a native menu, the menu closes when the application loses the focus
         function onStateChanged() {
+            console.warn("DIAGMENU appState=" + Qt.application.state)
             if (Qt.application.state !== Qt.ApplicationActive)
                 root.close()
         }
@@ -281,6 +282,7 @@ T.Popup {
         target: DialogsProvider
 
         function onDialogOpening() {
+            console.warn("DIAGMENU dialogOpening")
             root.close()
         }
     }
@@ -314,6 +316,7 @@ T.Popup {
             // the player may have hidden the cursor over the video
             cursorShape: Qt.ArrowCursor
             onPressed: (mouse) => {
+                console.warn("DIAGMENU outside press at " + mouse.x + "," + mouse.y)
                 root.close()
                 if (mouse.button === Qt.RightButton)
                     root.rightPressedOutside()
