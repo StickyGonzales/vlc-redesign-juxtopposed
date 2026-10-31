@@ -236,6 +236,24 @@ jobs:
           compression-level: 0
           retention-days: 1
 
+      # Cone Player's Debian package (amd64) of the same folder: /opt/cone-player, the command
+      # cone-player, its menu entry and icons, next to a normal VLC (linux-deb.sh)
+      - name: Debian package
+        if: ${{ env.VLC_BRAND == 'public' }}
+        run: |
+          TARBALL=$(ls linux/*-linux-x86_64.tar.xz | head -n 1)
+          .github/scripts/linux-deb.sh "${TARBALL%.tar.xz}" linux
+          echo "Debian package: $(basename linux/*.deb) ($(du -h linux/*.deb | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.VLC_BRAND == 'public' }}
+        continue-on-error: ${{ github.workflow == 'build-linux' }}
+        with:
+          name: cone-linux-deb-amd64
+          path: linux/*.deb
+          compression-level: 0
+          retention-days: 1
+
       # test builds only (a run of this workflow itself, not release-linux.yml calling it): the
       # tarball and the AppImage on the "test-builds" draft pre-release, replacing this branch's
       # previous ones; also after a failed AppImage step, with the tarball alone
@@ -246,4 +264,5 @@ jobs:
         run: |
           .github/scripts/test-build-assets.sh \
             "linux-x86_64.tar.xz=$(ls linux/*-linux-x86_64.tar.xz 2>/dev/null | head -n 1)" \
-            "x86_64.AppImage=$(ls linux/*.AppImage 2>/dev/null | head -n 1)"
+            "x86_64.AppImage=$(ls linux/*.AppImage 2>/dev/null | head -n 1)" \
+            "amd64.deb=$(ls linux/*.deb 2>/dev/null | head -n 1)"

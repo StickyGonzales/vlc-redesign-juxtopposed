@@ -1,6 +1,7 @@
 # Cone for Linux release (redesign/LINUX_NOTES.md, Decision (Sticky) 3): Linux ships as its own
 # beta, apart from the Windows release (release.yml, vX.Y.Z tags). Builds the public profile with
-# build-linux.yml and prepares a GitHub Release with the AppImage, the portable tarball and their
+# build-linux.yml and prepares a GitHub Release with the AppImage, the portable tarball, the Debian
+# package (amd64) and their
 # SHA-256 checksums as a DRAFT pre-release: nothing is public until someone presses Publish on the
 # draft in the Releases page.
 #
@@ -71,11 +72,16 @@ jobs:
           name: cone-linux-x86_64
           path: out
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-deb-amd64
+          path: out
+
       - name: Checksums and notes
         run: |
           cd out
           chmod +x ./*.AppImage
-          sha256sum ./*.AppImage ./*.tar.xz | sed 's| \./| |' > SHA256SUMS.txt
+          sha256sum ./*.AppImage ./*.tar.xz ./*.deb | sed 's| \./| |' > SHA256SUMS.txt
           cat SHA256SUMS.txt
           VERSION=${GITHUB_REF_NAME#linux-v}
           # the oldest C library it runs with, from the package's readme
@@ -84,7 +90,8 @@ jobs:
             echo "Cone $VERSION for Linux (x86_64). Experimental: based on the development version of VLC media player (VLC 4)."
             echo
             echo "- **AppImage**: download, \`chmod +x\` it, start it. A folder named \`portable\` next to it keeps settings and library there."
-            echo "- **Portable tarball**: unpack, start \`./cone\`; \`README-LINUX.txt\` inside explains the rest."
+            echo "- **Portable tarball**: unpack, start \`./cone\`, or run \`./install.sh\` to install it for your user (no sudo; menu entry, icons, \"Open with\"). \`README-LINUX.txt\` inside explains the rest."
+            echo "- **Debian / Ubuntu package** (amd64): \`sudo apt install ./cone-player_*_amd64.deb\`. Installs into \`/opt/cone-player\` with the command \`cone-player\`, next to VLC without replacing it; remove it with \`sudo apt remove cone-player\`."
             echo "- Needs a 64-bit Linux desktop (X11 or Wayland) with ${GLIBC:-a recent glibc} or newer."
             echo "- Cone keeps its own settings (\`~/.config/Cone\`, \`~/.local/share/Cone\`, \`~/.cache/Cone\`) and runs next to an installed VLC."
             echo
@@ -105,7 +112,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "$GITHUB_REF_NAME" out/*.AppImage out/*.tar.xz out/SHA256SUMS.txt \
+          gh release create "$GITHUB_REF_NAME" out/*.AppImage out/*.tar.xz out/*.deb out/SHA256SUMS.txt \
             --draft --prerelease --verify-tag \
             --title "Cone ${GITHUB_REF_NAME#linux-v} for Linux" --notes-file out/notes.md
           echo "Draft: $(gh release view "$GITHUB_REF_NAME" --json url --jq .url)" | tee -a "$GITHUB_STEP_SUMMARY"
