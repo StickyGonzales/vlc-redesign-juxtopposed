@@ -53,9 +53,10 @@
   !define PRODUCT_DOC_URL "${PRODUCT_WEB_SITE}#readme"
   !define PRODUCT_WEBSITE_LINK "${PRODUCT_NAME} Website"
   ; Decision 58: "Cone Player 1.0.0" in the window title and on the welcome and finish pages,
-  ; "based on VLC <version>" under every page; the Windows Apps list shows "Cone Player" and its
-  ; version
-  !define PRODUCT_BRANDING_TEXT "based on VLC ${VLC_VERSION}"
+  ; "based on VLC <major version>" under every page ("based on VLC 4", not the engine's
+  ; development version "4.0.0-dev"); the Windows Apps list shows "Cone Player" and its version
+  !searchparse "${VLC_VERSION}" "" VLC_VERSION_MAJOR "."
+  !define PRODUCT_BRANDING_TEXT "based on VLC ${VLC_VERSION_MAJOR}"
   !define PRODUCT_TITLE "${PRODUCT_NAME} ${PRODUCT_VERSION}"
   !define PRODUCT_DISPLAY_NAME "${PRODUCT_NAME}"
 !endif
@@ -83,6 +84,12 @@ Var PreviousInstallDir
 Var UninstallLog
 
 Var 32bitUninstaller
+!if "${PRODUCT_PROGID}" != "VLC"
+; redesign: brand layer, the welcome page's "Create a desktop shortcut" and "Customize" boxes
+Var WelcomeShortcut
+Var WelcomeCustomize
+Var CustomizeInstall
+!endif
 Var 32bitPath
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -148,6 +155,10 @@ RequestExecutionLevel admin
 ; Installer pages
   ; Welcome page
     !define MUI_PAGE_CUSTOMFUNCTION_PRE PageFastUpdatePre
+!if "${PRODUCT_PROGID}" != "VLC"
+    !define MUI_PAGE_CUSTOMFUNCTION_SHOW PageWelcomeShow
+    !define MUI_PAGE_CUSTOMFUNCTION_LEAVE PageWelcomeLeave
+!endif
     !define MUI_WELCOMEPAGE_TITLE_3LINES
     !insertmacro MUI_PAGE_WELCOME
   ; Optional update page
@@ -812,6 +823,16 @@ Function PageFastUpdatePre
 FunctionEnd
 
 Function PageComponentsPre
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, the components page shows only when asked for: "Customize" on the
+  ; welcome page, or "change settings" on the reinstall page; otherwise the install is
+  ; "Recommended" (the desktop shortcut is chosen on the welcome page)
+  ${If} $ReinstallType == 2
+  ${OrIf} $CustomizeInstall == ${BST_CHECKED}
+    Return
+  ${EndIf}
+  Abort
+!endif
   ClearErrors
   ReadRegStr $0 ${MEMENTO_REGISTRY_ROOT} `${MEMENTO_REGISTRY_KEY}` MementoSectionUsed
   ; Backward compatibility:
@@ -824,6 +845,46 @@ Function PageComponentsPre
 
 done:
 FunctionEnd
+
+!if "${PRODUCT_PROGID}" != "VLC"
+; redesign: brand layer, two boxes under the welcome text: "Create a desktop shortcut" (the
+; Desktop shortcut component, ticked by default) and "Customize the installation" (shows the
+; components page); in English for every language, like the file types' description
+Function PageWelcomeShow
+  ; the welcome text label runs to the bottom of the page: a shorter copy leaves room
+  ${NSD_GetText} $mui.WelcomePage.Text $0
+  ShowWindow $mui.WelcomePage.Text ${SW_HIDE}
+  ${NSD_CreateLabel} 120u 55u 195u 90u "$0"
+  Pop $1
+  SetCtlColors $1 "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+
+  ${NSD_CreateCheckbox} 120u 150u 195u 12u "Create a desktop shortcut"
+  Pop $WelcomeShortcut
+  SetCtlColors $WelcomeShortcut "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+  SectionGetFlags ${SEC02b} $0
+  IntOp $0 $0 & ${SF_SELECTED}
+  ${If} $0 == ${SF_SELECTED}
+    ${NSD_Check} $WelcomeShortcut
+  ${EndIf}
+
+  ${NSD_CreateCheckbox} 120u 165u 195u 12u "Customize the installation (choose components)"
+  Pop $WelcomeCustomize
+  SetCtlColors $WelcomeCustomize "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+  ${If} $CustomizeInstall == ${BST_CHECKED}
+    ${NSD_Check} $WelcomeCustomize
+  ${EndIf}
+FunctionEnd
+
+Function PageWelcomeLeave
+  ${NSD_GetState} $WelcomeShortcut $0
+  ${If} $0 == ${BST_CHECKED}
+    !insertmacro SelectSection ${SEC02b}
+  ${Else}
+    !insertmacro UnselectSection ${SEC02b}
+  ${EndIf}
+  ${NSD_GetState} $WelcomeCustomize $CustomizeInstall
+FunctionEnd
+!endif
 
 Function PageDirectoryPre
   ${If} $ReinstallType != ""

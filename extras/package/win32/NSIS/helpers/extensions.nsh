@@ -153,7 +153,14 @@ FunctionEnd
 
 !macro AssociateExtensionUnselectedSection TYPE EXT
   ${MementoUnselectedSection} ${EXT} SEC_EXT_${TYPE}_${EXT}
+!if "${PRODUCT_PROGID}" != "VLC"
+    ; redesign: brand layer, unticked by default, so not part of "Recommended" (install type 1):
+    ; the default ticks then are exactly "Recommended", and the components page no longer opens
+    ; on "Custom"; "Full" (3) ticks them
+    SectionIn 3
+!else
     SectionIn 1 3
+!endif
     Push $R0
     StrCpy $R0 ${EXT}
     Call AssociateExtension
