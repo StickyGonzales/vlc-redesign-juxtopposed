@@ -215,7 +215,7 @@ class Session:
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
         a = [exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
-             '--aout=adummy', '--file-logging', f'--logfile={self.log}', '--log-verbose=2',
+             '--aout=adummy', '--input-repeat=50', '--file-logging', f'--logfile={self.log}', '--log-verbose=2',
              '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
              f'--sub-file={os.path.join(MEDIA, "test.srt")}', *extra, video]
         log('start ' + ' '.join(a))
