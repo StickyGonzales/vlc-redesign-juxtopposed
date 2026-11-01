@@ -79,7 +79,7 @@ Checked on the released **linux-v1.1.2-beta2** tarball in the sandbox (Ubuntu 24
 | #90 update notice | build-linux #66 (41337560768) | green, Linux smoke checks all pass |
 | #91 open in running window | build-linux #67 (41337699213) | green, smoke checks all pass, the new hand-off and Exec checks included |
 | #92 window identity | build-linux #68 (41337784857) | green, smoke checks all pass, the new identity check included |
-| #93 driver folders | build-linux #69 (41338595984) | (running when this was written) |
+| #93 driver folders | build-linux #69 (41338595984) | green, smoke checks all pass, the new driver-folder check included |
 
 ## 6. Pictures
 
