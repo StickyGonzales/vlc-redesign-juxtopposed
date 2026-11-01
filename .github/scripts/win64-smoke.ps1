@@ -208,13 +208,14 @@ function Show-Bars($hwnd) {
 # ---------------------------------------------------------------- one Cone session
 
 # starts Cone with a video and its subtitles; returns the process, its window and its log file
+$script:ExtraArgs = @()
 function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag) {
     $log = Join-Path $Out "cone-$tag.log"
     Remove-Item $log -ErrorAction SilentlyContinue
     $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--input-repeat=50',
            '--file-logging', "--logfile=`"$log`"", '--log-verbose=2',
            '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet',
-           "--sub-file=`"$subs`"", "`"$video`"")
+           "--sub-file=`"$subs`"", "`"$video`"") + $script:ExtraArgs
     Log "start $exe $($a -join ' ')"
     $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
     return @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
@@ -508,6 +509,23 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+
+    # diagnostic only: the fullscreen "..." click with each Windows compositor forced
+    foreach ($c in 'dcomp', 'platform', 'win7') {
+        $script:ExtraArgs = @("--qt-compositor=$c")
+        $video = Join-Path $Media 'test-h264.mp4'
+        $s = Start-Cone $zipExe.FullName $video (Join-Path $Media 'test.srt') "comp-$c"
+        try {
+            if (Check-Window $s) {
+                Start-Sleep -Seconds 2
+                Check-MenuClick $s | Out-Null
+                Check-FsMenuClick $s | Out-Null
+            }
+        } finally { Stop-Cone $s }
+        $sel = Select-String -Path (Join-Path $Out "cone-comp-$c.log") -Pattern 'compositor|Direct Composition' | Select-Object -First 3
+        Log "compositor $c log: $($sel -join ' / ')"
+    }
+    $script:ExtraArgs = @()
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall
