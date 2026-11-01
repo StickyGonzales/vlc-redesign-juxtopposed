@@ -21,8 +21,8 @@
 // Figma "continue" toast: 52 high pill, radius 16, BG/A3, Inter 16 FG/2, a primary button),
 // centered over the bottom of the window, 18 px above the control bar (above the window's
 // bottom in the library). "Download" opens the release page in the browser, "Later" (and Escape
-// on its buttons) hides it until the next day. It never takes the keyboard focus from the
-// player, nor its Escape (fullscreen).
+// on its buttons) hides it until the next day, "Skip this version" never offers that version
+// again. It never takes the keyboard focus from the player, nor its Escape (fullscreen).
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Templates as T
@@ -116,13 +116,26 @@ T.Popup {
 
         Widgets.RdButton {
             Layout.alignment: Qt.AlignVCenter
-            Layout.rightMargin: VLCStyle.dp(10, VLCStyle.scale)
 
             style: Widgets.RdButton.Style.Plain
             text: qsTr("Later")
             focusPolicy: Qt.TabFocus
 
             onClicked: RdUpdateCheck.later()
+            Keys.onEscapePressed: RdUpdateCheck.later()
+        }
+
+        // never offers this exact version again; a newer one still shows (Settings > General
+        // can undo it)
+        Widgets.RdButton {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.rightMargin: VLCStyle.dp(10, VLCStyle.scale)
+
+            style: Widgets.RdButton.Style.Plain
+            text: qsTr("Skip this version")
+            focusPolicy: Qt.TabFocus
+
+            onClicked: RdUpdateCheck.skipVersion()
             Keys.onEscapePressed: RdUpdateCheck.later()
         }
     }

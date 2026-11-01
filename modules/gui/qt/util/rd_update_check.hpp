@@ -34,8 +34,10 @@
  * on and the first-run privacy question has been answered, it asks GitHub for the latest release
  * of Cone (one GET of the releases API, no data beyond the request itself). A newer version
  * than this build's shows the notice (RdUpdateNotice.qml): "Download" opens the release page in
- * the browser, "Later" hides it until the next day. Nothing is downloaded or installed.
- * "Check now" (Settings > General) asks at once and reports the result.
+ * the browser, "Later" hides it until the next day, "Skip this version" never offers that exact
+ * version again (a newer one still shows; Settings > General can undo the skip). Nothing is
+ * downloaded or installed. "Check now" (Settings > General) asks at once and reports the result,
+ * a skipped version included.
  */
 class RdUpdateCheck : public QObject
 {
@@ -46,6 +48,7 @@ class RdUpdateCheck : public QObject
     Q_PROPERTY(bool noticeVisible READ noticeVisible NOTIFY noticeVisibleChanged FINAL)
     Q_PROPERTY(QString latestVersion READ latestVersion NOTIFY statusChanged FINAL)
     Q_PROPERTY(QString currentVersion READ currentVersion CONSTANT FINAL)
+    Q_PROPERTY(QString skippedVersion READ skippedVersion NOTIFY skippedVersionChanged FINAL)
 
 public:
     enum Status
@@ -66,16 +69,22 @@ public:
     bool noticeVisible() const { return m_noticeVisible; }
     QString latestVersion() const { return m_latestVersion; }
     QString currentVersion() const;
+    QString skippedVersion() const { return m_skippedVersion; }
 
     // "Check now": asks at once, whatever the option and the day
     Q_INVOKABLE void checkNow();
-    // the notice's buttons: both hide it until the next day; download opens the release page
+    // the notice's buttons: download and later hide it until the next day, download also opens
+    // the release page; skipVersion hides it for the offered version for good
     Q_INVOKABLE void download();
     Q_INVOKABLE void later();
+    Q_INVOKABLE void skipVersion();
+    // Settings > General: the skipped version is offered again
+    Q_INVOKABLE void undoSkip();
 
 signals:
     void statusChanged();
     void noticeVisibleChanged();
+    void skippedVersionChanged();
 
 private:
     struct Job;
@@ -85,6 +94,7 @@ private:
     void onReply(int httpStatus, const QByteArray& body);
     void setStatus(Status status);
     void setNoticeVisible(bool visible);
+    void setSkippedVersion(const QString& version);
     void dismissForToday();
 
     qt_intf_t* m_intf;
@@ -92,6 +102,8 @@ private:
     bool m_noticeVisible = false;
     QString m_latestVersion;
     QString m_releasePage;
+    // "Skip this version": never offered at the start again (kept in the settings)
+    QString m_skippedVersion;
     // the running request answers "Check now": its result is reported
     bool m_explicitCheck = false;
     std::shared_ptr<Job> m_job;
