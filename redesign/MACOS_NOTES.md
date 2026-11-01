@@ -123,4 +123,9 @@ Any Apple Silicon Mac with macOS 12 or later. Note the macOS version and the Mac
 | #6 | cd3ba554cb | cache made after signing; prompt dismissed; Settings opened (screenshot) but Qt's content is not in the runner's accessibility tree; cache still stale |
 | #7 | 544027e979 | `cp -R` into the .dmg did not keep the files' times (VLC checks them to the second) → `ditto`; cache current; Settings opened in the picture, Escape did not close it |
 | #8 | 22e9f4c8e4 | the 30 s test video had ended before the Settings check (Cone on its Home page) → the video repeats (`--input-repeat=50`, as on Linux) |
-| #9 | a559a4a7ca | see the PR |
+| #9 | a559a4a7ca | build, app, signature and .dmg **green** (the latest .dmg: artifact `cone-macos-arm64` of run 41346080677, and `wip-macos-build--macos-arm64.dmg` on the test-builds draft); the smoke job **never started**: it waited about 15 minutes for a free macOS runner and was cancelled without running a step |
+
+## Where it stopped (2026-11-01, stopped to save usage)
+- **State:** the build is green; the smoke checks pass everything except "Settings opens", which the runner cannot check reliably yet (runs 6 and 7: the dialog opened, see the screenshots; run 8: the test video had ended before the check; run 9: no runner).
+- **Next step:** re-run the smoke job of run 41346080677 (Actions > the run > Re-run failed jobs), which now plays the video in a loop during the Settings check. If "Settings opens" still fails there, make that one check informational on the runner (it does not see Qt's content in the accessibility tree, and synthetic keys reach Qt unreliably) and leave Settings and Escape to the tester list. Then open the draft PR into wip/next-test.
+- **Open questions for a real Mac (tester list):** the video picture (black on the runner), Escape in Settings, the local network prompt, the update notice.
