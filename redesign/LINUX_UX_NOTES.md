@@ -44,17 +44,18 @@ Checked on the released **linux-v1.1.2-beta2** tarball in the sandbox (Ubuntu 24
 ### #90 Update notice on Linux
 - `rd_update_check.cpp`: on Linux the check reads `/releases?per_page=50` and offers the highest version among the `linux-` tags (pre-releases included, drafts never listed without a token, of equal versions the newest). Download opens that release's page; the fallback page is the releases list. A list without a Linux release counts as "no release yet". Windows still reads `/releases/latest`.
 - Unit test (the helpers compiled with Qt 6 against the real release list): `linux-v1.1.2-beta2` is offered; a newer Windows `v1.2.0` is ignored; a newer `linux-v1.2.0-beta1` wins; a draft is skipped; no Linux release gives none.
-- Real build: see section 5.
+- Real build (build-linux #66's tarball, Cone 0.1.0, `CONE_UPDATE_CHECK_TEST_FILE` with a release list in GitHub's format, a stand-in `xdg-open` recording the URL): the real list of releases: "update check: 1.1.2 is available", the notice shows (Download / Later / Skip this version), **Download opens `.../releases/tag/linux-v1.1.2-beta2`**; a list with `linux-v1.2.0-beta1` added: "1.2.0 is available"; a list with Windows releases only: "no release yet", no notice.
 - Known limit: the app knows only X.Y.Z of its version, not the label, so 1.1.2-beta2 is not offered 1.1.2 (same X.Y.Z). A new Linux release has always had a new X.Y.Z so far.
 
 ### #91 Files go to the running window
 - Menu entries (tarball and AppImage, `install.sh`, the .deb) run `cone --started-from-file %U`, which turns on VLC's own hand-off (one-instance-when-started-from-file) over Cone's D-Bus name.
 - Core, `src/posix/specific.c`, Cone build only: after handing the files over, the second start calls MPRIS Raise, so the running window comes forward, also with no file (clicking the menu entry while Cone runs did nothing before).
-- New smoke checks: the Exec line of the installed entries; a second start that must exit while the running window plays its file.
+- New smoke checks: the Exec line of the installed entries; a second start that must exit while the running window plays its file. On build-linux #67: "a second start opens the file in the running window: the second start ended after 0.0 s; the running window plays handoff.mp4"; the Exec checks of install.sh and the .deb pass.
 
 ### #92 Window identity
 - `BRAND_DESKTOP_FILE` (Qt desktop file name = Wayland app id, and the X11 WM_CLASS) `cone-player`; `StartupWMClass=cone-player`; MPRIS `DesktopEntry` `cone-player`, `Identity` "Cone Player"; the sound mixer's app id and icon (`bin/vlc.c`) `cone-player`.
 - New smoke check: the window class matches StartupWMClass, MPRIS reports cone-player / Cone Player.
+- Real build (build-linux #68's tarball) in the sandbox: WM_CLASS `"cone-player", "Cone"`, StartupWMClass `cone-player`, MPRIS DesktopEntry `cone-player` and Identity "Cone Player", and on Wayland `set_app_id("cone-player")` (beta 2: `cone` everywhere).
 
 ### #93 Hardware decoding driver folders
 - The bundled libva and libvdpau come from the Debian build image and only search `/usr/lib/x86_64-linux-gnu`. The launcher now sets `LIBVA_DRIVERS_PATH` to every driver folder that exists (Debian/Ubuntu first, then `/usr/lib64/dri`, `dri-freeworld`, `dri-nonfree`, `/usr/lib/dri`, `/run/opengl-driver/lib/dri`), and `VDPAU_DRIVER_PATH` when the Debian folder is missing. A value the user set is kept.
@@ -75,10 +76,10 @@ Checked on the released **linux-v1.1.2-beta2** tarball in the sandbox (Ubuntu 24
 
 | PR | Run | Result |
 |---|---|---|
-| #90 update notice | build-linux (filled in below) | |
-| #91 open in running window | build-linux | |
-| #92 window identity | build-linux | |
-| #93 driver folders | build-linux | |
+| #90 update notice | build-linux #66 (41337560768) | green, Linux smoke checks all pass |
+| #91 open in running window | build-linux #67 (41337699213) | green, smoke checks all pass, the new hand-off and Exec checks included |
+| #92 window identity | build-linux #68 (41337784857) | green, smoke checks all pass, the new identity check included |
+| #93 driver folders | build-linux #69 (41338595984) | (running when this was written) |
 
 ## 6. Pictures
 
