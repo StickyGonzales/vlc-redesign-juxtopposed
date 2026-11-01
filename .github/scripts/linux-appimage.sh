@@ -11,12 +11,19 @@ DIR=${1:?usage: $0 <folder> <runtime> <output>}
 RUNTIME=${2:?}
 OUT=${3:?}
 
-NAME=$(basename "$(find "$DIR" -maxdepth 1 -name '*.desktop' | head -n 1)" .desktop)
-[ -n "$NAME" ] && [ -x "$DIR/$NAME" ] || { echo "no launcher or desktop file in $DIR" >&2; exit 1; }
+# the top-level .desktop names the launcher (Exec=) and the icon (Icon=, a .png next to it); an
+# AppImage's integration tools (AppImageLauncher, appimaged, Gear Lever) read both, and Cone's
+# usr/share/applications and usr/share/icons inside
+DESKTOP=$(find "$DIR" -maxdepth 1 -name '*.desktop' | head -n 1)
+[ -n "$DESKTOP" ] || { echo "no desktop file in $DIR" >&2; exit 1; }
+NAME=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' "$DESKTOP" | head -n 1)
+ICON=$(sed -n 's/^Icon=//p' "$DESKTOP" | head -n 1)
+[ -n "$NAME" ] && [ -x "$DIR/$NAME" ] || { echo "no launcher \"$NAME\" for $DESKTOP" >&2; exit 1; }
+[ -f "$DIR/$ICON.png" ] || { echo "no icon $ICON.png in $DIR" >&2; exit 1; }
 
 # AppRun: the launcher; .DirIcon: the icon file managers show for the AppImage
 ln -sfn "$NAME" "$DIR/AppRun"
-ln -sfn "$NAME.png" "$DIR/.DirIcon"
+ln -sfn "$ICON.png" "$DIR/.DirIcon"
 
 SQUASHFS=$(mktemp -u).squashfs
 mksquashfs "$DIR" "$SQUASHFS" -root-owned -noappend -comp zstd -Xcompression-level 19 -no-progress -quiet
