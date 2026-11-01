@@ -1,0 +1,231 @@
+# Experimental macOS build of Cone (redesign/MACOS_NOTES.md): "Cone Player.app" in a .dmg,
+# signed ad hoc (no Apple developer account), never released by this workflow. Apple Silicon on
+# every run; Intel only when asked (the "intel" input of a manual run).
+#   Actions > build-macos > Run workflow (once this file is on the default branch), or a push to
+#   wip/macos-build (commits with [skip ci] do not start it)
+# VLC's own macOS steps (extras/package/macosx/build.sh) with VideoLAN's prebuilt contribs, the
+# Qt interface (Cone's redesign) instead of VLC's native macOS one, and Qt from Qt's own macOS
+# binaries (VLC's contribs build no Qt for macOS): .github/scripts/macos-build.sh,
+# macos-package.sh. Then the smoke checks on a second runner (smoke-macos.yml).
+name: build-macos
+
+on:
+  push:
+    branches: [wip/macos-build]
+    paths-ignore:
+      - 'redesign/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      intel:
+        description: 'Also build for Intel Macs (x86_64)'
+        type: boolean
+        default: false
+      package-suffix:
+        description: 'Package name suffix (e.g. -beta)'
+        type: string
+        default: ''
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # the Qt VLC bundles on Windows (contrib/src/qt), from Qt's own macOS binaries
+  QT_VERSION: 6.8.3
+  AQT_VERSION: 3.2.1
+
+jobs:
+  arches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          INTEL: ${{ inputs.intel }}
+        run: |
+          ARM='{"arch":"arm64","host":"aarch64","runner":"macos-15","ci":"macos-arm64"}'
+          INTEL_ROW='{"arch":"x86_64","host":"x86_64","runner":"macos-15-intel","ci":"macos-x86_64"}'
+          if [ "$INTEL" = true ]; then M="[$ARM,$INTEL_ROW]"; else M="[$ARM]"; fi
+          echo "matrix={\"include\":$M}" >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: arches
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.arches.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    permissions:
+      contents: write
+    env:
+      HOST_ARCH: ${{ matrix.host }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # get-contrib-sha.sh needs the history
+
+      # VideoLAN's prebuilt contribs of this source, as build-windows.yml finds its own
+      - name: Contrib SHA and prebuilt URL
+        id: sha
+        env:
+          CI_ARCH: ${{ matrix.ci }}
+        run: |
+          SHA=$(extras/ci/get-contrib-sha.sh "$CI_ARCH")
+          UPSTREAM=$(git merge-base HEAD origin/master)
+          if ! git merge-base --is-ancestor "$SHA" "$UPSTREAM" \
+             && [ -z "$(git rev-list -1 HEAD ^"$UPSTREAM" -- contrib extras/tools extras/ci)" ]; then
+            SHA=$(git rev-list -1 "$UPSTREAM" -- contrib extras/tools extras/ci extras/package/macosx)
+            echo "Contrib key from upstream: $SHA"
+          fi
+          URL="https://artifacts.videolan.org/vlc/$CI_ARCH/vlc-contrib-$HOST_ARCH-apple-darwin19-${SHA}.tar.zst"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          if extras/ci/check-url.sh "$URL"; then
+            echo "url=$URL" >> "$GITHUB_OUTPUT"
+            echo "Prebuilt contribs: $URL" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::no prebuilt contribs for $SHA: they are built from source"
+          fi
+
+      - name: Cache contribs built from source
+        if: steps.sha.outputs.url == ''
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-macos/contrib/${{ matrix.host }}-apple-darwin19
+            contrib/tarballs
+          key: contrib-macos-${{ matrix.arch }}-${{ steps.sha.outputs.sha }}
+
+      - name: Cache extra tools
+        uses: actions/cache@v4
+        with:
+          path: extras/tools/build
+          key: tools-macos-${{ matrix.arch }}-${{ steps.sha.outputs.sha }}
+
+      - name: Cache Qt
+        id: qt-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/Qt
+          key: qt-macos-${{ env.QT_VERSION }}-aqt${{ env.AQT_VERSION }}
+
+      # Qt's macOS binaries (universal: arm64 and x86_64) with Qt Shader Tools (qsb, the
+      # interface's shaders); Qt Quick, Qt SVG and the Qt Quick Controls are in the base install
+      - name: Qt ${{ env.QT_VERSION }}
+        if: steps.qt-cache.outputs.cache-hit != 'true'
+        run: |
+          python3 -m pip install --disable-pip-version-check -q --break-system-packages "aqtinstall==$AQT_VERSION" \
+            || python3 -m pip install --disable-pip-version-check -q "aqtinstall==$AQT_VERSION"
+          python3 -m aqt list-qt mac desktop --modules "$QT_VERSION" clang_64
+          python3 -m aqt install-qt mac desktop "$QT_VERSION" clang_64 -m qtshadertools -O "$RUNNER_TEMP/Qt"
+
+      - name: Qt path
+        run: |
+          QT_ROOT="$RUNNER_TEMP/Qt/$QT_VERSION/macos"
+          ls "$QT_ROOT/bin/qmake" "$QT_ROOT/bin/qsb" "$QT_ROOT/bin/macdeployqt"
+          echo "QT_ROOT=$QT_ROOT" >> "$GITHUB_ENV"
+
+      # one compiler cache per branch and architecture, a branch without one starts from redesign's
+      - name: Compiler cache keys
+        id: cachekey
+        run: |
+          {
+            echo "key=ccache-macos-${{ matrix.arch }}:$GITHUB_REF_NAME:$GITHUB_SHA"
+            echo "restore<<EOF"
+            echo "ccache-macos-${{ matrix.arch }}:$GITHUB_REF_NAME:"
+            echo "ccache-macos-${{ matrix.arch }}:redesign:"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore compiler cache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ${{ steps.cachekey.outputs.key }}
+          restore-keys: ${{ steps.cachekey.outputs.restore }}
+
+      # without it the build still runs, only without the compiler cache
+      - name: ccache
+        continue-on-error: true
+        run: |
+          brew install ccache
+          mkdir -p .ccache-bin
+          ln -sf "$(command -v ccache)" .ccache-bin/cc
+          ln -sf "$(command -v ccache)" .ccache-bin/c++
+          echo "VLC_CCACHE_BINS_PATH=$PWD/.ccache-bin" >> "$GITHUB_ENV"
+          {
+            echo "CCACHE_DIR=$PWD/.ccache"
+            echo "CCACHE_BASEDIR=$PWD"
+            echo "CCACHE_COMPILERCHECK=content"
+            echo "CCACHE_MAXSIZE=2G"
+          } >> "$GITHUB_ENV"
+
+      # a vX.Y.Z / macos-vX.Y.Z tag sets Cone's version (default 0.1.0); the package-suffix input
+      # goes into the file name only
+      - name: Version
+        id: version
+        env:
+          PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
+        run: |
+          V=""
+          case "$GITHUB_REF" in refs/tags/macos-v*) V="${GITHUB_REF_NAME#macos-v}" ;; refs/tags/v*) V="${GITHUB_REF_NAME#v}" ;; esac
+          echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || V=""
+          S="$PACKAGE_SUFFIX_INPUT"
+          echo "$S" | grep -Eq '^(-[A-Za-z0-9.]+)?$' || S=""
+          echo "brand-version=$V" >> "$GITHUB_OUTPUT"
+          echo "package-suffix=$S" >> "$GITHUB_OUTPUT"
+          echo "Version: ${V:-0.1.0 (default)}, package suffix: '$S'"
+
+      - name: Build
+        env:
+          VLC_PREBUILT_CONTRIBS_URL: ${{ steps.sha.outputs.url }}
+          BRAND_VERSION: ${{ steps.version.outputs.brand-version }}
+        run: .github/scripts/macos-build.sh build
+
+      - name: Compiler cache result
+        if: ${{ !cancelled() }}
+        run: |
+          SUMMARY=$(cat .ccache-summary.txt 2>/dev/null || echo "ccache: no statistics")
+          echo "$SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"; echo "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"; echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save compiler cache
+        if: ${{ !cancelled() && steps.ccache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ${{ steps.cachekey.outputs.key }}
+
+      - name: Cone Player.app and .dmg
+        env:
+          BRAND_VERSION: ${{ steps.version.outputs.brand-version }}
+          BRAND_PACKAGE_SUFFIX: ${{ steps.version.outputs.package-suffix }}
+        run: |
+          .github/scripts/macos-build.sh package
+          echo "dmg: $(basename macos/*.dmg) ($(du -h macos/*.dmg | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: cone-macos-${{ matrix.arch }}
+          path: macos/*.dmg
+          compression-level: 0
+          retention-days: 1
+
+      # test builds: the .dmg on the "test-builds" draft pre-release (redesign/TEST_BUILDS.md), never
+      # published
+      - name: Attach to the test-builds draft pre-release
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/test-build-assets.sh \
+            "macos-${{ matrix.arch }}.dmg=$(ls macos/*.dmg 2>/dev/null | head -n 1)"
+
+  # the smoke checks of the Apple Silicon .dmg on a second, clean runner (smoke-macos.yml)
+  smoke:
+    needs: macos
+    uses: ./.github/workflows/smoke-macos.yml

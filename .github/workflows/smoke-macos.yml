@@ -1,0 +1,81 @@
+# Smoke checks of the experimental Cone macOS build (Apple Silicon .dmg) on a clean GitHub macOS
+# runner, after every macOS build (build-macos.yml calls it); redesign/MACOS_NOTES.md. The checks:
+# .github/scripts/macos-smoke.py. The runner has a real desktop session; sound goes to VLC's dummy
+# audio output: no picture quality or sound checks.
+name: smoke-macos
+
+on:
+  workflow_call:
+
+jobs:
+  # the same test media as the Windows and Linux checks (smoke-media.sh), from the same cache
+  smoke-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Cached test media
+        id: media-cache
+        uses: actions/cache@v4
+        with:
+          path: smoke-media
+          key: cone-smoke-media-${{ hashFiles('.github/scripts/smoke-media.sh') }}
+      - uses: actions/setup-python@v5
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        with:
+          python-version: '3.12'
+      - name: Generate the test media
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --disable-pip-version-check -q imageio-ffmpeg==0.6.0
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" \
+            .github/scripts/smoke-media.sh smoke-media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-macos-smoke-media
+          path: smoke-media/
+          retention-days: 1
+
+  smoke:
+    needs: smoke-media
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-macos-arm64
+          path: smoke-in/dmg
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-macos-smoke-media
+          path: smoke-in/media
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test tools
+        run: |
+          python -m pip install --disable-pip-version-check -q \
+            pyobjc-framework-Quartz==11.1 pyobjc-framework-Cocoa==11.1 \
+            pyobjc-framework-ApplicationServices==11.1 pillow==11.3.0
+          ls -la smoke-in/*
+
+      - name: Smoke checks
+        run: |
+          python -I .github/scripts/macos-smoke.py \
+            --dmg "$(ls smoke-in/dmg/*.dmg | head -n 1)" \
+            --media smoke-in/media --out smoke-out
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          name: cone-macos-smoke-results
+          path: smoke-out/
+          retention-days: 1
