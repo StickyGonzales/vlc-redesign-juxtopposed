@@ -570,12 +570,23 @@ FocusScope {
                         }
                     }
 
+                    // the pointer hides with the bars while the video plays; in the Cone build
+                    // it stays while a player panel, the "..." menu or a dialog is open (they
+                    // keep the bars too) and while the Up Next card shows
+                    // (redesign/FIX_CURSOR_HIDE_NOTES.md). Only the topmost item with a cursor
+                    // under the pointer sets it: the items above the video leave it unset
+                    // (panelDismissArea below)
                     Binding on cursorShape {
                         when: Player.playingState === Player.PLAYING_STATE_PLAYING
                             && playerToolbarVisibilityFSM.started
                             && !playerToolbarVisibilityFSM.isVisible
                             && !interactiveAutoHideTimer.running
                             && !rootPlayer._mouseNearTop && !rootPlayer._mouseNearBottom
+                            && (!Brand.isPublic
+                                || (RdPanels.current === ""
+                                    && RdPanels.modalCount === 0
+                                    && !playerMenu.shown
+                                    && !upNextCard.shown))
                         value: Qt.BlankCursor
                     }
 
@@ -1378,6 +1389,12 @@ FocusScope {
 
         enabled: RdPanels.current !== "" || dismissClickGuard.running || pressed
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        // Cone build: no cursor of its own. A MouseArea sets the arrow by default, and Qt takes
+        // the cursor of the topmost item under the pointer that has one, disabled or not, so this
+        // one over the whole player kept the video's hidden cursor (Qt.BlankCursor) from ever
+        // showing: the pointer never hid during playback since 0.1.0 (538627909e,
+        // redesign/FIX_CURSOR_HIDE_NOTES.md)
+        cursorShape: Brand.isPublic ? undefined : Qt.ArrowCursor
 
         onPressed: {
             if (RdPanels.current === "")
