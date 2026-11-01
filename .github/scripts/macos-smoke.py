@@ -21,9 +21,9 @@ import tempfile
 import time
 
 import Quartz
-from AppKit import NSApplicationActivateIgnoringOtherApps, NSRunningApplication
+from AppKit import NSApplicationActivateIgnoringOtherApps, NSRunningApplication, NSWorkspace
 from ApplicationServices import (AXIsProcessTrusted, AXUIElementCopyAttributeValue,
-                                 AXUIElementCreateApplication)
+                                 AXUIElementCreateApplication, AXUIElementPerformAction)
 from PIL import Image, ImageChops, ImageStat
 
 ap = argparse.ArgumentParser()
@@ -141,6 +141,48 @@ def ax_names(pid, limit=4000):
     return names
 
 
+def dismiss_prompts():
+    """presses "Don't Allow" on macOS's own prompts (the local network one VLC's network
+    discovery brings up holds the keyboard): the names of the apps whose prompt was dismissed"""
+    done = []
+    if not AXIsProcessTrusted():
+        return done
+    for app in NSWorkspace.sharedWorkspace().runningApplications():
+        stack = [AXUIElementCreateApplication(app.processIdentifier())]
+        seen = 0
+        while stack and seen < 400:
+            el = stack.pop()
+            seen += 1
+            err, role = AXUIElementCopyAttributeValue(el, 'AXRole', None)
+            err2, title = AXUIElementCopyAttributeValue(el, 'AXTitle', None)
+            if err == 0 and role == 'AXButton' and err2 == 0 and title in ("Don't Allow", 'Don’t Allow'):
+                AXUIElementPerformAction(el, 'AXPress')
+                done.append(str(app.localizedName()))
+                break
+            err, kids = AXUIElementCopyAttributeValue(el, 'AXChildren', None)
+            if err == 0 and kids:
+                stack.extend(kids)
+    return done
+
+
+def click(x, y):
+    for kind in (Quartz.kCGEventLeftMouseDown, Quartz.kCGEventLeftMouseUp):
+        ev = Quartz.CGEventCreateMouseEvent(None, kind, (x, y), Quartz.kCGMouseButtonLeft)
+        Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev)
+        time.sleep(0.05)
+
+
+def picture_colour(path, box):
+    """how colourful the middle of the video area is: the mean of each pixel's spread between its
+    red, green and blue (the test pattern's colour bars score far above 40; black or grey is 0)"""
+    im = Image.open(path).convert('RGB')
+    scale = im.size[0] / Quartz.CGDisplayBounds(Quartz.CGMainDisplayID()).size.width
+    x, y, w, h = [int(v * scale) for v in box]
+    crop = im.crop((x + w // 4, y + h // 4, x + w * 3 // 4, y + h * 3 // 4)).resize((64, 36))
+    px = list(crop.getdata())
+    return sum(max(p) - min(p) for p in px) / len(px)
+
+
 def region_diff(a, b, box):
     """mean difference of two screenshots inside box (x, y, w, h, in points; Retina doubles)"""
     ia, ib = Image.open(a).convert('L'), Image.open(b).convert('L')
@@ -185,7 +227,7 @@ def rc_number(cmd):
 # ------------------------------------------------------------------ Cone sessions
 
 class Session:
-    def __init__(self, exe, video, tag):
+    def __init__(self, exe, video, tag, extra=()):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
@@ -193,7 +235,7 @@ class Session:
         a = [exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
              '--aout=adummy', '--file-logging', f'--logfile={self.log}', '--log-verbose=2',
              '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
-             f'--sub-file={os.path.join(MEDIA, "test.srt")}', video]
+             f'--sub-file={os.path.join(MEDIA, "test.srt")}', *extra, video]
         log('start ' + ' '.join(a))
         self.err = open(os.path.join(OUT, f'cone-{tag}-stderr.txt'), 'w')
         self.proc = subprocess.Popen(a, stdout=self.err, stderr=subprocess.STDOUT,
@@ -269,7 +311,16 @@ def check_settings(s):
     trusted = bool(AXIsProcessTrusted())
 
     def body():
+        prompts = dismiss_prompts()
+        if prompts:
+            log('dismissed a system prompt of: ' + ', '.join(prompts))
+            time.sleep(1)
         s.focus()
+        # Qt's shortcuts need Cone's window to be the key window (Cmd+Q, the app menu's, does
+        # not): a click on the empty middle of the top bar gives it the keyboard, and pauses nothing
+        _, x, y, w, h = s.win
+        click(x + w * 0.55, y + 14)
+        time.sleep(0.5)
         before = shot(f'{s.tag}-settings-before')
         key(KEY_P, command=True)
         if trusted:
@@ -277,7 +328,10 @@ def check_settings(s):
             while 'Search settings' not in ax_names(s.proc.pid):
                 if time.time() > end:
                     shot(f'{s.tag}-settings-fail')
-                    raise CheckFailed('Cmd+P: no Settings dialog ("Search settings") within 8 s')
+                    with open(os.path.join(OUT, f'{s.tag}-ax-names.txt'), 'w') as f:
+                        f.write('\n'.join(sorted(ax_names(s.proc.pid))))
+                    raise CheckFailed('Cmd+P: no Settings dialog ("Search settings") within 8 s '
+                                      f'(the accessibility names: {s.tag}-ax-names.txt)')
                 time.sleep(0.4)
             shot(f'{s.tag}-settings')
             key(KEY_ESCAPE)
@@ -349,7 +403,9 @@ def session(exe, codec, full):
             return
         time.sleep(2)
         s.focus()
-        shot(f'{tag}-start')
+        start = shot(f'{tag}-start')
+        note(f'{tag}: picture (information)', f'colour {picture_colour(start, s.win[1:]):.0f} in the middle '
+             'of the video (the test pattern: far above 40; black: 0)')
         check_time(s)
         if full:
             check_subtitle(s)
@@ -432,6 +488,25 @@ note('app: Gatekeeper (expected: rejected, unsigned)',
 EXE = os.path.join(APP, 'Contents', 'MacOS', APP_NAME)
 session(EXE, 'h264', True)
 session(EXE, 'hevc', False)
+
+
+# information only: the same H.264 file decoded in software (no VideoToolbox), to tell a
+# hardware decoding / display problem of the runner's virtual GPU from one of Cone's
+def software_picture():
+    s = Session(EXE, os.path.join(MEDIA, 'test-h264.mp4'), 'h264-sw', ('--avcodec-hw=none', '--codec=avcodec,none'))
+    try:
+        s.window()
+        time.sleep(4)
+        path = shot('h264-sw-start')
+        note('h264, software decoding: picture (information)',
+             f'colour {picture_colour(path, s.win[1:]):.0f} in the middle of the video')
+    except Exception as e:  # noqa: BLE001 (information only)
+        note('h264, software decoding: picture (information)', f'not measured: {e}')
+    finally:
+        s.stop()
+
+
+software_picture()
 
 
 def own_settings():

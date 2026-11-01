@@ -91,6 +91,7 @@ cat > "$C/Info.plist" <<EOF
     <key>NSHighResolutionCapable</key><true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSLocalNetworkUsageDescription</key><string>Cone Player looks for media servers and devices on your network (UPnP, Bonjour) for its Network view.</string>
 </dict>
 </plist>
 EOF
@@ -125,16 +126,6 @@ if otool -L "$C/Frameworks/plugins/libqt_plugin.dylib" "$C/MacOS/vlc-qt-check" |
     exit 1
 fi
 
-# --- plugin cache ---------------------------------------------------------------------------------
-# the installed generator (bin/vlc-cache-gen in the build folder is libtool's wrapper script);
-# it loads libvlccore from the install, as make install's own run of it does
-CACHE_GEN="$SRC/libexec/vlc/vlc-cache-gen"
-if [ "$(uname -m)" = "$ARCH" ]; then
-    [ -x "$CACHE_GEN" ] || { echo "::error::$CACHE_GEN is missing"; exit 1; }
-    DYLD_LIBRARY_PATH="$SRC/lib" "$CACHE_GEN" "$C/Frameworks/plugins"
-    ls -la "$C/Frameworks/plugins/plugins.dat"
-fi
-
 # --- ad-hoc signature, inside out (as extras/package/macosx/codesign.sh): the plug-ins and their
 # cache, the libraries, Qt's plug-ins and Qt Quick modules, the helpers, the frameworks, then the
 # app, which signs its main executable. Codesign checks every file under Contents/Frameworks
@@ -150,7 +141,18 @@ is_macho() {
 while IFS= read -r -d '' f; do
     sign "$f"
 done < <(find "$C/Frameworks/plugins" -type f -name '*.dylib' -print0)
-[ ! -e "$C/Frameworks/plugins/plugins.dat" ] || sign "$C/Frameworks/plugins/plugins.dat"
+
+# the plug-in cache after the plug-ins are signed: signing changes them, and a cache made before
+# is stale ("stale plugins cache: modified ...", every plug-in loaded again at each start, run
+# 41333588279). The installed generator (bin/vlc-cache-gen in the build folder is libtool's
+# wrapper script) loads libvlccore from the install, as make install's own run of it does
+CACHE_GEN="$SRC/libexec/vlc/vlc-cache-gen"
+if [ "$(uname -m)" = "$ARCH" ]; then
+    [ -x "$CACHE_GEN" ] || { echo "::error::$CACHE_GEN is missing"; exit 1; }
+    DYLD_LIBRARY_PATH="$SRC/lib" "$CACHE_GEN" "$C/Frameworks/plugins"
+    ls -la "$C/Frameworks/plugins/plugins.dat"
+    sign "$C/Frameworks/plugins/plugins.dat"
+fi
 while IFS= read -r -d '' f; do
     sign "$f"
 done < <(find "$C/Frameworks" -maxdepth 1 -type f -name '*.dylib' -print0)
