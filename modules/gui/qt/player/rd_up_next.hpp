@@ -194,6 +194,9 @@ private:
     void onDetected(int generation, const rdepisode::Show& show);
     // decides everything from the current state: the item in the queue, the card, the prompt
     void evaluate();
+    // the current file is an episode Up Next acts on: a show, and not shorter than the show's
+    // shortest episode (a short clip is never autoplayed, so it is not asked about either)
+    bool longEnough() const;
     QString guardReason() const;
     bool queueIsCones() const;
     void updateCard();
