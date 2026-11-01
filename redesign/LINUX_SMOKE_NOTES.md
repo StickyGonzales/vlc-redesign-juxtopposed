@@ -67,7 +67,7 @@ Every tarball and install check, on the real tarball of build-linux #52 (run 412
 | Run | Result |
 |---|---|
 | build-linux #54 (41256425136), first version | build green, **smoke red**: the bare runner had no `libEGL.so.1`, so the tarball's Qt plug-in did not load (the .deb, which depends on it, passed). Every desktop has it. |
-| build-linux #56 (41258280658), with libEGL on the runner (5e6e0951) | build and **all smoke checks pass** (37 of 37): tarball H.264 and HEVC (window, playback, subtitle file, Settings, seek, "..." menu in a window and in fullscreen, quit 0.21 s, every plug-in loads), settings in ~/.config/Cone, install.sh / uninstall.sh, the .deb installed next to Ubuntu's VLC 3.0.20, started (quit 0.16 s) and removed |
+| build-linux #56 (41258280658), with libEGL on the runner (5e6e0951) | build and **all smoke checks pass** (31 of 31): tarball H.264 and HEVC (window, playback, subtitle file, Settings, seek, "..." menu in a window and in fullscreen, quit 0.21 s, every plug-in loads), settings in ~/.config/Cone, install.sh / uninstall.sh, the .deb installed next to Ubuntu's VLC 3.0.20, started (quit 0.16 s) and removed |
 
 ## What it does not cover
 The same limits as the Windows checks (redesign/CI_SMOKE_NOTES.md section 3):
