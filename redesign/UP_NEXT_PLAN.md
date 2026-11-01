@@ -62,15 +62,12 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 ### 2.2 Timeline of one episode (autoplay on for this show)
 
 1. **The episode starts.** On a worker thread Cone checks whether the file is an episode of a show (section 3). If it is, it works out the next episode and appends it to the queue as an **autoplay item** (section 4.2). The Next button now opens episode 2, the queue shows it, and the library tags it "Up next".
-2. **The Up Next point.** The card appears at one of two points:
-   - **"At the end of the episode"** (default): the last *countdown* seconds before the end.
-   - **"When the credits start"**: at the start of a chapter named Credits / End Credits / Ending / ED / Outro, falling back to the end when there is none.
-3. **The countdown** (5 / 10 / 15 s, default 10) runs in wall-clock seconds.
-   - It pauses while the player is paused.
-   - It runs at real speed when the playback speed is not 1x.
-4. **At 0, or on Play now,** the next episode starts:
-   - At 0 in "end" mode this is the normal end-of-file move to the next queue item, so no frame is skipped.
-   - In "credits" mode, or on Play now, Cone calls `next()` and marks the episode watched in the library (it may not have reached the library's own "watched" threshold).
+2. **The credits.** The card appears when the credits start (section 5.4, decided 2026-11-01): at a credits chapter, at the point learned for the show, or at the "Show Up Next" setting (the last 30 s / 1 min / 2 min), fine-tuned by a text subtitle track. Never before the credits window (the last 8 minutes, or the last 15 % of a shorter episode). During the credits it shows **Next episode** and **Cancel**, without a countdown.
+3. **The countdown** (5 / 10 / 15 s, default 10) only runs in the last seconds of the episode, as before. So nobody is skipped out of a post-credits scene by accident.
+   - It is counted in real seconds at any playback speed.
+4. **At 0, or on Next episode / Play now,** the next episode starts:
+   - At 0 this is the normal end-of-file move to the next queue item, so no frame is skipped.
+   - On Next episode / Play now, Cone calls `next()` and marks the episode watched in the library (it may not have reached the library's own "watched" threshold).
 5. **Cancel** closes the card and removes the autoplay item from the queue. The episode ends as it does today (stop, back to Home). Cancel only affects this episode.
 6. **Seeking:**
    - Seeking back before the Up Next point hides the card; it comes back when the point is reached again.
@@ -208,7 +205,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
   |---|---|---|
   | `qt-autoplay-next` | 0 Off / 1 Ask / 2 Always | 1 in the Cone profile, 0 in the vlc profile (Q6) |
   | `qt-autoplay-countdown` | 5 / 10 / 15 | 10 |
-  | `qt-autoplay-card-point` | 0 end / 1 credits | 0 |
+  | `qt-autoplay-credits-lead` | 30 / 60 / 120 (seconds before the end, section 5.4) | 60 |
   | `qt-autoplay-still-watching` | bool | true |
 
   They take effect live, with no restart.
@@ -275,7 +272,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 |---|---|---|---|
 | Autoplay next episode (i) | dropdown 320x36 | Off / Ask for each show / Always | description under the label: "Plays the next episode of a show folder when one ends. Single videos, clips and music are never treated as shows." |
 | Countdown (i) | dropdown | 5 seconds / 10 seconds / 15 seconds | dimmed (0.3, `rd_disabledRowOpacity`) when Off |
-| Show Up Next (i) | dropdown | At the end of the episode / When the credits start | dimmed when Off |
+| Show Up Next (i) | dropdown | Last 30 s / Last 1 min / Last 2 min (default 1 min; the fallback when no chapter or learned point says where the credits start, section 5.4) | dimmed when Off |
 | Ask if I'm still watching after 3 episodes (i) | toggle 68x32 | on / off | dimmed when Off |
 | Remembered shows (i) | text + "Forget all" button | "N shows: X autoplay, Y never" | dimmed when Off |
 
@@ -295,6 +292,35 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 - **The sidebar's own header comment** still lists "Subtitle Timeline" and "Reverse" rows that do not exist (`PlaybackSettingsPage.qml:19-23`). Step 2 fixes the comment while editing the file.
 
 ---
+
+### 5.4 When the credits start (decided 2026-11-01, StickyGonzales)
+
+Before this, the card showed in the last seconds only (or at a credits chapter, as a setting). A 56-minute episode with 2 minutes of credits never showed it while the credits rolled. Now the card shows when the credits start. Code: `player/rd_credits_point.*` (the decision, pure, unit tested in `tests/test_rd_credits_point.cpp`), `player/rd_credits_subtitles.*` (the subtitle scan) and `RdUpNext::updateCard()`.
+
+**Hard rule.** The card can only appear inside the **credits window**: the last 8 minutes of the episode, or its last 15 % when that is shorter (episodes under about 53 minutes). Any signal that points earlier is ignored, so the card never shows in the middle of an episode.
+
+**Inside the window, in this order:**
+1. **Chapters.** A chapter whose name contains "credits", "end credits", "outro" or "ending" (whole words, any case), only when it starts inside the window. Exact.
+2. **Learned per show.** The user went on to another episode of the same show (Next, the card's button, a click in the queue) inside the credits window of an earlier episode, more than 3 s before its end. Cone remembers how long before the end that was and shows the card at the same point in the following episodes.
+   - One press is enough; a later press inside the window updates it.
+   - A press outside the window (skipping an episode mid-way) is never learned. Neither is the episode simply ending.
+   - Kept per show root folder in `rd-shows.json` (`"credits": {"<show folder>": {"leadMs": ..., "name": ...}}`). Forget all clears it too.
+   - A learned point that falls outside a shorter episode's window is ignored for that episode.
+3. **The setting** "Show Up Next" (Settings > Playback > Episodes): Last 30 s / 1 min / 2 min, default 1 min (`qt-autoplay-credits-lead`). It replaces "At the end of the episode / When the credits start": chapters are now always used. A shorter episode holds it inside its window.
+
+**Subtitles, a helper only.** If the episode has a text subtitle track, it can fine-tune the point from 2 or 3, never more than 2 minutes and never out of the window. It is never the only reason to show the card.
+- **Which subtitles:** an external SRT / ASS / SSA / WebVTT file (the ones VLC loaded, then the files next to the episode or in a Subs folder whose name starts with the episode's), else an embedded text track (SubRip, ASS, tx3g). The embedded track is read by opening the file a second time and demuxing only the window, on the Up Next worker thread, with a 20 s budget.
+- **Ignored:** picture subtitles (PGS, VobSub, DVB). Nothing reads text in the picture.
+- **The dialogue end:** the end of the first real dialogue line in the window that is followed by a gap of 60 s or more (to the next dialogue line or the end), or by music lines only.
+  - Music lines start with "#" or carry ♪ / ♫.
+  - Lines that credit the subtitles or advertise ("subtitles by", "synced by", "translated by", "downloaded from", web addresses) are skipped.
+  - Taking the first such gap keeps a post-credits scene with dialogue from pulling the point to the very end.
+
+**The card during the credits** shows "Up next", the episode, **Next episode** and **Cancel**. The countdown line stays empty and the line under the episode reads "Plays at the end of the episode".
+- The countdown only starts in the last `countdown` seconds, as before. So a post-credits scene is never skipped by itself.
+- **Cancel** hides the card for the rest of that episode (and takes the autoplay item out, as before).
+- "Still watching?" still comes at the countdown point.
+- Seeking back before the point hides the card; it comes back at the point.
 
 ## 6. Implementation outline (for step 2)
 
@@ -514,7 +540,7 @@ Starting rules (from the request):
 | 76 | Stop button / press-and-hold Play | | no | stop as today; the card closes and the waiting autoplay item is removed (as Cancel) | Stop during the card. Expect: Home, no next episode, the queue holds only E01. |
 | 77 | A-B loop active at the end | the loop never reaches the end | yes | **R6**: no card while an A-B loop is active (the loop wins); the loop resets for the next file anyway | Set A-B around the last minute. Expect: it loops, no card. |
 | 78 | Bookmarks | per file (library) | no | **R6**: nothing carries; Ctrl+B in E02 makes E02's bookmark | Bookmark in E01, play E02. Expect: E02's tab is empty. |
-| 79 | Chapters | per file | no | the credits chapter can be the card point (5.1) | Show Up Next = credits, a file with a "Credits" chapter. Expect: the card at that chapter, Play now skips the rest and E01 counts as watched. |
+| 79 | Chapters | per file | no | a credits chapter inside the credits window is the card point (5.4); one before the window is ignored | A file with a "Credits" chapter in its last minutes. Expect: the card at that chapter with Next episode and Cancel, the countdown in the last seconds, Next episode skips the rest and E01 counts as watched. |
 | 80 | Speed (sidebar slider / Faster / Slower) | carries | no | as 6 | - |
 | 81 | Frame step / Trickplay reverse | | no | Reverse is postponed (Decision 29) | - |
 | 82 | Subtitle timeline (P3-16 / P4-35) | per file | no | rebuilt for E02 | Timeline on, E02 starts. Expect: E02's cues. |

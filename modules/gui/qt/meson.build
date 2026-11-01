@@ -506,6 +506,10 @@ qt_plugin_sources = files(
     'player/rd_presets.hpp',
     'player/rd_episode_parser.cpp',
     'player/rd_episode_parser.hpp',
+    'player/rd_credits_point.cpp',
+    'player/rd_credits_point.hpp',
+    'player/rd_credits_subtitles.cpp',
+    'player/rd_credits_subtitles.hpp',
     'player/rd_up_next.cpp',
     'player/rd_up_next.hpp',
     'player/input_models.hpp',
@@ -1679,6 +1683,20 @@ if qt6_dep.found()
                 'player/rd_episode_parser.hpp',
                 'dialogs/redesign/addsubtitles/subtitle_matcher.cpp',
                 'dialogs/redesign/addsubtitles/subtitle_matcher.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone extra (Up Next): where the credits start, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_credits_point',
+            'sources': files(
+                'tests/test_rd_credits_point.cpp',
+                'player/rd_credits_point.cpp',
+                'player/rd_credits_point.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,

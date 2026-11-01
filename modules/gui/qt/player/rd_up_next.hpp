@@ -27,6 +27,8 @@
 #include <QTimer>
 #include <QUrl>
 
+#include <memory>
+
 #include "qt.hpp"
 #include "player/rd_episode_parser.hpp"
 #include "playlist/media.hpp"
@@ -34,6 +36,7 @@
 
 class MainCtx;
 class PlayerController;
+class RdCreditsSubtitles;
 class RdEffects;
 namespace vlc { namespace playlist { class PlaylistController; } }
 class PlaylistItem;
@@ -54,9 +57,15 @@ struct vlc_preparser_req;
  * command-line flow options) take the autoplay item out and keep the card away.
  *
  * Settings (qt.cpp): qt-autoplay-next (0 Off, 1 Ask for each show, 2 Always), qt-autoplay-countdown
- * (5 / 10 / 15 s), qt-autoplay-card-point (0 end of the episode, 1 credits chapter) and
- * qt-autoplay-still-watching. The answer per show (yes / no) is kept per show root folder in
- * rd-shows.json in VLC's user data folder, read and written on a worker thread.
+ * (5 / 10 / 15 s), qt-autoplay-credits-lead (the card's fallback point: the last 30 / 60 / 120 s)
+ * and qt-autoplay-still-watching. The answer per show (yes / no) and the credits point learned
+ * per show are kept per show root folder in rd-shows.json in VLC's user data folder, read and
+ * written on a worker thread.
+ *
+ * The card shows when the credits start (rd_credits_point, UP_NEXT_PLAN.md 5.4): never before
+ * the credits window, at a credits chapter, at the point learned for the show or at the set
+ * point, fine-tuned by a text subtitle track. There it offers Next episode and Cancel; the
+ * countdown only runs in the last `countdown` seconds, as before.
  *
  * Nothing runs while the setting is Off: no scan, no card, no item.
  */
@@ -94,6 +103,8 @@ class RdUpNext : public QObject
     Q_PROPERTY(bool cardVisible READ cardVisible NOTIFY cardChanged FINAL)
     Q_PROPERTY(int cardMode READ cardMode NOTIFY cardChanged FINAL)
     Q_PROPERTY(int secondsLeft READ secondsLeft NOTIFY countdownChanged FINAL)
+    // the countdown runs (the last seconds); false while the card shows during the credits
+    Q_PROPERTY(bool counting READ counting NOTIFY countdownChanged FINAL)
     Q_PROPERTY(double countdownProgress READ countdownProgress NOTIFY countdownChanged FINAL)
 
     // the one-time "Looks like a show" prompt
@@ -133,6 +144,7 @@ public:
     bool cardVisible() const { return m_cardVisible; }
     int cardMode() const { return m_cardMode; }
     int secondsLeft() const { return m_secondsLeft; }
+    bool counting() const { return m_counting; }
     double countdownProgress() const;
     bool promptVisible() const { return m_promptVisible; }
     bool subtitlesOn() const { return m_subtitlesOn; }
@@ -202,6 +214,15 @@ private:
     void updateCard();
     void setCard(bool visible, int mode);
     void setSecondsLeft(int seconds);
+    void setCounting(bool counting);
+    // where the credits of the episode playing start (rd_credits_point), -1 when unknown
+    qint64 creditsPoint(qint64 lengthMs);
+    // the text subtitle lines of the credits window, read once per episode in the background
+    void startSubtitleScan(qint64 lengthMs);
+    // the user went on to another episode of the show: inside the credits window, the point is
+    // learned for the show
+    void learnCreditsPoint(const QString& newPath);
+    void setLearnedLead(const QString& key, qint64 leadMs);
     void setPromptVisible(bool visible);
 
     // the autoplay item
@@ -244,7 +265,7 @@ private:
     // settings
     int m_mode = ModeOff;
     int m_countdown = 10;
-    int m_cardPoint = 0;
+    qint64 m_creditsLeadMs = 60 * 1000;
     bool m_stillWatching = true;
 
     // the media playing and its show
@@ -290,10 +311,27 @@ private:
     bool m_cardVisible = false;
     int m_cardMode = CardNext;
     int m_secondsLeft = 0;
-    // credits chapter mode: wall-clock countdown
-    QTimer m_creditsTimer;
-    qint64 m_creditsStartMs = -1;
-    bool m_creditsRunning = false;
+    bool m_counting = false;
+
+    // the credits point of the episode playing (logged when it changes)
+    qint64 m_creditsPointMs = -1;
+    // the end of the dialogue the subtitle scan found in the window, -1 none
+    qint64 m_dialogueEndMs = -1;
+    bool m_subtitleScanStarted = false;
+    std::shared_ptr<RdCreditsSubtitles> m_subtitleScan;
+    // where the episode playing was last (the time and length the player reported), for learning
+    qint64 m_lastTimeMs = -1;
+    qint64 m_lastLengthMs = -1;
+    QString m_lastShowKey;
+    QString m_lastShowRoot;
+    QString m_lastShowName;
+    // the credits point learned per show (time before the end), keyed like the answers
+    struct Learned
+    {
+        qint64 leadMs = 0;
+        QString name;
+    };
+    QHash<QString, Learned> m_learned;
 
     // the prompt
     bool m_promptVisible = false;

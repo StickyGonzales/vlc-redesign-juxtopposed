@@ -195,9 +195,9 @@ SettingsPage {
         }
 
         SettingsOption {
-            option: "qt-autoplay-card-point"
+            option: "qt-autoplay-credits-lead"
             text: qsTr("Show Up Next")
-            keywords: "autoplay up next credits chapter"
+            keywords: "autoplay up next credits chapter end"
             available: root._autoplayOn
         }
 

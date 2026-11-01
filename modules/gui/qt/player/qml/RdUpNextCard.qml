@@ -22,6 +22,8 @@
 // the resume toast's 60 px pill with a 64x36 thumbnail, one line of text, Play now and the dark
 // close button. "Still watching?" (after 3 episodes in a row) drops the picture and the line and
 // asks Keep watching / Stop.
+// During the credits (UP_NEXT_PLAN.md 5.4) it waits without a countdown: Next episode and Cancel;
+// the countdown only runs in the last seconds, so a post-credits scene is never cut by itself.
 // It never takes the focus by itself (Space still pauses); Tab reaches its buttons, Escape cancels
 // while it has the focus.
 import QtQuick
@@ -41,6 +43,8 @@ FocusScope {
 
     readonly property bool _still: RdUpNext.cardMode === RdUpNext.CardStillWatching
     readonly property bool _season: !_still && RdUpNext.nextIsNewSeason
+    // shown during the credits, before the countdown
+    readonly property bool _waiting: !_still && !RdUpNext.counting
 
     readonly property real _pad: VLCStyle.dp(12, VLCStyle.scale)
     readonly property real _thumbWidth: VLCStyle.dp(160, VLCStyle.scale)
@@ -51,7 +55,10 @@ FocusScope {
     readonly property string _heading: _still ? qsTr("Still watching?")
                                               : (_season ? qsTr("Up next · Season %1").arg(RdUpNext.nextSeason)
                                                          : qsTr("Up next"))
-    readonly property string _countdownText: qsTr("Playing in %1 s").arg(RdUpNext.secondsLeft)
+    readonly property string _countdownText: _waiting ? qsTr("Plays at the end of the episode")
+                                                      : qsTr("Playing in %1 s").arg(RdUpNext.secondsLeft)
+    readonly property string _playText: _still ? qsTr("Keep watching")
+                                               : (_waiting ? qsTr("Next episode") : qsTr("Play now"))
 
     implicitWidth: compact ? pill.implicitWidth : _cardWidth
     implicitHeight: compact ? pill.implicitHeight : full.implicitHeight
@@ -71,8 +78,10 @@ FocusScope {
 
     Accessible.role: Accessible.Dialog
     Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(RdUpNext.cardLine)
-                            : qsTr("Up next: %1, %2. Playing in %3 seconds.")
-                                  .arg(RdUpNext.showName).arg(RdUpNext.cardLine).arg(RdUpNext.secondsLeft)
+                            : _waiting ? qsTr("Up next: %1, %2. Plays at the end of the episode.")
+                                             .arg(RdUpNext.showName).arg(RdUpNext.cardLine)
+                                       : qsTr("Up next: %1, %2. Playing in %3 seconds.")
+                                             .arg(RdUpNext.showName).arg(RdUpNext.cardLine).arg(RdUpNext.secondsLeft)
 
     function _primary() {
         if (root._still)
@@ -247,7 +256,7 @@ FocusScope {
 
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
-                text: root._still ? qsTr("Keep watching") : qsTr("Play now")
+                text: root._playText
                 // 120 px wide at least (the design's Play now)
                 implicitWidth: Math.max(VLCStyle.dp(120, VLCStyle.scale), implicitContentWidth + leftPadding + rightPadding)
                 onClicked: root._primary()
@@ -276,6 +285,8 @@ FocusScope {
             height: root._lineHeight
             radius: height / 2
             visible: !root._still
+            // during the credits there is no countdown yet (the card keeps its height)
+            opacity: root._waiting ? 0 : 1
             color: VLCStyle.palette.rdBgB2
 
             Rectangle {
@@ -348,7 +359,8 @@ FocusScope {
                 id: pillHeading
 
                 width: parent.width
-                text: root._still ? qsTr("Still watching?") : qsTr("Up next in %1 s").arg(RdUpNext.secondsLeft)
+                text: root._still ? qsTr("Still watching?")
+                                  : (root._waiting ? qsTr("Up next") : qsTr("Up next in %1 s").arg(RdUpNext.secondsLeft))
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdAccentMain
                 font.family: VLCStyle.rd_fontFamily
@@ -380,7 +392,7 @@ FocusScope {
                 anchors.verticalCenter: parent.verticalCenter
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
-                text: root._still ? qsTr("Keep watching") : qsTr("Play now")
+                text: root._playText
                 onClicked: root._primary()
 
                 Navigation.parentItem: root
@@ -433,7 +445,7 @@ FocusScope {
             y: pill.height - VLCStyle.dp(6, VLCStyle.scale)
             height: VLCStyle.dp(2, VLCStyle.scale)
             radius: height / 2
-            visible: !root._still
+            visible: !root._still && !root._waiting
             color: VLCStyle.palette.rdBgB2
 
             Rectangle {

@@ -397,9 +397,10 @@ static const char *const psz_process_priority_text[] =
 #define AUTOPLAY_COUNTDOWN_TEXT N_( "Countdown" )
 #define AUTOPLAY_COUNTDOWN_LONGTEXT N_( "How long the Up Next card counts down before the next " \
     "episode starts." )
-#define AUTOPLAY_CARD_POINT_TEXT N_( "Show Up Next" )
-#define AUTOPLAY_CARD_POINT_LONGTEXT N_( "When the Up Next card appears: in the last seconds of " \
-    "the episode, or at its credits chapter when it has one." )
+#define AUTOPLAY_CREDITS_LEAD_TEXT N_( "Show Up Next" )
+#define AUTOPLAY_CREDITS_LEAD_LONGTEXT N_( "When the Up Next card appears if Cone does not know " \
+    "where the credits start. A credits chapter, or where you went on to the next episode of the " \
+    "show before, comes first. The card never shows before the last 8 minutes." )
 #define AUTOPLAY_STILL_WATCHING_TEXT N_( "Ask if I'm still watching after 3 episodes" )
 #define AUTOPLAY_STILL_WATCHING_LONGTEXT N_( "After 3 episodes in a row without a key press or " \
     "a click, the next episode waits paused until you answer." )
@@ -410,9 +411,9 @@ static const char *const psz_autoplay_next_text[] =
 static const int i_autoplay_countdown_list[] = { 5, 10, 15 };
 static const char *const psz_autoplay_countdown_text[] =
     { N_( "5 seconds" ), N_( "10 seconds" ), N_( "15 seconds" ) };
-static const int i_autoplay_card_point_list[] = { 0, 1 };
-static const char *const psz_autoplay_card_point_text[] =
-    { N_( "At the end of the episode" ), N_( "When the credits start" ) };
+static const int i_autoplay_credits_lead_list[] = { 30, 60, 120 };
+static const char *const psz_autoplay_credits_lead_text[] =
+    { N_( "Last 30 s" ), N_( "Last 1 min" ), N_( "Last 2 min" ) };
 
 static const char *const compositor_vlc[] = {
     "auto",
@@ -637,8 +638,9 @@ vlc_module_begin ()
         change_integer_list( i_autoplay_next_list, psz_autoplay_next_text )
     add_integer( "qt-autoplay-countdown", 10, AUTOPLAY_COUNTDOWN_TEXT, AUTOPLAY_COUNTDOWN_LONGTEXT )
         change_integer_list( i_autoplay_countdown_list, psz_autoplay_countdown_text )
-    add_integer( "qt-autoplay-card-point", 0, AUTOPLAY_CARD_POINT_TEXT, AUTOPLAY_CARD_POINT_LONGTEXT )
-        change_integer_list( i_autoplay_card_point_list, psz_autoplay_card_point_text )
+    add_integer( "qt-autoplay-credits-lead", 60, AUTOPLAY_CREDITS_LEAD_TEXT,
+                 AUTOPLAY_CREDITS_LEAD_LONGTEXT )
+        change_integer_list( i_autoplay_credits_lead_list, psz_autoplay_credits_lead_text )
     add_bool( "qt-autoplay-still-watching", true, AUTOPLAY_STILL_WATCHING_TEXT,
               AUTOPLAY_STILL_WATCHING_LONGTEXT )
 
