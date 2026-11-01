@@ -66,6 +66,13 @@
 #ifdef HAVE_VLC_SHOWCONSOLE
 static void ShowConsole (void);
 static void PauseConsole (void);
+# ifdef VLC_BRAND_PUBLIC
+/* redesign: the output went into the terminal Cone was started from (ShowConsole) */
+static bool console_attached = false;
+#  define BRAND_HELP_FILE "cone-help.txt"
+# else
+#  define BRAND_HELP_FILE "vlc-help.txt"
+# endif
 #else
 # define ShowConsole() (void)0
 # define PauseConsole() (void)0
@@ -726,6 +733,21 @@ static void ShowConsole( void )
 {
     if( getenv( "PWD" ) ) return; /* Cygwin shell or Wine */
 
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: Cone.exe is a window program, which Windows starts without the console of the
+     * terminal it was typed in: started from one (Command Prompt, PowerShell), --version and
+     * --help print into it, as a console program's output does */
+    if( AttachConsole( ATTACH_PARENT_PROCESS ) )
+    {
+        freopen( "CONOUT$", "w", stdout );
+        freopen( "CONOUT$", "w", stderr );
+        console_attached = true;
+        /* the terminal printed its prompt already: start on a line of our own */
+        fputs( "\n", stdout );
+        return;
+    }
+#endif
+
     if( !AllocConsole() ) return;
 
     /* Use the ANSI code page (e.g. Windows-1252) as expected by the LibVLC
@@ -737,10 +759,14 @@ static void ShowConsole( void )
     freopen( "CONOUT$", "w", stderr );
     freopen( "CONIN$", "r", stdin );
 
-    if( freopen( "vlc-help.txt", "wt", stdout ) != NULL )
+    if( freopen( BRAND_HELP_FILE, "wt", stdout ) != NULL )
     {
         fputs( "\xEF\xBB\xBF", stdout );
+#ifdef VLC_BRAND_PUBLIC
+        fprintf( stderr, _("\nDumped content to cone-help.txt file.\n") );
+#else
         fprintf( stderr, _("\nDumped content to vlc-help.txt file.\n") );
+#endif
     }
     else
         freopen( "CONOUT$", "w", stdout );
@@ -754,6 +780,16 @@ static void ShowConsole( void )
 static void PauseConsole( void )
 {
     if( getenv( "PWD" ) ) return; /* Cygwin shell or Wine */
+
+#ifdef VLC_BRAND_PUBLIC
+    /* the terminal stays: nothing to wait for */
+    if( console_attached )
+    {
+        fflush( stdout );
+        FreeConsole();
+        return;
+    }
+#endif
 
     utf8_fprintf( stderr, _("\nPress the RETURN key to continue...\n") );
     getchar();
