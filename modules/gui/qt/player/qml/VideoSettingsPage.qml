@@ -655,7 +655,12 @@ RdSidePanelPage {
                             id: paramSlider
 
                             readonly property var range: RdEffects.optionRange(entry.name)
-                            readonly property real current: Number(RdEffects.values[RdEffects.videoKey(entry.name)])
+                            // VLC keeps these as 32-bit floats (1.05 is 1.0499999523162842 as a
+                            // double): rounded to the row's decimals, so a screen reader reads the
+                            // value, its minimum and maximum as the row means them ("1.05")
+                            readonly property real _scale: Math.pow(10, entry.decimals ?? 1)
+                            function _round(v) { return Math.round(v * _scale) / _scale }
+                            readonly property real current: _round(Number(RdEffects.values[RdEffects.videoKey(entry.name)]))
                             readonly property bool live: entry.live ?? true
                             readonly property real shown: live ? current : restartCommit.shown
 
@@ -678,8 +683,8 @@ RdSidePanelPage {
                             // Figma's video filter rows show only the name (536:1865, 614:1473, 673:1692)
                             valueText: ""
                             dimmed: entry.hasToggle && !RdEffects.values[RdEffects.videoFilterKey(entry.module)]
-                            from: entry.from ?? range.min ?? 0
-                            to: entry.to ?? range.max ?? 1
+                            from: _round(entry.from ?? range.min ?? 0)
+                            to: _round(entry.to ?? range.max ?? 1)
                             stepSize: (entry.decimals ?? 1) === 0 ? 1 : Math.pow(10, -(entry.decimals ?? 1))
                             showTicks: entry.ticks !== undefined
                             tickIntervals: entry.ticks ?? 0
