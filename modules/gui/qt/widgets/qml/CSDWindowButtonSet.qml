@@ -138,6 +138,9 @@ Row {
             // handles VLCStyle.scale changes
             onWidthChanged: Qt.callLater(updateRect)
             onHeightChanged: Qt.callLater(updateRect)
+            // redesign: a set that is shown (again) places its button, a hidden one takes it away
+            onVisibleChanged: Qt.callLater(updateRect)
+            Component.onDestruction: _clearRect()
 
             Connections {
                 target: VLCStyle
@@ -147,11 +150,37 @@ Row {
                 function onAppHeightChanged() { Qt.callLater(updateRect) }
             }
 
+            // the rectangle this button last gave the window (several sets share one button model:
+            // the library's top bar, the player's, the minimal view)
+            property rect _ownRect: Qt.rect(0, 0, 0, 0)
+
+            // redesign: on Windows the rectangle makes the window answer the system's hit test with
+            // that window button (mainctx_win32.cpp, WM_NCHITTEST), so a click there never reaches
+            // the interface. Only a button that is shown may claim its place: a hidden set (the
+            // library's top bar behind the player, or any set in fullscreen) laid out somewhere
+            // else took the clicks of the player's fullscreen top bar ("..." and the logo)
             function updateRect() {
+                if (!visible || width <= 0 || height <= 0) {
+                    _clearRect()
+                    return
+                }
                 const point = mapToItem(null, 0, 0)
                 const rect = Qt.rect(point.x, point.y, width, height)
 
+                _ownRect = rect
                 modelData.rect = rect
+            }
+
+            // takes the button's place away, unless another (shown) set has given it since
+            function _clearRect() {
+                if (_ownRect.width <= 0 || !modelData)
+                    return
+                // (the model keeps whole pixels)
+                const r = modelData.rect
+                if (Math.abs(r.x - _ownRect.x) < 1 && Math.abs(r.y - _ownRect.y) < 1
+                        && Math.abs(r.width - _ownRect.width) < 1 && Math.abs(r.height - _ownRect.height) < 1)
+                    modelData.rect = Qt.rect(0, 0, 0, 0)
+                _ownRect = Qt.rect(0, 0, 0, 0)
             }
         }
     }
@@ -265,6 +294,9 @@ Row {
             // handles VLCStyle.scale changes
             onWidthChanged: Qt.callLater(updateRect)
             onHeightChanged: Qt.callLater(updateRect)
+            // redesign: a set that is shown (again) places its button, a hidden one takes it away
+            onVisibleChanged: Qt.callLater(updateRect)
+            Component.onDestruction: _clearRect()
 
             Connections {
                 target: VLCStyle
@@ -274,11 +306,37 @@ Row {
                 function onAppHeightChanged() { Qt.callLater(updateRect) }
             }
 
+            // the rectangle this button last gave the window (several sets share one button model:
+            // the library's top bar, the player's, the minimal view)
+            property rect _ownRect: Qt.rect(0, 0, 0, 0)
+
+            // redesign: on Windows the rectangle makes the window answer the system's hit test with
+            // that window button (mainctx_win32.cpp, WM_NCHITTEST), so a click there never reaches
+            // the interface. Only a button that is shown may claim its place: a hidden set (the
+            // library's top bar behind the player, or any set in fullscreen) laid out somewhere
+            // else took the clicks of the player's fullscreen top bar ("..." and the logo)
             function updateRect() {
+                if (!visible || width <= 0 || height <= 0) {
+                    _clearRect()
+                    return
+                }
                 const point = mapToItem(null, 0, 0)
                 const rect = Qt.rect(point.x, point.y, width, height)
 
+                _ownRect = rect
                 modelData.rect = rect
+            }
+
+            // takes the button's place away, unless another (shown) set has given it since
+            function _clearRect() {
+                if (_ownRect.width <= 0 || !modelData)
+                    return
+                // (the model keeps whole pixels)
+                const r = modelData.rect
+                if (Math.abs(r.x - _ownRect.x) < 1 && Math.abs(r.y - _ownRect.y) < 1
+                        && Math.abs(r.width - _ownRect.width) < 1 && Math.abs(r.height - _ownRect.height) < 1)
+                    modelData.rect = Qt.rect(0, 0, 0, 0)
+                _ownRect = Qt.rect(0, 0, 0, 0)
             }
         }
     }
