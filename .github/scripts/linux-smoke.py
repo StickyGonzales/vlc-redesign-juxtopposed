@@ -460,6 +460,33 @@ def check_plugins(s):
     return check(f'{s.tag}: every plug-in loads', body)
 
 
+def check_handoff(s, exe, env):
+    """a file opened while Cone runs, as the menu entry and "Open with" start it
+    (--started-from-file): it plays in the running window, the second start exits at once"""
+    def body():
+        other = os.path.join(WORK, 'handoff.mp4')
+        if not os.path.exists(other):
+            shutil.copy(os.path.join(MEDIA, 'test-h264.mp4'), other)
+        t = time.time()
+        r = run([exe, '--started-from-file', other], timeout=30, env=env)
+        took = time.time() - t
+        if r.returncode:
+            raise CheckFailed(f'the second start exited with {r.returncode}')
+        end = time.time() + 15
+        while 'handoff.mp4' not in rc('status'):
+            if time.time() > end:
+                raise CheckFailed('the running window did not open the file: ' + ' | '.join(rc('status').split()))
+            time.sleep(0.5)
+        if s.proc.poll() is not None:
+            raise CheckFailed('the running Cone exited')
+        others = [w for w in xdo('search', '--onlyvisible', '--name', 'handoff.mp4').split()
+                  if xdo('getwindowpid', w).strip() != str(s.proc.pid)]
+        if others:
+            raise CheckFailed(f'another process shows the file in a window: {others}')
+        return f'the second start ended after {took:.1f} s; the running window plays handoff.mp4'
+    return check(f'{s.tag}: a second start opens the file in the running window', body)
+
+
 def session(exe, codec, tag, full, env=None):
     video = os.path.join(MEDIA, f'test-{codec}.mp4')
     s = Session(exe, video, tag, env)
@@ -475,6 +502,8 @@ def session(exe, codec, tag, full, env=None):
             check_seek(s)
             check_menu(s)
             check_speed(s)
+            if codec == 'h264':
+                check_handoff(s, exe, env)
 
         def retry_quit():
             nonlocal s
@@ -530,6 +559,13 @@ def validate(desktop):
         raise CheckFailed('desktop-file-validate: ' + '; '.join(errors or [out]))
 
 
+def exec_line(desktop):
+    # files from the menu and "Open with" go to the running window (check_handoff)
+    lines = [l for l in open(desktop) if l.startswith('Exec=')]
+    if not lines or '--started-from-file %U' not in lines[0]:
+        raise CheckFailed(f'{os.path.basename(desktop)}: {lines[0].strip() if lines else "no Exec="} lacks --started-from-file')
+
+
 # 2. install.sh / uninstall.sh for one user (no sudo)
 ihome = os.path.join(WORK, 'ihome')
 os.makedirs(ihome)
@@ -550,6 +586,7 @@ def install():
     if missing:
         raise CheckFailed('missing: ' + ', '.join(os.path.relpath(m, ihome) for m in missing))
     validate(os.path.join(idata, 'applications/cone-player.desktop'))
+    exec_line(os.path.join(idata, 'applications/cone-player.desktop'))
     # "Open with": the menu entry is listed for video, audio and subtitle types ...
     with open(os.path.join(idata, 'applications/mimeinfo.cache')) as f:
         cache = f.read()
@@ -592,6 +629,7 @@ def deb_install():
     if vlc_before != vlc_after or not os.path.exists('/usr/bin/vlc'):
         raise CheckFailed(f'VLC changed: vlc-bin {vlc_before} -> {vlc_after}')
     validate('/usr/share/applications/cone-player.desktop')
+    exec_line('/usr/share/applications/cone-player.desktop')
     return f'installed into /opt/cone-player with /usr/bin/cone-player; VLC {vlc_before} untouched'
 if not args.skip_deb and check('deb: install next to VLC', deb_install):
     session('/usr/bin/cone-player', 'h264', 'deb-h264', False, env)

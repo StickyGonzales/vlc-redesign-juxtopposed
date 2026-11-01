@@ -153,6 +153,26 @@ static void system_ConfigureDbus(libvlc_int_t *vlc, int argc,
         dbus_message_unref(reply);
     }
 
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (brand layer): the running window comes to the front, with the files just handed
+     * over or without any (the menu entry while Cone already runs, which otherwise did nothing) */
+    DBusMessage *raise = dbus_message_new_method_call(MPRIS_BUS_NAME,
+        MPRIS_OBJECT_PATH, "org.mpris.MediaPlayer2", "Raise");
+    if (likely(raise != NULL))
+    {
+        DBusMessage *reply = dbus_connection_send_with_reply_and_block(conn,
+                                                                raise, -1, &err);
+        dbus_message_unref(raise);
+        if (reply == NULL)
+        {
+            msg_Err(vlc, "D-Bus error: %s", err.message);
+            dbus_error_free(&err);
+        }
+        else
+            dbus_message_unref(reply);
+    }
+#endif
+
     /* we unreference the connection when we've finished with it */
     dbus_connection_unref(conn);
     exit(0);
