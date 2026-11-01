@@ -50,7 +50,8 @@ The same two checks run on Linux (wip/linux-smoke, `linux-smoke.py`), and pass t
 | Run | Result |
 |---|---|
 | smoke-windows-manual 41251648899 on build-windows #141 (before the fix) | "..." in a window **passes**, in fullscreen **fails** (H.264 and HEVC, retries included) |
-| build-windows #150 (41256927661), this branch | running |
+| build-windows #150 (41256927661), this branch | build and **all smoke checks pass**: "..." opens the main menu **in fullscreen** in both sessions (H.264 and HEVC, first try), and in a window as before |
+| build-linux #56 (41258280658), wip/linux-smoke | the same two checks pass on Linux (tarball, H.264 and HEVC) |
 
 ## Windows retest (PC session)
 Build: `gh workflow run build-windows.yml --ref wip/fix-fs-menu`.
