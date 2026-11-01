@@ -54,11 +54,23 @@ public static class RdSmoke {
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [StructLayout(LayoutKind.Sequential)] public struct CURSORINFO { public int cbSize; public int flags; public IntPtr hCursor; public int x; public int y; }
   [DllImport("user32.dll")] static extern bool GetCursorInfo(ref CURSORINFO ci);
-  // the pointer Windows shows now: its handle, or none while it is hidden
-  public static IntPtr ShownCursor() {
+  [DllImport("user32.dll")] static extern IntPtr GetCursor();
+  // the cursor the window under the pointer set (its handle, none for a hidden cursor). The
+  // CURSOR_SHOWING flag is not used: a runner has no mouse, so Windows never shows the pointer
+  // there, but it still keeps the cursor the app set
+  public static IntPtr ScreenCursor(out int flags) {
     var ci = new CURSORINFO(); ci.cbSize = Marshal.SizeOf(typeof(CURSORINFO));
-    if (!GetCursorInfo(ref ci) || (ci.flags & 1) == 0) return IntPtr.Zero;
+    flags = -1;
+    if (!GetCursorInfo(ref ci)) return IntPtr.Zero;
+    flags = ci.flags;
     return ci.hCursor;
+  }
+  // the cursor Cone's interface thread set, read through its input state
+  public static IntPtr ThreadCursor(IntPtr hwnd) {
+    uint t = GetWindowThreadProcessId(hwnd, IntPtr.Zero);
+    uint me = GetCurrentThreadId();
+    if (t == 0 || !AttachThreadInput(me, t, true)) return IntPtr.Zero;
+    try { return GetCursor(); } finally { AttachThreadInput(me, t, false); }
   }
   delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
@@ -214,10 +226,8 @@ function Show-Bars($hwnd) {
     foreach ($d in 0, 20, 40, 60) { [RdSmoke]::SetCursorPos($cx + $d, $cy + $d) | Out-Null; Start-Sleep -Milliseconds 60 }
 }
 
-# the pixels of the pointer Windows shows now that are not transparent: 0 while it is hidden (no
-# cursor, or Qt's blank cursor)
-function Pointer-Pixels {
-    $h = [RdSmoke]::ShownCursor()
+# the pixels of a cursor that are not transparent: 0 for none or Qt's blank cursor
+function Cursor-Pixels([IntPtr]$h) {
     if ($h -eq [IntPtr]::Zero) { return 0 }
     $icon = [System.Drawing.Icon]::FromHandle($h)
     $bmp = $icon.ToBitmap()
@@ -229,11 +239,22 @@ function Pointer-Pixels {
         return $n
     } finally { $bmp.Dispose(); $icon.Dispose() }
 }
+# the pointer over Cone: the pixels of the cursor on the screen (GetCursorInfo); the flags and the
+# cursor of Cone's interface thread go into $script:PointerInfo for the check's message
+$script:PointerInfo = ''
+function Pointer-Pixels {
+    $flags = 0
+    $n = Cursor-Pixels ([RdSmoke]::ScreenCursor([ref]$flags))
+    $t = if ($script:PointerHwnd) { Cursor-Pixels ([RdSmoke]::ThreadCursor($script:PointerHwnd)) } else { -1 }
+    $script:PointerInfo = "screen cursor $n px, flags $flags, Cone's thread cursor $t px"
+    return $n
+}
 
 # the pointer over the playing video: hidden with the bars after about 3 s in a window (VLC's
 # mouse-hide-timeout in fullscreen), shown again on a move, kept while paused
 # (redesign/FIX_CURSOR_HIDE_NOTES.md)
 function Check-Pointer($s) {
+    $script:PointerHwnd = $s.hwnd
     # near the start, so the clip (30 s, repeated) does not start over during the three checks
     Rc 'seek 1' | Out-Null
     Start-Sleep -Seconds 1
@@ -254,11 +275,11 @@ function Check-Pointer($s) {
         $r = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$r) | Out-Null
         $cx = [int](($r.Left + $r.Right) / 2); $cy = [int](($r.Top + $r.Bottom) / 2)
         $moved, $after = & $still $cx $cy
-        if ($moved -eq 0) { throw 'the pointer is hidden right after a move' }
-        if ($after -ne 0) { throw "the pointer still shows ($after pixels) 5 s after the last move while playing" }
+        if ($moved -eq 0) { throw "the pointer is hidden right after a move ($script:PointerInfo)" }
+        if ($after -ne 0) { throw "the pointer still shows ($after pixels) 5 s after the last move while playing ($script:PointerInfo)" }
         [RdSmoke]::SetCursorPos($cx + 40, $cy + 30) | Out-Null; Start-Sleep -Milliseconds 500
         $again = Pointer-Pixels
-        if ($again -eq 0) { throw 'the pointer did not show again on a move' }
+        if ($again -eq 0) { throw "the pointer did not show again on a move ($script:PointerInfo)" }
         "shown after a move ($moved pixels), hidden 4.5 s later, shown again on a move ($again pixels)"
     } | Out-Null
     Check "$($s.tag): pointer stays while paused" {
@@ -267,7 +288,7 @@ function Check-Pointer($s) {
         Rc 'pause' | Out-Null
         try {
             $moved, $after = & $still ([int](($r.Left + $r.Right) / 2)) ([int](($r.Top + $r.Bottom) / 2))
-            if ($after -eq 0) { throw 'the pointer hid while the video was paused' }
+            if ($after -eq 0) { throw "the pointer hid while the video was paused ($script:PointerInfo)" }
             "still shown ($after pixels) 4.5 s after the last move while paused"
         } finally {
             # 'pause' toggles; the cli's 'play' does not resume a paused player (vlc_player_Start
@@ -284,8 +305,8 @@ function Check-Pointer($s) {
             Keys @(0x46)   # F: fullscreen
             Start-Sleep -Seconds 2
             $moved, $after = & $still ([int]($b.Left + $b.Width / 2)) ([int]($b.Top + $b.Height / 2))
-            if ($moved -eq 0) { throw 'the pointer is hidden right after a move' }
-            if ($after -ne 0) { throw "the pointer still shows ($after pixels) in fullscreen 4.5 s after the last move" }
+            if ($moved -eq 0) { throw "the pointer is hidden right after a move ($script:PointerInfo)" }
+            if ($after -ne 0) { throw "the pointer still shows ($after pixels) in fullscreen 4.5 s after the last move ($script:PointerInfo)" }
             'hidden in fullscreen 4.5 s after the last move'
         } finally {
             $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null

@@ -49,7 +49,7 @@ The vlc profile keeps its behavior apart from #74's change (pointer only hidden 
 
 ## 4. Smoke checks (every build)
 
-Linux (`.github/scripts/linux-smoke.py`, Xvfb, the pointer read with XFixesGetCursorImage) and Windows (`.github/scripts/win64-smoke.ps1`, GetCursorInfo and the cursor's pixels), on the h264 session, after the speed check (seeked to 1 s first, so the 30 s clip does not restart during them):
+Linux (`.github/scripts/linux-smoke.py`, Xvfb, the pointer read with XFixesGetCursorImage) and Windows (`.github/scripts/win64-smoke.ps1`, the pixels of the cursor GetCursorInfo reports; its "showing" flag is not used, since a runner has no mouse and Windows never shows the pointer there, which made every reading 0 on build-windows #172; the message also names the flags and the cursor of Cone's interface thread), on the h264 session, after the speed check (seeked to 1 s first, so the 30 s clip does not restart during them):
 
 | Check | What it does | Must |
 |---|---|---|
