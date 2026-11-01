@@ -89,11 +89,13 @@ jobs:
           {
             echo "Cone $VERSION for Linux (x86_64). Experimental: based on the development version of VLC media player (VLC 4)."
             echo
-            echo "- **AppImage**: download, \`chmod +x\` it, start it. A folder named \`portable\` next to it keeps settings and library there."
+            echo "- **AppImage**: download, \`chmod +x\` it, start it. AppImageLauncher or Gear Lever add it to the menu with its icon. A folder named \`portable\` next to it keeps settings and library there."
             echo "- **Portable tarball**: unpack, start \`./cone\`, or run \`./install.sh\` to install it for your user (no sudo; menu entry, icons, \"Open with\"). \`README-LINUX.txt\` inside explains the rest."
             echo "- **Debian / Ubuntu package** (amd64): \`sudo apt install ./cone-player_*_amd64.deb\`. Installs into \`/opt/cone-player\` with the command \`cone-player\`, next to VLC without replacing it; remove it with \`sudo apt remove cone-player\`."
             echo "- Needs a 64-bit Linux desktop (X11 or Wayland) with ${GLIBC:-a recent glibc} or newer."
             echo "- Cone keeps its own settings (\`~/.config/Cone\`, \`~/.local/share/Cone\`, \`~/.cache/Cone\`) and runs next to an installed VLC."
+            echo "- \"Open with\" lists Cone Player for videos, music and subtitles; it never makes itself the default player."
+            echo "- Checked on GitHub before release: H.264 and HEVC playback with subtitles, seeking, Settings, the menu, quitting, and installing and removing the tarball and the package (Ubuntu 24.04)."
             echo
             echo "Design by Juxtopposed (CC BY 4.0), built by StickyGonzales. Not affiliated with VideoLAN."
             echo

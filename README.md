@@ -43,7 +43,19 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 | **Installer** (recommended) | `coneplayer-1.1.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
 | **Portable zip** | `ConePlayer-1.1.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
-**Linux (beta):** [Cone Player 1.1.0 for Linux](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.1.0-beta) as an AppImage or a portable tarball (64-bit, glibc 2.39 or newer). It was tested in a Linux sandbox only: real sound and GPU video have not been tested on real Linux hardware yet.
+### Linux (beta)
+
+Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true) (64-bit x86, glibc 2.39 or newer: Ubuntu 24.04, Debian 13, Fedora 40 and later). It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
+
+| Download | How |
+|---|---|
+| **Debian / Ubuntu package** `cone-player_*_amd64.deb` | `sudo apt install ./cone-player_*_amd64.deb`. Installs into `/opt/cone-player` with the command `cone-player`, a menu entry and "Open with" for videos, music and subtitles. Remove it with `sudo apt remove cone-player`. |
+| **AppImage** `Cone-*-x86_64.AppImage` | `chmod +x` it and start it. AppImageLauncher or Gear Lever can add it to the menu with its icon. |
+| **Tarball** `Cone-*-linux-x86_64.tar.xz` | Unpack it and start `./cone`, or run `./install.sh` to install it for your user without sudo (`~/.local`, menu entry, icons, "Open with"). Remove it with `~/.local/share/cone-player/uninstall.sh`. |
+
+None of them makes Cone your default player: pick it in "Open with", or set it as the default in your desktop's settings. A folder named `portable` next to the AppImage or `./cone` keeps settings and the library there.
+
+Each Linux build is checked on GitHub: it plays H.264 and HEVC with subtitles, seeks, opens Settings and the menu, quits, installs and uninstalls. Real sound and GPU video on real hardware still need testing by people: please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
@@ -154,7 +166,7 @@ Cone Player is built from Juxtopposed's [VLC Redesign Figma file](https://www.fi
 
 ## Coming next
 
-- **Linux.** A Linux build follows as its own release.
+- **Linux.** The next Linux beta brings a Debian / Ubuntu package and a per-user installer for the tarball; see [Linux (beta)](#linux-beta).
 - **1.1** brings **Autoplay next episode**, a Cone extra: when an episode of a show folder ends, an "Up next" card counts down to the next one. Cone extras are features beyond Juxtopposed's design, and they are always marked that way.
 
 Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues).
