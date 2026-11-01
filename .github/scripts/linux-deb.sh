@@ -45,7 +45,7 @@ exec /opt/cone-player/cone "$@"
 EOF
 chmod 755 "$ROOT/usr/bin/cone-player"
 
-sed -e 's|^Exec=.*|Exec=cone-player %U|' "$DIR/usr/share/applications/cone-player.desktop" \
+sed -e 's|^Exec=.*|Exec=cone-player --started-from-file %U|' "$DIR/usr/share/applications/cone-player.desktop" \
     > "$ROOT/usr/share/applications/cone-player.desktop"
 cp -a "$DIR/usr/share/icons/hicolor" "$ROOT/usr/share/icons/"
 

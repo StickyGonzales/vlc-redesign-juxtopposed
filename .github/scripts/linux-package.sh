@@ -200,7 +200,10 @@ if [ "$NAME" = cone ]; then
         echo 'Name=Cone Player'
         echo 'GenericName=Media Player'
         echo 'Comment=Play your videos and music (based on VLC media player)'
-        echo "Exec=$NAME %U"
+        # --started-from-file: a file opened from the file manager or "Open with" goes to the
+        # running Cone window (one-instance-when-started-from-file, src/posix/specific.c), as the
+        # Windows file associations do
+        echo "Exec=$NAME --started-from-file %U"
         echo "Icon=$ID"
         echo 'Terminal=false'
         echo 'Categories=AudioVideo;Player;Video;Audio;'
