@@ -90,6 +90,8 @@ jobs:
 
       # each apt attempt is cut after 4 minutes, at most 3 attempts (apt has stalled on the runner);
       # Ubuntu's VLC, to prove the .deb installs next to it and leaves it alone
+      # libegl1 / libopengl0: the tarball's Qt needs them like every desktop has them; the bare runner
+      # does not (the .deb depends on them, so only the tarball sessions need them here)
       - name: Desktop test tools and Ubuntu's VLC
         run: |
           for i in 1 2 3; do
@@ -97,7 +99,7 @@ jobs:
             sudo timeout 240 apt-get install -y -q --no-install-recommends \
               xvfb openbox xdotool imagemagick dbus dbus-x11 at-spi2-core python3-pyatspi \
               desktop-file-utils libxcb-cursor0 vlc-bin vlc-plugin-base \
-              libopengl0 libpipewire-0.3-0t64 libjack-jackd2-0 libssh-4 libsmbclient0 libgtk-3-0t64 && break
+              libegl1 libegl-mesa0 libopengl0 libpipewire-0.3-0t64 libjack-jackd2-0 libssh-4 libsmbclient0 libgtk-3-0t64 && break
             echo "::warning::apt attempt $i failed or stalled"
             [ "$i" = 3 ] && exit 1
           done
