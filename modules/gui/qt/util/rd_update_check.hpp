@@ -32,7 +32,8 @@
  *
  * At most once a day, a few seconds after the start, while the "qt-cone-update-check" option is
  * on and the first-run privacy question has been answered, it asks GitHub for the latest release
- * of Cone (one GET of the releases API, no data beyond the request itself). A newer version
+ * of Cone (one GET of the releases API, no data beyond the request itself; on Linux the newest
+ * Linux release, tagged linux-v..., pre-releases included). A newer version
  * than this build's shows the notice (RdUpdateNotice.qml): "Download" opens the release page in
  * the browser, "Later" hides it until the next day, "Skip this version" never offers that exact
  * version again (a newer one still shows; Settings > General can undo the skip). Nothing is
