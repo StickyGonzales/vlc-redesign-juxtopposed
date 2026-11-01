@@ -40,8 +40,8 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 
 | Download | File | How |
 |---|---|---|
-| **Installer** (recommended) | `coneplayer-1.1.1-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
-| **Portable zip** | `ConePlayer-1.1.1-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
+| **Installer** (recommended) | `coneplayer-1.1.2-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
+| **Portable zip** | `ConePlayer-1.1.2-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
 ### Linux (beta)
 
@@ -140,17 +140,17 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 </details>
 
 <details>
-<summary>Known issues (1.1.1)</summary>
+<summary>Known issues (1.1.2)</summary>
 
 - Dragging the playback speed slider quickly on some HEVC (x265) films can freeze Cone Player; it then has to be ended in Task Manager. Change the speed in steps (the - and = keys) on those films until this is fixed.
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
 - Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds now opens in a new window.
-- Pressing M (mute) shows only the mute icon, without "Pressed M".
 - The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. It comes back once it works.
 - Rarely, Windows may log a background error after closing Settings. Nothing visible happens.
 - New Cone Player texts are in English in every language for now.
 - The portable zip doesn't show up in Windows' "Open with" menu. Use the installer for that, or drag files onto Cone Player.
 - Like VLC, Cone Player keeps a small graphics cache in `%LOCALAPPDATA%\Cone\cache`, also when run from the zip.
+- Upgrading with the installer adds the desktop shortcut again, also if you deleted it. Delete it once more after the upgrade; this will be fixed.
 
 </details>
 
