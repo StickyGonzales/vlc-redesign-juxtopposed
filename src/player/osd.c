@@ -161,7 +161,14 @@ vlc_player_osd_Volume(vlc_player_t *player, bool mute_action)
     bool mute = vlc_player_aout_IsMuted(player);
     int volume = lroundf(vlc_player_aout_GetVolume(player) * 100.f);
     if (mute_action && mute)
+#ifdef VLC_BRAND_PUBLIC
+        /* redesign: a message like the volume's ("Volume: 45%"), so a mute by a shortcut names
+         * it on its second line ("Pressed M", src/video_output/video_text.c), as every other
+         * shortcut's message does; the icon has no text */
+        vouts_osd_Message(vouts, count, _("Muted"));
+#else
         vouts_osd_Icon(vouts, count, OSD_MUTE_ICON);
+#endif
     else
     {
         if (vlc_player_vout_IsFullscreen(player))
