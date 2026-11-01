@@ -65,9 +65,16 @@ public static class RdSmoke {
     flags = ci.flags;
     return ci.hCursor;
   }
-  // the cursor Cone's interface thread set, read through its input state
-  public static IntPtr ThreadCursor(IntPtr hwnd) {
-    uint t = GetWindowThreadProcessId(hwnd, IntPtr.Zero);
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
+  [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
+  // the cursor set by the thread of the window under the screen point (the interface, or the
+  // video output's own window), read through that thread's input state; the window's class goes
+  // to cls for the check's message
+  public static IntPtr CursorAt(int x, int y, out string cls) {
+    POINT p; p.X = x; p.Y = y;
+    IntPtr h = WindowFromPoint(p);
+    StringBuilder sb = new StringBuilder(256); GetClassName(h, sb, sb.Capacity); cls = sb.ToString();
+    uint t = GetWindowThreadProcessId(h, IntPtr.Zero);
     uint me = GetCurrentThreadId();
     if (t == 0 || !AttachThreadInput(me, t, true)) return IntPtr.Zero;
     try { return GetCursor(); } finally { AttachThreadInput(me, t, false); }
@@ -239,14 +246,16 @@ function Cursor-Pixels([IntPtr]$h) {
         return $n
     } finally { $bmp.Dispose(); $icon.Dispose() }
 }
-# the pointer over Cone: the pixels of the cursor on the screen (GetCursorInfo); the flags and the
-# cursor of Cone's interface thread go into $script:PointerInfo for the check's message
+# the pointer over Cone at the screen point x, y: the pixels of the cursor set by the window under
+# it (its thread's cursor). A runner has no mouse: Windows suppresses the pointer there (flags 2,
+# no cursor on the screen), but the cursor the app set is kept. The screen cursor, the flags and
+# the window's class go into $script:PointerInfo for the check's message
 $script:PointerInfo = ''
-function Pointer-Pixels {
-    $flags = 0
-    $n = Cursor-Pixels ([RdSmoke]::ScreenCursor([ref]$flags))
-    $t = if ($script:PointerHwnd) { Cursor-Pixels ([RdSmoke]::ThreadCursor($script:PointerHwnd)) } else { -1 }
-    $script:PointerInfo = "screen cursor $n px, flags $flags, Cone's thread cursor $t px"
+function Pointer-Pixels([int]$x, [int]$y) {
+    $flags = 0; $cls = ''
+    $screen = Cursor-Pixels ([RdSmoke]::ScreenCursor([ref]$flags))
+    $n = Cursor-Pixels ([RdSmoke]::CursorAt($x, $y, [ref]$cls))
+    $script:PointerInfo = "cursor of the window under the pointer ($cls) $n px; screen cursor $screen px, flags $flags"
     return $n
 }
 
@@ -254,7 +263,6 @@ function Pointer-Pixels {
 # mouse-hide-timeout in fullscreen), shown again on a move, kept while paused
 # (redesign/FIX_CURSOR_HIDE_NOTES.md)
 function Check-Pointer($s) {
-    $script:PointerHwnd = $s.hwnd
     # near the start, so the clip (30 s, repeated) does not start over during the three checks
     Rc 'seek 1' | Out-Null
     Start-Sleep -Seconds 1
@@ -263,11 +271,11 @@ function Check-Pointer($s) {
     }
     $still = {
         param([int]$x, [int]$y)
-        [RdSmoke]::SetCursorPos($x, $y) | Out-Null; Start-Sleep -Milliseconds 100
-        [RdSmoke]::SetCursorPos($x + 5, $y + 5) | Out-Null; Start-Sleep -Milliseconds 500
-        $moved = Pointer-Pixels
+        foreach ($d in 0, 10, 20, 30) { [RdSmoke]::SetCursorPos($x + $d, $y + $d) | Out-Null; Start-Sleep -Milliseconds 60 }
+        Start-Sleep -Milliseconds 600
+        $moved = Pointer-Pixels ($x + 30) ($y + 30)
         Start-Sleep -Milliseconds 4500
-        return @($moved, (Pointer-Pixels))
+        return @($moved, (Pointer-Pixels ($x + 30) ($y + 30)))
     }
     Check "$($s.tag): pointer hides while playing (window)" {
         & $mustPlay
@@ -277,8 +285,9 @@ function Check-Pointer($s) {
         $moved, $after = & $still $cx $cy
         if ($moved -eq 0) { throw "the pointer is hidden right after a move ($script:PointerInfo)" }
         if ($after -ne 0) { throw "the pointer still shows ($after pixels) 5 s after the last move while playing ($script:PointerInfo)" }
-        [RdSmoke]::SetCursorPos($cx + 40, $cy + 30) | Out-Null; Start-Sleep -Milliseconds 500
-        $again = Pointer-Pixels
+        foreach ($d in 40, 50, 60) { [RdSmoke]::SetCursorPos($cx + $d, $cy + 30) | Out-Null; Start-Sleep -Milliseconds 60 }
+        Start-Sleep -Milliseconds 600
+        $again = Pointer-Pixels ($cx + 60) ($cy + 30)
         if ($again -eq 0) { throw "the pointer did not show again on a move ($script:PointerInfo)" }
         "shown after a move ($moved pixels), hidden 4.5 s later, shown again on a move ($again pixels)"
     } | Out-Null
