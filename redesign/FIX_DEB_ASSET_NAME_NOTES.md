@@ -38,7 +38,7 @@ The release job now checks out `.github/scripts` (sparse) for the script; the re
 
 | Run | Result |
 |---|---|
-| (filled in below the PR) | |
+| build-linux #64 (41336268836), d102f2d, package suffix `-beta3` | green. The build wrote `cone-player_0.1.0-beta3_amd64.deb`; the new check printed `ok:` for `Cone-0.1.0-beta3-linux-x86_64.tar.xz`, `cone-player_0.1.0-beta3_amd64.deb` and `Cone-0.1.0-beta3-x86_64.AppImage`. **Linux smoke checks all pass**; apt installed and removed the package as `cone-player (0.1.0~beta3)`: the file name has `-`, the package version keeps `~` |
 
 release-linux itself only runs from a `linux-v` tag on `redesign`, so it is not run for this branch; build-linux runs the same `check` and builds the package with the new name, and the smoke checks install that `.deb`.
 
