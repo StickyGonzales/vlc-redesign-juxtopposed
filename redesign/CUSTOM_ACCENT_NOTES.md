@@ -45,7 +45,7 @@ Branch `wip/custom-accent`, made from `origin/wip/next-test`. Draft pull request
 | build-linux #73 (ed7d4d4) | compiled (palette, MainCtx); cancelled after the compile for the review fixes |
 | build-windows #169 (ed7d4d4) | compiled, installer built; smoke cancelled for the review fixes |
 | **build-linux #74 (34cbdad, current head)** | **green, Linux smoke checks all pass** |
-| build-windows #170 (34cbdad) | (filled in below) |
+| **build-windows #170 (41349650025, 34cbdad, current head)** | **green: build, installer and the Windows smoke checks all pass** |
 
 **Real build in the sandbox** (build-linux #74's tarball, Xvfb, a fresh profile; picture `redesign/fix-shots/custom_accent.jpg`):
 
