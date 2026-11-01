@@ -340,6 +340,66 @@ function Open-Settings($s) {
 function Check-Settings($s) {
     Check "$($s.tag): Settings opens" { Open-Settings $s }
 }
+# the playback speed slider (the sidebar's Playback tab): a real drag across it while the video
+# plays, then Cone must still answer: its window processes messages, the cli gives the time and
+# the time moves on. Before the fix each speed change made the interface lock the player twice
+# and Cone froze (redesign/FIX_SPEED_FREEZE_NOTES.md)
+function Check-SpeedDrag($s) {
+    Check "$($s.tag): speed slider drag, Cone keeps responding" {
+        Focus-Window $s.hwnd
+        Show-Bars $s.hwnd
+        $gear = Uia-Find $s.hwnd 'Playback Settings' 5000
+        if (-not $gear) { throw 'the control bar has no "Playback Settings" button' }
+        $g = $gear.Current.BoundingRectangle
+        Click ([int]($g.Left + $g.Width / 2)) ([int]($g.Top + $g.Height / 2))
+        $slider = $null
+        $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Slider)
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while (-not $slider -and $sw.ElapsedMilliseconds -lt 5000) {
+            foreach ($e in [System.Windows.Automation.AutomationElement]::FromHandle($s.hwnd).FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+                try { if ($e.Current.Name -eq 'Speed' -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { $slider = $e; break } } catch {}
+            }
+            if (-not $slider) { Start-Sleep -Milliseconds 250 }
+        }
+        Shot "$($s.tag)-speed-sidebar"
+        if (-not $slider) { throw 'the gear opened no "Speed" slider (sidebar, Playback tab)' }
+        $r = $slider.Current.BoundingRectangle
+        # the slider's track is the top of the element, its step labels are below; the thumb
+        # starts at 1x (0.25 to 2: 43 % of the track)
+        $y = [int]($r.Top + 0.23 * $r.Height)
+        [RdSmoke]::SetCursorPos([int]($r.Left + 0.43 * $r.Width), $y) | Out-Null; Start-Sleep -Milliseconds 150
+        [RdSmoke]::mouse_event(0x0002, 0, 0, 0, [IntPtr]::Zero)
+        $moves = 0
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        try {
+            while ($sw.Elapsed.TotalSeconds -lt 4) {
+                $f = 0.05 + 0.9 * [math]::Abs((($moves % 40) / 20.0) - 1)
+                [RdSmoke]::SetCursorPos([int]($r.Left + $f * $r.Width), $y) | Out-Null
+                Start-Sleep -Milliseconds 30
+                $moves++
+            }
+            # it ends near 2x: the speed then shows that the drag reached the slider
+            [RdSmoke]::SetCursorPos([int]($r.Left + 0.9 * $r.Width), $y) | Out-Null
+            Start-Sleep -Milliseconds 150
+        } finally { [RdSmoke]::mouse_event(0x0004, 0, 0, 0, [IntPtr]::Zero) }
+        Start-Sleep -Milliseconds 500
+        if ($s.proc.HasExited) { throw "Cone exited during the drag (exit code $($s.proc.ExitCode))" }
+        # Responding: the window answers a message within 5 s (a frozen interface does not)
+        $s.proc.Refresh()
+        if (-not $s.proc.Responding) { Shot "$($s.tag)-speed-frozen"; throw 'after the drag Cone''s window does not respond (the interface froze)' }
+        try {
+            $rate = [double]::Parse([regex]::Match((Rc 'rate'), '(?m)^[>\s]*([0-9]+[.,]?[0-9]*)\s*$').Groups[1].Value.Replace(',', '.'), [Globalization.CultureInfo]::InvariantCulture)
+            Rc 'rate 1' | Out-Null
+            $t1 = Rc-Number 'get_time'; Start-Sleep -Seconds 2; $t2 = Rc-Number 'get_time'
+        } catch { throw "after the drag the player does not answer: $($_.Exception.Message)" }
+        if ($rate -lt 1.5) { throw "the speed is $($rate)x after the drag ended near 2x: the drag did not reach the slider" }
+        # the file repeats (--input-repeat): the time moves on or starts over, it does not stand still
+        if ($t2 -eq $t1) { throw "after the drag the time stands still ($t1 s, then $t2 s two seconds later)" }
+        Shot "$($s.tag)-speed-after"
+        Keys @(0x1B)   # Escape closes the sidebar
+        "$moves moves across the slider, released at $($rate)x; the window responds; time $t1 s, then $t2 s two seconds later"
+    }
+}
 # Ctrl+Q; $hevc: a quit the watchdog ends is a warning (known HEVC quit stall), otherwise a failure
 function Quit-Cone($s, [bool]$hevc) {
     if ($s.proc.HasExited) { throw 'Cone had already exited' }
@@ -396,6 +456,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
             Check-FsTopBar $s | Out-Null
             # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
             Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
+            Check-SpeedDrag $s | Out-Null
         }
         Check-Quit $s ($codec -eq 'hevc') $exe $video $subs | Out-Null
     } catch {
