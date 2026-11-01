@@ -1,0 +1,128 @@
+# Smoke checks of a Cone (public) Linux build on a GitHub Ubuntu 24.04 runner, after every Linux
+# build (build-linux.yml calls it) or by hand on an earlier build run's artifacts
+# (smoke-linux-manual.yml); redesign/LINUX_SMOKE_NOTES.md. The checks: .github/scripts/linux-smoke.py.
+# Xvfb, openbox and a D-Bus session with the accessibility bus; VLC's dummy audio output; Qt
+# renders in software: no picture quality or sound checks.
+# No job asks for permissions: a release run (release-linux.yml -> build-linux.yml) grants
+# contents only, and a called workflow may not ask for more than its caller grants.
+name: smoke-linux
+
+on:
+  workflow_call:
+    inputs:
+      build-run-id:
+        type: string
+        default: ''
+
+jobs:
+  # the same test media as the Windows checks (smoke-media.sh), from the same cache
+  smoke-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Cached test media
+        id: media-cache
+        uses: actions/cache@v4
+        with:
+          path: smoke-media
+          key: cone-smoke-media-${{ hashFiles('.github/scripts/smoke-media.sh') }}
+      - uses: actions/setup-python@v5
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        with:
+          python-version: '3.12'
+      - name: Generate the test media
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --disable-pip-version-check -q imageio-ffmpeg==0.6.0
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" \
+            .github/scripts/smoke-media.sh smoke-media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-linux-smoke-media
+          path: smoke-media/
+          retention-days: 1
+
+  smoke:
+    needs: smoke-media
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      BUILD_RUN_ID: ${{ inputs.build-run-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Download the portable tarball
+        id: tarball
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-x86_64
+          path: smoke-in/tarball
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - name: Download the Debian package
+        id: deb
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-deb-amd64
+          path: smoke-in/deb
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-smoke-media
+          path: smoke-in/media
+      - name: Build files present
+        env:
+          TARBALL_OK: ${{ steps.tarball.outcome }}
+          DEB_OK: ${{ steps.deb.outcome }}
+        run: |
+          [ "$TARBALL_OK" = success ] || { echo "::error title=Cone Linux smoke checks::the build's tarball artifact (cone-linux-x86_64) could not be downloaded: its upload failed (Actions storage full?) or it expired"; exit 1; }
+          [ "$DEB_OK" = success ] || { echo "::error title=Cone Linux smoke checks::the build's Debian package artifact (cone-linux-deb-amd64) could not be downloaded: its step or upload failed, or it expired"; exit 1; }
+          [ -n "$BUILD_RUN_ID" ] && echo "Checking the artifacts of build-linux run $BUILD_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          ls -la smoke-in/*
+
+      # each apt attempt is cut after 4 minutes, at most 3 attempts (apt has stalled on the runner);
+      # Ubuntu's VLC, to prove the .deb installs next to it and leaves it alone
+      # libegl1 / libopengl0: the tarball's Qt needs them like every desktop has them; the bare runner
+      # does not (the .deb depends on them, so only the tarball sessions need them here)
+      - name: Desktop test tools and Ubuntu's VLC
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get update -q && \
+            sudo timeout 240 apt-get install -y -q --no-install-recommends \
+              xvfb openbox xdotool imagemagick dbus dbus-x11 at-spi2-core python3-pyatspi \
+              desktop-file-utils libxcb-cursor0 vlc-bin vlc-plugin-base \
+              libegl1 libegl-mesa0 libopengl0 libpipewire-0.3-0t64 libjack-jackd2-0 libssh-4 libsmbclient0 libgtk-3-0t64 && break
+            echo "::warning::apt attempt $i failed or stalled"
+            [ "$i" = 3 ] && exit 1
+          done
+          dpkg-query -W vlc-bin
+
+      - name: Smoke checks
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp &
+          sleep 2
+          export DISPLAY=:99 QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1 QT_ACCESSIBILITY=1
+          dbus-run-session -- bash -c '
+            /usr/libexec/at-spi-bus-launcher --launch-immediately &
+            openbox &
+            sleep 2
+            /usr/bin/python3 -I .github/scripts/linux-smoke.py \
+              --tarball "$(ls smoke-in/tarball/*.tar.xz | head -n 1)" \
+              --deb "$(ls smoke-in/deb/*.deb | head -n 1)" \
+              --media smoke-in/media --out smoke-out'
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          name: cone-linux-smoke-results
+          path: smoke-out/
+          retention-days: 1

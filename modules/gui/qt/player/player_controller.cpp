@@ -1390,9 +1390,10 @@ void PlayerController::setRate( float new_rate )
         return;
 
     msg_Dbg( d->p_intf, "setRate %f", new_rate);
-    vlc_player_locker lock{ d->m_player };
-    if ( vlc_player_CanChangeRate( d->m_player ) )
     {
+        vlc_player_locker lock{ d->m_player };
+        if ( !vlc_player_CanChangeRate( d->m_player ) )
+            return;
         vlc_player_ChangeRate( d->m_player, new_rate );
 
         // Until the timer notifies the change, we need to still change
@@ -1400,8 +1401,11 @@ void PlayerController::setRate( float new_rate )
         // For position, it is supposed to be interpolated but for rate
         // the new value can be taken as is:
         d->m_rate = new_rate;
-        emit rateChanged(d->m_rate);
     }
+    // emitted once the player is unlocked, as jumpToPos does: a receiver may query the player,
+    // which locks it again (the player lock is not recursive: a lock taken twice by the same
+    // thread never returns, and the speed slider froze the whole interface)
+    emit rateChanged(d->m_rate);
 }
 
 void PlayerController::slower()
