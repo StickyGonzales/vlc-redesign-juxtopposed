@@ -53,12 +53,23 @@ Item {
     // cells between the window buttons)
     property real topBarIconPadding: VLCStyle.dp(2)
 
+    // Decision 74 (Cone build): an empty zone takes no room (the top bar's right zone, between
+    // the window buttons: Figma "Player - customize-6" closes the gap Fullscreen leaves);
+    // `dropHover` opens a slot there while a drag is over the window buttons (CustomizeTopBar)
+    property bool collapseWhenEmpty: false
+    property bool dropHover: false
+
     readonly property int count: repeater.count
     readonly property real controlsWidth: row.width
 
     readonly property real _minimumSlotWidth: VLCStyle.rd_playButtonWidth
+    readonly property bool _collapses: collapseWhenEmpty && Brand.isPublic
+    // Decision 74 (Cone build): the top bar shows its empty slots only as drop targets, while a
+    // control is dragged (Figma draws none in its free room)
+    readonly property bool _quietSlots: topBar && Brand.isPublic
 
-    implicitWidth: (count > 0) ? row.width : _minimumSlotWidth
+    implicitWidth: (count > 0) ? row.width
+                               : _collapses ? (dropHover ? iconWidth : 0) : _minimumSlotWidth
     implicitHeight: topBar ? VLCStyle.rd_topBarHeight : VLCStyle.rd_controlBarHeight
 
     // ------------------------------------------------------------------------------ gaps
@@ -150,7 +161,10 @@ Item {
             anchors.bottomMargin: anchors.topMargin
 
             visible: width > VLCStyle.dp(8)
-            color: slotDrop.containsDrag ? VLCStyle.palette.rdAccentMain : VLCStyle.palette.rdFgA3
+                     && (!root._quietSlots || root.dropHover || slotDrop.containsDrag
+                         || (root.editor !== null && root.editor.dragActive))
+            color: (slotDrop.containsDrag || root.dropHover) ? VLCStyle.palette.rdAccentMain
+                                                             : VLCStyle.palette.rdFgA3
         }
 
         DropArea {

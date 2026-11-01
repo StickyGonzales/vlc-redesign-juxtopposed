@@ -25,7 +25,9 @@
 // where Figma's top bar has its fullscreen button (without the window buttons of a client side
 // decoration: at the right end). Items move between this bar, the control bar and the box.
 // The cone and the window buttons stay where they are: the window buttons keep Figma's dashed
-// outline (36x24) but cannot be moved.
+// outline (36x24) but cannot be moved. Decision 74 (Cone build): what cannot be moved does not
+// look movable, so the window buttons have no outline; an emptied right zone closes at once
+// (Figma "-6"), and a drag over the window buttons opens a slot there to drop into.
 import QtQuick
 
 import VLC.MainInterface
@@ -123,6 +125,7 @@ Rectangle {
             id: rightZone
 
             width: implicitWidth
+            collapseWhenEmpty: true
             height: parent.height
 
             topBar: true
@@ -140,7 +143,28 @@ Rectangle {
         }
     }
 
-    // a window button: its icon in Figma's 36x24 dashed outline; it stays in place
+    // Decision 74 (Cone build): the emptied right zone takes drops over the whole window button
+    // group; the zone opens a slot between maximize and close while a drag is over it
+    DropArea {
+        anchors.fill: rightGroup
+        enabled: Brand.isPublic && rightZone.count === 0
+
+        onEntered: (drag) => {
+            if (!rightZone.acceptsDrag(drag)) {
+                drag.accepted = false
+                return
+            }
+            rightZone.dropHover = true
+        }
+        onExited: rightZone.dropHover = false
+        onDropped: (drop) => {
+            rightZone.dropHover = false
+            rightZone.dropAt(drop, 0)
+        }
+    }
+
+    // a window button: its icon in Figma's 36x24 dashed outline; it stays in place (Decision 74,
+    // Cone build: without the outline, it cannot be moved)
     component LockedWindowButton: Item {
         property string iconName: ""
 
@@ -151,6 +175,7 @@ Rectangle {
             anchors.centerIn: parent
             width: parent.width
             height: VLCStyle.dp(24)
+            visible: !Brand.isPublic
             color: VLCStyle.palette.rdFgA3
         }
 
