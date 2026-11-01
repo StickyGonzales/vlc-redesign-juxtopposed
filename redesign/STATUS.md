@@ -10,8 +10,8 @@ Hard rule (CLAUDE.md, 2026-11-01): before starting a task, read this table, the 
 | macOS experimental build (Apple Silicon first, .dmg with Cone Player.app, ad-hoc signed, smoke checks, MACOS_NOTES.md; never released) | web | wip/macos-build | in progress |
 | Up Next card: "Turn off autoplay" as a real accessible button (UIA Invoke, keyboard); no wrong or empty episode name as the next episode starts (the two LOW issues of the #87 row) | web | wip/fix-up-next-card | in progress |
 | HEVC speed slider freeze fix | web | wip/fix-speed-freeze | done: PR #85 merged 2026-11-01 after the PC retest (HEVC and H.264: responding, keeps playing). The code already shipped in 1.1.2 through #83, which merged this branch |
-| Installer upgrade re-adds the desktop shortcut | web | wip/fix-upgrade-shortcut (not started yet) | queued after the Up Next PR |
-| Linux .deb file name with `~` (GitHub stores `.`; SHA256SUMS mismatch) | web | wip/fix-deb-asset-name (not started yet) | queued after the Up Next PR |
+| Installer upgrade re-adds the desktop shortcut (#73) | web 2 | wip/fix-upgrade-shortcut | in progress |
+| Linux .deb file name with `~` (GitHub stores `.`; SHA256SUMS mismatch) | web 2 | wip/fix-deb-asset-name | in progress |
 | Update notice: Skip this version | PC | wip/update-skip-version | PR #86 up (draft), CI green, tested on Windows. A second copy the web session wrote is not on GitHub: it is not continued |
 | OSD inventory and style mockups (P7-08 research) | web | wip/osd-inventory | PR #81 up (draft) |
 | Player: hide the cursor only during playback | none of the sessions: an outside contributor's fork (krishvaghasiya705), against redesign | wip/cursor-playing-hide (fork) | PR #74 up; not claimed by the web session |
