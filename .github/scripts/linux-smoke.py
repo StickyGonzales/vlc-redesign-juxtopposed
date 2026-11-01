@@ -460,6 +460,31 @@ def check_plugins(s):
     return check(f'{s.tag}: every plug-in loads', body)
 
 
+def check_identity(s, folder):
+    """the names the desktop matches against the menu entry: the window class (X11; Qt's
+    desktop file name is the Wayland app id), and the media controls' entry and name (MPRIS)"""
+    def body():
+        with open(os.path.join(folder, 'cone-player.desktop')) as f:
+            wmclass = [l.split('=', 1)[1].strip() for l in f if l.startswith('StartupWMClass=')]
+        prop = run(['xprop', '-id', s.win, 'WM_CLASS']).stdout.strip()
+        if not wmclass or f'"{wmclass[0]}"' not in prop:
+            raise CheckFailed(f'StartupWMClass {wmclass} does not match the window: {prop}')
+
+        def mpris(name):
+            r = run(['dbus-send', '--session', '--print-reply', '--dest=org.mpris.MediaPlayer2.cone',
+                     '/org/mpris/MediaPlayer2', 'org.freedesktop.DBus.Properties.Get',
+                     'string:org.mpris.MediaPlayer2', f'string:{name}'])
+            parts = r.stdout.split('"')
+            if r.returncode or len(parts) < 2:
+                raise CheckFailed(f'MPRIS {name}: {(r.stdout + r.stderr).strip()}')
+            return parts[1]
+        entry, identity = mpris('DesktopEntry'), mpris('Identity')
+        if entry != 'cone-player' or identity != 'Cone Player':
+            raise CheckFailed(f'MPRIS DesktopEntry "{entry}", Identity "{identity}" (cone-player, Cone Player expected)')
+        return f'{prop}; MPRIS DesktopEntry "{entry}", Identity "{identity}"'
+    return check(f'{s.tag}: window class and media controls name cone-player.desktop', body)
+
+
 def session(exe, codec, tag, full, env=None):
     video = os.path.join(MEDIA, f'test-{codec}.mp4')
     s = Session(exe, video, tag, env)
@@ -475,6 +500,8 @@ def session(exe, codec, tag, full, env=None):
             check_seek(s)
             check_menu(s)
             check_speed(s)
+            if codec == 'h264':
+                check_identity(s, os.path.dirname(os.path.realpath(exe)))
 
         def retry_quit():
             nonlocal s

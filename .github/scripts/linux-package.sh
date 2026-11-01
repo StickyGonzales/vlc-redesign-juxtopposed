@@ -206,7 +206,8 @@ if [ "$NAME" = cone ]; then
         echo 'Categories=AudioVideo;Player;Video;Audio;'
         echo 'Keywords=Player;Video;Audio;Music;Movie;Subtitles;'
         echo 'StartupNotify=true'
-        echo "StartupWMClass=$NAME"
+        # the app's X11 window class and Wayland app id (BRAND_DESKTOP_FILE, brand.hpp)
+        echo "StartupWMClass=$ID"
         echo "MimeType=$MIMETYPES$SUBTITLE_TYPES"
     } > "$U/share/applications/$ID.desktop"
     cp "$U/share/applications/$ID.desktop" "$DIR/$ID.desktop"

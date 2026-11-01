@@ -40,11 +40,12 @@
 #include "dbus_root.h"
 #include "dbus_common.h"
 
-/* redesign (brand layer, public profile): media player name and desktop file (cone.desktop of
- * the Linux package, modules/gui/qt/qt.cpp setDesktopFileName) that desktops show for Cone */
+/* redesign (brand layer, public profile): media player name and desktop ID (cone-player.desktop
+ * of the Linux packages, modules/gui/qt/qt.cpp setDesktopFileName) that the desktops' media
+ * controls show for Cone, with its icon */
 #ifdef VLC_BRAND_PUBLIC
-# define BRAND_MPRIS_IDENTITY "Cone"
-# define BRAND_DESKTOP_ENTRY "cone"
+# define BRAND_MPRIS_IDENTITY "Cone Player"
+# define BRAND_DESKTOP_ENTRY "cone-player"
 #else
 # define BRAND_MPRIS_IDENTITY _("VLC media player")
 # define BRAND_DESKTOP_ENTRY PACKAGE
