@@ -6,7 +6,8 @@ Hard rule (CLAUDE.md, 2026-11-01): before starting a task, read this table, the 
 
 | Task | Owner session | Branch | State |
 |---|---|---|---|
-| Up Next: card when the credits start, and the Netflix-style rework (no start prompt, strong/weak names, Turn off autoplay, migration, seasons, seek/pause) | web | wip/up-next-credits | in progress: all code pushed (5fd8617721), build-linux / build-windows running, then the sandbox tests and one draft PR |
+| Up Next: card when the credits start, and the Netflix-style rework (no start prompt, strong/weak names, Turn off autoplay, migration, seasons, seek/pause) | web | wip/up-next-credits | PR #87 up (draft), build-windows #161 and build-linux #62 green with smoke, sandbox 51 of 51; Windows retest steps in redesign/UP_NEXT_CREDITS_NOTES.md |
+| macOS experimental build (Apple Silicon first, .dmg with Cone Player.app, ad-hoc signed, smoke checks, MACOS_NOTES.md; never released) | web | wip/macos-build | in progress |
 | HEVC speed slider freeze fix | web | wip/fix-speed-freeze | done: PR #85 merged 2026-11-01 after the PC retest (HEVC and H.264: responding, keeps playing). The code already shipped in 1.1.2 through #83, which merged this branch |
 | Installer upgrade re-adds the desktop shortcut | web | wip/fix-upgrade-shortcut (not started yet) | queued after the Up Next PR |
 | Linux .deb file name with `~` (GitHub stores `.`; SHA256SUMS mismatch) | web | wip/fix-deb-asset-name (not started yet) | queued after the Up Next PR |
