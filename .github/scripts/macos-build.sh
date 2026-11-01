@@ -27,13 +27,15 @@ MIN_MACOS=12.0
 : "${QT_ROOT:?QT_ROOT is not set}"
 
 # VLC's macOS build environment (compilers, ac_cv_* overrides, contrib flags). It resets PATH:
-# VLC_PATH is appended to it, so the Qt tools come through there
+# VLC_PATH is appended to it, so the Qt tools come through there. Never Homebrew's folder:
+# extras/tools then takes Homebrew's autotools and pkg-config instead of building its own, and
+# autoconf misses their macros (run 41321099631). python3 is the system's (/usr/bin)
 export VLC_FORCE_KERNELVERSION=19
 # configure looks for "qmake6"; Qt's macOS binaries call it "qmake"
 SHIM="$ROOT/.qt-shim"
 mkdir -p "$SHIM"
 ln -sf "$QT_ROOT/bin/qmake" "$SHIM/qmake6"
-export VLC_PATH="$SHIM:$QT_ROOT/bin:$(dirname "$(command -v python3)")"
+export VLC_PATH="$SHIM:$QT_ROOT/bin"
 # found before VLC's environment resets PATH
 CCACHE_BIN="$(command -v ccache || true)"
 # shellcheck source=/dev/null

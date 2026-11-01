@@ -16,6 +16,7 @@ One asset per branch and package kind: `<branch>--<kind>`, where `/` in the bran
 | build-windows | `win64-installer.exe` | the NSIS installer (public profile) |
 | build-linux | `linux-x86_64.tar.xz` | the portable tarball |
 | build-linux | `x86_64.AppImage` | the AppImage (chmod +x after downloading) |
+| build-macos | `macos-arm64.dmg` / `macos-x86_64.dmg` | the experimental macOS .dmg (redesign/MACOS_NOTES.md) |
 
 Example: a public build of `wip/next-test` gives `wip-next-test--win64-public.zip` and `wip-next-test--win64-installer.exe`.
 
