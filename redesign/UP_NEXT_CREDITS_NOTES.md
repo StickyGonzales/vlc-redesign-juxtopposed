@@ -66,10 +66,35 @@ An independent review of the first commit found 8 points:
 - **Left as is:** smoothing several learns (one press is enough, as decided) and caching the chapter list (cheap).
 
 ## Runs
-Builds and sandbox tests running (filled in when done).
+| Run | Head | Result |
+|---|---|---|
+| build-windows #160 | first part | failed: `char[]` to `QByteArrayView` in rd_up_next.cpp (Qt 6.8 only; the local Qt 6.4 accepted it), fixed in 5fd8617721 |
+| build-windows #161 (41315444738) | 5fd8617721 | green, Windows smoke included |
+| build-linux #62 (41315441762) | 5fd8617721 | green, Linux smoke included |
+| unit test `test_rd_credits_point` | 5fd8617721 | 69 of 69 |
+
+**Sandbox (Linux build #62, Xvfb, 14 cases, 51 of 51 checks pass):**
+
+| Case | Checks | What it shows |
+|---|---|---|
+| chap | 4/4 | card at an "End Credits" chapter; an "Ending" chapter mid-episode ignored |
+| learn | 7/7 | Next mid-episode never learned; a press in the window learned (lead 72988 ms), a later one updated it (76980 ms) |
+| subs | 2/2 | SRT in `Subs/` with ♪ and "Subtitles by" lines: point 520000 ms "(setting, tuned by the subtitles)" |
+| embedded | 2/2 | the same subtitles inside an MKV |
+| post | 5/5 | post-credits scene: card without a countdown, countdown only in the last seconds |
+| plain | 7/7 | no chapters, no subtitles: card at the 1 min setting, none earlier |
+| noprompt | 1/1 | no start prompt |
+| weak | 5/5 | `Show 01 02 …`: "Episode 2. Plays when you choose", no countdown, nothing plays |
+| turnoff | 5/5 | "Turn off autoplay": card gone, setting Off, logged |
+| answeredno | 3/3 | a folder answered No before stays off |
+| vlcrc0 / vlcrc2 | 1/1, 1/1 | old Off stays off; old Always reads as On |
+| seasons | 2/2 | Season 2 uses the point learned in Season 1 |
+| seek | 6/6 | seek back hides the card, forward brings it back, Cancel keeps it away; pause stops the countdown |
+
+Picture: `redesign/fix-shots/up_next_credits_card.jpg` (left: the credits-phase card with subtitles; right: the weak-name card).
 
 ## Windows retest (PC session)
-Build: `gh workflow run build-windows.yml --ref wip/up-next-credits`. Test with a show folder of 3+ episodes (`Show S01E01.mkv` …), with Settings > Playback > Episodes > Autoplay next episode set to **Always** (or answer Yes). With "Log to file" on, the log lines above show where each point came from.
+Build: `gh workflow run build-windows.yml --ref wip/up-next-credits`. Test with a show folder of 3+ episodes (`Show S01E01.mkv` …), with Settings > Playback > Episodes > Play episodes in a row **On** (the default). With "Log to file" on, the log lines above show where each point came from.
 1. **No chapters, no subtitles.** Seek to the middle: no card. Seek to 2 minutes before the end: no card. At 1 minute before the end the card shows "Up next … Next episode / Cancel" and "Plays at the end of the episode", without a countdown; in the last 10 s it counts down as before.
 2. **Setting.** Show Up Next = Last 2 min: the card comes at 2 minutes before the end; Last 30 s: at 30 s.
 3. **Credits chapter.** An episode with an "End Credits" chapter in its last minutes: the card at that chapter. A chapter named "Ending" in the middle of the episode: no card there.
