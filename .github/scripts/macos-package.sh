@@ -179,7 +179,9 @@ echo "app: $(du -sh "$APP" | cut -f1)"
 DMG="$OUT/Cone-$VERSION${BRAND_PACKAGE_SUFFIX:-}-macos-$ARCH.dmg"
 STAGE="$(mktemp -d)/Cone Player"
 mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/"
+# ditto keeps the files' times: VLC checks its plug-in cache against them (to the second), and a
+# plain copy made every plug-in look modified ("stale plugins cache", run 41336561372)
+ditto "$APP" "$STAGE/$NAME.app"
 ln -s /Applications "$STAGE/Applications"
 cp "$ROOT/COPYING" "$STAGE/COPYING.txt"
 rm -f "$DMG"

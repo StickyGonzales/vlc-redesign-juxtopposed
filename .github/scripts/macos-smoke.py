@@ -135,9 +135,11 @@ def ax_names(pid, limit=4000):
             err, v = AXUIElementCopyAttributeValue(el, attr, None)
             if err == 0 and isinstance(v, str) and v:
                 names.add(v)
-        err, kids = AXUIElementCopyAttributeValue(el, 'AXChildren', None)
-        if err == 0 and kids:
-            stack.extend(kids)
+        # Qt lists its windows under AXWindows, not always under the app's AXChildren
+        for attr in ('AXChildren', 'AXWindows'):
+            err, kids = AXUIElementCopyAttributeValue(el, attr, None)
+            if err == 0 and kids:
+                stack.extend(kids)
     return names
 
 
@@ -323,16 +325,20 @@ def check_settings(s):
         time.sleep(0.5)
         before = shot(f'{s.tag}-settings-before')
         key(KEY_P, command=True)
+        # the accessibility tree when this runner exposes Qt's content (on run 41336561372 it held the
+        # menu bar only, while the screenshot showed the Settings dialog open): else the picture
+        found = False
         if trusted:
             end = time.time() + 8
-            while 'Search settings' not in ax_names(s.proc.pid):
-                if time.time() > end:
-                    shot(f'{s.tag}-settings-fail')
-                    with open(os.path.join(OUT, f'{s.tag}-ax-names.txt'), 'w') as f:
-                        f.write('\n'.join(sorted(ax_names(s.proc.pid))))
-                    raise CheckFailed('Cmd+P: no Settings dialog ("Search settings") within 8 s '
-                                      f'(the accessibility names: {s.tag}-ax-names.txt)')
+            while time.time() < end:
+                if 'Search settings' in ax_names(s.proc.pid):
+                    found = True
+                    break
                 time.sleep(0.4)
+            if not found:
+                with open(os.path.join(OUT, f'{s.tag}-ax-names.txt'), 'w') as f:
+                    f.write('\n'.join(sorted(ax_names(s.proc.pid))))
+        if found:
             shot(f'{s.tag}-settings')
             key(KEY_ESCAPE)
             end = time.time() + 5
@@ -341,21 +347,22 @@ def check_settings(s):
                     raise CheckFailed('Escape did not close the Settings dialog')
                 time.sleep(0.3)
             return 'Cmd+P opens the Settings dialog ("Search settings" in the accessibility tree); Escape closes it'
-        # no accessibility access: the dialog covers the middle of the window
-        time.sleep(2)
+        # the picture: the dialog (dark grey, about 30 of 255) covers the middle of the black video;
+        # two screenshots of the same paused-looking frame differ by less than 2
+        time.sleep(0 if trusted else 2)
         opened = shot(f'{s.tag}-settings')
         d_open = region_diff(before, opened, s.win[1:])
         key(KEY_ESCAPE)
         time.sleep(1.5)
         closed = shot(f'{s.tag}-settings-closed')
         d_closed = region_diff(opened, closed, s.win[1:])
-        if d_open < 25:
+        if d_open < 12:
             raise CheckFailed(f'Cmd+P: the window did not change (difference {d_open:.1f})')
-        if d_closed < 25:
+        if d_closed < 12:
             raise CheckFailed(f'Escape: the window did not change back (difference {d_closed:.1f})')
         return (f'Cmd+P changes the middle of the window (difference {d_open:.1f}), Escape changes it '
-                f'back ({d_closed:.1f}); screenshots settings / settings-closed (no accessibility access '
-                'on this runner)')
+                f'back ({d_closed:.1f}); screenshots settings / settings-closed (Qt\'s content is not in '
+                'this runner\'s accessibility tree)')
     return check(f'{s.tag}: Settings opens', body)
 
 
