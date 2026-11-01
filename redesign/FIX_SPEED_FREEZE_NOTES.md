@@ -70,9 +70,11 @@ Windows: `.github/scripts/win64-smoke.ps1` (this branch). Linux: `.github/script
 | Run | Result |
 |---|---|
 | Linux sandbox, build-linux #53 (wip/next-test, without the fix), the new `linux-smoke.py` | the speed check **fails**: "Cone exited during the drag (exit code -6)" (the assertion above) |
-| build-windows on this branch (head c6aa4e7dcf) | running |
-| build-windows #153 (41303303636), test-only `wip/test-speed-check-only` = the check without the fix | running (expected: the speed check fails) |
-| build-linux on `wip/linux-smoke` (bf74a5c28b) = the fix + the Linux check | running |
+| **build-windows #153 (41303303636)**, test-only `wip/test-speed-check-only` = the check **without** the fix | the speed check **fails** in both sessions: "after the drag Cone's window does not respond (the interface froze)"; then Ctrl+Q is never handled (still running 10 s later), as in the PC session's report |
+| **build-windows #154 (41303559683)**, this branch (c6aa4e7dcf) | build and **all smoke checks pass**: zip-h264 "127 moves across the slider, released at 1.75x; the window responds; time 14 s, then 17 s"; zip-hevc the same (14 s, then 16 s); quit 2.1 s / 1.44 s |
+| **build-linux #57 (41303592768)**, `wip/linux-smoke` (bf74a5c28b) = the fix + the Linux check | build and **all smoke checks pass**: tar-h264 "118 moves, released at 1.75x; the interface answers (0.02 s)"; tar-hevc "120 moves, released at 1.75x (0.04 s)"; quit 0.11 s |
+
+Checks: privacycheck 0. No QML or build list change.
 
 ## Windows retest (PC session)
 Build: `gh workflow run build-windows.yml --ref wip/fix-speed-freeze`.
