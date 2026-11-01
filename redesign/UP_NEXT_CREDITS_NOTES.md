@@ -1,6 +1,6 @@
-# Up Next card when the credits start (branch wip/up-next-credits)
+# Up Next: the card when the credits start, no start prompt (branch wip/up-next-credits)
 
-Branch `wip/up-next-credits`, made from `origin/wip/next-test`. Draft pull request into `wip/next-test`. Cone extra (Decision 71, part of Autoplay next episode), Cone build only (Up Next is off in the vlc profile). Interface only: `modules/gui/qt` and `redesign/UP_NEXT_PLAN.md` (the decision is its section 5.4).
+Branch `wip/up-next-credits`, made from `origin/wip/next-test`. Draft pull request into `wip/next-test`. Cone extra (Decision 71, part of Autoplay next episode), Cone build only (Up Next is off in the vlc profile). Interface only: `modules/gui/qt` and `redesign/UP_NEXT_PLAN.md` (the decisions are its sections 2.3 and 5.4). Both decisions of the first part were confirmed by StickyGonzales on 2026-11-01: the new Show Up Next setting replaces the old one, and Forget all also clears the learned credits points.
 
 ## What changed
 Before, the card showed in the last seconds only (10 s by default). On a 56-minute episode with 2 minutes of credits it never showed while the credits rolled.
@@ -35,6 +35,25 @@ Before, the card showed in the last seconds only (10 s by default). On a 56-minu
 
 The log says where the point comes from: `up next: credits point <ms> of <length> (chapter|learned|setting[, tuned by the subtitles])`, `up next: subtitles for the credits: ...`, `up next: credits point learned for the show: ...`.
 
+## Part 2: no start prompt, strong and weak names (UP_NEXT_PLAN.md 2.3)
+1. **No "Looks like a show. Play episodes in a row?" prompt** at the start of episodes, like Netflix.
+   - The setting Settings > Playback > Episodes > **Play episodes in a row** is On / Off, default On; "Ask for each show" is gone.
+   - `qt-autoplay-next` becomes a bool. `RdShowPrompt.qml` and the prompt code are removed.
+2. **Strong names autoplay** (S01E02, 1x02, "Season 1 Episode 2"): the countdown runs at the end, as before.
+   **Weak names** (01 02 03, "Part 2", "Episode 2", "E02"):
+   - no autoplay item;
+   - the card shows Next episode and Cancel with "Plays when you choose", never a countdown;
+   - nothing plays unless the user clicks.
+3. **"Turn off autoplay"**, a small link on the card, switches the setting off: the card goes and the autoplay item leaves the queue.
+   - Decision (Claude): the full card only. The compact pill (narrow windows) leaves it out, since a wider pill would hide in more windows.
+4. **Migration:**
+   - a saved Off (0) stays off;
+   - Ask (1) reads as On;
+   - Always (2) falls back to the default On;
+   - a folder answered No to the old prompt, or turned off in the sidebar, keeps autoplay off (its "no" in `rd-shows.json`).
+5. **Season folders share a show:** the show root is the parent of the season folders, so Season 2 uses the credits point learned in Season 1.
+6. **Seeking back** before the credits point hides the card; it comes back when playback reaches the point again, unless Cancel was pressed. **Pausing** pauses the countdown, which follows the playback time.
+
 ## Review
 An independent review of the first commit found 8 points:
 - **Fixed in the second commit:**
@@ -63,3 +82,11 @@ Build: `gh workflow run build-windows.yml --ref wip/up-next-credits`. Test with 
 6. **Post-credits scene.** The card shows at the credits and stays without a countdown during the scene after them; the scene plays to its last 10 s.
 7. **Cancel / Next episode.** Cancel hides the card for the rest of the episode, with no countdown at the end. Next episode starts the next episode at once.
 8. **A 56-minute episode with 2 minutes of credits** (the report): the card while the credits roll.
+9. **No start prompt.** A fresh portable Cone, a show episode: no "Looks like a show" question at the start, in the first minute or later. Settings > Playback > Episodes shows "Play episodes in a row" as a toggle, On.
+10. **Strong vs weak.**
+    - `Show S01E01.mkv` … autoplays at the end with the 10 s countdown.
+    - A folder of `Show 01.mkv`, `Show 02.mkv` … (each over 10 minutes): the card shows near the end with Next episode and "Plays when you choose", no countdown, and nothing plays at the end. Next episode plays 02.
+11. **Turn off autoplay.** On the card, click "Turn off autoplay": the card goes, nothing plays at the end, and the setting is Off. Turn it on again in Settings.
+12. **Migration.** Before installing this build, set the old setting to Off in 1.1.x: it stays off after the update. A folder answered No to the old prompt in 1.1.x stays off; another folder autoplays.
+13. **Seasons.** `Show/Season 1/…S01E01` and `Show/Season 2/…S02E01`. Press Next during the credits of S01E01 (1 min 15 s before the end), then open S02E01: its card comes 1 min 15 s before the end.
+14. **Seek and pause.** With the card up, seek back to the middle: it goes; seek forward past the point: it comes back. After Cancel it stays away. Pause during the countdown: the number stands still and goes on when playing again.
