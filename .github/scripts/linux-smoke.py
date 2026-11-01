@@ -354,7 +354,80 @@ def check_menu(s):
     check(f'{s.tag}: "..." opens the main menu in fullscreen', fs)
 
 
+def check_speed(s):
+    """the playback speed slider (sidebar, Playback tab): a real drag across it while the video
+    plays, then Cone must still answer: the interface (AT-SPI), the cli (speed and time) and the
+    time moves on. Before the fix the first speed change from the interface made it lock the
+    player twice: an assertion build aborts, a release build freezes (FIX_SPEED_FREEZE_NOTES.md)"""
+    def body():
+        if s.proc.poll() is not None:
+            raise CheckFailed(f'Cone is not running (exit code {s.proc.returncode})')
+        s.focus()
+        s.show_bars()
+        g = find('Playback Settings', 5, role='push button')
+        if not g:
+            raise CheckFailed('the control bar has no "Playback Settings" button')
+        xdo('mousemove', g[0] + g[2] // 2, g[1] + g[3] // 2)
+        time.sleep(0.3)
+        xdo('click', 1)
+        r = find('Speed', 5, role='slider')
+        shot(f'{s.tag}-speed-sidebar')
+        if not r:
+            raise CheckFailed('the gear opened no "Speed" slider (sidebar, Playback tab)')
+        x, y, w, h = r
+        # the track is the top of the element, its step labels are below; the thumb starts at
+        # 1x (0.25 to 2: 43 % of the track)
+        ty = y + int(0.23 * h)
+        xdo('mousemove', x + int(0.43 * w), ty)
+        time.sleep(0.15)
+        xdo('mousedown', 1)
+        moves = 0
+        end = time.time() + 4
+        try:
+            while time.time() < end:
+                f = 0.05 + 0.9 * abs(((moves % 40) / 20.0) - 1)
+                xdo('mousemove', x + int(f * w), ty)
+                time.sleep(0.03)
+                moves += 1
+            # it ends near 2x: the speed then shows that the drag reached the slider
+            xdo('mousemove', x + int(0.9 * w), ty)
+            time.sleep(0.15)
+        finally:
+            xdo('mouseup', 1)
+        time.sleep(0.5)
+        if s.proc.poll() is not None:
+            raise CheckFailed(f'Cone exited during the drag (exit code {s.proc.returncode})')
+        t0 = time.time()
+        if not find('Play/Pause', 5, role='push button'):
+            shot(f'{s.tag}-speed-frozen')
+            raise CheckFailed('after the drag the interface does not answer (AT-SPI, 5 s)')
+        ui = time.time() - t0
+        try:
+            out = rc('rate')
+            rate = float([l.strip().lstrip('>').strip() for l in out.splitlines()
+                          if l.strip().lstrip('>').strip().replace('.', '', 1).isdigit()][0])
+            rc('rate 1')
+            t1 = rc_number('get_time')
+            time.sleep(2)
+            t2 = rc_number('get_time')
+        except Exception as e:  # noqa: BLE001
+            raise CheckFailed(f'after the drag the player does not answer: {e}')
+        if rate < 1.5:
+            raise CheckFailed(f'the speed is {rate}x after the drag ended near 2x: the drag did not reach the slider')
+        # the file repeats (--input-repeat): the time moves on or starts over, it does not stand still
+        if t2 == t1:
+            raise CheckFailed(f'after the drag the time stands still ({t1} s, then {t2} s two seconds later)')
+        shot(f'{s.tag}-speed-after')
+        xdo('key', 'Escape')
+        time.sleep(0.4)
+        return (f'{moves} moves across the slider, released at {rate}x; the interface answers '
+                f'({ui:.2f} s); time {t1} s, then {t2} s two seconds later')
+    return check(f'{s.tag}: speed slider drag, Cone keeps responding', body)
+
+
 def quit_cone(s, hevc):
+    if s.proc.poll() is not None:
+        raise CheckFailed(f'Cone had already exited (exit code {s.proc.returncode})')
     s.focus()
     xdo('key', 'ctrl+q')
     t = time.time()
@@ -401,6 +474,7 @@ def session(exe, codec, tag, full, env=None):
             check_settings(s)
             check_seek(s)
             check_menu(s)
+            check_speed(s)
 
         def retry_quit():
             nonlocal s
