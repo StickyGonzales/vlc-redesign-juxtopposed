@@ -1,0 +1,22 @@
+# The Linux smoke checks (smoke-linux.yml) by hand, on the artifacts of an earlier build-linux run
+# (they last one day): Actions > smoke-linux-manual > Run workflow > the build run's id.
+name: smoke-linux-manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-run-id:
+        description: 'build-linux run id (artifacts at most one day old)'
+        type: string
+        required: true
+
+permissions:
+  # reading another run's artifacts
+  actions: read
+  contents: read
+
+jobs:
+  smoke:
+    uses: ./.github/workflows/smoke-linux.yml
+    with:
+      build-run-id: ${{ inputs.build-run-id }}

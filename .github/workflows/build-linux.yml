@@ -266,3 +266,11 @@ jobs:
             "linux-x86_64.tar.xz=$(ls linux/*-linux-x86_64.tar.xz 2>/dev/null | head -n 1)" \
             "x86_64.AppImage=$(ls linux/*.AppImage 2>/dev/null | head -n 1)" \
             "amd64.deb=$(ls linux/*.deb 2>/dev/null | head -n 1)"
+
+  # after every Linux build (the public profile): the smoke checks of the tarball, its per-user
+  # install and the Debian package on an Ubuntu 24.04 runner (smoke-linux.yml,
+  # redesign/LINUX_SMOKE_NOTES.md); a failed check fails the run, and a release run
+  # (release-linux.yml) waits for them
+  smoke:
+    needs: linux64
+    uses: ./.github/workflows/smoke-linux.yml
