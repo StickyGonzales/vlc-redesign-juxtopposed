@@ -502,6 +502,8 @@ void SystemPalette::applyRdColors()
     {
         rdFgOnAccent = readableOn(main, darkText, lightText);
         rdFgOnAccentInverse = readableOn(main, rdBgA1, darkText);
+        // selected text on the Accent/DIm selection
+        rdSelectionText = readableOn(rdAccentDim, rdSelectionText, darkText);
     }
     m_accentLowContrast = std::min(contrastRatio(main, rdBgA1), contrastRatio(main, rdBgB2)) < 2.0;
 

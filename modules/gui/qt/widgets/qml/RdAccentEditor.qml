@@ -20,8 +20,9 @@
 // color, onboarding). A preview square and a hex field (#RRGGBB): every complete code recolors
 // the whole interface at once (MainCtx.accentColor, kept in "qt-accent-color" as the hex code,
 // so profiles keep it like the presets); Enter or a click outside keeps it, Escape goes back to
-// the accent the editor opened with. Under the field, a warning when the color is hard to see on
-// the theme's surfaces. Styled as the info popovers (RdTooltip): opaque BG/B1, radius 6,
+// the accent the editor opened with ("default" and "system" included) and to the custom swatch's
+// color. Under the field, a warning when the color is hard to see on the theme's surfaces. It
+// closes with the swatch it belongs to (a page or a dialog hiding it). Styled as the info popovers (RdTooltip): opaque BG/B1, radius 6,
 // padding 10, Inter 14.
 import QtQuick
 import QtQuick.Templates as T
@@ -38,12 +39,16 @@ T.Popup {
     // the last custom color, shown on the Custom swatch while a preset is chosen
     readonly property string lastCustomKey: "RdAccent/Custom"
 
-    // the accent when the editor opened: Escape restores it ("default" stays "default")
-    property color _openedWith
-    property bool _openedValid: false
+    // the warning's line stays reserved, so the editor never changes size while typing (the
+    // onboarding's editor sits above its swatch: a growing editor would move the field)
+    property bool reserveWarningSpace: false
 
-    // a custom color was chosen in the editor (the swatches show it)
-    signal customColorChanged(color value)
+    // the accent option and the last custom color when the editor opened: Escape restores them
+    property string _openedOption
+    property string _openedLastCustom
+
+    // the last custom color changed (the Custom swatches show it; "" for none)
+    signal lastCustomChanged(string hex)
 
     // "#RRGGBB" or "RRGGBB" as a color; anything else (still being typed) gives none
     function colorOf(text: string): var {
@@ -59,14 +64,13 @@ T.Popup {
         MainCtx.accentColor = value
         const hex = hexOf(value)
         MainCtx.setSettingValue(lastCustomKey, hex)
-        customColorChanged(value)
+        lastCustomChanged(hex)
     }
 
     function _revert() {
-        if (_openedValid)
-            MainCtx.accentColor = _openedWith
-        else
-            MainCtx.resetAccentColor()
+        MainCtx.restoreAccentOption(_openedOption)
+        MainCtx.setSettingValue(lastCustomKey, _openedLastCustom)
+        lastCustomChanged(_openedLastCustom)
         close()
     }
 
@@ -79,11 +83,21 @@ T.Popup {
     closePolicy: T.Popup.CloseOnPressOutsideParent
 
     onAboutToShow: {
-        _openedValid = MainCtx.accentColor.valid
-        _openedWith = _openedValid ? MainCtx.accentColor : rdPalette.rdAccentMain
-        field.text = hexOf(_openedWith)
+        _openedOption = MainCtx.accentOption()
+        _openedLastCustom = String(MainCtx.settingValue(lastCustomKey, ""))
+        field.text = hexOf(MainCtx.accentColor.valid ? MainCtx.accentColor : rdPalette.rdAccentMain)
         field.selectAll()
         field.forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    // the swatch it belongs to hides (another page, a search, the dialog closing): close too
+    readonly property Connections _parentConnections: Connections {
+        target: control.parent
+
+        function onVisibleChanged() {
+            if (control.opened && !control.parent.visible)
+                control.close()
+        }
     }
 
     // a dialog opening (Ctrl+P, Ctrl+N, ...) closes the editor first; the color stays
@@ -142,14 +156,23 @@ T.Popup {
 
                 Keys.onReturnPressed: control.close()
                 Keys.onEnterPressed: control.close()
+                // Escape is a shortcut of the dialog or onboarding popup: take it here first
+                Keys.onShortcutOverride: (event) => {
+                    if (event.key === Qt.Key_Escape)
+                        event.accepted = true
+                }
                 Keys.onEscapePressed: control._revert()
             }
         }
 
         // the accent of headings, icons and the seek bar would vanish on the theme's surfaces
         Text {
+            readonly property bool shown: control.rdPalette.rdAccentLowContrast
+                                          && control.colorOf(field.text) !== undefined
+
             width: VLCStyle.dp(172)
-            visible: control.rdPalette.rdAccentLowContrast && control.colorOf(field.text) !== undefined
+            visible: shown || control.reserveWarningSpace
+            opacity: shown ? 1 : 0
             wrapMode: Text.WordWrap
             text: qsTr("Hard to see on this theme. Try a brighter or darker color.")
             font.family: VLCStyle.rd_fontFamily

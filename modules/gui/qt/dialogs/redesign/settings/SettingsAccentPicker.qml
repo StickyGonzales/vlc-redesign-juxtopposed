@@ -235,8 +235,14 @@ Rectangle {
         x: customCell.width - width
         y: customCell.height + VLCStyle.dp(6)
 
-        onCustomColorChanged: (value) => {
-            root._lastCustom = String(value).toUpperCase()
+        onLastCustomChanged: (hex) => {
+            root._lastCustom = hex
+        }
+
+        // the keyboard focus goes back to the Custom cell
+        onClosed: {
+            if (customCell.visible)
+                customCell.forceActiveFocus(Qt.OtherFocusReason)
         }
     }
 }

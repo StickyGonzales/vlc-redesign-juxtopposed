@@ -124,9 +124,17 @@ T.Popup {
 
     // the player takes the keyboard focus when its media starts, which can be after the onboarding
     // opened (first start with a file): the keys (Enter, Escape) stay here while it is open
+    // the custom color editor (Cone extra) is a popup of its own: its field keeps the focus
+    property bool _editorOpen: false
+
+    // where the color row must end, in the screens' Figma coordinates: 20 before Back, which is
+    // not scaled with the screens (a narrow window brings it closer)
+    readonly property real _swatchRowLimit: (backButton.x - (screens.x + screens.width * (1 - _fit) / 2)) / _fit
+                                            - dp(20)
+
     function _keepFocus() {
         const window = contentItem.Window.window
-        if (opened && window && window.activeFocusItem && !contentItem.activeFocus)
+        if (opened && !_editorOpen && window && window.activeFocusItem && !contentItem.activeFocus)
             nextButton.forceActiveFocus(Qt.OtherFocusReason)
     }
 
@@ -216,6 +224,8 @@ T.Popup {
 
             // the screens at the Figma size, in the middle of a larger window
             Item {
+                id: screens
+
                 anchors.centerIn: parent
                 width: VLCStyle.rd_onboardingWidth
                 height: VLCStyle.rd_onboardingHeight
@@ -697,7 +707,9 @@ T.Popup {
             Row {
                 x: root.dp(41)
                 y: root.dp(655)
-                spacing: root.dp(13)
+                // 13, less when Back comes closer (a window too narrow for the Figma size)
+                spacing: Math.max(0, Math.min(root.dp(13),
+                                              (root._swatchRowLimit - x - 10 * customSwatch.width) / 9))
 
                 Repeater {
                     id: swatchRepeater
@@ -759,9 +771,18 @@ T.Popup {
 
                         x: (customSwatch.width - width) / 2
                         y: -height - VLCStyle.dp(8)
+                        reserveWarningSpace: true
 
-                        onCustomColorChanged: (value) => {
-                            customSwatch.lastCustom = String(value).toUpperCase()
+                        // the field keeps the keyboard focus (_keepFocus)
+                        onOpened: root._editorOpen = true
+                        onClosed: {
+                            root._editorOpen = false
+                            if (customSwatch.visible)
+                                customSwatch.forceActiveFocus(Qt.OtherFocusReason)
+                        }
+
+                        onLastCustomChanged: (hex) => {
+                            customSwatch.lastCustom = hex
                         }
                     }
                 }
