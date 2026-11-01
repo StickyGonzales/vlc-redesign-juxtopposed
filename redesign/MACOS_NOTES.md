@@ -53,10 +53,36 @@ On a second, clean `macos-15` runner (Apple Silicon), with the Windows and Linux
 What a runner cannot check: picture quality, sound (VLC's dummy audio output), real mouse use of the controls (there is no accessibility access to drive the interface the way the Windows and Linux checks do), Retina scaling on a real display, and Gatekeeper's first-open prompt.
 
 ## Results
-Filled in from the runs below.
+Smoke checks on GitHub's `macos-15` runner (Apple Silicon, macOS 15.8, a virtual machine), the last runs:
+
+| Check | Result |
+|---|---|
+| dmg opens, holds the app, the Applications link and COPYING.txt; the app copies out | pass |
+| ad-hoc signature verifies (`codesign --verify --deep --strict`); bundle `io.github.stickygonzales.coneplayer`, "Cone Player" | pass |
+| Gatekeeper | rejected, as expected for an app without a Developer ID (information) |
+| main window | pass, 1.1 to 2.3 s |
+| H.264 and HEVC: the playback time advances | pass, both |
+| subtitle file loads | pass |
+| Cmd+P opens Settings | the dialog opened in runs 6 and 7 (screenshots); see "Runs" for the check itself |
+| Cmd+Q | pass, under 3 s |
+| every plug-in loads (388) | pass; the plug-in cache is current (no "stale plugins cache" line since run 7) |
+| own settings folders, VLC's untouched | pass |
+| picture (information) | black in the middle of the video, with hardware **and** software decoding; the subtitles and the interface draw |
+
+![Cone on the macOS runner](fix-shots/macos-runner.png)
 
 ## What works, what doesn't
-Filled in from the runs below.
+**Works (on the runner):**
+- Cone's redesign as the interface: top bar, control bar with the seek bar, the subtitle, Settings (Global Settings: theme, accent, startup, diagnostics), the library's Home page.
+- Playback of H.264 and HEVC (time advances), external subtitles, quitting, every plug-in, Cone's own settings folders next to an installed VLC.
+- The .dmg, the app bundle, its ad-hoc signature and its Cone icon.
+
+**Not known yet / to check on a real Mac:**
+1. **The video picture.** On the runner it stays black (VLC's macOS video output `samplebufferdisplay`, embedded by the Qt interface's "platform" compositor), also with software decoding, while the subtitles drawn into the same video show. The runner is a virtual machine with a paravirtual GPU (Qt also could not create an OpenGL context there), so this is most likely the runner. **The first thing a tester checks.**
+2. **Escape in Settings** and keyboard shortcuts in general: the runner delivers synthetic keys unreliably to Qt's window (the first Cmd+P after the local network prompt was lost; Escape did not close Settings in one run).
+3. **The local network prompt:** macOS asks once whether Cone may find devices on the local network (VLC's UPnP / Bonjour discovery for the Network view); Info.plist now gives the reason. Declining it only empties the Network view.
+4. **The update notice:** Settings shows "Check for updates" On. Cone's checker looks at the Windows / Linux releases; there is no macOS release, so a Mac build should not point to one. Left as is in this experimental build (a code change, not CI); to be decided before any macOS release.
+5. **Not built:** Intel (x86_64) on every run (one checkbox on a manual run, untested), Sparkle (VLC's macOS updater), VLC's native macOS interface (Cone's design is the only interface), the fancy .dmg background (VLC's shows VLC's cone).
 
 ## Opening an unsigned app (for testers)
 Cone Player for macOS has no Apple Developer ID, so macOS says it "cannot be opened because Apple cannot check it for malicious software" the first time. Either way below works once; after that it opens normally.
@@ -75,10 +101,10 @@ xattr -dr com.apple.quarantine "/Applications/Cone Player.app"
 ## Test list for a volunteer tester
 Any Apple Silicon Mac with macOS 12 or later. Note the macOS version and the Mac model; for each step, "works" or what happened (a screenshot helps).
 1. **Install:** open the .dmg, drag Cone Player to Applications, open it (right-click > Open). Does it start, and does the window look like the screenshots in the README (dark theme, top bar, control bar)?
-2. **Play:** open an MP4 (H.264) and an MKV (HEVC / H.265) by dragging each onto the window and with the "..." menu > Open File. Picture and sound OK? Pause, seek (click and drag the seek bar), volume, mute.
+2. **Play, the picture first:** open an MP4 (H.264) and an MKV (HEVC / H.265) by dragging each onto the window and with the "..." menu > Open File. **Do you see the picture** (the runner shows it black)? Sound OK? Pause, seek (click and drag the seek bar), volume, mute.
 3. **Subtitles:** a video with an .srt next to it (same name): do the subtitles show? Switch them with the subtitle button.
 4. **Fullscreen:** the fullscreen button and F, Escape back; do the bars show and hide on mouse moves?
-5. **Settings:** Cmd+P (and the gear > Settings): does the Settings dialog open, can you change the theme and the accent color, and are they kept after quitting and opening again?
+5. **Settings:** Cmd+P (and the gear > Settings): does the Settings dialog open, does **Escape** close it, can you change the theme and the accent color, and are they kept after quitting and opening again?
 6. **Queue and library:** add a folder of videos; the queue sidebar; Next / Previous.
 7. **Keyboard:** Space, arrows, M, F, Cmd+Q. (macOS uses Cmd where Windows uses Ctrl.)
 8. **Quit:** Cmd+Q quits within a few seconds; nothing left in the Dock.
@@ -87,4 +113,14 @@ Any Apple Silicon Mac with macOS 12 or later. Note the macOS version and the Mac
 11. **Anything odd:** crashes (macOS shows a report: copy its first 40 lines), freezes, missing icons, text cut off.
 
 ## Runs
-Filled in when done.
+| Run | Head | What it showed / what changed |
+|---|---|---|
+| build-macos #1 | 0477d8adb2 | bootstrap failed: Homebrew's folder (with python3) on the build PATH made extras/tools take Homebrew's autotools and pkg-config → Homebrew kept off the PATH |
+| #2 | acaf70691b | VLC compiled; the ncurses plug-in's link lost the system libraries: VideoLAN's prebuilt contribs name their build machine's SDK (MacOSX26.2.sdk) in their .pc / .la files → pointed at the runner's SDK |
+| #3 | 21d7718077 | **the whole build passed** (Qt interface, 388 plug-ins); packaging: `bin/vlc-cache-gen` is libtool's wrapper script, macdeployqt copied QtSql's database drivers → the installed generator, no SQL drivers |
+| #4 | 905d859d99 | signing failed: `plugins.dat` (data) unsigned under Contents/Frameworks → signed inside out, as `extras/package/macosx/codesign.sh` |
+| #5 | 3b86520509 | **build, app, signature and .dmg green** (97 MB); first smoke run: window, H.264, HEVC, subtitles, Cmd+Q, plug-ins, own folders pass; Settings failed (the local network prompt held the keyboard); "stale plugins cache" (signing changed the plug-ins after the cache) |
+| #6 | cd3ba554cb | cache made after signing; prompt dismissed; Settings opened (screenshot) but Qt's content is not in the runner's accessibility tree; cache still stale |
+| #7 | 544027e979 | `cp -R` into the .dmg did not keep the files' times (VLC checks them to the second) → `ditto`; cache current; Settings opened in the picture, Escape did not close it |
+| #8 | 22e9f4c8e4 | the 30 s test video had ended before the Settings check (Cone on its Home page) → the video repeats (`--input-repeat=50`, as on Linux) |
+| #9 | a559a4a7ca | see the PR |
