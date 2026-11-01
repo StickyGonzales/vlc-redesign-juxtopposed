@@ -124,8 +124,9 @@ T.Popup {
 
     // the player takes the keyboard focus when its media starts, which can be after the onboarding
     // opened (first start with a file): the keys (Enter, Escape) stay here while it is open
-    // the custom color editor (Cone extra) is a popup of its own: its field keeps the focus
-    property bool _editorOpen: false
+    // the custom color editor (Cone extra) while it is open: a popup of its own, whose field
+    // keeps the focus
+    property var _openEditor: null
 
     // where the color row must end, in the screens' Figma coordinates: 20 before Back, which is
     // not scaled with the screens (a narrow window brings it closer)
@@ -134,8 +135,14 @@ T.Popup {
 
     function _keepFocus() {
         const window = contentItem.Window.window
-        if (opened && !_editorOpen && window && window.activeFocusItem && !contentItem.activeFocus)
+        if (!opened || !window || !window.activeFocusItem)
+            return
+        if (_openEditor) {
+            if (!_openEditor.contentItem.activeFocus)
+                _openEditor.takeFocus()
+        } else if (!contentItem.activeFocus) {
             nextButton.forceActiveFocus(Qt.OtherFocusReason)
+        }
     }
 
     Connections {
@@ -774,9 +781,9 @@ T.Popup {
                         reserveWarningSpace: true
 
                         // the field keeps the keyboard focus (_keepFocus)
-                        onOpened: root._editorOpen = true
+                        onOpened: root._openEditor = customEditor
                         onClosed: {
-                            root._editorOpen = false
+                            root._openEditor = null
                             if (customSwatch.visible)
                                 customSwatch.forceActiveFocus(Qt.OtherFocusReason)
                         }

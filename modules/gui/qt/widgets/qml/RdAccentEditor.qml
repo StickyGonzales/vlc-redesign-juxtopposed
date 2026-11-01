@@ -67,6 +67,11 @@ T.Popup {
         lastCustomChanged(hex)
     }
 
+    // the keyboard focus back in the field (a dialog's focus keeper)
+    function takeFocus() {
+        field.forceActiveFocus(Qt.OtherFocusReason)
+    }
+
     function _revert() {
         MainCtx.restoreAccentOption(_openedOption)
         MainCtx.setSettingValue(lastCustomKey, _openedLastCustom)
