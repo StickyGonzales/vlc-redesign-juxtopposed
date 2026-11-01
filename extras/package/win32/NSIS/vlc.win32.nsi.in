@@ -694,7 +694,8 @@ WinOk:
   ; shortcut component) starts in the state of the install as it is now: ticked only while a
   ; Cone Player desktop shortcut exists (#73). Memento restores the choice of the last install,
   ; so a shortcut the user deleted since came back on every upgrade, the silent one (/S)
-  ; included. A fresh install keeps the default (ticked)
+  ; included. A fresh install is ticked, also when Memento still holds the choice of an install
+  ; whose folder was deleted by hand (no previous version then, ReadPreviousVersion)
   ${If} $PreviousVersion != ""
     Call DesktopShortcutExists
     Pop $0
@@ -703,6 +704,8 @@ WinOk:
     ${Else}
       !insertmacro UnselectSection ${SEC02b}
     ${EndIf}
+  ${Else}
+    !insertmacro SelectSection ${SEC02b}
   ${EndIf}
 !endif
 

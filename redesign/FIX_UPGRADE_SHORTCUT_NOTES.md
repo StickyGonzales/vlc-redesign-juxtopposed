@@ -12,7 +12,7 @@ An upgrade or reinstall created the desktop shortcut again, also when the user h
 
 | Case | "Create a desktop shortcut" starts | Result |
 |---|---|---|
-| Fresh install (no Cone Player installed) | ticked, as before | shortcut created |
+| Fresh install (no Cone Player installed, or its folder deleted by hand) | ticked, as before | shortcut created |
 | Upgrade or reinstall, the shortcut is on the desktop | ticked | shortcut kept (re-created) |
 | Upgrade or reinstall, the shortcut was removed | **unticked** | **no shortcut** |
 | Upgrade or reinstall, the user unticks a ticked box | (ticked) | **the existing shortcut is removed** |
@@ -41,6 +41,7 @@ Silent (`/S`):
 | Same-version reinstall with shortcut | shortcut | shortcut |
 | Shortcut only on the user's own desktop | user's copy | user's copy only, no second one |
 | 0.x beta `Cone.lnk` on the desktop | `Cone.lnk` | `Cone Player.lnk` (renamed, as before) |
+| Install folder deleted by hand after an upgrade without shortcut (Memento still says unticked), install again | no install folder | `Cone Player.lnk`: counts as a fresh install (review finding, second commit) |
 
 Interactive (welcome page under Xvfb, picture `redesign/fix-shots/installer_upgrade_shortcut.jpg`):
 
