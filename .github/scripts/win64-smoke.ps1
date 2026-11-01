@@ -379,6 +379,21 @@ function Check-Quit($s, [bool]$hevc, [string]$exe, [string]$video, [string]$subs
     }
 }
 
+# every plug-in DLL loads: VLC logs "cannot load plug-in <path>: <reason>" for one Windows refuses
+# (a missing dependency DLL: error 126). Read after the quit, when the file logger has flushed
+# (fully buffered on Windows); the zip ships no plug-in cache, so its sessions load every plug-in
+function Check-PluginsLoad($s) {
+    Check "$($s.tag): every plug-in loads" {
+        if (-not (Test-Path $s.log)) { throw "no log at $($s.log)" }
+        $bad = @(Select-String -Path $s.log -Pattern 'cannot load plug-in (.+)$' | ForEach-Object {
+            $_.Matches[0].Groups[1].Value -replace '^.*[\\/]plugins[\\/]', 'plugins\' })
+        if ($bad.Count) { throw "$($bad.Count) plug-in(s) do not load: $($bad -join '; ')" }
+        $loaded = @(Select-String -Path $s.log -Pattern 'cannot read .*plugins\.dat' -SimpleMatch:$false).Count
+        if ($loaded) { 'no "cannot load plug-in" line (no plug-in cache: every plug-in was loaded at the start)' }
+        else { 'no "cannot load plug-in" line' }
+    }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -398,6 +413,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
             Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
         }
         Check-Quit $s ($codec -eq 'hevc') $exe $video $subs | Out-Null
+        Check-PluginsLoad $s | Out-Null
     } catch {
         Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
     } finally {

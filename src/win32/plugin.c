@@ -50,6 +50,48 @@ char *vlc_dlerror(void)
     return FromWide( wmsg );
 }
 
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+/* redesign: the GCC runtime DLLs that plug-ins built from C++ libraries with the GCC toolchain
+ * import (x265, libsrt, game-music-emu link libgcc_s dynamically; the posix toolchain's libgcc_s
+ * imports libwinpthread). Plug-ins resolve their imports only from System32 and the modules
+ * already loaded (LOAD_LIBRARY_SEARCH_SYSTEM32 here, SetDefaultDllDirectories in winvlc.c), so
+ * the copies the package ships next to libvlccore.dll (extras/package/win32/copy-gcc-runtime.sh)
+ * are loaded once, by full path, before the first plug-in. Without them those plug-ins failed
+ * with error 126. Libraries that are not there are skipped. */
+static BOOL CALLBACK PreloadGccRuntime(PINIT_ONCE once, void *param, void **ctx)
+{
+    static const wchar_t *const names[] = {
+        L"libwinpthread-1.dll", L"libgcc_s_seh-1.dll", L"libgcc_s_dw2-1.dll", L"libstdc++-6.dll",
+    };
+    HMODULE core;
+    wchar_t path[MAX_PATH];
+
+    (void) once; (void) param; (void) ctx;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+                            | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            (LPCWSTR)PreloadGccRuntime, &core))
+        return TRUE;
+    DWORD len = GetModuleFileNameW(core, path, MAX_PATH);
+    if (len == 0 || len >= MAX_PATH)
+        return TRUE;
+    wchar_t *name = wcsrchr(path, L'\\');
+    if (name == NULL)
+        return TRUE;
+    name++;
+    const size_t room = MAX_PATH - (size_t)(name - path);
+
+    for (size_t i = 0; i < ARRAY_SIZE(names); i++)
+    {
+        if (wcslen(names[i]) >= room)
+            continue;
+        wcscpy(name, names[i]);
+        if (GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES)
+            LoadLibraryExW(path, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    }
+    return TRUE;
+}
+#endif
+
 void *vlc_dlopen(const char *psz_file, bool lazy)
 {
     wchar_t *wfile = ToWide (psz_file);
@@ -58,6 +100,9 @@ void *vlc_dlopen(const char *psz_file, bool lazy)
 
     HMODULE handle = NULL;
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+    static INIT_ONCE runtime_once = INIT_ONCE_STATIC_INIT;
+    InitOnceExecuteOnce(&runtime_once, PreloadGccRuntime, NULL, NULL);
+
     DWORD mode;
     if (SetThreadErrorMode (SEM_FAILCRITICALERRORS, &mode) != 0)
     {
