@@ -24,6 +24,7 @@
 #include <QDate>
 #include <QDesktopServices>
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
@@ -41,12 +42,25 @@ namespace {
 
 #ifdef VLC_BRAND_PUBLIC
 const QString settingsGroup = QStringLiteral("RdUpdateCheck/");
+#ifdef Q_OS_LINUX
+// Linux is released apart from Windows, as pre-releases tagged linux-vX.Y.Z[-label]
+// (release-linux.yml), which /releases/latest never answers: the list of releases, newest first,
+// of which the newest Linux one is offered (redesign/LINUX_UX_NOTES.md)
+const QUrl latestReleaseApi(QStringLiteral(
+    "https://api.github.com/repos/StickyGonzales/vlc-redesign-juxtopposed/releases?per_page=50"));
+const QString releaseTagPrefix = QStringLiteral("linux-");
+// the release page opened by "Download" must be on GitHub; this one lists every release, the
+// Linux ones included
+const QString releasesPage = QStringLiteral(
+    "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases");
+#else
 // the releases API answers with the newest release that is neither a draft nor a pre-release
 const QUrl latestReleaseApi(QStringLiteral(
     "https://api.github.com/repos/StickyGonzales/vlc-redesign-juxtopposed/releases/latest"));
 // the release page opened by "Download" must be on GitHub; this one lists every release
 const QString releasesPage = QStringLiteral(
     "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/latest");
+#endif
 const QString releasePagePrefix = QStringLiteral("https://github.com/");
 // after the start, so the request never competes with opening the first file
 constexpr int startupDelay = 4000;
@@ -77,6 +91,36 @@ bool isNewer(const QString& version, const QString& current)
             return x > y;
     }
     return false;
+}
+
+// the release to offer out of GitHub's answer; empty when it holds none
+QJsonObject releaseOf(const QJsonDocument& answer)
+{
+#ifdef Q_OS_LINUX
+    // the highest version among the Linux releases, pre-releases included (drafts are never
+    // listed without a token); of equal versions the first, the newest
+    QJsonObject newest;
+    QString newestVersion;
+    const QJsonArray releases = answer.array();
+    for (const QJsonValue& value : releases)
+    {
+        const QJsonObject release = value.toObject();
+        const QString tag = release.value(QStringLiteral("tag_name")).toString();
+        if (release.value(QStringLiteral("draft")).toBool() || !tag.startsWith(releaseTagPrefix))
+            continue;
+        const QString version = versionOf(tag);
+        if (version.isEmpty())
+            continue;
+        if (newestVersion.isEmpty() || isNewer(version, newestVersion))
+        {
+            newest = release;
+            newestVersion = version;
+        }
+    }
+    return newest;
+#else
+    return answer.object();
+#endif
 }
 #endif
 
@@ -249,8 +293,12 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     const bool explicitCheck = m_explicitCheck;
     m_explicitCheck = false;
 
-    // 404: GitHub has no release that is not a pre-release yet, so nothing newer either
-    if (httpStatus == 404)
+    const QJsonDocument answer = QJsonDocument::fromJson(body);
+    const QJsonObject release = releaseOf(answer);
+
+    // 404: GitHub has no release that is not a pre-release yet; on Linux, a list without a
+    // Linux release: nothing newer either
+    if (httpStatus == 404 || (httpStatus == 200 && answer.isArray() && release.isEmpty()))
     {
         msg_Dbg(m_intf, "update check: no release yet");
         setNoticeVisible(false);
@@ -258,7 +306,6 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         return;
     }
 
-    const QJsonObject release = QJsonDocument::fromJson(body).object();
     const QString version = versionOf(release.value(QStringLiteral("tag_name")).toString());
     if (httpStatus != 200 || version.isEmpty())
     {
