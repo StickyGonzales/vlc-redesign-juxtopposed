@@ -398,7 +398,6 @@ void RdUpNext::onInputChanged(bool hasInput)
     }
     m_lastSingleAdd = SharedInputItem();
     m_cancelled = false;
-    setCounting(false);
     m_creditsPointMs = -1;
     m_dialogueEndMs = -1;
     m_subtitleScanStarted = false;
@@ -414,6 +413,8 @@ void RdUpNext::onInputChanged(bool hasInput)
     else
         setCard(false, CardNext);
     m_stillPending = false;
+    // after the card is hidden: the card keeps "Playing in" while it fades out
+    setCounting(false);
 
     m_url = hasInput ? m_player->getUrl() : QUrl();
     m_path = localPath(m_url);
