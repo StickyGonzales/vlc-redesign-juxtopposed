@@ -73,10 +73,26 @@ FocusScope {
             interval: MainCtx.mouseHideTimeout
 
             onTriggered: {
+                if (Player.playingState !== Player.PLAYING_STATE_PLAYING)
+                    return
+
                 // Cursor hides when toggleControlBarButton is not visible
                 videoSurface.forceActiveFocus()
                 videoSurface.cursorShape = Qt.BlankCursor
                 root._csdOnVideo = false
+            }
+        }
+
+        Connections {
+            target: Player
+
+            function onPlayingStateChanged() {
+                if (Player.playingState === Player.PLAYING_STATE_PLAYING)
+                    mouseAutoHide.restart()
+                else {
+                    mouseAutoHide.stop()
+                    videoSurface.cursorShape = Qt.ArrowCursor
+                }
             }
         }
     }
