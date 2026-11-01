@@ -571,7 +571,8 @@ FocusScope {
                     }
 
                     Binding on cursorShape {
-                        when: playerToolbarVisibilityFSM.started
+                        when: Player.playingState === Player.PLAYING_STATE_PLAYING
+                            && playerToolbarVisibilityFSM.started
                             && !playerToolbarVisibilityFSM.isVisible
                             && !interactiveAutoHideTimer.running
                             && !rootPlayer._mouseNearTop && !rootPlayer._mouseNearBottom
