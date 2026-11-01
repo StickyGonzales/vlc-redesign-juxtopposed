@@ -1,5 +1,21 @@
 # STATUS
 
+- Updated: 2026-11-01 01:15. **Web session, overnight queue of 2026-10-31: all items done, each a draft PR into wip/next-test (none merged, nothing released, no PR watched).**
+
+  | PR | Item | What | CI |
+  |---|---|---|---|
+  | #82 | 1 | **Fullscreen "..." menu (real bug, Windows only):** the library's hidden top bar laid its window buttons' hit-test rectangles over "..." on entering fullscreen, so Windows answered "maximize" there. Window buttons now claim their place only while shown (CSDWindowButtonSet.qml). New smoke checks click "..." in a window and in fullscreen | before: fullscreen fail (41251648899); **build-windows #150 green**, fullscreen check passes |
+  | #50 / #53 | 2a | Linux postproc fix and release build without assertions, brought up to date (189 commits behind), mergeable | build-linux #49, #50 green |
+  | #79 | 2b | Tarball install.sh / uninstall.sh for the current user (~/.local, no sudo): menu entry, icons 16-256, "Open with" for video/audio/subtitles, never the default; same entry and icons in the AppImage | build-linux #51 green |
+  | #80 | 2c | .deb `cone-player` (amd64): /opt/cone-player, /usr/bin/cone-player, beside Ubuntu's VLC; built in build-linux and release-linux | build-linux #55 green; clean Ubuntu 24.04 container: install, play, remove |
+  | #83 | 2d | Linux smoke checks after every Linux build (Xvfb, dummy audio): H.264 / HEVC, subtitles, seek, Settings, "..." menu, quit < 3 s, plug-ins, tarball install/uninstall, .deb install/remove | #54 red (runner lacked libEGL), **#56 green, 31 of 31** |
+  | #84 | 2e | README Linux section (.deb, AppImage, tarball) and Linux release text | covered by #56 |
+  | #75 | 3a | No "Looks like a show" prompt for files too short to autoplay | build-windows #145 green |
+  | #76 | 3b | M shows "Muted / Pressed M" (core, own build) | build-windows #146 green |
+  | #77 | 3c | Filter sliders report rounded values to screen readers | build-windows #147 green |
+  | #78 | 3d | Cone.exe --version / --help print into the terminal (core, own build) | build-windows #148 green |
+
+  Stacked: #79 -> #80 -> #83 -> #84 (merge in that order). Retest steps in each PR's notes file (FIX_FS_MENU_NOTES, LINUX_INSTALL/DEB/SMOKE_NOTES, FIX_*_NOTES).
 - Updated: 2026-10-31 23:00. **Merged into wip/next-test: PR #66 (smoke media from the Actions cache, ffmpeg from PyPI instead of apt) and PR #65 (fullscreen top bar stays while the pointer is on its buttons).** Test branch build 41243837748 (93011e90b93): smoke 22 of 22, including the new 'fullscreen top bar stays under the pointer' for H.264 and HEVC. By hand on this PC (fullscreen, pointer from the top edge onto '...' in 2 px steps, resting 2 s): the bar stays (released 1.1.0: the bar hides, the report reproduced).
   - **New bug for the web session (MED, open since 1.1.0 or earlier, not caused by #65):** in fullscreen a real click on the top bar's '...' opens no main menu (no new window of Cone's, no menu items in UI Automation), while in a window the same click opens it (Open File(s), Keyboard Shortcuts, Customize Player). On 1.1.0 the click was impossible (the bar hid). To be confirmed by hand once; runs verifyruns\pr65c..pr65e.
   - **Status of the four tasks of 2026-10-31 (StickyGonzales):** nothing on GitHub since 2026-10-27 17:20 for web 1's missing-DLL fix and 'closed abruptly / restore playlist' popup fix, or web 2's installer polish and Decision 74 Customize Player fixes. 1.1.1 waits for them.
