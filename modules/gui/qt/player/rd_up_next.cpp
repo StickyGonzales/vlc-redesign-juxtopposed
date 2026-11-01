@@ -847,13 +847,17 @@ void RdUpNext::setCounting(bool counting)
 void RdUpNext::playNow()
 {
     // a weak name pattern has no autoplay item until the user asks for the next episode
-    if (!queuedPresent() && !autoplays() && m_nextIndex >= 0 && m_blockedReason.isEmpty())
+    const bool queueWeak = !queuedPresent() && !autoplays() && m_nextIndex >= 0 && m_blockedReason.isEmpty();
+    if (!queueWeak && !queuedPresent())
+        return;
+    // the card hides before the queue changes, so it never shows a changed episode while it fades
+    setCard(false, CardNext);
+    if (queueWeak)
         queueNext(false);
     if (!queuedPresent())
         return;
     // the rest of the episode is skipped: it counts as watched
     markWatched(m_url);
-    setCard(false, CardNext);
     m_playlist->next();
 }
 

@@ -1,0 +1,39 @@
+# Up Next card: two LOW fixes from the #87 retest (branch wip/fix-up-next-card)
+
+Branch `wip/fix-up-next-card`, made from `origin/wip/next-test` (with #87 merged). Draft pull request into `wip/next-test`. Cone extra (Decision 71), Cone build only. Interface only: `modules/gui/qt/player/qml/RdUpNextCard.qml`, `modules/gui/qt/player/rd_up_next.cpp`.
+
+## 1. "Turn off autoplay" did not react to the screen reader's activate action
+**Seen (PC session, build-windows #161):** a mouse click works; UI Automation's Invoke (Narrator, keyboard-less accessibility) does nothing.
+
+**Cause:** the link was a bare `T.AbstractButton` with the role `Link` and no press action. Cone's other buttons (`RdButton`, `TextToolButton`, ...) answer the activate action with `Accessible.onPressAction: control.clicked()`; this one had none.
+
+**Fix:**
+- role **Button** (the card's other two are buttons too), with a description ("Turns off Play episodes in a row");
+- `Accessible.onPressAction` presses it as a click does (UIA Invoke on Windows, AT-SPI "press" on Linux);
+- keyboard: Tab reaches it after Cancel (unchanged); **Space** presses it (AbstractButton), and now **Enter / Return** as well.
+- Its look is unchanged (the underlined link text).
+
+## 2. The card showed the wrong or an empty episode name as the next episode started
+**Seen:** for about 0.6 s as the next episode starts, the card shows the episode after it ("S01E03. Playing in 1 seconds") or an empty name ("Strong Show, . Plays when you choose") before it hides.
+
+**Cause:** when the next episode starts, RdUpNext hides the card (`setCard(false)`, a 150 ms fade) and right away starts the detection for the new episode: the next episode is reset (empty name), then found again (the one after the new episode). The card read RdUpNext's values live, so the fading card showed both. On a busy start of playback the fade can take longer than its 150 ms.
+
+**Fix:**
+- **Frozen texts:** everything the card shows (mode, show name, episode line, seconds, countdown line, thumbnail, season, waiting/counting, autoplays) is held while the card fades out: the values of the moment it began to hide. Shown, or fully hidden, they follow RdUpNext as before (so its next showing, and the compact-pill width check, use current values).
+- **Hide first:** Next episode / Play now hides the card before it queues the next episode (weak names queue it only on that click), so the queue change never reaches a visible card.
+
+## Checks
+- `qmlcheck.py`: errors 1 (the known HighResolutionTimeWidget stub), crashed 0; `buildlists.py`: 0 problems; `privacycheck.py`: 0 problems.
+
+## Runs
+Filled in when done.
+
+## Windows retest (PC session)
+Build: `gh workflow run build-windows.yml --ref wip/fix-up-next-card`. A show folder with 3+ strong episodes (`Show S01E01.mkv` …) and one with 4 weak ones (`Show 01.mkv` …), each over 10 minutes; Play episodes in a row On.
+1. **Invoke.** Seek to 1 min before the end of S01E01: the card shows. With Accessibility Insights (or Narrator: move to "Turn off autoplay", Caps Lock+Enter), invoke **Turn off autoplay**: the card goes, nothing plays at the end, Settings > Playback > Episodes > Play episodes in a row is Off. Turn it On again.
+2. **Keyboard.** Card up again: Tab to Next episode, Tab to Cancel, Tab to Turn off autoplay (its text lights up): **Enter** turns it off. Again with **Space**.
+3. **Inspect.** Accessibility Insights shows "Turn off autoplay" as a **Button** with the Invoke pattern.
+4. **Strong names, countdown end.** Let S01E01 count down to the end (record the screen, or watch closely): the card fades with "S01E02" and its last number, never "S01E03" or an empty name; S01E02 starts.
+5. **Play now.** In S01E02's countdown, click Play now: the same, the card fades with "S01E03".
+6. **Weak names.** In `Show 01`, 1 min before the end, click Next episode: the card fades with "Episode 2" and "Plays when you choose", never an empty name; Show 02 starts.
+7. **Cancel / Escape** still hide the card as before; the card comes back on the next episode's credits.
