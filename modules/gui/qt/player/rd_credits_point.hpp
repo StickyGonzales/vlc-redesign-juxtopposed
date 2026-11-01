@@ -51,8 +51,11 @@ constexpr int kWindowPercent = 15;
 constexpr qint64 kDialogueGapMs = 60 * 1000;
 // the farthest the subtitles may move the learned or the set point
 constexpr qint64 kSubtitleTuneMs = 2 * 60 * 1000;
-// a move to the next episode closer to the end than this is the episode ending, not a choice
+// a move to the next episode closer to the end than this (past the countdown) is the episode
+// ending, not a choice
 constexpr qint64 kNaturalEndMs = 3 * 1000;
+// the subtitle scan starts this long before the credits window
+constexpr qint64 kScanLeadMs = 2 * 60 * 1000;
 
 // how long the credits window of an episode is
 qint64 windowLength(qint64 lengthMs);

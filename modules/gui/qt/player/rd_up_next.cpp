@@ -429,6 +429,12 @@ void RdUpNext::onInputChanged(bool hasInput)
 void RdUpNext::startDetection()
 {
     ++m_generation;
+    // a scan of the subtitles runs again for the new detection (its result names the generation)
+    m_subtitleScanStarted = false;
+    m_dialogueEndMs = -1;
+    if (m_subtitleScan)
+        m_subtitleScan->cancel();
+    m_subtitleScan.reset();
     m_showKnown = false;
     m_show = rdepisode::Show();
     m_nextIndex = -1;
@@ -618,6 +624,7 @@ void RdUpNext::updateCard()
             m_lastShowKey = showKey();
             m_lastShowRoot = m_show.root;
             m_lastShowName = m_show.name;
+            m_lastNextPath = localPath(nextUrl());
         }
     }
 
@@ -655,8 +662,9 @@ void RdUpNext::updateCard()
     const qint64 timeMs = time.toMilliseconds();
     const double rate = std::max(0.01f, m_player->getRate());
 
-    // the subtitle lines of the credits window, read once, in the background
-    startSubtitleScan(lengthMs);
+    // the subtitle lines of the credits window, read once in the background, shortly before it
+    if (timeMs >= rdcredits::windowStart(lengthMs) - rdcredits::kScanLeadMs)
+        startSubtitleScan(lengthMs);
 
     // the end of the episode: the last `countdown` seconds, in real seconds at any speed
     const qint64 remainingMs = lengthMs - timeMs;
@@ -768,21 +776,27 @@ void RdUpNext::learnCreditsPoint(const QString& newPath)
 {
     const QString key = m_lastShowKey;
     const QString root = m_lastShowRoot;
+    const QString nextPath = m_lastNextPath;
     const qint64 timeMs = m_lastTimeMs;
     const qint64 lengthMs = m_lastLengthMs;
     m_lastShowKey.clear();
     m_lastShowRoot.clear();
+    m_lastNextPath.clear();
     m_lastTimeMs = -1;
     m_lastLengthMs = -1;
     if (key.isEmpty() || newPath.isEmpty() || root.isEmpty())
         return;
-    // another episode of the same show (Next, the card, the queue), not the file starting again
-    const QString cleanRoot = QDir::cleanPath(root) + QLatin1Char('/');
-    if (!normalizedPath(newPath).startsWith(normalizedPath(cleanRoot)) || normalizedPath(newPath) == normalizedPath(m_path))
+    // only a move on to the next episode of the show (Next, the card, the queue), not Previous,
+    // another episode picked in the library or the file starting again
+    if (nextPath.isEmpty() || normalizedPath(newPath) != normalizedPath(nextPath)
+            || !normalizedPath(newPath).startsWith(normalizedPath(QDir::cleanPath(root) + QLatin1Char('/'))))
         return;
-    // only inside the credits window, and not the episode simply ending
+    // only inside the credits window, and never in the countdown: a Play now there, or the episode
+    // simply ending (a container a few seconds longer than its picture), says nothing about the
+    // credits
     const qint64 leadMs = lengthMs - timeMs;
-    if (!rdcredits::inWindow(timeMs, lengthMs) || leadMs <= rdcredits::kNaturalEndMs)
+    const qint64 countdownMs = qint64(m_countdown) * 1000 + rdcredits::kNaturalEndMs;
+    if (!rdcredits::inWindow(timeMs, lengthMs) || leadMs <= countdownMs)
         return;
     msg_Dbg(m_intf, "up next: credits point learned for the show: %lld ms before the end",
             static_cast<long long>(leadMs));

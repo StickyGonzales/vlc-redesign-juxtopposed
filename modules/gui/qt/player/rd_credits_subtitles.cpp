@@ -291,10 +291,14 @@ QVector<rdcredits::Line> RdCreditsSubtitles::fromEmbedded()
         else
         {
             // the tracks are announced while the demuxer opens: no text track, no read
-            if (scan.text)
+            // and a file the demuxer cannot seek in is never read from its start
+            bool canSeek = false;
+            if (demux_Control(demux, DEMUX_CAN_SEEK, &canSeek) != VLC_SUCCESS)
+                canSeek = false;
+            const qint64 seekMs = std::max<qint64>(0, rdcredits::windowStart(m_lengthMs) - kSeekMarginMs);
+            if (scan.text && canSeek
+                    && demux_Control(demux, DEMUX_SET_TIME, VLC_TICK_FROM_MS(seekMs), false) == VLC_SUCCESS)
             {
-                const qint64 seekMs = std::max<qint64>(0, rdcredits::windowStart(m_lengthMs) - kSeekMarginMs);
-                demux_Control(demux, DEMUX_SET_TIME, VLC_TICK_FROM_MS(seekMs), false);
                 const vlc_tick_t deadline = vlc_tick_now() + VLC_TICK_FROM_SEC(kTimeBudgetSeconds);
                 while (!cancelled() && !scan.past && vlc_tick_now() < deadline
                        && demux_Demux(demux) == VLC_DEMUXER_SUCCESS)

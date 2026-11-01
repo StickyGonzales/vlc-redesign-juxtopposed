@@ -49,10 +49,13 @@ bool inWindow(qint64 timeMs, qint64 lengthMs)
 
 bool isCreditsChapterName(const QString& name)
 {
-    // "Credits", "End Credits", "Closing credits", "Outro", "Ending", "ending theme"
-    static const QRegularExpression credits(QStringLiteral("\\b(?:credits|outro|ending)\\b"),
+    // "Credits", "End Credits", "Closing credits", "Outro", "Ending", "ending theme", "ED" (anime);
+    // not a scene around them: "Pre-Credits Scene", "Mid-credits", "Post-credits"
+    static const QRegularExpression credits(QStringLiteral("\\b(?:credits|outro|ending)\\b|^\\s*ed\\s*$"),
                                             QRegularExpression::CaseInsensitiveOption);
-    return credits.match(name).hasMatch();
+    static const QRegularExpression scene(QStringLiteral("\\b(?:pre|mid|post)[\\s-]*credits?\\b"),
+                                          QRegularExpression::CaseInsensitiveOption);
+    return credits.match(name).hasMatch() && !scene.match(name).hasMatch();
 }
 
 QString plainText(const QString& text)

@@ -116,6 +116,8 @@ class RdUpNext : public QObject
     // remembered answers (Settings > Playback > Episodes)
     Q_PROPERTY(int rememberedYes READ rememberedYes NOTIFY storeChanged FINAL)
     Q_PROPERTY(int rememberedNo READ rememberedNo NOTIFY storeChanged FINAL)
+    // shows with a learned credits point (Forget all clears them too)
+    Q_PROPERTY(int rememberedCredits READ rememberedCredits NOTIFY storeChanged FINAL)
 
 public:
     enum Mode { ModeOff = 0, ModeAsk = 1, ModeAlways = 2 };
@@ -150,6 +152,7 @@ public:
     bool subtitlesOn() const { return m_subtitlesOn; }
     int rememberedYes() const;
     int rememberedNo() const;
+    int rememberedCredits() const { return int(m_learned.size()); }
 
     // the card's buttons
     Q_INVOKABLE void playNow();
@@ -323,6 +326,8 @@ private:
     qint64 m_lastTimeMs = -1;
     qint64 m_lastLengthMs = -1;
     QString m_lastShowKey;
+    // the next episode at that time: only a move to it is learned
+    QString m_lastNextPath;
     QString m_lastShowRoot;
     QString m_lastShowName;
     // the credits point learned per show (time before the end), keyed like the answers

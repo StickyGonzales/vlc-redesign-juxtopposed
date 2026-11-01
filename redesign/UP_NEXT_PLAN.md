@@ -300,16 +300,16 @@ Before this, the card showed in the last seconds only (or at a credits chapter, 
 **Hard rule.** The card can only appear inside the **credits window**: the last 8 minutes of the episode, or its last 15 % when that is shorter (episodes under about 53 minutes). Any signal that points earlier is ignored, so the card never shows in the middle of an episode.
 
 **Inside the window, in this order:**
-1. **Chapters.** A chapter whose name contains "credits", "end credits", "outro" or "ending" (whole words, any case), only when it starts inside the window. Exact.
-2. **Learned per show.** The user went on to another episode of the same show (Next, the card's button, a click in the queue) inside the credits window of an earlier episode, more than 3 s before its end. Cone remembers how long before the end that was and shows the card at the same point in the following episodes.
+1. **Chapters.** A chapter whose name contains "credits", "end credits", "outro" or "ending" (whole words, any case), or is "ED", only when it starts inside the window. Exact. "Pre-credits", "mid-credits" and "post-credits" scenes are not the credits.
+2. **Learned per show.** The user went on to the next episode of the show (Next, the card's button, a click on it in the queue) inside the credits window of an earlier episode, before the countdown. Cone remembers how long before the end that was and shows the card at the same point in the following episodes.
    - One press is enough; a later press inside the window updates it.
-   - A press outside the window (skipping an episode mid-way) is never learned. Neither is the episode simply ending.
+   - A press outside the window (skipping an episode mid-way) is never learned. Neither is a Play now during the countdown, the episode simply ending, Previous, or another episode picked in the library.
    - Kept per show root folder in `rd-shows.json` (`"credits": {"<show folder>": {"leadMs": ..., "name": ...}}`). Forget all clears it too.
    - A learned point that falls outside a shorter episode's window is ignored for that episode.
 3. **The setting** "Show Up Next" (Settings > Playback > Episodes): Last 30 s / 1 min / 2 min, default 1 min (`qt-autoplay-credits-lead`). It replaces "At the end of the episode / When the credits start": chapters are now always used. A shorter episode holds it inside its window.
 
 **Subtitles, a helper only.** If the episode has a text subtitle track, it can fine-tune the point from 2 or 3, never more than 2 minutes and never out of the window. It is never the only reason to show the card.
-- **Which subtitles:** an external SRT / ASS / SSA / WebVTT file (the ones VLC loaded, then the files next to the episode or in a Subs folder whose name starts with the episode's), else an embedded text track (SubRip, ASS, tx3g). The embedded track is read by opening the file a second time and demuxing only the window, on the Up Next worker thread, with a 20 s budget.
+- **Which subtitles:** an external SRT / ASS / SSA / WebVTT file (the ones VLC loaded, then the files next to the episode or in a Subs folder whose name starts with the episode's), else an embedded text track (SubRip, ASS, tx3g). The embedded track is read by opening the file a second time and demuxing only the window, on the Up Next worker thread, with a 20 s budget. It starts 2 minutes before the window, never at the start of the episode, and a file the demuxer cannot seek in is not read.
 - **Ignored:** picture subtitles (PGS, VobSub, DVB). Nothing reads text in the picture.
 - **The dialogue end:** the end of the first real dialogue line in the window that is followed by a gap of 60 s or more (to the next dialogue line or the end), or by music lines only.
   - Music lines start with "#" or carry ♪ / ♫.

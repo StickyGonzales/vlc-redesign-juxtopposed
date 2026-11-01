@@ -87,6 +87,11 @@ void testChapterNames()
     check(!isCreditsChapterName(QStringLiteral("Pending")), "Pending is no ending");
     check(!isCreditsChapterName(QStringLiteral("Chapter 5")), "Chapter 5");
     check(!isCreditsChapterName(QStringLiteral("Intro")), "Intro");
+    check(isCreditsChapterName(QStringLiteral("ED")), "ED (anime)");
+    check(!isCreditsChapterName(QStringLiteral("Edge")), "Edge is no ED");
+    check(!isCreditsChapterName(QStringLiteral("Pre-Credits Scene")), "a pre-credits scene is a story scene");
+    check(!isCreditsChapterName(QStringLiteral("Mid-credits")), "mid-credits");
+    check(!isCreditsChapterName(QStringLiteral("Post Credits")), "post credits");
 }
 
 void testDecideChapter()

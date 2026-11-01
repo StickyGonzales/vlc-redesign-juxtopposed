@@ -211,7 +211,7 @@ SettingsPage {
         // the answers given per show folder (rd-shows.json); they do not follow the profiles
         SettingsRow {
             text: qsTr("Remembered shows")
-            description: qsTr("The shows you answered the \"Looks like a show\" question for, or turned autoplay on or off for in the Playback tab. Forget all asks again for each show.")
+            description: qsTr("The shows you answered the \"Looks like a show\" question for, or turned autoplay on or off for in the Playback tab. Forget all asks again for each show and forgets where their credits start.")
             keywords: "autoplay show remembered forget"
             available: root._autoplayOn
 
@@ -236,7 +236,7 @@ SettingsPage {
                 Widgets.RdButton {
                     style: Widgets.RdButton.Style.Plain
                     text: qsTr("Forget all")
-                    enabled: RdUpNext.rememberedYes + RdUpNext.rememberedNo > 0
+                    enabled: RdUpNext.rememberedYes + RdUpNext.rememberedNo + RdUpNext.rememberedCredits > 0
                     onClicked: RdUpNext.forgetAll()
                 }
             }
