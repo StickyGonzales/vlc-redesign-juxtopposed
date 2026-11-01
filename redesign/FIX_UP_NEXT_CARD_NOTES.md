@@ -30,10 +30,24 @@ Branch `wip/fix-up-next-card`, made from `origin/wip/next-test` (with #87 merged
 - `qmlcheck.py`: errors 1 (the known HighResolutionTimeWidget stub), crashed 0; `buildlists.py`: 0 problems; `privacycheck.py`: 0 problems.
 
 ## Runs
-Filled in when done.
+| Run | Head | Result |
+|---|---|---|
+| build-windows #162, build-linux #63 | 6f2ffad23b (button, frozen texts) | green; the recording showed the card coming back with the episode after it (the real cause) |
+| build-windows #165, build-linux #65 | 16085f3c6c (no stale time) | green; one frame of "Plays at the end of the episode" at full opacity before the fade |
+| **build-windows #167, build-linux #70** | **2ab12be858** (hide before the countdown stops) | **green, smoke included** |
+
+**Linux sandbox on build-linux #70** (Xvfb, AT-SPI, 10-minute generated episodes):
+| Check | Result |
+|---|---|
+| invoke: "Turn off autoplay" is a push button with a Press action; the activate action hides the card, logs "autoplay turned off from the card", no countdown afterwards | 5 of 5 |
+| keyboard: Tab reaches "Turn off autoplay" (11 presses from the video), Return turns autoplay off and hides the card | 4 of 4 |
+| strong names, countdown end, 20 fps recording | the card keeps "S01E02, Playing in 1 s" through its fade; S01E02 starts; no other text at any frame |
+| weak names, Next episode, 20 fps recording | the card keeps "Episode 2, Plays when you choose" through its fade; Weak Show 02 starts |
+
+Picture: `redesign/fix-shots/up_next_card_hide.jpg` (the frames around the fade, both cases). The Windows-only part (UI Automation's Invoke and Narrator) is retest step 1 below.
 
 ## Windows retest (PC session)
-Build: `gh workflow run build-windows.yml --ref wip/fix-up-next-card`. A show folder with 3+ strong episodes (`Show S01E01.mkv` …) and one with 4 weak ones (`Show 01.mkv` …), each over 10 minutes; Play episodes in a row On.
+Build: build-windows #167 (or `gh workflow run build-windows.yml --ref wip/fix-up-next-card`). A show folder with 3+ strong episodes (`Show S01E01.mkv` …) and one with 4 weak ones (`Show 01.mkv` …), each over 10 minutes; Play episodes in a row On.
 1. **Invoke.** Seek to 1 min before the end of S01E01: the card shows. With Accessibility Insights (or Narrator: move to "Turn off autoplay", Caps Lock+Enter), invoke **Turn off autoplay**: the card goes, nothing plays at the end, Settings > Playback > Episodes > Play episodes in a row is Off. Turn it On again.
 2. **Keyboard.** Card up again: Tab to Next episode, Tab to Cancel, Tab to Turn off autoplay (its text lights up): **Enter** turns it off. Again with **Space**.
 3. **Inspect.** Accessibility Insights shows "Turn off autoplay" as a **Button** with the Invoke pattern.
