@@ -33,3 +33,9 @@ A manual build is Cone 0.1.0, so any 1.x answer is newer. In PowerShell, per ste
 4. **A newer version.** Answer v1.0.3, clear the day, start: the notice "Cone Player 1.0.3 is available" shows; the ini no longer has `SkippedVersion`; Settings has no "Skipped version" row.
 5. **Undo.** Skip 1.0.3, open Settings > General, click **Undo Skip of 1.0.3**: the row goes away and the notice shows again.
 6. **Later and Escape** behave as before (hidden until the next day).
+
+## 5. Runs
+| Run | Result |
+|---|---|
+| build-windows 41312915117 (1d6c53e0724) | build and **all smoke checks pass** |
+| PC session, 2026-11-01, that build with the test hook (buttons through UI Automation) | 1: notice 'Cone Player 1.0.2 is available' with Download, Later, Skip this version; Skip hides it, ini SkippedVersion=1.0.2. 2: next start with 1.0.2 skipped: no notice. 4: answer 1.0.3: the notice shows 1.0.3 and SkippedVersion is gone. 5: Skip 1.0.3 stores it; next start no notice; Settings > General shows the Skipped version row (button 'Offer Cone Player 1.0.3 again'); Check Now shows the notice for 1.0.3; Undo clears SkippedVersion, the row goes, the notice shows again. **All steps pass.** |
