@@ -59,6 +59,8 @@ Linux (`.github/scripts/linux-smoke.py`, Xvfb, the pointer read with XFixesGetCu
 
 `smoke-linux.yml` installs `libxfixes3` for the Linux check.
 
+The window and fullscreen checks first ask the cli whether the video plays (`status`). After the paused check they resume with the cli's `pause` (a toggle): its `play` does not resume a paused player (`vlc_player_Start` returns at once on a started player). The first run used `play`, so its fullscreen check ran on a paused video and rightly saw the pointer kept (build-linux #75); checked by hand on that build: after `play` the status stays `pause`, after `pause` it is `play`.
+
 ## 5. Runs
 
 | Run | Result |

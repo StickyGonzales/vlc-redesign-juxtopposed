@@ -328,7 +328,12 @@ def check_pointer(s):
     rc('seek 1')
     time.sleep(1)
 
+    def must_play():
+        if '( play state:' not in rc('status'):
+            raise CheckFailed('the video is not playing (cli status), so the pointer may stay')
+
     def window():
+        must_play()
         s.focus()
         moved, still = still_over_video(640, 360, 4.5)
         if not moved:
@@ -351,10 +356,13 @@ def check_pointer(s):
                 raise CheckFailed('the pointer hid while the video was paused')
             return f'still shown ({still} pixels) 4.5 s after the last move while paused'
         finally:
-            rc('play')
+            # 'pause' toggles; the cli's 'play' does not resume a paused player (vlc_player_Start
+            # returns at once on a started player)
+            rc('pause')
             time.sleep(1)
 
     def fullscreen():
+        must_play()
         s.focus()
         xdo('key', 'f')
         time.sleep(2)

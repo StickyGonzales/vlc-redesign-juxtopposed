@@ -237,6 +237,9 @@ function Check-Pointer($s) {
     # near the start, so the clip (30 s, repeated) does not start over during the three checks
     Rc 'seek 1' | Out-Null
     Start-Sleep -Seconds 1
+    $mustPlay = {
+        if ((Rc 'status') -notmatch '\( play state:') { throw 'the video is not playing (cli status), so the pointer may stay' }
+    }
     $still = {
         param([int]$x, [int]$y)
         [RdSmoke]::SetCursorPos($x, $y) | Out-Null; Start-Sleep -Milliseconds 100
@@ -246,6 +249,7 @@ function Check-Pointer($s) {
         return @($moved, (Pointer-Pixels))
     }
     Check "$($s.tag): pointer hides while playing (window)" {
+        & $mustPlay
         Focus-Window $s.hwnd
         $r = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$r) | Out-Null
         $cx = [int](($r.Left + $r.Right) / 2); $cy = [int](($r.Top + $r.Bottom) / 2)
@@ -266,11 +270,14 @@ function Check-Pointer($s) {
             if ($after -eq 0) { throw 'the pointer hid while the video was paused' }
             "still shown ($after pixels) 4.5 s after the last move while paused"
         } finally {
-            Rc 'play' | Out-Null
+            # 'pause' toggles; the cli's 'play' does not resume a paused player (vlc_player_Start
+            # returns at once on a started player)
+            Rc 'pause' | Out-Null
             Start-Sleep -Seconds 1
         }
     } | Out-Null
     Check "$($s.tag): pointer hides while playing (fullscreen)" {
+        & $mustPlay
         Focus-Window $s.hwnd
         $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
         try {
