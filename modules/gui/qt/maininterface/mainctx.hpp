@@ -409,6 +409,10 @@ public:
 
     QWindow *intfMainWindow() const;
 
+    // redesign: the accent goes back to the theme's own ("default"); the custom color editor's
+    // Escape (RdAccentEditor.qml)
+    Q_INVOKABLE void resetAccentColor() { setAccentColor(QColor()); }
+
     Q_INVOKABLE QVariant settingValue(const QString &key, const QVariant &defaultValue) const;
     Q_INVOKABLE void setSettingValue(const QString &key, const QVariant &value);
 

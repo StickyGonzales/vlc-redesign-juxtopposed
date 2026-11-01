@@ -561,6 +561,8 @@ T.Popup {
         }
 
         property color swatchColor
+        // the Custom swatch before a custom color exists: the spectrum (Cone extra)
+        property bool spectrum: false
 
         implicitWidth: VLCStyle.dp(64, VLCStyle.scale)
         implicitHeight: VLCStyle.dp(64, VLCStyle.scale)
@@ -596,6 +598,18 @@ T.Popup {
                     height: width
                     radius: width / 2
                     color: swatch.swatchColor
+                    gradient: swatch.spectrum ? spectrumGradient : null
+
+                    Gradient {
+                        id: spectrumGradient
+
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "#E15032" }
+                        GradientStop { position: 0.25; color: "#C49E23" }
+                        GradientStop { position: 0.5; color: "#19A234" }
+                        GradientStop { position: 0.75; color: "#185DD3" }
+                        GradientStop { position: 1.0; color: "#F052B3" }
+                    }
                 }
             }
 
@@ -677,11 +691,13 @@ T.Popup {
                 }
             }
 
-            // the 9 accent colors (Decision 15): 64 x 64 every 80 px from x 41, y 655
+            // the 9 accent colors (Decision 15): 64 x 64 from x 41, y 655; Figma's 16 px gaps are
+            // 13 here, so the Custom swatch after them (Cone extra, CUSTOM_ACCENT_NOTES.md) still
+            // ends 20 px before Back (x 820)
             Row {
                 x: root.dp(41)
                 y: root.dp(655)
-                spacing: root.dp(16)
+                spacing: root.dp(13)
 
                 Repeater {
                     id: swatchRepeater
@@ -707,9 +723,45 @@ T.Popup {
                                 item.forceActiveFocus(Qt.TabFocusReason)
                         }
                         Keys.onRightPressed: (event) => {
-                            const item = swatchRepeater.itemAt(index + 1)
-                            if (item)
-                                item.forceActiveFocus(Qt.TabFocusReason)
+                            const item = swatchRepeater.itemAt(index + 1) ?? customSwatch
+                            item.forceActiveFocus(Qt.TabFocusReason)
+                        }
+                    }
+                }
+
+                // Cone extra: the custom color, as in Settings (SettingsAccentPicker)
+                Swatch {
+                    id: customSwatch
+
+                    property string lastCustom: String(MainCtx.settingValue(customEditor.lastCustomKey, ""))
+                    readonly property bool custom: MainCtx.accentColor.valid
+                                                   && !VLCStyle.rd_accentOptions.some((c) => Qt.colorEqual(MainCtx.accentColor, c))
+
+                    swatchColor: custom ? MainCtx.accentColor : (lastCustom !== "" ? lastCustom : "transparent")
+                    spectrum: !custom && lastCustom === ""
+                    text: qsTr("Custom color")
+                    checked: custom
+
+                    onClicked: {
+                        if (!custom && lastCustom !== "")
+                            MainCtx.accentColor = lastCustom
+                        if (!customEditor.opened)
+                            customEditor.open()
+                    }
+
+                    Keys.onLeftPressed: (event) => {
+                        swatchRepeater.itemAt(swatchRepeater.count - 1).forceActiveFocus(Qt.TabFocusReason)
+                    }
+
+                    // above the swatch: the row is near the window's bottom edge
+                    Widgets.RdAccentEditor {
+                        id: customEditor
+
+                        x: (customSwatch.width - width) / 2
+                        y: -height - VLCStyle.dp(8)
+
+                        onCustomColorChanged: (value) => {
+                            customSwatch.lastCustom = String(value).toUpperCase()
                         }
                     }
                 }
