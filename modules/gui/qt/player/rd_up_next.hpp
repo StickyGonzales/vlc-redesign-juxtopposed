@@ -214,6 +214,8 @@ private:
     QString guardReason() const;
     bool queueIsCones() const;
     void updateCard();
+    // the player's time belongs to the episode playing (not the previous one's last time)
+    bool timeFresh();
     void setCard(bool visible, int mode);
     void setSecondsLeft(int seconds);
     void setCounting(bool counting);
@@ -321,6 +323,11 @@ private:
     qint64 m_dialogueEndMs = -1;
     bool m_subtitleScanStarted = false;
     std::shared_ptr<RdCreditsSubtitles> m_subtitleScan;
+    // after the input changes, the player keeps reporting the previous episode's time until the
+    // new one sends its first position: that time is not used (it put the card of the next
+    // episode up for a moment, the retest of #87). The time the previous episode was at
+    qint64 m_staleTimeMs = -1;
+    bool m_timeFresh = true;
     // where the episode playing was last (the time and length the player reported), for learning
     qint64 m_lastTimeMs = -1;
     qint64 m_lastLengthMs = -1;

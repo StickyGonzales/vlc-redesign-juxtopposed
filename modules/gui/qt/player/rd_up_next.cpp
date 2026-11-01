@@ -372,6 +372,13 @@ void RdUpNext::onInputChanged(bool hasInput)
     // the user (or the queue) went on to the next episode during the credits of this one
     learnCreditsPoint(hasInput ? localPath(m_player->getUrl()) : QString());
 
+    // the time the player reports is still the previous episode's until the new one starts
+    {
+        const VLCTime time = m_player->getTime();
+        m_staleTimeMs = time.valid() ? time.toMilliseconds() : -1;
+        m_timeFresh = false;
+    }
+
     const bool fromAutoplay = input && input == m_queuedInput;
     if (fromAutoplay)
     {
@@ -391,7 +398,6 @@ void RdUpNext::onInputChanged(bool hasInput)
     }
     m_lastSingleAdd = SharedInputItem();
     m_cancelled = false;
-    setCounting(false);
     m_creditsPointMs = -1;
     m_dialogueEndMs = -1;
     m_subtitleScanStarted = false;
@@ -407,6 +413,8 @@ void RdUpNext::onInputChanged(bool hasInput)
     else
         setCard(false, CardNext);
     m_stillPending = false;
+    // after the card is hidden: the card keeps "Playing in" while it fades out
+    setCounting(false);
 
     m_url = hasInput ? m_player->getUrl() : QUrl();
     m_path = localPath(m_url);
@@ -574,15 +582,27 @@ void RdUpNext::evaluate()
 
 // ---------------------------------------------------------------------------------- card
 
+bool RdUpNext::timeFresh()
+{
+    if (!m_timeFresh)
+    {
+        const VLCTime time = m_player->getTime();
+        if (time.valid() && time.toMilliseconds() != m_staleTimeMs)
+            m_timeFresh = true;
+    }
+    return m_timeFresh;
+}
+
 void RdUpNext::updateCard()
 {
     const bool started = m_player->isStarted();
+    const bool fresh = timeFresh();
 
     // where the episode playing is: learned from when the user goes on to the next one
     {
         const VLCDuration length = m_player->getLength();
         const VLCTime time = m_player->getTime();
-        if (started && length.valid() && time.valid() && !showKey().isEmpty() && m_player->getUrl() == m_url)
+        if (started && fresh && length.valid() && time.valid() && !showKey().isEmpty() && m_player->getUrl() == m_url)
         {
             m_lastTimeMs = time.toMilliseconds();
             m_lastLengthMs = length.toMilliseconds();
@@ -614,7 +634,7 @@ void RdUpNext::updateCard()
     // a weak pattern has no autoplay item: its card waits for a click (no countdown)
     const bool armed = m_nextIndex >= 0 && m_blockedReason.isEmpty() && !m_cancelled
                        && (autoplays() ? queuedPresent() : true);
-    if (!armed || !started)
+    if (!armed || !started || !fresh)
     {
         if (!m_stillPending)
             setCard(false, CardNext);
@@ -847,13 +867,17 @@ void RdUpNext::setCounting(bool counting)
 void RdUpNext::playNow()
 {
     // a weak name pattern has no autoplay item until the user asks for the next episode
-    if (!queuedPresent() && !autoplays() && m_nextIndex >= 0 && m_blockedReason.isEmpty())
+    const bool queueWeak = !queuedPresent() && !autoplays() && m_nextIndex >= 0 && m_blockedReason.isEmpty();
+    if (!queueWeak && !queuedPresent())
+        return;
+    // the card hides before the queue changes, so it never shows a changed episode while it fades
+    setCard(false, CardNext);
+    if (queueWeak)
         queueNext(false);
     if (!queuedPresent())
         return;
     // the rest of the episode is skipped: it counts as watched
     markWatched(m_url);
-    setCard(false, CardNext);
     m_playlist->next();
 }
 
