@@ -48,7 +48,7 @@ SettingsPage {
     readonly property bool _repeat: _option("repeat") === true
     readonly property bool _exit: _option("play-and-exit") === true
     readonly property bool _pause: _option("play-and-pause") === true
-    readonly property bool _autoplayOn: Number(_option("qt-autoplay-next")) !== 0
+    readonly property bool _autoplayOn: _option("qt-autoplay-next") === true
 
     SettingsSection {
         title: qsTr("Startup")
@@ -183,8 +183,8 @@ SettingsPage {
 
         SettingsOption {
             option: "qt-autoplay-next"
-            text: qsTr("Autoplay next episode")
-            keywords: "autoplay next episode binge up next show series"
+            text: qsTr("Play episodes in a row")
+            keywords: "autoplay play episodes in a row next episode binge up next show series"
         }
 
         SettingsOption {
@@ -211,7 +211,7 @@ SettingsPage {
         // the answers given per show folder (rd-shows.json); they do not follow the profiles
         SettingsRow {
             text: qsTr("Remembered shows")
-            description: qsTr("The shows you answered the \"Looks like a show\" question for, or turned autoplay on or off for in the Playback tab. Forget all asks again for each show and forgets where their credits start.")
+            description: qsTr("The shows you turned autoplay on or off for in the Playback tab (or answered the old \"Looks like a show\" question for), and where their credits start. Forget all plays every show in a row again and forgets their credits.")
             keywords: "autoplay show remembered forget"
             available: root._autoplayOn
 

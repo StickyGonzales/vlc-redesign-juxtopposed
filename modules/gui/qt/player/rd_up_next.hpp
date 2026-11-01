@@ -56,7 +56,7 @@ struct vlc_preparser_req;
  * (shuffle, repeat one, a stop or quit at the end, pause on the last frame, an A-B loop, the
  * command-line flow options) take the autoplay item out and keep the card away.
  *
- * Settings (qt.cpp): qt-autoplay-next (0 Off, 1 Ask for each show, 2 Always), qt-autoplay-countdown
+ * Settings (qt.cpp): qt-autoplay-next ("Play episodes in a row", on / off), qt-autoplay-countdown
  * (5 / 10 / 15 s), qt-autoplay-credits-lead (the card's fallback point: the last 30 / 60 / 120 s)
  * and qt-autoplay-still-watching. The answer per show (yes / no) and the credits point learned
  * per show are kept per show root folder in rd-shows.json in VLC's user data folder, read and
@@ -73,7 +73,7 @@ class RdUpNext : public QObject
 {
     Q_OBJECT
 
-    // the setting: 0 Off, 1 Ask for each show, 2 Always
+    // the setting "Play episodes in a row": 0 Off, 1 On
     Q_PROPERTY(int mode READ mode NOTIFY settingsChanged FINAL)
     Q_PROPERTY(int countdown READ countdown NOTIFY settingsChanged FINAL)
 
@@ -107,10 +107,11 @@ class RdUpNext : public QObject
     Q_PROPERTY(bool counting READ counting NOTIFY countdownChanged FINAL)
     Q_PROPERTY(double countdownProgress READ countdownProgress NOTIFY countdownChanged FINAL)
 
-    // the one-time "Looks like a show" prompt
-    Q_PROPERTY(bool promptVisible READ promptVisible NOTIFY promptChanged FINAL)
+    // the next episode plays by itself at the end (a strong name pattern: S01E02, 1x02 ...);
+    // false for weak patterns (01 02, "Part 2", "Episode 2"): the card waits for a click
+    Q_PROPERTY(bool autoplays READ autoplays NOTIFY nextChanged FINAL)
 
-    // a subtitle track is on: the card and the prompt sit above the subtitle band (plan 7.1)
+    // a subtitle track is on: the card sits above the subtitle band (plan 7.1)
     Q_PROPERTY(bool subtitlesOn READ subtitlesOn NOTIFY subtitlesChanged FINAL)
 
     // remembered answers (Settings > Playback > Episodes)
@@ -120,7 +121,7 @@ class RdUpNext : public QObject
     Q_PROPERTY(int rememberedCredits READ rememberedCredits NOTIFY storeChanged FINAL)
 
 public:
-    enum Mode { ModeOff = 0, ModeAsk = 1, ModeAlways = 2 };
+    enum Mode { ModeOff = 0, ModeOn = 1 };
     enum CardMode { CardNext = 0, CardStillWatching = 1 };
     Q_ENUM(CardMode)
 
@@ -148,7 +149,7 @@ public:
     int secondsLeft() const { return m_secondsLeft; }
     bool counting() const { return m_counting; }
     double countdownProgress() const;
-    bool promptVisible() const { return m_promptVisible; }
+    bool autoplays() const;
     bool subtitlesOn() const { return m_subtitlesOn; }
     int rememberedYes() const;
     int rememberedNo() const;
@@ -159,9 +160,8 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void keepWatching();
     Q_INVOKABLE void stopWatching();
-    // the prompt's buttons
-    Q_INVOKABLE void answer(bool yes);
-    Q_INVOKABLE void dismissPrompt();
+    // the card's "Turn off autoplay": the setting goes off
+    Q_INVOKABLE void turnOffAutoplay();
     // the sidebar toggle: the remembered answer for the show playing
     Q_INVOKABLE void setShowEnabled(bool enabled);
     // Settings > Playback > Episodes > Remembered shows
@@ -178,7 +178,6 @@ signals:
     void thumbnailChanged();
     void cardChanged();
     void countdownChanged();
-    void promptChanged();
     void storeChanged();
     void subtitlesChanged();
     void queuedChanged();
@@ -207,7 +206,7 @@ private:
     void onInputChanged(bool hasInput);
     void startDetection();
     void onDetected(int generation, const rdepisode::Show& show);
-    // decides everything from the current state: the item in the queue, the card, the prompt
+    // decides everything from the current state: the item in the queue and the card
     void evaluate();
     // the current file is an episode Up Next acts on: a show, and not shorter than the show's
     // shortest episode (a short clip is never autoplayed, so it is not asked about either)
@@ -226,7 +225,6 @@ private:
     // learned for the show
     void learnCreditsPoint(const QString& newPath);
     void setLearnedLead(const QString& key, qint64 leadMs);
-    void setPromptVisible(bool visible);
 
     // the autoplay item
     void queueNext(bool startPaused);
@@ -262,6 +260,7 @@ private:
 
     qt_intf_t* m_intf = nullptr;
     MainCtx* m_ctx = nullptr;
+    RdEffects* m_effects = nullptr;
     PlayerController* m_player = nullptr;
     vlc::playlist::PlaylistController* m_playlist = nullptr;
 
@@ -338,12 +337,6 @@ private:
     };
     QHash<QString, Learned> m_learned;
 
-    // the prompt
-    bool m_promptVisible = false;
-    bool m_promptDone = false;
-    // since the media started (the resume toast comes first)
-    QElapsedTimer m_inputClock;
-    QTimer m_promptTimer;
 
     // remembered answers, keyed by the show root folder
     QHash<QString, Answer> m_answers;

@@ -68,12 +68,6 @@ using vlc::playlist::vlc_playlist_locker;
 
 namespace {
 
-// the prompt: this long into the first episode of a show, then this long on screen
-constexpr int kPromptDelayMs = 10000;
-constexpr int kPromptShownMs = 20000;
-// the resume toast shows from the start of a file for 10 s at most (ResumeDialog.qml); the
-// prompt comes after it (Player.qml also waits while the toast is visible)
-constexpr int kResumeToastMs = 10500;
 // the next episode's picture: at this part of the file, this wide
 constexpr double kThumbnailPosition = 0.15;
 constexpr int kThumbnailWidth = 320;
@@ -148,17 +142,12 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     : QObject(parent)
     , m_intf(intf)
     , m_ctx(ctx)
+    , m_effects(effects)
     , m_player(intf->p_mainPlayerController)
     , m_playlist(intf->p_mainPlaylistController)
 {
     m_scanPool.setMaxThreadCount(1);
     m_storePool.setMaxThreadCount(1);
-
-    m_promptTimer.setSingleShot(true);
-    connect(&m_promptTimer, &QTimer::timeout, this, [this]() {
-        // no answer: asked again with the next episode of the show
-        setPromptVisible(false);
-    });
 
     readSettings();
     connect(effects, &RdEffects::changed, this, &RdUpNext::reloadSettings);
@@ -252,7 +241,7 @@ RdUpNext::~RdUpNext()
 bool RdUpNext::readSettings()
 {
     // inherited: an option on the command line wins for the session, else the saved one
-    const int mode = std::clamp(int(var_InheritInteger(m_intf, "qt-autoplay-next")), int(ModeOff), int(ModeAlways));
+    const int mode = var_InheritBool(m_intf, "qt-autoplay-next") ? ModeOn : ModeOff;
     const int countdown = int(var_InheritInteger(m_intf, "qt-autoplay-countdown"));
     const int lead = int(var_InheritInteger(m_intf, "qt-autoplay-credits-lead"));
     const bool still = var_InheritBool(m_intf, "qt-autoplay-still-watching");
@@ -297,11 +286,12 @@ bool RdUpNext::showEnabled() const
 {
     if (!showActive())
         return false;
+    // on, once the stored answers are known: a show turned off in the Playback tab (or answered
+    // No to the old "Looks like a show" question) stays off
     const auto it = m_answers.constFind(showKey());
     if (it != m_answers.cend())
         return it->yes;
-    // Always: on, once the stored answers are known (a stored "no" wins)
-    return m_mode == ModeAlways && m_storeLoaded;
+    return m_storeLoaded;
 }
 
 QString RdUpNext::nextCode() const
@@ -401,8 +391,6 @@ void RdUpNext::onInputChanged(bool hasInput)
     }
     m_lastSingleAdd = SharedInputItem();
     m_cancelled = false;
-    m_promptDone = false;
-    setPromptVisible(false);
     setCounting(false);
     m_creditsPointMs = -1;
     m_dialogueEndMs = -1;
@@ -420,7 +408,6 @@ void RdUpNext::onInputChanged(bool hasInput)
         setCard(false, CardNext);
     m_stillPending = false;
 
-    m_inputClock.start();
     m_url = hasInput ? m_player->getUrl() : QUrl();
     m_path = localPath(m_url);
     startDetection();
@@ -554,17 +541,15 @@ void RdUpNext::evaluate()
 
     const bool active = showActive() && longEnough();
 
-    // Always remembers "yes" for a new show, once the stored answers are known (a stored "no" wins)
-    if (active && m_mode == ModeAlways && m_storeLoaded && !hasAnswer())
-        setAnswer(true);
-
     const bool enabled = active && showEnabled();
     m_blockedReason = enabled ? guardReason() : QString();
 
     const int next = (active && enabled) ? m_show.next() : -1;
     m_nextIndex = next;
 
-    const bool wantItem = next >= 0 && m_blockedReason.isEmpty() && !m_cancelled;
+    // a weak name pattern gets no autoplay item: the card offers the next episode, nothing plays
+    // by itself (UP_NEXT_PLAN.md 2.3)
+    const bool wantItem = next >= 0 && m_blockedReason.isEmpty() && !m_cancelled && autoplays();
     if (wantItem)
     {
         const QUrl url = nextUrl();
@@ -579,10 +564,6 @@ void RdUpNext::evaluate()
         removeQueued();
     }
 
-    // the prompt: an unanswered show in "Ask for each show"
-    if (!(active && m_mode == ModeAsk && !hasAnswer()))
-        setPromptVisible(false);
-
     if (oldReason != m_blockedReason || oldNext != m_nextIndex)
         emit nextChanged();
     emit stateChanged();
@@ -596,22 +577,6 @@ void RdUpNext::evaluate()
 void RdUpNext::updateCard()
 {
     const bool started = m_player->isStarted();
-
-    // the prompt, early in the first episode of an unanswered show and after the resume toast
-    // (never for a file too short to be autoplayed: under 2 minutes, 10 for a weak name pattern)
-    if (showActive() && longEnough() && m_mode == ModeAsk && m_storeLoaded && !hasAnswer() && !m_promptDone
-            && !m_promptVisible && started)
-    {
-        const VLCTime time = m_player->getTime();
-        // not canRestorePlayback: a toast that times out leaves it set
-        if (time.valid() && time.toMilliseconds() >= kPromptDelayMs
-                && m_inputClock.isValid() && m_inputClock.elapsed() >= kResumeToastMs)
-        {
-            m_promptDone = true;
-            setPromptVisible(true);
-            m_promptTimer.start(kPromptShownMs);
-        }
-    }
 
     // where the episode playing is: learned from when the user goes on to the next one
     {
@@ -646,7 +611,9 @@ void RdUpNext::updateCard()
         return;
     }
 
-    const bool armed = m_nextIndex >= 0 && m_blockedReason.isEmpty() && !m_cancelled && queuedPresent();
+    // a weak pattern has no autoplay item: its card waits for a click (no countdown)
+    const bool armed = m_nextIndex >= 0 && m_blockedReason.isEmpty() && !m_cancelled
+                       && (autoplays() ? queuedPresent() : true);
     if (!armed || !started)
     {
         if (!m_stillPending)
@@ -669,7 +636,7 @@ void RdUpNext::updateCard()
     // the end of the episode: the last `countdown` seconds, in real seconds at any speed
     const qint64 remainingMs = lengthMs - timeMs;
     const int seconds = int(std::ceil(double(remainingMs) / 1000.0 / rate));
-    if (remainingMs > 0 && seconds <= m_countdown)
+    if (remainingMs > 0 && seconds <= m_countdown && autoplays())
     {
         if (m_autoStreak >= kStillWatchingAfter && m_stillWatching)
         {
@@ -743,7 +710,7 @@ void RdUpNext::startSubtitleScan(qint64 lengthMs)
             {
                 if (item->pp_slaves[i]->i_type != SLAVE_TYPE_SPU)
                     continue;
-                const QString path = localPath(QUrl::fromEncoded(item->pp_slaves[i]->psz_uri));
+                const QString path = localPath(QUrl::fromEncoded(QByteArray(item->pp_slaves[i]->psz_uri)));
                 if (!path.isEmpty())
                     slaves.append(path);
             }
@@ -875,20 +842,13 @@ void RdUpNext::setCounting(bool counting)
     emit countdownChanged();
 }
 
-void RdUpNext::setPromptVisible(bool visible)
-{
-    if (visible == m_promptVisible)
-        return;
-    m_promptVisible = visible;
-    if (!visible)
-        m_promptTimer.stop();
-    emit promptChanged();
-}
-
 // ------------------------------------------------------------------------------- actions
 
 void RdUpNext::playNow()
 {
+    // a weak name pattern has no autoplay item until the user asks for the next episode
+    if (!queuedPresent() && !autoplays() && m_nextIndex >= 0 && m_blockedReason.isEmpty())
+        queueNext(false);
     if (!queuedPresent())
         return;
     // the rest of the episode is skipped: it counts as watched
@@ -922,16 +882,24 @@ void RdUpNext::stopWatching()
     m_playlist->stop();
 }
 
-void RdUpNext::answer(bool yes)
+void RdUpNext::turnOffAutoplay()
 {
-    setPromptVisible(false);
-    setAnswer(yes);
-    evaluate();
+    msg_Dbg(m_intf, "up next: autoplay turned off from the card");
+    setCard(false, CardNext);
+    // written like a settings row, then taken at once (RdEffects writes it a moment later)
+    m_effects->setOption(QStringLiteral("qt-autoplay-next"), false);
+    if (m_mode == ModeOff)
+        return;
+    m_mode = ModeOff;
+    emit settingsChanged();
+    startDetection();
 }
 
-void RdUpNext::dismissPrompt()
+bool RdUpNext::autoplays() const
 {
-    setPromptVisible(false);
+    if (m_show.current < 0 || m_show.current >= m_show.episodes.size())
+        return false;
+    return m_show.episodes.at(m_show.current).strength == rdepisode::Strength::Strong;
 }
 
 void RdUpNext::setShowEnabled(bool enabled)

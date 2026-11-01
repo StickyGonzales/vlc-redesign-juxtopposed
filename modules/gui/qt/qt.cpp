@@ -391,9 +391,10 @@ static const char *const psz_process_priority_text[] =
     { N_( "Lowest" ), N_( "Low" ), N_( "Normal" ), N_( "High" ), N_( "Highest" ) };
 
 /* Cone extra (Decision 71, redesign/UP_NEXT_PLAN.md): RdUpNext */
-#define AUTOPLAY_NEXT_TEXT N_( "Autoplay next episode" )
-#define AUTOPLAY_NEXT_LONGTEXT N_( "Plays the next episode of a show folder when one ends. " \
-    "Single videos, clips and music are never treated as shows." )
+#define AUTOPLAY_NEXT_TEXT N_( "Play episodes in a row" )
+#define AUTOPLAY_NEXT_LONGTEXT N_( "Plays the next episode of a show folder when one ends " \
+    "(S01E02, 1x02 ...). With plain numbers or Part 2, the Up Next card offers the next episode " \
+    "and waits for a click. Single videos, clips and music are never treated as shows." )
 #define AUTOPLAY_COUNTDOWN_TEXT N_( "Countdown" )
 #define AUTOPLAY_COUNTDOWN_LONGTEXT N_( "How long the Up Next card counts down before the next " \
     "episode starts." )
@@ -405,9 +406,6 @@ static const char *const psz_process_priority_text[] =
 #define AUTOPLAY_STILL_WATCHING_LONGTEXT N_( "After 3 episodes in a row without a key press or " \
     "a click, the next episode waits paused until you answer." )
 
-static const int i_autoplay_next_list[] = { 0, 1, 2 };
-static const char *const psz_autoplay_next_text[] =
-    { N_( "Off" ), N_( "Ask for each show" ), N_( "Always" ) };
 static const int i_autoplay_countdown_list[] = { 5, 10, 15 };
 static const char *const psz_autoplay_countdown_text[] =
     { N_( "5 seconds" ), N_( "10 seconds" ), N_( "15 seconds" ) };
@@ -628,14 +626,15 @@ vlc_module_begin ()
     add_bool( "qt-seek-subtitle-timeline", false, SEEK_SUBTITLE_TIMELINE_TEXT,
               SEEK_SUBTITLE_TIMELINE_LONGTEXT )
 
-    /* Cone extra (Decision 71): autoplay next episode; the vlc profile behaves like stock VLC
-     * (Off), Cone asks for each show (UP_NEXT_PLAN.md Q6) */
+    /* Cone extra (Decision 71): play episodes in a row; the vlc profile behaves like stock VLC
+     * (off), Cone plays them, with no question at the start (UP_NEXT_PLAN.md 2.3). Before, this
+     * was 0 Off / 1 Ask / 2 Always: a saved 0 stays off, 1 reads as on, and 2 (out of a bool's
+     * range) falls back to the default, on */
 #ifdef VLC_BRAND_PUBLIC
-    add_integer( "qt-autoplay-next", 1, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+    add_bool( "qt-autoplay-next", true, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
 #else
-    add_integer( "qt-autoplay-next", 0, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+    add_bool( "qt-autoplay-next", false, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
 #endif
-        change_integer_list( i_autoplay_next_list, psz_autoplay_next_text )
     add_integer( "qt-autoplay-countdown", 10, AUTOPLAY_COUNTDOWN_TEXT, AUTOPLAY_COUNTDOWN_LONGTEXT )
         change_integer_list( i_autoplay_countdown_list, psz_autoplay_countdown_text )
     add_integer( "qt-autoplay-credits-lead", 60, AUTOPLAY_CREDITS_LEAD_TEXT,

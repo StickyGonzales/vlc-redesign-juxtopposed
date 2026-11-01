@@ -55,7 +55,10 @@ FocusScope {
     readonly property string _heading: _still ? qsTr("Still watching?")
                                               : (_season ? qsTr("Up next · Season %1").arg(RdUpNext.nextSeason)
                                                          : qsTr("Up next"))
-    readonly property string _countdownText: _waiting ? qsTr("Plays at the end of the episode")
+    // a weak name pattern (01 02, "Part 2") never plays by itself: the card waits for a click
+    readonly property string _waitingText: RdUpNext.autoplays ? qsTr("Plays at the end of the episode")
+                                                              : qsTr("Plays when you choose")
+    readonly property string _countdownText: _waiting ? _waitingText
                                                       : qsTr("Playing in %1 s").arg(RdUpNext.secondsLeft)
     readonly property string _playText: _still ? qsTr("Keep watching")
                                                : (_waiting ? qsTr("Next episode") : qsTr("Play now"))
@@ -78,8 +81,8 @@ FocusScope {
 
     Accessible.role: Accessible.Dialog
     Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(RdUpNext.cardLine)
-                            : _waiting ? qsTr("Up next: %1, %2. Plays at the end of the episode.")
-                                             .arg(RdUpNext.showName).arg(RdUpNext.cardLine)
+                            : _waiting ? qsTr("Up next: %1, %2. %3.")
+                                             .arg(RdUpNext.showName).arg(RdUpNext.cardLine).arg(_waitingText)
                                        : qsTr("Up next: %1, %2. Playing in %3 seconds.")
                                              .arg(RdUpNext.showName).arg(RdUpNext.cardLine).arg(RdUpNext.secondsLeft)
 
@@ -274,6 +277,46 @@ FocusScope {
 
                 Navigation.parentItem: root
                 Navigation.leftItem: playButton
+                Navigation.rightItem: turnOffLink.visible ? turnOffLink : null
+            }
+        }
+
+        // "Turn off autoplay": the setting Play episodes in a row goes off (UP_NEXT_PLAN.md 2.3)
+        T.AbstractButton {
+            id: turnOffLink
+
+            anchors.right: parent.right
+            anchors.rightMargin: root._pad
+            anchors.verticalCenter: fullButtons.verticalCenter
+            visible: !root._still
+            focusPolicy: Qt.StrongFocus
+            text: qsTr("Turn off autoplay")
+            implicitWidth: linkLabel.implicitWidth
+            implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+
+            Accessible.role: Accessible.Link
+            Accessible.name: text
+
+            onClicked: RdUpNext.turnOffAutoplay()
+
+            Navigation.parentItem: root
+            Navigation.leftItem: cancelButton
+            Keys.priority: Keys.AfterItem
+            Keys.onPressed: (event) => turnOffLink.Navigation.defaultKeyAction(event)
+
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            contentItem: T.Label {
+                id: linkLabel
+
+                text: turnOffLink.text
+                verticalAlignment: Text.AlignVCenter
+                color: turnOffLink.hovered || turnOffLink.visualFocus ? VLCStyle.palette.rdFg2 : VLCStyle.palette.rdFgA3
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.dp(12, VLCStyle.scale)
+                font.underline: true
             }
         }
 

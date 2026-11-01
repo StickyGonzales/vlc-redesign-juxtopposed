@@ -970,7 +970,6 @@ qml_modules += {
        'player/qml/RdMiniPlayer.qml',
        'player/qml/RdInfoPanel.qml',
        'player/qml/RdUpNextCard.qml',
-       'player/qml/RdShowPrompt.qml',
    ),
    'singletons' : files(
        'player/qml/PlayerControlbarControls.qml',

@@ -1609,8 +1609,7 @@ libqml_module_player_a_QML = \
 	player/qml/RdMiniQueue.qml \
 	player/qml/RdMiniPlayer.qml \
 	player/qml/RdInfoPanel.qml \
-	player/qml/RdUpNextCard.qml \
-	player/qml/RdShowPrompt.qml
+	player/qml/RdUpNextCard.qml
 
 libqml_module_player_a_Singleton_QML = \
 	player/qml/PlayerControlbarControls.qml \
