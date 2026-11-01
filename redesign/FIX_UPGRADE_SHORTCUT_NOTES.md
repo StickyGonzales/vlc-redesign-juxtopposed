@@ -59,7 +59,7 @@ Not testable under Wine: Windows' own desktop folders and Explorer refreshing th
 
 | Run | Result |
 |---|---|
-| build-windows #164 (41336043714), e787ef6 | build and installer green; **smoke 31 of 31 plus the three new checks**: "desktop shortcut on a fresh install" (C:\Users\Public\Desktop\Cone Player.lnk), "reinstall keeps the desktop shortcut", "reinstall does not bring back a removed desktop shortcut"; silent uninstall after them |
+| build-windows #164 (41336043714), e787ef6 | build and installer green; **smoke 31 of 31 plus the three new checks**: "desktop shortcut on a fresh install" (%PUBLIC%\Desktop\Cone Player.lnk), "reinstall keeps the desktop shortcut", "reinstall does not bring back a removed desktop shortcut"; silent uninstall after them |
 | build-windows #166 (41338203178), 7f641f1 (review follow-up) | green, smoke checks pass |
 
 ## 5. Windows retest (PC session)
