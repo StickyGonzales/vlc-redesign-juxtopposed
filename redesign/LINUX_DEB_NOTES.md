@@ -3,7 +3,7 @@
 Branch `wip/linux-deb`, on top of `wip/linux-install` (it uses that branch's menu entry and icons). Draft pull request into `wip/next-test`. CI and packaging only, Cone build only.
 
 ## The package
-`cone-player_<version>_amd64.deb`, built by `.github/scripts/linux-deb.sh` from the portable folder:
+`cone-player_<version>_amd64.deb` (the release's version as in the tarball, e.g. `1.1.3-beta3`; the package's own Version is `1.1.3~beta3`, FIX_DEB_ASSET_NAME_NOTES.md), built by `.github/scripts/linux-deb.sh` from the portable folder:
 - in **every Linux build** (artifact `cone-linux-deb-amd64`, and on the test-builds draft);
 - and in **release-linux.yml**, which adds it to the draft release next to the AppImage and the tarball, with its SHA-256.
 
