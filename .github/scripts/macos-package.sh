@@ -135,15 +135,40 @@ if [ "$(uname -m)" = "$ARCH" ]; then
     ls -la "$C/Frameworks/plugins/plugins.dat"
 fi
 
-# --- ad-hoc signature: every binary, then the frameworks, then the app -----------------------------
-find "$APP" -type f \( -name '*.dylib' -o -perm -u+x \) -print0 | while IFS= read -r -d '' f; do
-    if file -b "$f" | grep -q 'Mach-O'; then
-        codesign --force --sign - --timestamp=none "$f"
-    fi
+# --- ad-hoc signature, inside out (as extras/package/macosx/codesign.sh): the plug-ins and their
+# cache, the libraries, Qt's plug-ins and Qt Quick modules, the helpers, the frameworks, then the
+# app, which signs its main executable. Codesign checks every file under Contents/Frameworks
+# when it signs the app: plugins.dat, which is data, is signed too (its signature goes into an
+# extended attribute), or the app's signature fails ("plugins.dat: code object is not signed",
+# run 41331290193)
+sign() {
+    codesign --force --sign - --timestamp=none "$1"
+}
+is_macho() {
+    file -b "$1" | grep -q 'Mach-O'
+}
+while IFS= read -r -d '' f; do
+    sign "$f"
+done < <(find "$C/Frameworks/plugins" -type f -name '*.dylib' -print0)
+[ ! -e "$C/Frameworks/plugins/plugins.dat" ] || sign "$C/Frameworks/plugins/plugins.dat"
+while IFS= read -r -d '' f; do
+    sign "$f"
+done < <(find "$C/Frameworks" -maxdepth 1 -type f -name '*.dylib' -print0)
+while IFS= read -r -d '' f; do
+    if is_macho "$f"; then sign "$f"; fi
+done < <(find "$C/PlugIns" "$C/Resources" -type f -print0)
+for helper in vlc-preparser vlc-qt-check; do
+    sign "$C/MacOS/$helper"
 done
-find "$C/Frameworks" -maxdepth 1 -name '*.framework' -print0 | while IFS= read -r -d '' fw; do
-    codesign --force --sign - --timestamp=none "$fw"
-done
+while IFS= read -r -d '' fw; do
+    sign "$fw"
+done < <(find "$C/Frameworks" -maxdepth 1 -name '*.framework' -print0)
+# anything else under Frameworks outside the frameworks is signed the same way (VLC signs its
+# plug-ins' .jar like this)
+while IFS= read -r -d '' f; do
+    echo "signing a file that is not a library: ${f#"$C/"}"
+    sign "$f"
+done < <(find "$C/Frameworks" -type f ! -path '*.framework/*' ! -name '*.dylib' ! -name plugins.dat -print0)
 codesign --force --sign - --timestamp=none "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 echo "app: $(du -sh "$APP" | cut -f1)"
