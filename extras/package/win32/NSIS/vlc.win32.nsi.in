@@ -494,6 +494,19 @@ ${MementoSection} "$(Name_Section02b)" SEC02b
     "$INSTDIR\${PRODUCT_EXE}" ""
 ${MementoSectionEnd}
 
+!if "${PRODUCT_PROGID}" != "VLC"
+; redesign: brand layer, an upgrade or reinstall with "Create a desktop shortcut" unticked leaves
+; no desktop shortcut (#73, redesign/FIX_UPGRADE_SHORTCUT_NOTES.md): the box starts in the
+; install's current state (.onInit), so unticking it means "remove it"
+Section "-DesktopShortcutOff"
+  SectionIn 1 2 3 RO
+  ${IfNot} ${SectionIsSelected} ${SEC02b}
+  ${AndIf} $PreviousVersion != ""
+    Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
+  ${EndIf}
+SectionEnd
+!endif
+
 !ifdef INSTALL_ACTIVEX
 SectionGroup /e "!$(Name_Section34)"
 
@@ -676,6 +689,23 @@ WinOk:
     ${EndIf}
   ${EndIf}
 
+!if "${PRODUCT_PROGID}" != "VLC"
+  ; redesign: brand layer, on an upgrade or reinstall "Create a desktop shortcut" (the Desktop
+  ; shortcut component) starts in the state of the install as it is now: ticked only while a
+  ; Cone Player desktop shortcut exists (#73). Memento restores the choice of the last install,
+  ; so a shortcut the user deleted since came back on every upgrade, the silent one (/S)
+  ; included. A fresh install keeps the default (ticked)
+  ${If} $PreviousVersion != ""
+    Call DesktopShortcutExists
+    Pop $0
+    ${If} $0 == 1
+      !insertmacro SelectSection ${SEC02b}
+    ${Else}
+      !insertmacro UnselectSection ${SEC02b}
+    ${EndIf}
+  ${EndIf}
+!endif
+
   !insertmacro MUI_LANGDLL_DISPLAY
 
 FunctionEnd
@@ -847,8 +877,29 @@ done:
 FunctionEnd
 
 !if "${PRODUCT_PROGID}" != "VLC"
+; redesign: brand layer, pushes 1 when the installer's desktop shortcut exists, else 0 (#73): on
+; the all-users desktop, where the installer puts it and the uninstaller removes it (a copy on the
+; user's own desktop is the user's, never counted or touched); a 0.x beta's "Cone" shortcut
+; counts, the install replaces it with the new name
+Function DesktopShortcutExists
+  Push $1
+  StrCpy $1 0
+  SetShellVarContext all
+  ${If} ${FileExists} "$DESKTOP\${PRODUCT_NAME}.lnk"
+    StrCpy $1 1
+  ${EndIf}
+!if "${PRODUCT_BETA_NAME}" != "${PRODUCT_NAME}"
+  ${If} ${FileExists} "$DESKTOP\${PRODUCT_BETA_NAME}.lnk"
+    StrCpy $1 1
+  ${EndIf}
+!endif
+  SetShellVarContext current
+  Exch $1
+FunctionEnd
+
 ; redesign: brand layer, two boxes under the welcome text: "Create a desktop shortcut" (the
-; Desktop shortcut component, ticked by default) and "Customize the installation" (shows the
+; Desktop shortcut component, ticked on a fresh install; on an upgrade or reinstall only while
+; a desktop shortcut exists, see .onInit) and "Customize the installation" (shows the
 ; components page); in English for every language, like the file types' description
 Function PageWelcomeShow
   ; the welcome text label runs to the bottom of the page: a shorter copy leaves room

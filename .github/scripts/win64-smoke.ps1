@@ -8,7 +8,8 @@
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
 #   watchdog ends is a warning (known HEVC quit stall, STATUS.md), only a process that outlives the
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
-#   installer: a silent install, the installed Cone plays, a silent uninstall removes it.
+#   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
+#   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
 # Input goes through UI Automation and Win32 (like redesign/tools/perf/vlcperf.ps1); playback state
 # comes from VLC's cli interface on 127.0.0.1. Results: <Out>\summary.md, <Out>\smoke-log.txt,
@@ -601,6 +602,31 @@ $installed = Check 'installer: silent install' {
 }
 if ($installed) {
     Run-Session (Join-Path $installDir 'Cone.exe') 'h264' $false 'installed-h264'
+    # the desktop shortcut on a reinstall follows the install as it is (#73,
+    # redesign/FIX_UPGRADE_SHORTCUT_NOTES.md): kept when it is there, not brought back once removed
+    $lnk = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Cone Player.lnk'
+    function Reinstall-Silent {
+        $p = Start-Process -FilePath $Installer -ArgumentList '/S' -PassThru -Wait
+        if ($p.ExitCode -ne 0) { throw "the installer ended with exit code $($p.ExitCode)" }
+    }
+    Check 'installer: desktop shortcut on a fresh install' {
+        if (-not (Test-Path $lnk)) { throw "no $lnk after the install" }
+        $lnk
+    } | Out-Null
+    Check 'installer: reinstall keeps the desktop shortcut' {
+        if (-not (Test-Path $lnk)) { throw "no $lnk before the reinstall" }
+        Reinstall-Silent
+        if (-not (Test-Path $lnk)) { throw "the reinstall removed $lnk" }
+        'still there'
+    } | Out-Null
+    Check 'installer: reinstall does not bring back a removed desktop shortcut' {
+        Remove-Item $lnk -Force -ErrorAction SilentlyContinue
+        if (Test-Path $lnk) { throw "could not remove $lnk" }
+        Reinstall-Silent
+        if (Test-Path $lnk) { throw "the reinstall created $lnk again" }
+        if (-not (Test-Path (Join-Path $installDir 'Cone.exe'))) { throw "no $installDir\Cone.exe after the reinstall" }
+        'not created again'
+    } | Out-Null
     Check 'installer: silent uninstall' {
         $un = Join-Path $installDir 'uninstall.exe'
         if (-not (Test-Path $un)) { throw "no $un" }
