@@ -72,6 +72,15 @@ build() {
                 make -j"$JOBS" -k || make -j1
             fi
         fi
+        # VideoLAN's prebuilt contribs name their build machine's SDK (…/MacOSX26.2.sdk) in their
+        # pkg-config and libtool files; a link with a missing SDK loses the system libraries
+        # ("library 'm' not found", run 41323064735): point them at this runner's SDK
+        local_files="$(grep -rlE '/SDKs/MacOSX[0-9.]*\.sdk' "../$HOST_TRIPLET/lib" 2>/dev/null \
+            | grep -E '\.(pc|la)$' || true)"
+        for f in $local_files; do
+            sed -i '' -E "s#/[^ \"']*/SDKs/MacOSX[0-9.]*\.sdk#$SDKROOT#g" "$f"
+            echo "SDK path set in ${f#../}"
+        done
     )
     echo "::endgroup::"
     vlcUnsetContribEnvironment
