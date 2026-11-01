@@ -205,7 +205,7 @@ QPushButton[rdPrimary="true"], QToolButton[rdPrimary="true"] {
 }
 QPushButton[rdPrimary="true"]:hover, QToolButton[rdPrimary="true"]:hover {
     background-color: {accentMain};
-    color: {fgB1};
+    color: {fgOnAccent};
 }
 QPushButton[rdPrimary="true"]:disabled, QToolButton[rdPrimary="true"]:disabled {
     background-color: {saveDisabledBg};
@@ -328,7 +328,7 @@ QString makeStyleSheet( const SystemPalette& p )
         { "{fgA2}", p.get_rdFgA2() },
         { "{fgA3}", p.get_rdFgA3() },
         { "{fgA4}", p.get_rdFgA4() },
-        { "{fgB1}", p.get_rdFgB1() },
+        { "{fgOnAccent}", p.get_rdFgOnAccent() },
         { "{bgA1}", p.get_rdBgA1() },
         { "{bgA2}", p.get_rdBgA2() },
         { "{bgA3}", p.get_rdBgA3() },

@@ -115,7 +115,7 @@ Item {
                     y: 2
                     size: 24
                     name: "play"
-                    color: root.rdPalette.rdFgB1
+                    color: root.rdPalette.rdFgOnAccent
                 }
             }
 

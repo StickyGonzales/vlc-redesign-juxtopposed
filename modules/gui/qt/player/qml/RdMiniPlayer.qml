@@ -716,7 +716,7 @@ Item {
                 anchors.centerIn: parent
                 name: stripButton.iconName
                 size: VLCStyle.dp(20)
-                color: stripButton.primary ? VLCStyle.palette.rdFgB1 : VLCStyle.palette.rdFgA2
+                color: stripButton.primary ? VLCStyle.palette.rdFgOnAccent : VLCStyle.palette.rdFgA2
             }
         }
     }

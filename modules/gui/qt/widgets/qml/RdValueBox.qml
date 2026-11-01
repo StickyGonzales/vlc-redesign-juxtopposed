@@ -118,7 +118,7 @@ T.Control {
             font.pixelSize: control.fontSize
             color: control.textColor
             selectionColor: control.rdPalette.rdAccentMain
-            selectedTextColor: control.rdPalette.rdFgB1
+            selectedTextColor: control.rdPalette.rdFgOnAccent
             cursorDelegate: Rectangle {
                 width: VLCStyle.dp(1)
                 color: control.rdPalette.rdAccentMain

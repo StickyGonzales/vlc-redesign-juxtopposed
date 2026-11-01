@@ -18,6 +18,7 @@
 #include "systempalette.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <QGuiApplication>
 #include <QPalette>
 #include <QSettings>
@@ -377,6 +378,31 @@ QColor deriveAccentShade(const QColor& main, const QColor& refMain, const QColor
     return QColor::fromHsvF(h, std::min(1.f, s * satRatio), std::min(1.f, v * valRatio));
 }
 
+// WCAG relative luminance and contrast ratio
+double relativeLuminance(const QColor& color)
+{
+    const auto channel = [](double c) {
+        return c <= 0.03928 ? c / 12.92 : std::pow((c + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.redF()) + 0.7152 * channel(color.greenF())
+         + 0.0722 * channel(color.blueF());
+}
+
+double contrastRatio(const QColor& a, const QColor& b)
+{
+    const double la = relativeLuminance(a);
+    const double lb = relativeLuminance(b);
+    return (std::max(la, lb) + 0.05) / (std::min(la, lb) + 0.05);
+}
+
+// the design's text color on `fill`, or `other` when the design's one is under 4.5:1 there
+// (WCAG AA for text) and `other` reads better
+QColor readableOn(const QColor& fill, const QColor& preferred, const QColor& other)
+{
+    const double preferredRatio = contrastRatio(fill, preferred);
+    return (preferredRatio >= 4.5 || preferredRatio >= contrastRatio(fill, other)) ? preferred : other;
+}
+
 // a color with a layer of `layer` at `opacity` painted over it
 QColor overlayColor(const QColor& base, const QColor& layer, float opacity)
 {
@@ -461,6 +487,25 @@ void SystemPalette::applyRdColors()
         rdBgAccentBright = deriveAccentShade(main, refMain, QColor(t.bgAccentBright));
         rdBgAccentDark = deriveAccentShade(main, refMain, QColor(t.bgAccentDark));
     }
+
+    // text on the accent: Figma's colors with the theme's own accent; with any other accent the
+    // dark FG/B1 or the light Dark/FG/1 (BG/A1 where the Light design puts light text), whichever
+    // reads on it, so a custom accent never leaves dark text on a dark fill (or the reverse)
+    const QColor darkText(rdDarkColors.fgB1);
+    const QColor lightText(rdDarkColors.fg1);
+    if (main == refMain)
+    {
+        rdFgOnAccent = rdFgB1;
+        rdFgOnAccentInverse = rdBgA1;
+    }
+    else
+    {
+        rdFgOnAccent = readableOn(main, darkText, lightText);
+        rdFgOnAccentInverse = readableOn(main, rdBgA1, darkText);
+        // selected text on the Accent/DIm selection
+        rdSelectionText = readableOn(rdAccentDim, rdSelectionText, darkText);
+    }
+    m_accentLowContrast = std::min(contrastRatio(main, rdBgA1), contrastRatio(main, rdBgB2)) < 2.0;
 
     // the subtitle timeline's blocks: the surface under them with 9 % white (Dark) or black
     // (Light) over it (video 7:00-7:04: #4A331D over the #331902 fill); they follow the accent

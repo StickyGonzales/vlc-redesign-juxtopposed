@@ -167,7 +167,8 @@ T.Control {
             anchors.horizontalCenterOffset: root._playing ? 0 : VLCStyle.dp(1, VLCStyle.scale)
 
             name: root._playing ? "pause" : "play"
-            color: VLCStyle.palette.rdFgB1
+            // FG/B1 on the gray pause pill; on the accent, the text color that reads on it
+            color: root._playing ? VLCStyle.palette.rdFgB1 : VLCStyle.palette.rdFgOnAccent
         }
     }
 

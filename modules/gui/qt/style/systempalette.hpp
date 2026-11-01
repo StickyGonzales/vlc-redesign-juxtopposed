@@ -152,6 +152,15 @@ public:
     COLOR_DEFINITION(rdBgDestructive, "#1A1111");
     // Figma color swatch stroke (Text Color, Shadow Color...): #FFFFFF 21 %, 1.5 px
     COLOR_DEFINITION(rdSwatchStroke, QColor(0xFF, 0xFF, 0xFF, 54));
+    // text and icons on Accent/Main fills (Primary buttons, the play button): Figma's FG/B1, or
+    // Dark/FG/1 when a custom accent is too dark for it (applyRdColors)
+    COLOR_DEFINITION(rdFgOnAccent, "#161616");
+    // the same where the Light theme puts BG/A1 on Accent/Main (the chosen segment): BG/A1, or
+    // FG/B1 when a custom accent is too light for it
+    COLOR_DEFINITION(rdFgOnAccentInverse, "#EDEDED");
+    // the accent is hard to see on the theme's surfaces (under 2:1 against BG/A1 or BG/B2): the
+    // custom color field warns (SettingsAccentPicker, Onboarding)
+    Q_PROPERTY(bool rdAccentLowContrast MEMBER m_accentLowContrast NOTIFY paletteChanged FINAL)
     // selected text on the Accent/DIm selection (no Figma style): FG/1 in Dark, BG/A1 in Light
     COLOR_DEFINITION(rdSelectionText, "#EAEAEA");
     // the BG/A5 input fields (search fields, Add Subtitles fields and dropdowns): BG/A5 in Dark,
@@ -254,6 +263,7 @@ private:
 
     ColorSchemeModel::ColorScheme m_source = ColorSchemeModel::ColorScheme::Day;
     bool m_isDark = false;
+    bool m_accentLowContrast = false;
     bool m_switching = false;
     bool m_hasCSDImage = false;
 
