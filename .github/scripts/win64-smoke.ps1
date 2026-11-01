@@ -346,6 +346,7 @@ function Check-Settings($s) {
 # and Cone froze (redesign/FIX_SPEED_FREEZE_NOTES.md)
 function Check-SpeedDrag($s) {
     Check "$($s.tag): speed slider drag, Cone keeps responding" {
+        if ($s.proc.HasExited) { throw "Cone is not running (exit code $($s.proc.ExitCode))" }
         Focus-Window $s.hwnd
         Show-Bars $s.hwnd
         $gear = Uia-Find $s.hwnd 'Playback Settings' 5000
