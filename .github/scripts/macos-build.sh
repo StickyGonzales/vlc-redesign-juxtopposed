@@ -114,8 +114,6 @@ build() {
     rm -rf "$DEST"
     make install DESTDIR="$DEST"
     echo "::endgroup::"
-    # the plugin cache generator, for the package step (a native build: it runs here)
-    cp bin/vlc-cache-gen "$DEST/vlc-cache-gen"
     if [ -n "${VLC_CCACHE_BINS_PATH:-}" ] && [ -n "$CCACHE_BIN" ]; then
         "$CCACHE_BIN" --show-stats | tee "$ROOT/.ccache-summary.txt" || true
     fi

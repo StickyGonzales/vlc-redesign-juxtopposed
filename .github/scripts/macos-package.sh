@@ -108,6 +108,13 @@ printf 'APPL????' > "$C/PkgInfo"
     -executable="$C/MacOS/vlc-qt-check" \
     -verbose=1
 cat "$C/Resources/qt.conf"
+# Qt's SQL drivers come with QtSql's plugins, which the interface never loads; they point at
+# database client libraries that are not there (macdeployqt: "no file at ...libpq...")
+rm -rf "$C/PlugIns/sqldrivers"
+rm -rf "$C/Frameworks/QtSql.framework"
+if otool -L "$C/Frameworks/plugins/libqt_plugin.dylib" | grep -q QtSql; then
+    echo "::error::the Qt interface links QtSql: keep it"; exit 1
+fi
 for f in QtCore QtGui QtQml QtQuick QtWidgets QtSvg QtQuickControls2; do
     [ -d "$C/Frameworks/$f.framework" ] || { echo "::error::$f.framework is missing from the app"; exit 1; }
 done
@@ -119,8 +126,13 @@ if otool -L "$C/Frameworks/plugins/libqt_plugin.dylib" "$C/MacOS/vlc-qt-check" |
 fi
 
 # --- plugin cache ---------------------------------------------------------------------------------
-if [ -x "$SRC/vlc-cache-gen" ] && [ "$(uname -m)" = "$ARCH" ]; then
-    VLC_LIB_PATH="$C/Frameworks" "$SRC/vlc-cache-gen" "$C/Frameworks/plugins"
+# the installed generator (bin/vlc-cache-gen in the build folder is libtool's wrapper script);
+# it loads libvlccore from the install, as make install's own run of it does
+CACHE_GEN="$SRC/libexec/vlc/vlc-cache-gen"
+if [ "$(uname -m)" = "$ARCH" ]; then
+    [ -x "$CACHE_GEN" ] || { echo "::error::$CACHE_GEN is missing"; exit 1; }
+    DYLD_LIBRARY_PATH="$SRC/lib" "$CACHE_GEN" "$C/Frameworks/plugins"
+    ls -la "$C/Frameworks/plugins/plugins.dat"
 fi
 
 # --- ad-hoc signature: every binary, then the frameworks, then the app -----------------------------
