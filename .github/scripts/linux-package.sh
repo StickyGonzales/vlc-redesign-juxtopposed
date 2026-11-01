@@ -168,6 +168,22 @@ if [ -d "\$BASE/portable" ]; then
     export XDG_DATA_HOME="\$BASE/portable/data"
     export XDG_CACHE_HOME="\$BASE/portable/cache"
 fi
+# hardware decoding: the bundled VA-API and VDPAU loaders look for the system's drivers where
+# Debian and Ubuntu keep them; other systems keep them elsewhere (Fedora, openSUSE: /usr/lib64;
+# Arch: /usr/lib; NixOS: /run/opengl-driver), so every folder of these that exists is named,
+# unless the user set the variable
+if [ -z "\$LIBVA_DRIVERS_PATH" ]; then
+    for d in /usr/lib/x86_64-linux-gnu/dri /usr/lib64/dri /usr/lib64/dri-freeworld \\
+             /usr/lib64/dri-nonfree /usr/lib/dri /run/opengl-driver/lib/dri; do
+        [ -d "\$d" ] && LIBVA_DRIVERS_PATH=\${LIBVA_DRIVERS_PATH:+\$LIBVA_DRIVERS_PATH:}\$d
+    done
+    [ -n "\$LIBVA_DRIVERS_PATH" ] && export LIBVA_DRIVERS_PATH
+fi
+if [ -z "\$VDPAU_DRIVER_PATH" ] && [ ! -d /usr/lib/x86_64-linux-gnu/vdpau ]; then
+    for d in /usr/lib64/vdpau /usr/lib/vdpau /run/opengl-driver/lib/vdpau; do
+        [ -d "\$d" ] && { export VDPAU_DRIVER_PATH=\$d; break; }
+    done
+fi
 exec "\$HERE/usr/bin/vlc" "\$@"
 EOF
 chmod +x "$DIR/$NAME"

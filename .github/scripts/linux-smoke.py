@@ -512,6 +512,21 @@ def check_identity(s, folder):
     return check(f'{s.tag}: window class and media controls name cone-player.desktop', body)
 
 
+def check_driver_paths(s):
+    """hardware decoding: the launcher names the system's VA-API driver folders that exist
+    (linux-package.sh), so the bundled libva finds the drivers outside Debian and Ubuntu too"""
+    def body():
+        with open(f'/proc/{s.proc.pid}/environ', 'rb') as f:
+            env = dict(e.split(b'=', 1) for e in f.read().split(b'\0') if b'=' in e)
+        want = [d for d in ('/usr/lib/x86_64-linux-gnu/dri', '/usr/lib64/dri', '/usr/lib/dri')
+                if os.path.isdir(d)]
+        got = env.get(b'LIBVA_DRIVERS_PATH', b'').decode()
+        if want and got.split(':')[:len(want)] != want:
+            raise CheckFailed(f'LIBVA_DRIVERS_PATH "{got}", expected the folders {want}')
+        return f'LIBVA_DRIVERS_PATH "{got}"' if want else 'no VA-API driver folder on this system'
+    return check(f'{s.tag}: the launcher names the VA-API driver folders', body)
+
+
 def session(exe, codec, tag, full, env=None):
     video = os.path.join(MEDIA, f'test-{codec}.mp4')
     s = Session(exe, video, tag, env)
@@ -528,6 +543,7 @@ def session(exe, codec, tag, full, env=None):
             check_menu(s)
             check_speed(s)
             if codec == 'h264':
+                check_driver_paths(s)
                 check_identity(s, os.path.dirname(os.path.realpath(exe)))
                 check_handoff(s, exe, env)
 
