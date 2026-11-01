@@ -23,6 +23,7 @@
 
 #include <QDate>
 #include <QDesktopServices>
+#include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
@@ -51,6 +52,9 @@ const QString releasePagePrefix = QStringLiteral("https://github.com/");
 constexpr int startupDelay = 4000;
 // the request gives up after this long (a stalled connection or DNS lookup)
 constexpr int requestTimeout = 15000;
+// tests only: a file whose content stands for GitHub's answer (HTTP 200), so the notice can be
+// tested on a real build without a server (redesign/UPDATE_SKIP_NOTES.md); unset in normal use
+const char testAnswerVariable[] = "CONE_UPDATE_CHECK_TEST_FILE";
 
 // "1.2.3" out of "1.2.3", "v1.2.3" or "v1.2.3-beta"; empty when there is none
 QString versionOf(const QString& text)
@@ -109,6 +113,7 @@ RdUpdateCheck::RdUpdateCheck(qt_intf_t* intf, QObject* parent)
         m_latestVersion = found;
         m_releasePage = settings->value(settingsGroup + QStringLiteral("ReleasePage")).toString();
     }
+    m_skippedVersion = settings->value(settingsGroup + QStringLiteral("SkippedVersion")).toString();
 
     QTimer::singleShot(startupDelay, this, &RdUpdateCheck::startupCheck);
 #else
@@ -149,7 +154,8 @@ void RdUpdateCheck::startupCheck()
     const QDate today = QDate::currentDate();
     const bool dismissedToday = settings->value(settingsGroup + QStringLiteral("DismissedOn")).toDate() == today;
 
-    if (!m_latestVersion.isEmpty() && !dismissedToday)
+    // a skipped version waits silently: only a newer one (or "Check now") shows the notice
+    if (!m_latestVersion.isEmpty() && !dismissedToday && m_latestVersion != m_skippedVersion)
     {
         setStatus(UpdateAvailable);
         setNoticeVisible(true);
@@ -182,6 +188,17 @@ void RdUpdateCheck::request(bool explicitCheck)
     // a request already on its way answers "Check now" too
     if (m_job)
         return;
+
+    const QString testFile = qEnvironmentVariable(testAnswerVariable);
+    if (!testFile.isEmpty())
+    {
+        QFile file(testFile);
+        const bool read = file.open(QIODevice::ReadOnly);
+        const QByteArray body = read ? file.readAll() : QByteArray();
+        msg_Dbg(m_intf, "update check: answer read from %s (test)", qtu(testFile));
+        QTimer::singleShot(0, this, [this, read, body]() { onReply(read ? 200 : 0, body); });
+        return;
+    }
 
     auto job = std::make_shared<Job>();
     if (!job->interrupt)
@@ -260,6 +277,8 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         settings->remove(settingsGroup + QStringLiteral("ReleasePage"));
         m_latestVersion.clear();
         m_releasePage.clear();
+        // up to date: a version skipped earlier is installed or older now
+        setSkippedVersion(QString());
         setNoticeVisible(false);
         setStatus(UpToDate);
         return;
@@ -276,10 +295,15 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         emit statusChanged();
     setStatus(UpdateAvailable);
 
-    // "Later" holds for the day, except against "Check now"
+    // a newer version than the skipped one ends the skip: only that exact version was skipped
+    if (!m_skippedVersion.isEmpty() && isNewer(version, m_skippedVersion))
+        setSkippedVersion(QString());
+
+    // "Later" holds for the day and "Skip this version" for that version, except against
+    // "Check now", which always shows the newest version
     const bool dismissedToday = settings->value(settingsGroup + QStringLiteral("DismissedOn")).toDate()
                                 == QDate::currentDate();
-    if (explicitCheck || !dismissedToday)
+    if (explicitCheck || (!dismissedToday && version != m_skippedVersion))
         setNoticeVisible(true);
 #else
     Q_UNUSED(httpStatus);
@@ -298,6 +322,41 @@ void RdUpdateCheck::download()
 void RdUpdateCheck::later()
 {
     dismissForToday();
+}
+
+void RdUpdateCheck::skipVersion()
+{
+#ifdef VLC_BRAND_PUBLIC
+    if (!m_latestVersion.isEmpty())
+        setSkippedVersion(m_latestVersion);
+#endif
+    setNoticeVisible(false);
+}
+
+void RdUpdateCheck::undoSkip()
+{
+#ifdef VLC_BRAND_PUBLIC
+    setSkippedVersion(QString());
+    // the version that was skipped is offered again at once
+    if (m_status == UpdateAvailable && !m_latestVersion.isEmpty())
+        setNoticeVisible(true);
+#endif
+}
+
+void RdUpdateCheck::setSkippedVersion(const QString& version)
+{
+#ifdef VLC_BRAND_PUBLIC
+    if (m_skippedVersion == version)
+        return;
+    m_skippedVersion = version;
+    if (version.isEmpty())
+        m_intf->mainSettings->remove(settingsGroup + QStringLiteral("SkippedVersion"));
+    else
+        m_intf->mainSettings->setValue(settingsGroup + QStringLiteral("SkippedVersion"), version);
+    emit skippedVersionChanged();
+#else
+    Q_UNUSED(version);
+#endif
 }
 
 void RdUpdateCheck::dismissForToday()

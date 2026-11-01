@@ -163,6 +163,23 @@ SettingsPage {
                 color: VLCStyle.palette.rdFgA3
             }
         }
+
+        // "Skip this version" on the update notice: the version it no longer offers, and the way
+        // back (shown only while one is skipped)
+        SettingsRow {
+            text: qsTr("Skipped version")
+            description: qsTr("The update notice does not offer %1 %2. A newer version still shows, and Check Now always shows the newest one.").arg(Brand.name).arg(RdUpdateCheck.skippedVersion)
+            keywords: "update version skip skipped undo"
+            shown: RdUpdateCheck.supported && RdUpdateCheck.skippedVersion !== ""
+
+            Widgets.RdButton {
+                style: Widgets.RdButton.Style.Plain
+                implicitWidth: VLCStyle.dp(320)
+                text: qsTr("Undo Skip of %1").arg(RdUpdateCheck.skippedVersion)
+                Accessible.name: qsTr("Offer %1 %2 again").arg(Brand.name).arg(RdUpdateCheck.skippedVersion)
+                onClicked: RdUpdateCheck.undoSkip()
+            }
+        }
     }
 
     SettingsSection {
