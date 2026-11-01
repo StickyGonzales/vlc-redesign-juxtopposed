@@ -142,7 +142,6 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 <details>
 <summary>Known issues (1.1.2)</summary>
 
-- Dragging the playback speed slider quickly on some HEVC (x265) films can freeze Cone Player; it then has to be ended in Task Manager. Change the speed in steps (the - and = keys) on those films until this is fixed.
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
 - Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself (settings and the resume position are kept). A file double-clicked during those seconds now opens in a new window.
 - The Subtitle Duration Factor slider is hidden for now: in this VLC 4 engine it made ASS / SSA subtitles disappear. It comes back once it works.

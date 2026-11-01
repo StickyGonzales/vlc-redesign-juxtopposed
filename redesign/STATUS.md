@@ -7,7 +7,7 @@ Hard rule (CLAUDE.md, 2026-11-01): before starting a task, read this table, the 
 | Task | Owner session | Branch | State |
 |---|---|---|---|
 | Up Next: card when the credits start, and the Netflix-style rework (no start prompt, strong/weak names, Turn off autoplay, migration, seasons, seek/pause) | web | wip/up-next-credits | in progress: all code pushed (5fd8617721), build-linux / build-windows running, then the sandbox tests and one draft PR |
-| HEVC speed slider freeze fix | web | wip/fix-speed-freeze | PR #85 up (draft), waiting for the PC retest |
+| HEVC speed slider freeze fix | web | wip/fix-speed-freeze | done: PR #85 merged 2026-11-01 after the PC retest (HEVC and H.264: responding, keeps playing). The code already shipped in 1.1.2 through #83, which merged this branch |
 | Installer upgrade re-adds the desktop shortcut | web | wip/fix-upgrade-shortcut (not started yet) | queued after the Up Next PR |
 | Linux .deb file name with `~` (GitHub stores `.`; SHA256SUMS mismatch) | web | wip/fix-deb-asset-name (not started yet) | queued after the Up Next PR |
 | Update notice: Skip this version | PC | wip/update-skip-version | PR #86 up (draft), CI green, tested on Windows. A second copy the web session wrote is not on GitHub: it is not continued |
