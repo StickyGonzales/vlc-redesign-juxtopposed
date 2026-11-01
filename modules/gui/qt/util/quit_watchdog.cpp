@@ -25,6 +25,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <functional>
 #include <mutex>
 #include <thread>
 
@@ -60,6 +61,9 @@ constexpr auto kLogGrace = std::chrono::milliseconds(300);
 constexpr double kResumeMaxPosition = 0.9;
 
 std::atomic<bool> s_armed{false};
+
+/* setDiscardOnQuit(): interface thread only */
+std::function<void()> s_discardOnQuit;
 
 /* the object the message is logged through: the interface while it exists, then the libvlc
  * instance, which the core frees only at the very end of the quit (a quit that got that far
@@ -208,6 +212,21 @@ void QuitWatchdog::arm(qt_intf_t *p_intf)
             static_cast<long long>((recording ? kQuitTimeoutRecording : kQuitTimeout).count()));
 
     saveState(p_intf);
+    discardForQuit();
+}
+
+void QuitWatchdog::setDiscardOnQuit(std::function<void()> discard)
+{
+    s_discardOnQuit = std::move(discard);
+}
+
+void QuitWatchdog::discardForQuit()
+{
+    /* once: the function may destroy what it was given */
+    std::function<void()> discard = std::move(s_discardOnQuit);
+    s_discardOnQuit = nullptr;
+    if (discard)
+        discard();
 }
 
 void QuitWatchdog::armWithoutSaving(qt_intf_t *p_intf)
