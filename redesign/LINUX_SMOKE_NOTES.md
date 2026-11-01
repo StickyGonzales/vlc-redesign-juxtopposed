@@ -29,6 +29,7 @@ Each failed check runs once more; every retry is listed in the summary. Results 
 - the seek bar (the "Progress" slider) clicked at 75 % → the time is 75 % of the length;
 - Ctrl+P opens Settings ("Search settings"), Escape closes it;
 - the top bar's "..." opens the main menu ("Open File(s)") with a real click, in a window and in fullscreen (F), and Escape closes it;
+- the speed slider (the gear, the sidebar's Speed): a real drag back and forth for 4 s, released near 2x; then Cone must still answer (AT-SPI within 5 s, the cli gives the speed, 1.5x or more, and the time moves on). Added with the speed slider freeze fix (#85, redesign/FIX_SPEED_FREEZE_NOTES.md), which this branch merges;
 - Ctrl+Q quits in under 3 s (HEVC: a quit the watchdog ends is a warning, as on Windows);
 - no "cannot load plug-in" line in Cone's log.
 
@@ -68,6 +69,7 @@ Every tarball and install check, on the real tarball of build-linux #52 (run 412
 |---|---|
 | build-linux #54 (41256425136), first version | build green, **smoke red**: the bare runner had no `libEGL.so.1`, so the tarball's Qt plug-in did not load (the .deb, which depends on it, passed). Every desktop has it. |
 | build-linux #56 (41258280658), with libEGL on the runner (5e6e0951) | build and **all smoke checks pass** (31 of 31): tarball H.264 and HEVC (window, playback, subtitle file, Settings, seek, "..." menu in a window and in fullscreen, quit 0.21 s, every plug-in loads), settings in ~/.config/Cone, install.sh / uninstall.sh, the .deb installed next to Ubuntu's VLC 3.0.20, started (quit 0.16 s) and removed |
+| build-linux #57 (41303592768), with the speed check and #85's fix (bf74a5c28b) | build and **all smoke checks pass**: the speed drag released at 1.75x in both tarball sessions, the interface answers in 0.02 / 0.04 s. Without the fix (local run on build-linux #53) the check fails: "Cone exited during the drag (exit code -6)" |
 
 ## What it does not cover
 The same limits as the Windows checks (redesign/CI_SMOKE_NOTES.md section 3):
