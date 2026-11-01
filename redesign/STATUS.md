@@ -1,5 +1,18 @@
 # STATUS
 
+## Task owners
+
+Hard rule (CLAUDE.md, 2026-11-01): before starting a task, read this table, the open branches and the open PRs; a task listed here is not started by another session. Claim a new task by adding its row and pushing it to wip/next-test first.
+
+| Task | Owner session | Branch | State |
+|---|---|---|---|
+| Up Next: card when the credits start, and the Netflix-style rework | web | wip/up-next-credits | in progress |
+| HEVC speed slider freeze fix | web | wip/fix-speed-freeze | PR #85 up (draft), waiting for the PC retest |
+| Installer upgrade re-adds the desktop shortcut | web | (not pushed yet) | in progress |
+| Linux .deb file name with `~` (GitHub stores `.`; SHA256SUMS mismatch) | web | (not pushed yet) | in progress |
+| Update notice: Skip this version | PC | wip/update-skip-version | PR #86 up (draft), CI green, tested on Windows. A second copy the web session wrote is not on GitHub: it is not continued |
+| OSD inventory and style mockups (P7-08 research) | web | wip/osd-inventory | PR #81 up (draft) |
+| Player: hide the cursor only during playback | not recorded | wip/cursor-playing-hide | PR #74 up |
 - Updated: 2026-11-01 15:10. **Cone Player 1.1.2 released (full, Latest): https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v1.1.2** (redesign 7bd708c98ae, release run 41309041002 with smoke 31 of 31; the installer upgraded the installed 1.1.1 to 1.1.2 and it plays; the zip plays on its second start, settings in portable). **Cone Player 1.1.2 for Linux (beta 2), pre-release, not Latest: https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.1.2-beta2** (run 41309078173 with the Linux smoke checks; AppImage, tarball with install.sh / uninstall.sh, .deb (ar archive: debian-binary, control.tar.xz, data.tar.xz); checksums match; README's Linux section matches the files).
   - **LOW for the web session (release-linux):** the .deb is built as `cone-player_1.1.2~beta2_amd64.deb`; GitHub stores an asset name's `~` as `.`, so SHA256SUMS.txt and the release text named a file that does not exist and `sha256sum -c` fails for it. Fixed by hand for beta 2 (SHA256SUMS.txt replaced with the stored name, same hash; text corrected). release-linux should name the uploaded file and the checksum line the same (no `~` in the asset name, or rename before upload).
   - Release cadence rule (CLAUDE.md, 2026-11-01): at most one Windows release a week; 1.1.3 waits for StickyGonzales's go, green PRs (the HEVC speed-slider freeze fix among them) go into wip/next-test meanwhile. One scratch folder rule (CLAUDE.md): <TEST_MEDIA_DIR>\builds.
