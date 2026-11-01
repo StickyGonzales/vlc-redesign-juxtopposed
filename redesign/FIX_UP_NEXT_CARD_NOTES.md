@@ -16,11 +16,15 @@ Branch `wip/fix-up-next-card`, made from `origin/wip/next-test` (with #87 merged
 ## 2. The card showed the wrong or an empty episode name as the next episode started
 **Seen:** for about 0.6 s as the next episode starts, the card shows the episode after it ("S01E03. Playing in 1 seconds") or an empty name ("Strong Show, . Plays when you choose") before it hides.
 
-**Cause:** when the next episode starts, RdUpNext hides the card (`setCard(false)`, a 150 ms fade) and right away starts the detection for the new episode: the next episode is reset (empty name), then found again (the one after the new episode). The card read RdUpNext's values live, so the fading card showed both. On a busy start of playback the fade can take longer than its 150 ms.
+**Cause (found with a 20 fps screen recording in the Linux sandbox, build-linux #63):** the card did not just keep its old text while fading: it came back at full opacity for the new episode, with the episode after it ("S01E03, Playing in 1 s"; "Episode 3" for weak names), and only then faded.
+- After the input changes, the player keeps reporting the previous episode's time until the new episode sends its first position.
+- RdUpNext checked the card right away with that time (about 9:59 of 10:00): for the new episode it is inside the credits window, so the card of its next episode showed until the real time (0:00) arrived.
+- The same stale time was also recorded as the new episode's "last position" (used for learning the credits point).
 
 **Fix:**
-- **Frozen texts:** everything the card shows (mode, show name, episode line, seconds, countdown line, thumbnail, season, waiting/counting, autoplays) is held while the card fades out: the values of the moment it began to hide. Shown, or fully hidden, they follow RdUpNext as before (so its next showing, and the compact-pill width check, use current values).
-- **Hide first:** Next episode / Play now hides the card before it queues the next episode (weak names queue it only on that click), so the queue change never reaches a visible card.
+- **No stale time:** after an input change, RdUpNext ignores the player's time until it differs from the previous episode's last time (the new episode's first position). Until then the card stays hidden and nothing is recorded for learning.
+- **Frozen texts:** what the card shows (mode, show name, episode line, seconds, countdown line, thumbnail, season, waiting/counting, autoplays) is held while it fades out, so the fade itself never shows a changed episode. Shown, or fully hidden, the card follows RdUpNext as before (its next showing and the compact-pill width check use current values).
+- **Hide first:** Next episode / Play now hides the card before it queues the next episode (weak names queue it only on that click).
 
 ## Checks
 - `qmlcheck.py`: errors 1 (the known HighResolutionTimeWidget stub), crashed 0; `buildlists.py`: 0 problems; `privacycheck.py`: 0 problems.
