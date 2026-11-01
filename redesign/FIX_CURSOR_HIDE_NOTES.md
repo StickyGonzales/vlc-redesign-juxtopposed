@@ -65,7 +65,15 @@ The window and fullscreen checks first ask the cli whether the video plays (`sta
 
 | Run | Result |
 |---|---|
-| (filled in below the PR) | |
+| build-linux #75 (41356019545), a43a6c2 | build green; smoke: window and paused pointer checks pass (254 px after a move, 0 px 4.5 s later), fullscreen failed: the smoke check resumed with the cli's `play`, which left the video paused (section 4) |
+| build-linux #76 (41359267506), 062e34b | **green, every Linux smoke check passes**, the three pointer checks included |
+| build-windows #172 (41359270335), 062e34b | build green; smoke: every pointer reading 0 (the runner suppresses the pointer, section 4) |
+| build-windows #173 (41361816973), f526932 | build green; smoke: still 0 on the screen (flags 2), Cone's own thread already 144 px while paused |
+| smoke-windows-manual #12 (41363955610), 899dabc, on build #173 | **green, every Windows smoke check passes**: "shown after a move (144 pixels), hidden 4.5 s later, shown again on a move (144 pixels)", "still shown (144 pixels) 4.5 s after the last move while paused", "hidden in fullscreen 4.5 s after the last move" |
+
+Between #173 and the PR head only the Windows smoke script and these notes changed; the app is the same code. Use build-windows #173's artifacts (or a new build of the branch) for the retest below.
+
+Sandbox (Xvfb, build-linux #75's tarball): window: shown after a move, hidden after 6 s; fullscreen: hidden 1.1 to 1.3 s after the last move (VLC's mouse-hide-timeout), kept at the bottom edge with the control bar; paused: kept.
 
 ## 6. Windows retest (PC session)
 
