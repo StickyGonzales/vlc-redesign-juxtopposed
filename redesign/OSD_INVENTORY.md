@@ -252,3 +252,19 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
 
 - **Close-ups:** at 2x real size, readable on a phone: [`OSD_round6_E1_closeup.jpg`](mockups/osd/OSD_round6_E1_closeup.jpg) and [`OSD_round6_E2_closeup.jpg`](mockups/osd/OSD_round6_E2_closeup.jpg). The whole window with the volume message: `OSD_round6_E1_window.jpg`, `OSD_round6_E2_window.jpg`.
 - **Pick:** StickyGonzales picks E1 or E2, then step 2 builds it.
+
+## Round 7: read-only, nothing that looks clickable (StickyGonzales, 2026-11-02)
+
+- **Feedback:** E1 and E2 look like the controls themselves (the play-button tile, the draggable cone and seek track, the key caps), so they look interactable. A message must read as status only.
+- **The change:** keep the boxy Cone shape (radius 10, BG/A3 Transparent, Figma shadow) but use only display parts.
+  - The level is a thin 3 px line, like the Up Next card's countdown line.
+  - The icon is plain.
+  - The key is plain dim text (FG/A3, 12 px), not a cap.
+  - There is no edge, no tile, no handle.
+- **Close-ups at 2x size:** [`OSD_round7_G1_closeup.jpg`](mockups/osd/OSD_round7_G1_closeup.jpg), [`OSD_round7_G2_closeup.jpg`](mockups/osd/OSD_round7_G2_closeup.jpg). Whole window: `OSD_round7_G1_window.jpg`, `OSD_round7_G2_window.jpg`.
+
+| | G1: two lines | G2: one line |
+|---|---|---|
+| **Layout** | 300 px wide: icon, name (FG/A2), value at the right (FG/1 semibold), key (FG/A3); under it a 3 px level line (track BG/B2, fill accent) | 44 px high: the same row; the 3 px level line runs along the box's bottom edge |
+| **Levels** | volume (to 200 %), speed (0.25x to 4x), muted (empty line); none for subtitles | same |
+| **Place, motion** | top center, 16 px under the top bar's place; a quarter bigger in fullscreen; in 120 ms, stays 1.5 s, out 200 ms; the line moves in place while a key is held | same |

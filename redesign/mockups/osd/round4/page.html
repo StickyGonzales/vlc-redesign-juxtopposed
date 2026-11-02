@@ -85,6 +85,20 @@ body{background:#000;font-family:Inter,sans-serif}
 .tv{font-variant-numeric:tabular-nums;color:var(--fga2);min-width:44px}
 .tx{color:var(--fg2);font-weight:500}
 .E1 .key,.E2 .key{height:22px}
+
+/* G1 / G2: read-only status, no control-like parts: no buttons, no draggable tracks, no key caps */
+.G1,.G2{left:50%;transform:translateX(-50%);border-radius:10px;background:var(--ta3e);color:var(--fga2);font-size:15px}
+.G1{width:300px;padding:12px 16px 14px}
+.G1 .r,.G2 .r{display:flex;align-items:center;gap:10px}
+.G1 .ic,.G2 .ic{width:20px;height:20px;color:var(--fg2)}
+.G1 .nm,.G2 .nm{color:var(--fga2)} .G1 .vl,.G2 .vl{margin-left:auto;color:var(--fg1);font-weight:600;font-variant-numeric:tabular-nums}
+.G1 .k,.G2 .k{font-size:12px;color:var(--fga3);margin-left:10px}
+.G1 .ln{height:3px;border-radius:2px;background:var(--bgb2);margin-top:11px;position:relative;overflow:hidden}
+.G1 .ln i,.G2 .ln i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:2px}
+.G2{height:44px;padding:0 16px;display:flex;align-items:center;min-width:260px;position:absolute;overflow:hidden}
+.G2 .r{width:100%}
+.G2 .ln{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--bgb2)}
+.G2 .ln i{border-radius:0}
 </style></head><body><div id="win"></div>
 <script>
 const FRAME='data:image/png;base64,%%FRAME%%';
@@ -102,6 +116,13 @@ function osd(v,m,bar){
  const g=MSG[m];
 
 
+
+ if(v==='G1'||v==='G2'){
+   const lv=m==='vol'?0.40:m==='speed'?(1.5-0.25)/(4-0.25):m==='mute'?0:null;
+   const nm=m==='mute'?'Volume':g.label, vl=m==='mute'?'Muted':g.value;
+   const row=`<div class="r">${ic(g.icon)}<span class="nm">${nm}</span><span class="vl">${vl}</span><span class="k">${g.key}</span></div>`;
+   const ln=lv!=null?`<div class="ln"><i style="width:${lv*100}%"></i></div>`:'';
+   return `<div class="osd ${v} shadow" style="top:${TOPH+16}px">${row}${ln}</div>`;}
  if(v==='E1'||v==='E2'){
    const th=document.getElementById('win').className;
    const lead=v==='E1'?ic(g.icon):`<span class="tile${m==='mute'?' off':''}">${ic(g.icon)}</span>`;
