@@ -9,6 +9,8 @@
 # interface on a Unix socket. Sound goes to VLC's dummy audio output; Qt renders in software.
 # Each failed check runs once more; every retry is listed in the summary.
 import argparse
+import ctypes
+import ctypes.util
 import glob
 import os
 import shutil
@@ -286,6 +288,104 @@ def check_settings(s):
     return check(f'{s.tag}: Settings opens', body)
 
 
+class _CursorImage(ctypes.Structure):
+    _fields_ = [('x', ctypes.c_short), ('y', ctypes.c_short), ('width', ctypes.c_ushort),
+                ('height', ctypes.c_ushort), ('xhot', ctypes.c_ushort), ('yhot', ctypes.c_ushort),
+                ('serial', ctypes.c_ulong), ('pixels', ctypes.POINTER(ctypes.c_ulong)),
+                ('atom', ctypes.c_ulong), ('name', ctypes.c_char_p)]
+
+
+def pointer_pixels():
+    """the pixels of the pointer the X server shows now that are not transparent (XFixes):
+    0 while the pointer is hidden"""
+    x11 = ctypes.CDLL(ctypes.util.find_library('X11'))
+    xfixes = ctypes.CDLL(ctypes.util.find_library('Xfixes'))
+    x11.XOpenDisplay.restype = ctypes.c_void_p
+    x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
+    xfixes.XFixesGetCursorImage.restype = ctypes.POINTER(_CursorImage)
+    xfixes.XFixesGetCursorImage.argtypes = [ctypes.c_void_p]
+    display = x11.XOpenDisplay(None)
+    try:
+        image = xfixes.XFixesGetCursorImage(display).contents
+        return sum(1 for i in range(image.width * image.height) if (image.pixels[i] >> 24) & 0xff)
+    finally:
+        x11.XCloseDisplay(display)
+
+
+def check_pointer(s):
+    """the pointer hides over the playing video with the bars (about 3 s in a window, VLC's
+    mouse-hide-timeout in fullscreen), shows again on a move, and stays while paused"""
+    def still_over_video(x, y, seconds):
+        xdo('mousemove', x, y)
+        time.sleep(0.1)
+        xdo('mousemove', x + 5, y + 5)
+        time.sleep(0.5)
+        moved = pointer_pixels()
+        time.sleep(seconds)
+        return moved, pointer_pixels()
+
+    # near the start, so the clip (30 s, repeated) does not start over during the three checks
+    rc('seek 1')
+    time.sleep(1)
+
+    def must_play():
+        if '( play state:' not in rc('status'):
+            raise CheckFailed('the video is not playing (cli status), so the pointer may stay')
+
+    def window():
+        must_play()
+        s.focus()
+        moved, still = still_over_video(640, 360, 4.5)
+        if not moved:
+            raise CheckFailed('the pointer is hidden right after a move')
+        if still:
+            raise CheckFailed(f'the pointer still shows ({still} pixels) 5 s after the last move while playing')
+        xdo('mousemove', 700, 400)
+        time.sleep(0.5)
+        again = pointer_pixels()
+        if not again:
+            raise CheckFailed('the pointer did not show again on a move')
+        return f'shown after a move ({moved} pixels), hidden 4.5 s later, shown again on a move'
+
+    def paused():
+        s.focus()
+        rc('pause')
+        try:
+            moved, still = still_over_video(640, 360, 4.5)
+            if not still:
+                raise CheckFailed('the pointer hid while the video was paused')
+            return f'still shown ({still} pixels) 4.5 s after the last move while paused'
+        finally:
+            # 'pause' toggles; the cli's 'play' does not resume a paused player (vlc_player_Start
+            # returns at once on a started player)
+            rc('pause')
+            time.sleep(1)
+
+    def fullscreen():
+        must_play()
+        s.focus()
+        xdo('key', 'f')
+        time.sleep(2)
+        try:
+            if not is_fullscreen(s):
+                raise CheckFailed('F did not make the window fullscreen')
+            w, h = (int(v) for v in xdo('getdisplaygeometry').split())
+            moved, still = still_over_video(w // 2, h // 2, 4.5)
+            if not moved:
+                raise CheckFailed('the pointer is hidden right after a move')
+            if still:
+                raise CheckFailed(f'the pointer still shows ({still} pixels) in fullscreen 4.5 s after the last move')
+            return 'hidden in fullscreen 4.5 s after the last move'
+        finally:
+            if is_fullscreen(s):
+                xdo('key', 'f')
+                time.sleep(1)
+
+    check(f'{s.tag}: pointer hides while playing (window)', window)
+    check(f'{s.tag}: pointer stays while paused', paused)
+    check(f'{s.tag}: pointer hides while playing (fullscreen)', fullscreen)
+
+
 def is_fullscreen(s):
     geo = xdo('getwindowgeometry', s.win)
     size = geo.split('Geometry:')[1].strip() if 'Geometry:' in geo else ''
@@ -543,6 +643,7 @@ def session(exe, codec, tag, full, env=None):
             check_menu(s)
             check_speed(s)
             if codec == 'h264':
+                check_pointer(s)
                 check_driver_paths(s)
                 check_identity(s, os.path.dirname(os.path.realpath(exe)))
                 check_handoff(s, exe, env)
