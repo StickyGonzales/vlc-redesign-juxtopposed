@@ -23,7 +23,8 @@ Fill in when publishing:
 
 ## Fixed
 
-- **No more freeze when you drag the playback speed slider.** On HEVC (x265) films, dragging the speed slider could freeze Cone Player until it was ended in Task Manager. 1.1.2 listed this as a known issue; it is fixed.
+- **No more freeze when you drag the playback speed slider.** On any video, dragging the speed slider could freeze Cone Player until it was ended in Task Manager. 1.1.2 listed this as a known issue; it is fixed.
+- **The mouse pointer hides again during playback.** Over a playing video it now hides after a few seconds without a move, in a window and in fullscreen, and shows again when you move the mouse. It stays visible while the video is paused, and while a menu, the sidebar or the Up Next card is open. Thanks to [krishvaghasiya705](https://github.com/krishvaghasiya705) for the paused part (#74).
 
 ## New: Up Next for shows
 
@@ -53,7 +54,6 @@ Two downloads, both for Windows 10 / 11, 64-bit. Their checksums are in `SHA256S
 
 ## Known issues
 
-- The mouse pointer stays visible over the video during playback, also in fullscreen (the bars do hide). This will be fixed.
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
 - Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself. Settings and the resume position are kept.
 - The Subtitle Duration Factor slider is still hidden: in this VLC 4 engine it made ASS / SSA subtitles disappear.
@@ -79,7 +79,9 @@ Cone Player is not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, 
 
 > **Beta:** checked automatically in a Linux environment on GitHub (with dummy audio and software video). Real sound output and GPU video decoding have not been tested on real Linux hardware yet. Please report what works and what doesn't in [Issues](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues). Windows users: get [Cone Player 1.2.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v1.2.0).
 
-**Fixed:** no more freeze when you drag the playback speed slider on HEVC (x265) films.
+**Fixed:**
+- No more freeze when you drag the playback speed slider, on any video.
+- The mouse pointer hides again over a playing video, in a window and in fullscreen, and stays visible while paused. Thanks to [krishvaghasiya705](https://github.com/krishvaghasiya705) for the paused part (#74).
 
 **New, as on Windows:**
 - **Up Next for shows.** The card comes when the credits start, and the countdown only runs in the last 10 s. There's no more "Play episodes in a row?" question, and a "Turn off autoplay" link is on the card. Episodes only numbered play when you choose.
@@ -96,7 +98,7 @@ Cone Player is not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, 
 - **AppImage**: download, `chmod +x` it, start it. AppImageLauncher or Gear Lever add it to the menu with its icon. A folder named `portable` next to it keeps settings and library there.
 - **Portable tarball**: unpack, start `./cone`, or run `./install.sh` to install it for your user (no sudo; menu entry, icons, "Open with"). `README-LINUX.txt` inside explains the rest.
 - **Debian / Ubuntu package** (amd64): `sudo apt install ./cone-player_1.2.0-beta3_amd64.deb`. Installs into `/opt/cone-player` with the command `cone-player`, next to VLC without replacing it; remove it with `sudo apt remove cone-player`.
-- Needs a 64-bit Linux desktop (X11 or Wayland) with glibc 2.39 or newer.
+- Needs a 64-bit Linux desktop (X11 or Wayland) with glibc 2.39 or newer: for example Ubuntu 24.04, Linux Mint 22, Debian 13, Fedora 40 or newer.
 - Cone keeps its own settings (`~/.config/Cone`, `~/.local/share/Cone`, `~/.cache/Cone`) and runs next to an installed VLC.
 - Checked on GitHub before release: H.264 and HEVC playback with subtitles, seeking, Settings, the menu, quitting, opening a file in the running window, the media controls' name, and installing and removing the tarball and the package (Ubuntu 24.04).
 
@@ -108,11 +110,11 @@ SHA-256: (written by release-linux)
 
 ## 3. Cone Player for macOS (experimental preview)
 
-Use only if the Mac build is green and a tester confirmed it plays.
+Published as its own pre-release with the file `ConePlayer-1.2.0-preview-macos-arm64.dmg` and its SHA-256.
 
 **Cone Player for macOS, experimental preview**: a first build of Cone Player for **Apple Silicon** Macs (M1 and later), macOS 12 or later. It's a preview for testers, not a finished release. Windows users: get [Cone Player 1.2.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v1.2.0).
 
-> **Preview:** checked automatically on GitHub's Macs (playback, subtitles, quitting), and tested by hand on one Mac. Sound, Retina scaling and everyday use have hardly been tried yet. Please report what works and what doesn't in [Issues](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues), with your macOS version and Mac model.
+> **Preview:** it hasn't been tried on a real Mac yet. It is only checked automatically on GitHub's test Mac, where the video area stayed black, probably because of that Mac's virtual graphics (not confirmed). Testers are very welcome: please report what works and what doesn't in [Issues](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues), with your macOS version and Mac model.
 
 **Install:**
 1. Open the `.dmg` and drag **Cone Player** onto **Applications**.
