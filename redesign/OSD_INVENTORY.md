@@ -268,3 +268,22 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
 | **Layout** | 300 px wide: icon, name (FG/A2), value at the right (FG/1 semibold), key (FG/A3); under it a 3 px level line (track BG/B2, fill accent) | 44 px high: the same row; the 3 px level line runs along the box's bottom edge |
 | **Levels** | volume only (to 200 %; empty when muted): StickyGonzales, speed and the others need no line | same |
 | **Place, motion** | top center, 16 px under the top bar's place; a quarter bigger in fullscreen; in 120 ms, stays 1.5 s, out 200 ms; the line moves in place while a key is held | same |
+
+## Final style (StickyGonzales, 2026-11-02)
+
+- **What StickyGonzales chose:** E1's look ("these are fine"), with the level shown only for the volume.
+  - **Box:** 44 px, radius 10, BG/A3 Transparent with the bar's 1 px Divider/Dim edge, Figma's shadow. The icon is plain (FG/A2).
+  - **Volume and Muted:** the control bar's own volume cone (Figma "volume": 80 %, 200 %, empty when muted) and the number or "Muted".
+  - **Every other message:** icon, name (FG/2), value (FG/1), no slider and no tile.
+  - **Key:** in a small key cap (radius 4), only when a key did it.
+  - **Place:** top center, 16 px under the top bar's place, also with the bars hidden (it never moves); a quarter bigger in fullscreen.
+  - **Motion:** in 120 ms, stays 1.5 s ("Show feedback for"), out 200 ms. A new message changes the text in place; a held key moves the cone in place.
+- **Images:**
+  - [`OSD_final_closeup.jpg`](mockups/osd/OSD_final_closeup.jpg): the 4 messages, dark and light, at 2x.
+  - [`OSD_final_window.jpg`](mockups/osd/OSD_final_window.jpg): the whole window.
+  - [`OSD_final_all_messages.jpg`](mockups/osd/OSD_final_all_messages.jpg): every message of this inventory in the final style, by group, dark, at 2x.
+- **In the all-messages image:**
+  - Wording fixes applied: chapters count from 1; Speed and the category names are translatable.
+  - The play state icons (5.x) become "Paused" / "Playing" messages.
+  - The title at start (6.1) is off by default (Decision 69); it is shown for completeness.
+- **Not shown:** the EPG panel (4.2) keeps its own layout.

@@ -72,9 +72,9 @@ body{background:#000;font-family:Inter,sans-serif}
    played fill BG/Accent Bright radius 4, playhead 8x24 Accent/Main radius 4, the volume cone, time text 400 15 FG/A2) */
 .dark{--accbg:#371F06;--divdim:#222222;--fgb1:#161616;--ta3e:rgba(25,25,25,.95);--trk:#090909}
 .light{--accbg:#D8BA9A;--divdim:#ACACAC;--fgb1:#161616;--ta3e:rgba(213,213,213,.92);--trk:#888888}
-.E1,.E2{left:50%;transform:translateX(-50%);height:44px;border-radius:10px;background:var(--ta3e);border:1px solid var(--divdim);
+.E1,.E2,.H{left:50%;transform:translateX(-50%);height:44px;border-radius:10px;background:var(--ta3e);border:1px solid var(--divdim);
   display:flex;align-items:center;gap:10px;padding:0 10px 0 8px;font-size:15px;color:var(--fga2)}
-.E1 .ic{width:24px;height:24px;color:var(--fga2);margin-left:2px}
+.E1 .ic,.H .ic{width:24px;height:24px;color:var(--fga2);margin-left:2px}
 .E2 .tile{width:54px;height:28px;border-radius:6px;background:var(--acc);display:flex;align-items:center;justify-content:center}
 .E2 .tile .ic{width:20px;height:20px;color:var(--fgb1)}
 .E2 .tile.off{background:var(--fga3)}
@@ -84,7 +84,7 @@ body{background:#000;font-family:Inter,sans-serif}
 .wedge{width:94px;height:30px;display:block}
 .tv{font-variant-numeric:tabular-nums;color:var(--fga2);min-width:44px}
 .tx{color:var(--fg2);font-weight:500}
-.E1 .key,.E2 .key{height:22px}
+.E1 .key,.E2 .key,.H .key{height:22px}
 
 /* G1 / G2: read-only status, no control-like parts: no buttons, no draggable tracks, no key caps */
 .G1,.G2{left:50%;transform:translateX(-50%);border-radius:10px;background:var(--ta3e);color:var(--fga2);font-size:15px}
@@ -123,13 +123,13 @@ function osd(v,m,bar){
    const row=`<div class="r">${ic(g.icon)}<span class="nm">${nm}</span><span class="vl">${vl}</span><span class="k">${g.key}</span></div>`;
    const ln=lv!=null?`<div class="ln"><i style="width:${lv*100}%"></i></div>`:'';
    return `<div class="osd ${v} shadow" style="top:${TOPH+16}px">${row}${ln}</div>`;}
- if(v==='E1'||v==='E2'){
+ if(v==='E1'||v==='E2'||v==='H'){
    const th=document.getElementById('win').className;
-   const lead=v==='E1'?ic(g.icon):`<span class="tile${m==='mute'?' off':''}">${ic(g.icon)}</span>`;
+   const lead=v!=='E2'?ic(g.icon):`<span class="tile${m==='mute'?' off':''}">${ic(g.icon)}</span>`;
    let mid;
    if(m==='vol') mid=`<img class="wedge" src="${WEDGE['80_'+th]}"><span class="tv">80%</span>`;
    else if(m==='mute') mid=`<img class="wedge" src="${WEDGE['0_'+th]}"><span class="tx">Muted</span>`;
-   else if(m==='speed'){const f=(1.5-0.25)/(4-0.25); mid=`<span class="trk"><i style="width:${f*146}px"></i><s style="left:${2+f*138}px"></s></span><span class="tv">1.5×</span>`;}
+   else if(m==='speed'){const f=(1.5-0.25)/(4-0.25); mid=v==='H'?`<span class="tx">Speed</span><span class="tv" style="color:var(--fg1);font-weight:500">1.5×</span>`:`<span class="trk"><i style="width:${f*146}px"></i><s style="left:${2+f*138}px"></s></span><span class="tv">1.5×</span>`;}
    else mid=`<span class="tx">${g.label}</span><span class="tv" style="color:var(--fg1);font-weight:500">English</span>`;
    return `<div class="osd ${v} shadow" style="top:${TOPH+16}px">${lead}${mid}<span class="key">${g.key}</span></div>`;}
  if(v==='D'){const val=g.value||g.label; return `<div class="osd D" style="top:${TOPH+24}px">${ic(g.icon)}<span class="val">${val}</span><span class="hint">${g.key}</span></div>`;}
