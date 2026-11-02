@@ -266,5 +266,5 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
 | | G1: two lines | G2: one line |
 |---|---|---|
 | **Layout** | 300 px wide: icon, name (FG/A2), value at the right (FG/1 semibold), key (FG/A3); under it a 3 px level line (track BG/B2, fill accent) | 44 px high: the same row; the 3 px level line runs along the box's bottom edge |
-| **Levels** | volume (to 200 %), speed (0.25x to 4x), muted (empty line); none for subtitles | same |
+| **Levels** | volume only (to 200 %; empty when muted): StickyGonzales, speed and the others need no line | same |
 | **Place, motion** | top center, 16 px under the top bar's place; a quarter bigger in fullscreen; in 120 ms, stays 1.5 s, out 200 ms; the line moves in place while a key is held | same |

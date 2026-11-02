@@ -118,7 +118,7 @@ function osd(v,m,bar){
 
 
  if(v==='G1'||v==='G2'){
-   const lv=m==='vol'?0.40:m==='speed'?(1.5-0.25)/(4-0.25):m==='mute'?0:null;
+   const lv=m==='vol'?0.40:m==='mute'?0:null;
    const nm=m==='mute'?'Volume':g.label, vl=m==='mute'?'Muted':g.value;
    const row=`<div class="r">${ic(g.icon)}<span class="nm">${nm}</span><span class="vl">${vl}</span><span class="k">${g.key}</span></div>`;
    const ln=lv!=null?`<div class="ln"><i style="width:${lv*100}%"></i></div>`:'';
