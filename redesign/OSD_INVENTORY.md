@@ -250,4 +250,5 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
 | **Key** | key cap, radius 4 | same |
 | **Place, motion** | top center, 16 px under the top bar's place; a quarter bigger in fullscreen; in 120 ms, stays 1.5 s, out 200 ms; a held key moves the cone or the playhead in place | same |
 
+- **Close-ups:** at 2x real size, readable on a phone: [`OSD_round6_E1_closeup.jpg`](mockups/osd/OSD_round6_E1_closeup.jpg) and [`OSD_round6_E2_closeup.jpg`](mockups/osd/OSD_round6_E2_closeup.jpg). The whole window with the volume message: `OSD_round6_E1_window.jpg`, `OSD_round6_E2_window.jpg`.
 - **Pick:** StickyGonzales picks E1 or E2, then step 2 builds it.
