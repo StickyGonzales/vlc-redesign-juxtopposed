@@ -8,7 +8,7 @@ const path = require('path');
   await p.evaluate(() => document.fonts.ready);
   const only = process.argv[2];
   const rects = {};
-  for (const v of ['A', 'B', 'C']) for (const t of ['dark', 'light']) for (const bar of [1, 0]) for (const m of ['mute', 'vol', 'speed', 'subs']) {
+  for (const v of (process.env.V||'A,B,C').split(',')) for (const t of ['dark', 'light']) for (const bar of [1, 0]) for (const m of ['mute', 'vol', 'speed', 'subs']) {
     const name = `${v}_${t}_${bar ? 'bar' : 'nobar'}_${m}`;
     if (only && name !== only) continue;
     rects[name] = await p.evaluate(([v, t, bar, m]) => render(v, t, !!bar, m), [v, t, bar, m]);

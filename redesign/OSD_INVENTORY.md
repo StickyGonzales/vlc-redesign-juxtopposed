@@ -193,3 +193,40 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
   - Build the picked variant in the Qt interface for the Cone build. The core keeps sending the messages; the interface draws them.
   - Make sure it never sits under the top bar or the Up Next card.
   - Keep VLC's sliders hidden; add smoke checks; draft PR into `wip/next-test`.
+
+## Round 5: what other players do, and three variants from it (StickyGonzales, 2026-11-02)
+
+- **Why:** StickyGonzales liked A best but found it still not right: too small from the sofa and in your face at the same time. Before picking, look at what the players people know do, and take that as the model.
+- **Comparison image:** [`mockups/osd/OSD_round5_player_standards.jpg`](mockups/osd/OSD_round5_player_standards.jpg). It has the survey, then each variant with the same 4 messages, in dark and light, with the bars shown and hidden, and at real size. Sources: `mockups/osd/round4/` (variants D, E, F in `page.html`; `V=D,E,F node shoot.js`).
+
+| Player | Where | What | How long |
+|---|---|---|---|
+| YouTube (web) | top center | dark see-through rounded box, only the value ("80%", "1.5x"); a big round icon flash in the middle for play/pause and seeks | ~0.7 s |
+| Netflix, Prime Video, Disney+ (web) | none | no message: the control bar's slider shows the change | - |
+| macOS (Sonoma and later) | top right | small rounded pill: icon and a thin level bar, no number | ~1.5 s |
+| Windows 11 | bottom center | small pill: icon, a thin level bar, the number | ~2 s |
+| Phone players (iOS, MX Player, Infuse) | middle of the picture | rounded square: big icon and a level bar | under 1 s |
+| IINA (macOS) | top left | small see-through panel: icon, text, a level bar | ~1 s |
+| mpv | top left | plain outlined text; a centered bar for levels | ~1 s |
+| MPC-HC, PotPlayer | top left / right | text on a dark box | 1-2 s |
+
+- **Source and accuracy:** from the players' current versions as known; times are approximate.
+- **What the modern ones share:**
+  - a level bar instead of words for continuous values, and text only for discrete ones;
+  - see-through dark backgrounds (Figma has them: BG/B2 Transparent, BG/A3 Transparent);
+  - very short times, under 1.5 s.
+
+| | D: Value box, top center (YouTube) | E: Level pill, top center (macOS / Windows 11) | F: Center HUD (phone players) |
+|---|---|---|---|
+| **Shape** | radius 12 box on BG/B2 Transparent (black 80 %; light: BG/B1 Transparent) | 48 px pill on BG/A3 Transparent | 168 px rounded square (radius 28) on BG/B2 Transparent |
+| **Content** | only the value, 24 px semibold, plain icon, key in small text | icon, a level bar for continuous values (volume to 200 % with a mark at 100 %, speed 0.25x-4x) and the number; text for discrete ones; key in small text | 56 px icon, the value, a level bar for the volume, the key |
+| **Place** | top center, 24 px under the top bar's place | top center, 16 px under the top bar's place | middle of the picture |
+| **Motion** | in 100 ms, 1 s, out 200 ms | in 120 ms, 1.5 s, out 200 ms; a held key moves the bar in place | in 100 ms, 0.8 s, out 150 ms |
+| **Sofa** | large value, readable | the bar reads at a glance even when the text is small | the biggest |
+| **In your face** | small, gone fast | small, calm | covers the middle of the picture, so it is the shortest |
+
+- **For all three:**
+  - in fullscreen they grow by a quarter;
+  - they never sit under the top bar or the Up Next card;
+  - VLC's sliders stay hidden (#102).
+- **Pick:** StickyGonzales picks one (or a mix, e.g. E's level bar in D's box), then step 2 builds it.

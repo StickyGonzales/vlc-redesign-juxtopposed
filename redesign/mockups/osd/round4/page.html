@@ -48,6 +48,25 @@ body{background:#000;font-family:Inter,sans-serif}
 .C .meter{width:72px;height:12px;position:relative;background:var(--bgb2);clip-path:polygon(0 42%,100% 0,100% 100%,0 58%)}
 .C .meter i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
 .C .sep{width:1px;height:22px;background:var(--div);margin:0 2px}
+
+/* Figma's transparent styles: Dark/BG/B2 Transparent #000 80 %, BG/A3 Transparent #191919 95 %; Light/BG/B1 Transparent #E7E7E7 80 %, BG/A3 Transparent #D5D5D5 75 % */
+.dark{--tb2:rgba(0,0,0,.80);--ta3:rgba(25,25,25,.95);--track:rgba(255,255,255,.16)}
+.light{--tb2:rgba(231,231,231,.80);--ta3:rgba(213,213,213,.75);--track:rgba(0,0,0,.14)}
+.hint{font-size:12px;color:var(--fga2);font-weight:500}
+/* D: YouTube-style value box, top center */
+.D{left:50%;transform:translateX(-50%);border-radius:12px;background:var(--tb2);display:flex;align-items:center;gap:12px;padding:10px 20px 10px 16px}
+.D .ic{width:26px;height:26px;color:var(--fg1)} .D .val{font-size:24px;font-weight:600;color:var(--fg1)}
+.D .hint{margin-left:6px}
+/* E: OS-style HUD pill (macOS / Windows 11), top center */
+.E{left:50%;transform:translateX(-50%);height:48px;border-radius:24px;background:var(--ta3);display:flex;align-items:center;gap:12px;padding:0 20px 0 16px;color:var(--fg2);font-size:15px;font-weight:500}
+.E .ic{width:24px;height:24px;color:var(--fg1)} .E .lv{width:150px;height:6px;border-radius:3px;background:var(--track);position:relative;overflow:hidden}
+.E .lv i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:3px} .E .lv s{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--bga3)}
+.E b{font-weight:600;color:var(--fg1);min-width:38px;text-align:right} .E .hint{margin-left:2px}
+/* F: center HUD (phone players), middle of the picture */
+.F{left:50%;top:50%;transform:translate(-50%,-50%);width:168px;height:168px;border-radius:28px;background:var(--tb2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.F .ic{width:56px;height:56px;color:var(--fg1)} .F .val{font-size:20px;font-weight:600;color:var(--fg1)}
+.F .lv{width:112px;height:5px;border-radius:3px;background:var(--track);position:relative;overflow:hidden}
+.F .lv i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
 </style></head><body><div id="win"></div>
 <script>
 const FRAME='data:image/png;base64,%%FRAME%%';
@@ -63,6 +82,13 @@ const TOPH=40, BARH=55;
 function ic(n){return '<span class="ic">'+ICONS[n]+'</span>'}
 function osd(v,m,bar){
  const g=MSG[m];
+
+ if(v==='D'){const val=g.value||g.label; return `<div class="osd D" style="top:${TOPH+24}px">${ic(g.icon)}<span class="val">${val}</span><span class="hint">${g.key}</span></div>`;}
+ if(v==='E'){const lvl=g.level!=null?`<span class="lv"><i style="width:${g.level*100}%"></i><s></s></span><b>${g.value}</b>`
+     :m==='speed'?`<span class="lv"><i style="width:${(1.5-0.25)/(4-0.25)*100}%"></i></span><b>${g.value}</b>`
+     :`<span>${g.value?g.label+' ':''}</span><b style="min-width:0">${g.value||g.label}</b>`;
+   return `<div class="osd E shadow" style="top:${TOPH+16}px">${ic(g.icon)}${lvl}<span class="hint">${g.key}</span></div>`;}
+ if(v==='F'){const val=g.value||g.label; const lvl=g.level!=null?`<span class="lv"><i style="width:${g.level*100}%"></i></span>`:''; return `<div class="osd F">${ic(g.icon)}<span class="val">${val}</span>${lvl}<span class="hint">${g.key}</span></div>`;}
  if(v==='A'){ // top center, 16 px under the top bar's place (it never moves)
   const y=TOPH+16;
   return `<div class="osd A shadow" style="top:${y}px">${ic(g.icon)}<span>${g.value?g.label+' <b>'+g.value+'</b>':'<b>'+g.label+'</b>'}</span><span class="key">${g.key}</span></div>`;}
