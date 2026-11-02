@@ -2321,11 +2321,14 @@ FocusScope {
 
     // Cone extra (Decision 71, UP_NEXT_PLAN.md 7.1): the Up Next card never covers the subtitles. With a subtitle track on they sit 16 px above the subtitle
     // band (the lift over the control bar + sub-margin + two lines at the current size, whether a
-    // line shows or not, so they do not jump); without, 24 px above the control bar, or above
-    // the bottom edge while the bars are hidden. They show in Hide UI too (Q4).
-    readonly property real _upNextBottom: {
+    // line shows or not, so they do not jump); without, 24 px above the control bar. They show in
+    // Hide UI too (Q4), then 24 px above the bottom edge.
+    // The card never moves while it shows (a bar that shows or hides under it would make it jump,
+    // and a click on it miss its button): its place counts the control bar as shown, whether it
+    // is or not, and is held from the moment the card appears until it is gone.
+    readonly property real _upNextBottomNow: {
         const dpr = MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0
-        const barRoom = Math.max(0, height - controlBar.y) * (controlBar.visible ? controlBar.opacity : 0)
+        const barRoom = RdPanels.uiHidden ? 0 : controlBar.height
         const minimum = barRoom + VLCStyle.dp(24, VLCStyle.scale)
         if (!RdUpNext.subtitlesOn)
             return minimum
@@ -2333,10 +2336,24 @@ FocusScope {
         const scaleValue = Number(RdEffects.values.subtitleTextScale) || 100
         // VLC's text size: 6.25 % of the video height at 100 % (STYLE_DEFAULT_REL_FONT_SIZE),
         // a line about 1.25 of it
-        const line = playerSpecializationLoader.height * 0.0625 * (scaleValue / 100) * 1.25
-        const band = (RdSubtitleLift.lift + margin) / dpr + 2 * line
+        const area = playerSpecializationLoader
+        const line = area.height * 0.0625 * (scaleValue / 100) * 1.25
+        // the subtitles' lift with the bar shown (_subtitleLift at full opacity)
+        const lift = (RdPanels.uiHidden || !MainCtx.hasEmbededVideo) ? 0
+                   : Math.max(0, area.y + area.height - (height - controlBar.height))
+        const band = lift + margin / dpr + 2 * line
         return Math.max(minimum, band + VLCStyle.dp(16, VLCStyle.scale))
     }
+    property real _upNextBottom: 0
+
+    Binding {
+        target: rootPlayer
+        property: "_upNextBottom"
+        value: rootPlayer._upNextBottomNow
+        when: !upNextCard.visible
+        restoreMode: Binding.RestoreNone
+    }
+
     // the video area beside the compact library and an open panel
     readonly property real _upNextRoom: width - _videoInset - _toastRightInset - 2 * VLCStyle.dp(24, VLCStyle.scale)
 
