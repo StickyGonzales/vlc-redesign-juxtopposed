@@ -1,0 +1,81 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;font-family:Inter,sans-serif}
+#win{position:relative;width:1920px;height:1080px;overflow:hidden;background:#000}
+#win img.frame{position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover;object-position:62% 50%}
+.top{position:absolute;left:0;top:0;width:1920px;height:40px}
+.top img{width:1920px;height:40px;display:block}
+.top .logo{position:absolute;left:8px;top:4px;width:36px;height:32px}
+.top .logo i{position:absolute;left:6px;top:3px;width:26px;height:26px}
+.top .title{position:absolute;left:760px;top:0;width:400px;height:40px;line-height:40px;text-align:center;font-size:14px}
+.bar{position:absolute;left:0;bottom:0;width:1920px;height:55px}
+.bar img{width:1920px;height:55px;display:block}
+/* themes: Figma styles.txt; Light FG/1, FG/2 from Decision 33 */
+.dark{--bga3:#1B1B1B;--bga1:#222222;--bgb2:#090909;--fg1:#EAEAEA;--fg2:#C6C6C6;--fga2:#8F8F8F;--fga3:#6B6B6B;--acc:#D37918;--topbg:#1B1B1B;--div:#373737}
+.light{--bga3:#D5D5D5;--bga1:#EDEDED;--bgb2:#B3B3B3;--fg1:#111111;--fg2:#222222;--fga2:#2E2E2E;--fga3:#6B6B6B;--acc:#E8851A;--topbg:#ACACAB;--div:#9B9B9B}
+.top .logo{background:var(--topbg)} .top .logo i{color:var(--acc)}
+.top .title{background:var(--topbg);color:var(--fga2)}
+.dark .top .title{color:#8F8F8F} .light .top .title{color:#2E2E2E}
+.osd{position:absolute;z-index:5;white-space:nowrap}
+.ic{display:inline-block;flex:none}
+.key{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:4px;font-size:12px;font-weight:500;
+     background:var(--bga1);color:var(--fga2);border:1px solid var(--div)}
+/* the shadow of Figma's "bg blur + shadow", without the blur (opaque, Decision: opaque popups) */
+.shadow{box-shadow:0 8px 15px rgba(0,0,0,.46)}
+.light .shadow{box-shadow:0 8px 15px rgba(0,0,0,.28)}
+
+/* A: pill, top center */
+.A{left:50%;transform:translateX(-50%);height:44px;border-radius:22px;background:var(--bga3);display:flex;align-items:center;
+   gap:10px;padding:0 16px 0 14px;font-size:16px;font-weight:500;color:var(--fg2)}
+.A .ic{width:22px;height:22px;color:var(--acc)} .A b{font-weight:600;color:var(--fg1)}
+.A .key{margin-left:4px}
+
+/* B: card, top right, with a level line */
+.B{right:24px;border-radius:14px;background:var(--bga3);display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;min-width:220px}
+.B .tile{width:40px;height:40px;border-radius:10px;background:var(--bga1);display:flex;align-items:center;justify-content:center}
+.B .ic{width:24px;height:24px;color:var(--acc)}
+.B .t{display:flex;flex-direction:column;gap:2px;flex:1}
+.B .l{font-size:12px;font-weight:600;letter-spacing:.4px;color:var(--fga2)} .B .l span{font-weight:400;letter-spacing:0;color:var(--fga3)}
+.B .v{font-size:18px;font-weight:600;color:var(--fg1)}
+.B .lvl{position:relative;height:3px;border-radius:2px;background:var(--bgb2);margin-top:6px}
+.B .lvl i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--acc)}
+.B .lvl s{position:absolute;left:50%;top:-2px;width:1px;height:7px;background:var(--fga3)}
+
+/* C: the update notice's pill, bottom center above the bar */
+.C{left:50%;transform:translateX(-50%);height:52px;border-radius:16px;background:var(--bga3);display:flex;align-items:center;
+   gap:12px;padding:0 14px 0 18px;font-size:16px;color:var(--fg2)}
+.C .ic{width:24px;height:24px;color:var(--fg2)} .C b{font-weight:600;color:var(--acc)}
+.C .meter{width:72px;height:12px;position:relative;background:var(--bgb2);clip-path:polygon(0 42%,100% 0,100% 100%,0 58%)}
+.C .meter i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+.C .sep{width:1px;height:22px;background:var(--div);margin:0 2px}
+</style></head><body><div id="win"></div>
+<script>
+const FRAME='data:image/png;base64,%%FRAME%%';
+const TOP={dark:'data:image/png;base64,%%TOP_DARK%%',light:'data:image/png;base64,%%TOP_LIGHT%%'};
+const BAR={dark:'data:image/png;base64,%%BAR_DARK%%',light:'data:image/png;base64,%%BAR_LIGHT%%'};
+const ICONS=%%ICONS%%; const CONE=%%CONE%%;
+const MSG={
+ mute:{icon:'mute',label:'Muted',key:'M'},
+ vol:{icon:'vol',label:'Volume',value:'80%',level:0.40,key:'Ctrl + ↑'},
+ speed:{icon:'speed',label:'Speed',value:'1.5×',level:null,key:']'},
+ subs:{icon:'subs',label:'Subtitles',value:'English',key:'V'}};
+const TOPH=40, BARH=55;
+function ic(n){return '<span class="ic">'+ICONS[n]+'</span>'}
+function osd(v,m,bar){
+ const g=MSG[m];
+ if(v==='A'){ // top center, 16 px under the top bar's place (it never moves)
+  const y=TOPH+16;
+  return `<div class="osd A shadow" style="top:${y}px">${ic(g.icon)}<span>${g.value?g.label+' <b>'+g.value+'</b>':'<b>'+g.label+'</b>'}</span><span class="key">${g.key}</span></div>`;}
+ if(v==='B'){ // top right, 16 px under the top bar's place (it never moves)
+  const lvl=g.level!=null?`<div class="lvl"><i style="width:${g.level*100}%"></i><s></s></div>`:'';
+  const label=m==='mute'?'SOUND':g.label.toUpperCase(), value=m==='mute'?'Muted':g.value;
+  return `<div class="osd B shadow" style="top:${TOPH+16}px"><div class="tile">${ic(g.icon)}</div><div class="t"><div class="l">${label} <span>· ${g.key}</span></div><div class="v">${value}</div>${lvl}</div></div>`;}
+ // C: bottom center, 18 px above the control bar's place (it never moves)
+ const val=m==='vol'?`<span>Volume</span><span class="meter"><i style="width:40%"></i></span><b>80%</b>`
+         :g.value?`<span>${g.label}</span><b>${g.value}</b>`:`<span>${g.label}</span>`;
+ return `<div class="osd C shadow" style="bottom:${BARH+18}px">${ic(g.icon)}${val}<span class="sep"></span><span class="key">${g.key}</span></div>`;}
+function render(v,theme,bar,m){
+ const w=document.getElementById('win'); w.className=theme;
+ w.innerHTML=`<img class="frame" src="${FRAME}">`+(bar?`<div class="top"><img src="${TOP[theme]}"><div class="logo"><i>${CONE}</i></div><div class="title">Sintel</div></div><div class="bar"><img src="${BAR[theme]}"></div>`:'')+osd(v,m,bar);
+ const r=w.querySelector('.osd').getBoundingClientRect(); return [r.left,r.top,r.width,r.height];}
+</script></body></html>

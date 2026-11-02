@@ -162,3 +162,34 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
 5. **`N/A` from `vlc_player_osd_Track()` with `select = false`** (`osd.c:185`): no caller passes `false` today (the only call is `player.c:603` with `true`), so that variant is likely unreachable; the reachable `N/A` comes from `vlc_player_osd_Tracks()` (`osd.c:229`).
 6. **Subtitle position at video start.** `vout_intf.c:411-414` re-triggers `sub-margin` and `secondary-sub-margin` when a video output starts; `osd.c:328` and `:331` skip the message when the value did not change, which should hide it, but it was not confirmed on a build.
 7. **Messages on several video outputs.** With more than one video window (e.g. a visualizer plus video), every message goes to every window (`osd.c:33-46`). Not checked how Cone's single-window layout handles that.
+
+---
+
+## Round 4: Cone's own look (StickyGonzales, 2026-11-02)
+
+- **Direction:** StickyGonzales does not want VLC's look. Round 3 (VLC's white outlined text with small refinements, `mockups/osd/OSD_styles_round3*.png`) is dropped. The messages get Cone's own style, from Juxtopposed's design language:
+  - the Figma colors (`reference/figma/styles.txt`; Light FG/1 and FG/2 from Decision 33), Inter, Figma's radii and its shadow;
+  - Cone's own icons;
+  - the update notice and the Up Next card as models.
+- **Comparison image:** [`mockups/osd/OSD_round4_cone_style.jpg`](mockups/osd/OSD_round4_cone_style.jpg). It shows 3 variants, each with Muted, Volume 80%, Speed 1.5x and Subtitles: English, on a real video frame (Sintel, Blender Foundation, CC BY 3.0), in the dark and the light theme, with the bars shown and hidden. Under each grid, the messages are shown at real size. Sources: `mockups/osd/round4/`.
+
+| | A: Pill, top center | B: Card, top right | C: Notice pill, bottom center |
+|---|---|---|---|
+| **Shape** | 44 px pill, radius 22, BG/A3, Figma shadow | card, radius 14, BG/A3, shadow, 40 px icon tile | the update notice's 52 px pill, radius 16 |
+| **Content** | accent icon; label FG/2, value FG/1 semibold; key cap | name in caps with the key, value 18 px; volume gets a 3 px level line (tick at 100 %, runs to 200 %) | plain icon; value in the accent color; a small cone meter for the volume; key cap after a divider |
+| **Place** | top center, 16 px under the top bar's place | top right, 24 px from the edge, 16 px under the top bar's place (VLC's corner) | bottom center, 18 px above the control bar's place |
+| **Never moves** | yes: the same place with the bars shown or hidden | yes | yes |
+| **Top bar** | never under it | never under it | far from it |
+| **Up Next card** (bottom right) | far from it | far from it (other corner) | beside it; in a narrow window it has to go above the card |
+| **Subtitles** | never covers them | never covers them | sits where subtitles show (they would be lifted above it, like over the control bar) |
+| **Update notice, resume toast** (bottom center) | no clash | no clash | same place: the message waits for them, or goes above them |
+| **Motion** | fade in 120 ms (the menus' fade), stays for "Show feedback for" (2.75 s), fade out 200 ms; a new message changes the text in place | 150 ms fade in with a 6 px drop, 200 ms fade out | 150 ms fade in and out |
+
+- **For all three:**
+  - "Pressed X" (row 7.1) becomes a key cap or a label suffix.
+  - VLC's orange position and volume sliders stay hidden (#102). The volume level is shown in the message instead (B's line, C's cone meter) or not at all (A).
+  - Every message of the inventory takes the same shape: an icon by group, the label, the value.
+- **Next (step 2, after the pick):**
+  - Build the picked variant in the Qt interface for the Cone build. The core keeps sending the messages; the interface draws them.
+  - Make sure it never sits under the top bar or the Up Next card.
+  - Keep VLC's sliders hidden; add smoke checks; draft PR into `wip/next-test`.
