@@ -165,12 +165,13 @@ def rc_number(cmd):
 
 
 class Session:
-    def __init__(self, exe, video, tag, env=None):
+    def __init__(self, exe, video, tag, env=None, first_start=False):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
-        a = [exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+        # first_start: Cone's first start (the onboarding), as on a fresh install
+        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
              '--aout=adummy', '--input-repeat=50', '--file-logging', f'--logfile={self.log}',
              '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
              f'--sub-file={os.path.join(MEDIA, "test.srt")}', video]
@@ -660,6 +661,72 @@ def session(exe, codec, tag, full, env=None):
         s.stop()
 
 
+def rc_time():
+    """the playback time in seconds, None while nothing plays (the cli gives no number)"""
+    try:
+        return rc_number('get_time')
+    except CheckFailed:
+        return None
+
+
+def first_start(exe, env):
+    """a first start with a file (F1): the onboarding shows, the file waits at 0 while it is open,
+    and plays from the beginning once it is closed (here with Escape, on Windows with Finish)"""
+    tag = 'first-start'
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), tag, env, first_start=True)
+    try:
+        if not check_window(s):
+            return
+
+        def shown():
+            if not find('Next', 15, role='push button'):
+                raise CheckFailed('no onboarding (its "Next" button) within 15 s')
+            shot(f'{tag}-onboarding')
+            return 'the onboarding is shown'
+        if not check(f'{tag}: the onboarding shows', shown):
+            return
+
+        def waits():
+            end = time.time() + 15
+            while not os.path.exists(RC_SOCK) and time.time() < end:
+                time.sleep(0.3)
+            seen = []
+            for _ in range(8):
+                t = rc_time()
+                seen.append('-' if t is None else str(t))
+                if t:
+                    raise CheckFailed(f'the file plays behind the onboarding: time {", ".join(seen)} s')
+                time.sleep(1)
+            return f'time over 8 s: {" ".join(seen)} (- = not started)'
+        check(f'{tag}: the file waits at 0 while the onboarding is open', waits)
+
+        def plays_after():
+            s.focus()
+            xdo('key', 'Escape')
+            end = time.time() + 5
+            while find('Next', 0, role='push button'):
+                if time.time() > end:
+                    raise CheckFailed('Escape did not close the onboarding')
+                time.sleep(0.3)
+            end = time.time() + 15
+            t1 = rc_time()
+            while t1 is None and time.time() < end:
+                time.sleep(0.5)
+                t1 = rc_time()
+            if t1 is None:
+                raise CheckFailed('nothing plays within 15 s after the onboarding closed')
+            if t1 > 4:
+                raise CheckFailed(f'playback did not start from the beginning: {t1} s right after the close')
+            time.sleep(3)
+            t2 = rc_time()
+            if t2 is None or t2 <= t1:
+                raise CheckFailed(f'the time does not advance: {t1} s, then {t2} s')
+            return f'{t1} s right after the close, {t2} s three seconds later'
+        check(f'{tag}: playback starts from 0 when the onboarding closes', plays_after)
+    finally:
+        s.stop()
+
+
 # ------------------------------------------------------------------ runs
 
 def all_files(root):
@@ -682,6 +749,7 @@ env = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
            XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
 session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
+first_start(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():

@@ -330,10 +330,12 @@ function Check-Pointer($s) {
 # ---------------------------------------------------------------- one Cone session
 
 # starts Cone with a video and its subtitles; returns the process, its window and its log file
-function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag) {
+# $firstStart: Cone's first start (the onboarding), as on a fresh install
+function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [bool]$firstStart = $false) {
     $log = Join-Path $Out "cone-$tag.log"
     Remove-Item $log -ErrorAction SilentlyContinue
-    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--input-repeat=50',
+    $privacy = if ($firstStart) { '--qt-privacy-ask' } else { '--no-qt-privacy-ask' }
+    $a = @($privacy, '--no-qt-video-autoresize', '--input-repeat=50',
            '--file-logging', "--logfile=`"$log`"", '--log-verbose=2',
            '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet',
            "--sub-file=`"$subs`"", "`"$video`"")
@@ -686,6 +688,71 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     }
 }
 
+# the playback time in seconds, $null while nothing plays (the cli gives no number)
+function Rc-Time {
+    try { return Rc-Number 'get_time' } catch { return $null }
+}
+function Click-Element($e) {
+    $r = $e.Current.BoundingRectangle
+    Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+}
+# a first start with a file (F1): the onboarding shows, the file waits at 0 while it is open, and
+# plays from the beginning after Finish (on Linux the onboarding is closed with Escape)
+function Run-FirstStart([string]$exe) {
+    $tag = 'first-start'
+    $s = Start-Cone $exe (Join-Path $Media 'test-h264.mp4') (Join-Path $Media 'test.srt') $tag $true
+    try {
+        if (-not (Check-Window $s)) { return }
+        $shown = Check "$tag`: the onboarding shows" {
+            if (-not (Uia-Find $s.hwnd 'Next' 15000)) { throw 'no onboarding (its "Next" button) within 15 s' }
+            Shot "$tag-onboarding"
+            'the onboarding is shown'
+        }
+        if (-not $shown) { return }
+        Check "$tag`: the file waits at 0 while the onboarding is open" {
+            Wait-Rc 20
+            $seen = @()
+            for ($i = 0; $i -lt 8; $i++) {
+                $t = Rc-Time
+                $seen += $(if ($null -eq $t) { '-' } else { "$t" })
+                if ($t) { throw "the file plays behind the onboarding: time $($seen -join ', ') s" }
+                Start-Sleep -Seconds 1
+            }
+            "time over 8 s: $($seen -join ' ') (- = not started)"
+        } | Out-Null
+        Check "$tag`: playback starts from 0 after Finish" {
+            Focus-Window $s.hwnd
+            # Next, Next, Finish (the media folder page only shows with the media library)
+            for ($i = 0; $i -lt 3; $i++) {
+                $finish = Uia-Find $s.hwnd 'Finish' 0
+                if ($finish) { Click-Element $finish; break }
+                $next = Uia-Find $s.hwnd 'Next' 3000
+                if (-not $next) { throw "no Next or Finish button on screen $($i + 1)" }
+                Click-Element $next
+                Start-Sleep -Milliseconds 700
+            }
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ((Uia-Find $s.hwnd 'Finish' 0) -or (Uia-Find $s.hwnd 'Next' 0)) {
+                if ($sw.Elapsed.TotalSeconds -gt 5) { throw 'the onboarding did not close after Finish' }
+                Start-Sleep -Milliseconds 300
+            }
+            $sw.Restart()
+            $t1 = Rc-Time
+            while ($null -eq $t1 -and $sw.Elapsed.TotalSeconds -lt 15) { Start-Sleep -Milliseconds 500; $t1 = Rc-Time }
+            if ($null -eq $t1) { throw 'nothing plays within 15 s after Finish' }
+            if ($t1 -gt 4) { throw "playback did not start from the beginning: $t1 s right after Finish" }
+            Start-Sleep -Seconds 3
+            $t2 = Rc-Time
+            if ($null -eq $t2 -or $t2 -le $t1) { throw "the time does not advance: $t1 s, then $t2 s" }
+            "$t1 s right after Finish, $t2 s three seconds later"
+        } | Out-Null
+    } catch {
+        Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
 # ---------------------------------------------------------------- runs
 
 Log "screen $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds), Windows $([Environment]::OSVersion.Version)"
@@ -709,6 +776,7 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+    Run-FirstStart $zipExe.FullName
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall
