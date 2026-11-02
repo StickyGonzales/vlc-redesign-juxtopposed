@@ -67,12 +67,30 @@ body{background:#000;font-family:Inter,sans-serif}
 .F .ic{width:56px;height:56px;color:var(--fg1)} .F .val{font-size:20px;font-weight:600;color:var(--fg1)}
 .F .lv{width:112px;height:5px;border-radius:3px;background:var(--track);position:relative;overflow:hidden}
 .F .lv i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+
+/* E1 / E2: the level pill in the control bar's own pieces (Figma "Controls": 28 px rows, track radius 6,
+   played fill BG/Accent Bright radius 4, playhead 8x24 Accent/Main radius 4, the volume cone, time text 400 15 FG/A2) */
+.dark{--accbg:#371F06;--divdim:#222222;--fgb1:#161616;--ta3e:rgba(25,25,25,.95);--trk:#090909}
+.light{--accbg:#D8BA9A;--divdim:#ACACAC;--fgb1:#161616;--ta3e:rgba(213,213,213,.92);--trk:#888888}
+.E1,.E2{left:50%;transform:translateX(-50%);height:44px;border-radius:10px;background:var(--ta3e);border:1px solid var(--divdim);
+  display:flex;align-items:center;gap:10px;padding:0 10px 0 8px;font-size:15px;color:var(--fga2)}
+.E1 .ic{width:24px;height:24px;color:var(--fga2);margin-left:2px}
+.E2 .tile{width:54px;height:28px;border-radius:6px;background:var(--acc);display:flex;align-items:center;justify-content:center}
+.E2 .tile .ic{width:20px;height:20px;color:var(--fgb1)}
+.E2 .tile.off{background:var(--fga3)}
+.trk{position:relative;width:150px;height:28px;border-radius:6px;background:var(--trk)}
+.trk i{position:absolute;left:2px;top:2px;bottom:2px;border-radius:4px;background:var(--accbg)}
+.trk s{position:absolute;top:2px;width:8px;height:24px;border-radius:4px;background:var(--acc)}
+.wedge{width:94px;height:30px;display:block}
+.tv{font-variant-numeric:tabular-nums;color:var(--fga2);min-width:44px}
+.tx{color:var(--fg2);font-weight:500}
+.E1 .key,.E2 .key{height:22px}
 </style></head><body><div id="win"></div>
 <script>
 const FRAME='data:image/png;base64,%%FRAME%%';
 const TOP={dark:'data:image/png;base64,%%TOP_DARK%%',light:'data:image/png;base64,%%TOP_LIGHT%%'};
 const BAR={dark:'data:image/png;base64,%%BAR_DARK%%',light:'data:image/png;base64,%%BAR_LIGHT%%'};
-const ICONS=%%ICONS%%; const CONE=%%CONE%%;
+const ICONS=%%ICONS%%; const WEDGE=%%WEDGE%%; const CONE=%%CONE%%;
 const MSG={
  mute:{icon:'mute',label:'Muted',key:'M'},
  vol:{icon:'vol',label:'Volume',value:'80%',level:0.40,key:'Ctrl + ↑'},
@@ -83,6 +101,16 @@ function ic(n){return '<span class="ic">'+ICONS[n]+'</span>'}
 function osd(v,m,bar){
  const g=MSG[m];
 
+
+ if(v==='E1'||v==='E2'){
+   const th=document.getElementById('win').className;
+   const lead=v==='E1'?ic(g.icon):`<span class="tile${m==='mute'?' off':''}">${ic(g.icon)}</span>`;
+   let mid;
+   if(m==='vol') mid=`<img class="wedge" src="${WEDGE['80_'+th]}"><span class="tv">80%</span>`;
+   else if(m==='mute') mid=`<img class="wedge" src="${WEDGE['0_'+th]}"><span class="tx">Muted</span>`;
+   else if(m==='speed'){const f=(1.5-0.25)/(4-0.25); mid=`<span class="trk"><i style="width:${f*146}px"></i><s style="left:${2+f*138}px"></s></span><span class="tv">1.5×</span>`;}
+   else mid=`<span class="tx">${g.label}</span><span class="tv" style="color:var(--fg1);font-weight:500">English</span>`;
+   return `<div class="osd ${v} shadow" style="top:${TOPH+16}px">${lead}${mid}<span class="key">${g.key}</span></div>`;}
  if(v==='D'){const val=g.value||g.label; return `<div class="osd D" style="top:${TOPH+24}px">${ic(g.icon)}<span class="val">${val}</span><span class="hint">${g.key}</span></div>`;}
  if(v==='E'){const lvl=g.level!=null?`<span class="lv"><i style="width:${g.level*100}%"></i><s></s></span><b>${g.value}</b>`
      :m==='speed'?`<span class="lv"><i style="width:${(1.5-0.25)/(4-0.25)*100}%"></i></span><b>${g.value}</b>`

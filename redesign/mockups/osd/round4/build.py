@@ -16,4 +16,6 @@ html = html.replace('%%FRAME%%', b64('dl/f_000310.png'))
 for t in ('dark', 'light'):
     html = html.replace('%%TOP_' + t.upper() + '%%', b64('top_%s.png' % t)).replace('%%BAR_' + t.upper() + '%%', b64('bar_%s.png' % t))
 html = html.replace('%%ICONS%%', json.dumps(icons)).replace('%%CONE%%', json.dumps(cone))
+wedge = {k: 'data:image/png;base64,' + b64('wedge_%s.png' % k) for k in ('80_dark', '80_light', '0_dark', '0_light')}
+html = html.replace('%%WEDGE%%', json.dumps(wedge))
 (M/'work/out.html').write_text(html)

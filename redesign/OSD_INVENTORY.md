@@ -230,3 +230,24 @@ Drawn by `modules/gui/qt/widgets/qml/FloatingNotification.qml` (in `Player.qml:1
   - they never sit under the top bar or the Up Next card;
   - VLC's sliders stay hidden (#102).
 - **Pick:** StickyGonzales picks one (or a mix, e.g. E's level bar in D's box), then step 2 builds it.
+
+## Round 6: E in the control bar's style (StickyGonzales, 2026-11-02)
+
+- **Feedback:** StickyGonzales likes E (round 5), but Cone is boxier than a round pill. The timeline and the play button are 28 px rounded rectangles, so the message should follow that style.
+- **Comparison image:** [`mockups/osd/OSD_round6_bar_style.jpg`](mockups/osd/OSD_round6_bar_style.jpg). It shows:
+  - the control bar it takes its parts from, at real size, dark and light;
+  - round 5's E for comparison;
+  - E1 and E2 at real size, then in the full grid (dark and light, the bars shown and hidden).
+- **Parts:** Figma "Controls" (FIGMA_FLOWS.md "exact specs") and the "volume" component.
+
+| | E1: bar pieces, plain icon | E2: bar pieces, play-button tile |
+|---|---|---|
+| **Box** | 44 px, radius 10 (the menus' radius), BG/A3 Transparent, the bar's 1 px Divider/Dim edge, Figma's shadow | same |
+| **Icon** | 24 px, FG/A2 like the bar's icons | in a 54 x 28 tile, radius 6, like the play button: accent with an FG/B1 glyph; FG/A3 when muted, like the paused play button |
+| **Volume, Muted** | the bar's own volume cone (Figma "volume" 80 %; empty when muted) and the number / "Muted" | same |
+| **Speed** | a seek-bar track: radius 6, played part BG/Accent Bright, the 8 x 24 accent playhead (0.25x to 4x) | same |
+| **Text** | the numbers in the time labels' style (Inter 15, FG/A2); names FG/2 | same |
+| **Key** | key cap, radius 4 | same |
+| **Place, motion** | top center, 16 px under the top bar's place; a quarter bigger in fullscreen; in 120 ms, stays 1.5 s, out 200 ms; a held key moves the cone or the playhead in place | same |
+
+- **Pick:** StickyGonzales picks E1 or E2, then step 2 builds it.
