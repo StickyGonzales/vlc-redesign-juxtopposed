@@ -30,8 +30,8 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 ## Runs
 | Run | Head | Result |
 |---|---|---|
-| build-linux | see the PR | |
-| build-windows | see the PR | |
+| build-linux #79 (run 41535409514) | 1fe7791682 | green, smoke included |
+| build-windows #176 (run 41535414370) | 1fe7791682 | green, smoke included |
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/up-next-card-click-fill`), Cone (portable), the 11-min test episodes of the #87 retest (strong names).
