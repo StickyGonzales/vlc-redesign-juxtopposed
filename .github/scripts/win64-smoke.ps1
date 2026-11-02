@@ -692,6 +692,15 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
 function Rc-Time {
     try { return Rc-Number 'get_time' } catch { return $null }
 }
+# an element named $name inside $parent (the onboarding's own buttons, not the control bar's
+# "Next" under it, which UI Automation also reports as on screen)
+function Uia-FindIn($parent, [string]$name) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $name)
+    foreach ($e in $parent.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+        try { if (-not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { return $e } } catch {}
+    }
+    return $null
+}
 function Click-Element($e) {
     $r = $e.Current.BoundingRectangle
     Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
@@ -704,7 +713,8 @@ function Run-FirstStart([string]$exe) {
     try {
         if (-not (Check-Window $s)) { return }
         $shown = Check "$tag`: the onboarding shows" {
-            if (-not (Uia-Find $s.hwnd 'Next' 15000)) { throw 'no onboarding (its "Next" button) within 15 s' }
+            # the onboarding's screen (Onboarding.qml: Accessible.Dialog "Welcome")
+            if (-not (Uia-Find $s.hwnd 'Welcome' 15000)) { throw 'no onboarding (its "Welcome" dialog) within 15 s' }
             Shot "$tag-onboarding"
             'the onboarding is shown'
         }
@@ -724,15 +734,17 @@ function Run-FirstStart([string]$exe) {
             Focus-Window $s.hwnd
             # Next, Next, Finish (the media folder page only shows with the media library)
             for ($i = 0; $i -lt 3; $i++) {
-                $finish = Uia-Find $s.hwnd 'Finish' 0
+                $dialog = Uia-Find $s.hwnd 'Welcome' 3000
+                if (-not $dialog) { throw "the onboarding is gone before screen $($i + 1)" }
+                $finish = Uia-FindIn $dialog 'Finish'
                 if ($finish) { Click-Element $finish; break }
-                $next = Uia-Find $s.hwnd 'Next' 3000
+                $next = Uia-FindIn $dialog 'Next'
                 if (-not $next) { throw "no Next or Finish button on screen $($i + 1)" }
                 Click-Element $next
                 Start-Sleep -Milliseconds 700
             }
             $sw = [Diagnostics.Stopwatch]::StartNew()
-            while ((Uia-Find $s.hwnd 'Finish' 0) -or (Uia-Find $s.hwnd 'Next' 0)) {
+            while (Uia-Find $s.hwnd 'Welcome' 0) {
                 if ($sw.Elapsed.TotalSeconds -gt 5) { throw 'the onboarding did not close after Finish' }
                 Start-Sleep -Milliseconds 300
             }

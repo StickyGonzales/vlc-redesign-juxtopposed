@@ -35,8 +35,8 @@ Branch `wip/fix-first-start-wait`, made from `origin/wip/next-test`. Draft pull 
 ## Runs
 | Run | Head | Result |
 |---|---|---|
-| build-linux | see the PR | |
-| build-windows | see the PR | |
+| build-linux #78 (run 41534730663) | 4c05d3a476 | green, smoke included: "first-start: the file waits at 0 while the onboarding is open" and "playback starts from 0 when the onboarding closes" pass |
+| build-windows #175 (run 41534736187) | 4c05d3a476 | red in the smoke only: the file waited (time "- - - - - - - -" over 8 s, pass), but the check looked for "Next" in the whole window and found the control bar's own Next button under the onboarding, so it never saw the onboarding close; the check now looks inside the onboarding's "Welcome" dialog |
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/fix-first-start-wait`), Cone (portable).
