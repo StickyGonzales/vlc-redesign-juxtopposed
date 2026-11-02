@@ -28,8 +28,8 @@ Branch `wip/hide-osd-seek-slider`, made from `origin/wip/next-test`. Draft pull 
 ## Runs
 | Run | Head | Result |
 |---|---|---|
-| build-windows | see the PR | |
-| build-linux | see the PR | |
+| build-windows #177 (run 41536473026) | 35dfd8d437 | green, smoke included |
+| build-linux #80 (run 41536478323) | 35dfd8d437 | green, smoke included |
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/hide-osd-seek-slider`), Cone (portable), a landscape test video.
