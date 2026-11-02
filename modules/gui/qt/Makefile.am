@@ -355,6 +355,8 @@ libqt_plugin_la_SOURCES = \
 	player/rd_episode_parser.hpp \
 	player/rd_credits_point.cpp \
 	player/rd_credits_point.hpp \
+	player/rd_show_tracks.cpp \
+	player/rd_show_tracks.hpp \
 	player/rd_credits_subtitles.cpp \
 	player/rd_credits_subtitles.hpp \
 	player/rd_up_next.cpp \
@@ -2370,6 +2372,17 @@ test_rd_credits_point_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_credits_point_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_rd_credits_point
 TESTS += test_rd_credits_point
+
+# test_rd_show_tracks (Cone extra, Up Next): QtCore only
+check_PROGRAMS += test_rd_show_tracks
+test_rd_show_tracks_SOURCES = \
+	tests/test_rd_show_tracks.cpp \
+	player/rd_show_tracks.cpp player/rd_show_tracks.hpp
+test_rd_show_tracks_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_show_tracks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_show_tracks_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_show_tracks_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_show_tracks
 
 # test_vlc_dialog_model
 

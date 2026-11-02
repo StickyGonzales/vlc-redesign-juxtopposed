@@ -119,6 +119,8 @@ class RdUpNext : public QObject
     Q_PROPERTY(int rememberedNo READ rememberedNo NOTIFY storeChanged FINAL)
     // shows with a learned credits point (Forget all clears them too)
     Q_PROPERTY(int rememberedCredits READ rememberedCredits NOTIFY storeChanged FINAL)
+    // shows with a remembered audio or subtitle track (Forget all clears them too)
+    Q_PROPERTY(int rememberedTracks READ rememberedTracks NOTIFY storeChanged FINAL)
 
 public:
     enum Mode { ModeOff = 0, ModeOn = 1 };
@@ -154,6 +156,7 @@ public:
     int rememberedYes() const;
     int rememberedNo() const;
     int rememberedCredits() const { return int(m_learned.size()); }
+    int rememberedTracks() const { return int(m_trackChoices.size()); }
 
     // the card's buttons
     Q_INVOKABLE void playNow();
@@ -216,6 +219,17 @@ private:
     void updateCard();
     // the player's time belongs to the episode playing (not the previous one's last time)
     bool timeFresh();
+
+    // the audio and subtitle track a show is watched with (SHOW_TRACKS_NOTES.md): the episode
+    // playing is one of a detected show (a plain film never is)
+    bool isShowEpisode() const;
+    // the episode's tracks are listed (or the show is known): its saved tracks are applied once
+    // the list settles
+    void onTracksListed();
+    void applyTrackChoice();
+    // a track was picked (or the subtitles turned off) while the episode plays
+    void onTrackSelectionChanged(bool audio);
+    void recordTrackChoice();
     void setCard(bool visible, int mode);
     void setSecondsLeft(int seconds);
     void setCounting(bool counting);
@@ -343,6 +357,31 @@ private:
         QString name;
     };
     QHash<QString, Learned> m_learned;
+
+    // the tracks picked per show, by language (rd_show_tracks), keyed like the answers
+    struct TrackChoice
+    {
+        // a language key, or empty for no saved choice
+        QString audio;
+        QString subtitles;
+        // the subtitles were turned off
+        bool subtitlesOff = false;
+        QString name;
+    };
+    QHash<QString, TrackChoice> m_trackChoices;
+    // after an input change: the saved tracks are applied once the track lists settle, then the
+    // selection settles before a change counts as the user's
+    QTimer* m_trackApplyTimer = nullptr;
+    QTimer* m_trackSettleTimer = nullptr;
+    QTimer* m_trackRecordTimer = nullptr;
+    bool m_tracksSettled = false;
+    bool m_applyingTracks = false;
+    bool m_recordAudio = false;
+    bool m_recordSubtitles = false;
+    // the selected tracks once settled (and after each saved change): a list update that changes
+    // no selection is not a pick
+    QString m_audioSelection;
+    QString m_subtitleSelection;
 
 
     // remembered answers, keyed by the show root folder
