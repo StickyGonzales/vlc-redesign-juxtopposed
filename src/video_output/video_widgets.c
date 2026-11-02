@@ -288,6 +288,32 @@ static void OSDWidget(vout_thread_t *vout, int channel, vlc_osd_widget_type type
 {
     if (!var_InheritBool(vout, "osd"))
         return;
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (redesign/OSD_INVENTORY.md "Final style"): with Cone's interface listening on
+     * "cone-osd", it shows the play state itself ("icon", play / pause / mute) and the level in
+     * its volume message; VLC's sliders are not drawn (#102) */
+    libvlc_int_t *libvlc = vlc_object_instance(vout);
+    if (var_Type(libvlc, "cone-osd") != 0)
+    {
+        const char *name = type == OSD_PLAY_ICON ? "play" : type == OSD_PAUSE_ICON ? "pause"
+                         : type == OSD_MUTE_ICON ? "mute" : NULL;
+        if (name != NULL)
+        {
+            char *key = NULL;
+            const vlc_tick_t pressed = var_GetInteger(libvlc, "osd-key-hint-date");
+            if (pressed > 0 && vlc_tick_now() - pressed < VLC_TICK_FROM_MS(400))
+                key = var_GetString(libvlc, "osd-key-hint");
+            char *payload;
+            if (asprintf(&payload, "icon\x1f%s\x1f%s", name, key != NULL ? key : "") != -1)
+            {
+                var_SetString(libvlc, "cone-osd", payload);
+                free(payload);
+            }
+            free(key);
+        }
+        return;
+    }
+#endif
     if (type == OSD_HOR_SLIDER || type == OSD_VERT_SLIDER)
         position = VLC_CLIP(position, 0, 100);
 

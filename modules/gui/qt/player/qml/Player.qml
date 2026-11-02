@@ -1831,8 +1831,32 @@ FocusScope {
         }
     }
 
+    // redesign (redesign/OSD_INVENTORY.md "Final style"): the on-screen messages, top center 16 px
+    // under the top bar's place whether the bars show or not, so it never moves and never sits
+    // under the top bar; the Up Next card is bottom right. A quarter bigger in fullscreen
+    RdOsdMessage {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: topBar.height + VLCStyle.dp(16, VLCStyle.scale)
+        z: 4
+        transformOrigin: Item.Top
+        scale: MainCtx.intfMainWindow && MainCtx.intfMainWindow.visibility === Window.FullScreen ? 1.25 : 1
+        enabled: false
+    }
+
+    // Cone build: the interface's own notifications (interface scale, Minimal View, bookmark
+    // added) use the same message in the player
+    Connections {
+        target: RdOsd.active ? UINotifier : null
+
+        function onShowNotification(id, text) {
+            RdOsd.showText(id === UINotifier.Bookmark ? "bookmark" : "interface", text)
+        }
+    }
+
     Widgets.FloatingNotification {
         id: notif
+
+        visible: !RdOsd.active
 
         anchors {
             bottom: controlBar.top

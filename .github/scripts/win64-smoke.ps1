@@ -381,6 +381,22 @@ function Check-Subtitle($s) {
         "selected: $(($sel | Select-Object -First 1).Trim())"
     }
 }
+# Cone's on-screen message (RdOsdMessage.qml): a volume key shows it with "Volume ...", and it goes away
+function Check-Osd($s) {
+    Check "$($s.tag): a volume key shows Cone's on-screen message" {
+        Focus-Window $s.hwnd
+        Keys @(0x11, 0x26)   # Ctrl+Up: volume up
+        $e = Uia-Find $s.hwnd 'On-screen message' 3000
+        if (-not $e) { throw 'no on-screen message within 3 s after Ctrl+Up' }
+        Shot "$($s.tag)-osd"
+        $text = $e.Current.HelpText
+        if ($text -notmatch 'Volume') { throw "the message says '$text', expected the volume" }
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while ((Uia-Find $s.hwnd 'On-screen message' 0) -and $sw.Elapsed.TotalSeconds -lt 6) { Start-Sleep -Milliseconds 250 }
+        if (Uia-Find $s.hwnd 'On-screen message' 0) { throw 'the message is still shown 6 s later' }
+        """$text"", gone again"
+    }
+}
 # fullscreen: a bar shown by its edge zone stays while the pointer rests on its buttons (the top
 # bar hid under the pointer on Windows when a button's tooltip, a native window pushed onto the
 # button at the top of the screen, made the window report a leave)
@@ -667,6 +683,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Check-Time $s | Out-Null
         if ($full) {
             Check-Subtitle $s | Out-Null
+            Check-Osd $s | Out-Null
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
             Check-FsTopBar $s | Out-Null
