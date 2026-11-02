@@ -33,6 +33,19 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 | build-linux #79 (run 41535409514) | 1fe7791682 | green, smoke included |
 | build-windows #176 (run 41535414370) | 1fe7791682 | green, smoke included |
 
+**Linux sandbox on build-linux #79** (Xvfb + openbox, the generated "Plain Show" 10 min episodes, card at 9:05):
+| Check | Result |
+|---|---|
+| the card shows ("Up next: Plain Show, S01E02. Plays at the end of the episode.") | pass |
+| pointer resting on the card's text until the bars hide, then mouse button down and up on it: the control bar stays hidden (bottom strip of the screenshot stays the bright picture before, during and after the press) | pass |
+| the card's place (AT-SPI extents 856, 484, 400 x 158) before, during and after the press | pass, unchanged |
+| a mouse move over the video shows the bars: the card stays at the same place, above the bar | pass |
+| countdown at 4 s left: "Playing in 4 seconds", the Next episode button filled about 70 % (one step ahead, full as the next episode starts) | pass |
+| no QML warning or error for RdUpNextCard in the log | pass |
+
+- **The test's own mouse move:** in a window, any mouse move over the video shows the bars (Decision 30), so a test that moves onto the card shows them by moving. The check presses only once the pointer has rested on the card and the bars have hidden.
+- **Screenshots:** `redesign/fix-shots/up_next_fill.jpg` (generated test video).
+
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/up-next-card-click-fill`), Cone (portable), the 11-min test episodes of the #87 retest (strong names).
 1. **Card place.** Play S01E01, seek to 1:30 before the end and keep the mouse still until the bars hide; the card shows. Move the mouse: the bars show and the card does not move (it already sits above the bar's place). Let the bars hide again: the card does not move.
