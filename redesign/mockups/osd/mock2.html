@@ -1,0 +1,40 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0E0E0E;font-family:Inter,sans-serif;color:#EAEAEA;padding:36px 40px;width:1920px}
+h1{font-size:26px;font-weight:600;margin-bottom:6px}
+.sub{color:#969696;font-size:15px;margin-bottom:28px;max-width:1700px;line-height:1.45}
+.row{margin-bottom:34px}
+.row h2{font-size:20px;font-weight:600;margin-bottom:4px}.row h2 b{color:#D37918}
+.row p{color:#969696;font-size:14px;margin-bottom:12px}
+.frames{display:grid;grid-template-columns:repeat(2,912px);gap:16px}
+.f{position:relative;width:912px;height:513px;border-radius:6px;overflow:hidden;
+ background:radial-gradient(ellipse at 60% 72%,#6b4a2a 0%,#3a3240 35%,#1d2433 70%,#121722 100%)}
+.f::before{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(180deg,#141a20,#0c0f13);
+ clip-path:polygon(0 40%,18% 20%,35% 45%,52% 10%,70% 38%,85% 22%,100% 35%,100% 100%,0 100%)}
+.f::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;left:52%;top:30%;background:#e9a55c;opacity:.55;filter:blur(3px)}
+.cap{position:absolute;left:12px;bottom:10px;font-size:12px;color:#8F8F8F;z-index:3}
+.o{position:absolute;z-index:5;top:16px;right:16px;white-space:nowrap}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border:1px solid #373737;background:#222;border-radius:4px;font-size:10px;font-weight:500;color:#C6C6C6}
+.ic{stroke:#EAEAEA;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;display:block}
+.cone{position:relative;height:10px;background:#0B0B0B;clip-path:polygon(0 35%,100% 0,100% 100%,0 65%)}
+.cone i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#6E9E12,#8E921A 45%,#B5701A 75%,#D2402A)}
+.panel{background:rgba(25,25,25,.95);backdrop-filter:blur(50px);box-shadow:0 8px 15px rgba(0,0,0,.46);border-radius:6px}
+/* 1 pill */
+.P{display:flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 10px;font-size:13px}
+.P .v{font-weight:500}
+/* 2 ghost pill */
+.G{display:flex;align-items:center;gap:8px;height:28px;padding:0 6px 0 10px;font-size:13px;background:rgba(0,0,0,.45);backdrop-filter:blur(50px);border-radius:6px}
+.G .key{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12)}
+/* 3 compact card */
+.K{padding:8px 10px;font-size:13px;min-width:150px}
+.K .t{display:flex;align-items:center;gap:8px}.K .t .v{margin-left:auto;padding-left:14px;font-weight:500}
+.K .h{margin-top:6px;display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:10px;color:#8F8F8F}
+/* 4 text */
+.T{text-align:right;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.6)}
+.T .t{font-size:16px;font-weight:500}.T .t span{color:#D37918}
+.T .h{margin-top:4px;font-size:11px;color:#C6C6C6;display:flex;gap:5px;justify-content:flex-end;align-items:center}
+</style></head><body>
+<h1>On-screen messages, round 2: top right, out of the way</h1>
+<div class="sub">All four stay in the top right corner at real size (frame = a 912 × 513 window, text 13 px like the rest of Cone). Each shows Volume (with its bar) and Crop (with the key). They fade in and out quickly and step below the top bar while it is showing.</div>
+<div class="row"><h2><b>1</b> &nbsp;Solid pill</h2><p>Round 1’s A at real size. Opaque Cone panel, one line, key as a keycap.</p><div class="frames"><div class="f"><div class="o panel P"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Volume</span><div class="cone" style="width:56px"><i style="width:42%"></i></div><span class="v">85%</span><span class="key">Ctrl + Up</span></div><div class="cap">Volume</div></div><div class="f"><div class="o panel P"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></svg><span>Crop</span><span class="v">2.35:1</span><span class="key">C</span></div><div class="cap">Crop</div></div></div></div><div class="row"><h2><b>2</b> &nbsp;See-through pill</h2><p>Same pill, but a dark see-through glass (45%) with no shadow, so the picture shows through it. Least heavy box.</p><div class="frames"><div class="f"><div class="o G"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Volume</span><div class="cone" style="width:56px"><i style="width:42%"></i></div><span style="font-weight:500">85%</span><span class="key">Ctrl + Up</span></div><div class="cap">Volume</div></div><div class="f"><div class="o G"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></svg><span>Crop</span><span style="font-weight:500">2.35:1</span><span class="key">C</span></div><div class="cap">Crop</div></div></div></div><div class="row"><h2><b>3</b> &nbsp;Compact card</h2><p>Two short lines: the message, then the bar or "Pressed C" underneath, as in her video. A little taller than the pills.</p><div class="frames"><div class="f"><div class="o panel K"><div class="t"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Volume</span><span class="v">85%</span></div><div style="margin-top:7px"><div class="cone" style="width:150px"><i style="width:42%"></i></div></div><div class="h">Pressed <span class="key">Ctrl + Up</span></div></div><div class="cap">Volume</div></div><div class="f"><div class="o panel K"><div class="t"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></svg><span>Crop</span><span class="v">2.35:1</span></div><div class="h">Pressed <span class="key">C</span></div></div><div class="cap">Crop</div></div></div></div><div class="row"><h2><b>4</b> &nbsp;Text only</h2><p>No box at all: right-aligned text with a soft shadow, value in the accent color. Covers the least, but harder to read on bright scenes.</p><div class="frames"><div class="f"><div class="o T"><div class="t">Volume <span>85%</span></div><div style="margin-top:6px;display:flex;justify-content:flex-end"><div class="cone" style="width:110px"><i style="width:42%"></i></div></div><div class="h">Pressed <span class="key">Ctrl + Up</span></div></div><div class="cap">Volume</div></div><div class="f"><div class="o T"><div class="t">Crop <span>2.35:1</span></div><div class="h">Pressed <span class="key">C</span></div></div><div class="cap">Crop</div></div></div></div>
+</body></html>
