@@ -39,8 +39,7 @@ Branch `wip/fix-open-in-running-window`, made from `origin/wip/next-test`. Draft
 ## Runs
 | Run | Head | Result |
 |---|---|---|
-| build-windows | see the PR | |
-| build-linux | see the PR | |
+| build-windows #178 (run 41536483824) | 527bf89e22 | green, smoke included: "open-in-running: a second start with a file plays it in the running window: the second start exited, the running window plays test-hevc.mp4 after 0.8 s" |
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/fix-open-in-running-window`), the installer (the ProgIDs and Open with need the installed Cone).
