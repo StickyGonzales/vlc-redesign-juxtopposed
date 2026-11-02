@@ -53,7 +53,7 @@ Branch `wip/show-tracks`, made from `origin/wip/next-test`. Draft pull request i
 | Run | Head | Result |
 |---|---|---|
 | build-linux #77 | 10cf1a2b6c | green, smoke included |
-| build-windows #174 | 10cf1a2b6c | see the PR |
+| build-windows #174 (run 41527348895) | 10cf1a2b6c | green, smoke included |
 
 **Linux sandbox on build-linux #77** (generated 40 s MKV episodes, the first audio and subtitle track the default in each, picks made through VLC's cli interface like a hotkey): **21 of 21**.
 | Episode | Tracks | Result |
