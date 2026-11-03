@@ -180,7 +180,10 @@ private:
             scan = m_scanner->run();
             if (!scan.ok)
             {
-                out.error = m_scanner->cancelled() ? QString() : qtr("The file could not be read.");
+                out.error = m_scanner->cancelled() ? QString()
+                            : std::strcmp(scan.reason, "over the time budget") == 0
+                                ? qtr("The file took too long to read.")
+                                : qtr("The file could not be read.");
                 return;
             }
         }
@@ -429,7 +432,8 @@ void RdSubSync::syncDownloaded(const QByteArray& uri)
     }
     const QByteArray hash = QCryptographicHash::hash(uri, QCryptographicHash::Md5).toHex();
     const TrackRef selected = selectedSubtitle();
-    if (selected.valid && selected.strId.startsWith(hash))
+    // the file is listed on the media a moment after its track is created
+    if (selected.valid && selected.strId.startsWith(hash) && !selected.uri.isEmpty())
     {
         m_downloadUri.clear();
         start(selected, QByteArray(), true);
@@ -637,9 +641,14 @@ void RdSubSync::clearForNewMedia()
 
     // a frame-rate fix belongs to the file it was found for: VLC keeps the subtitle speed for
     // the next file, so it is taken back (unless the user changed it since)
-    if (m_undo.valid && m_undo.fpsChanged
-        && std::abs(m_player->getSubtitleFPS() - m_undo.appliedFps) < 0.0005f)
-        m_player->setSubtitleFPS(m_undo.fps);
+    // (directly on the player: PlayerController ignores a change while it switches media)
+    if (m_undo.valid && m_undo.fpsChanged)
+    {
+        vlc_player_t* player = m_player->getPlayer();
+        vlc_player_locker lock{ player };
+        if (std::abs(vlc_player_GetAssociatedSubsFPS(player) - m_undo.appliedFps) < 0.0005f)
+            vlc_player_SetAssociatedSubsFPS(player, m_undo.fps);
+    }
 
     m_mediaUri = mediaUri;
     if (m_busy)

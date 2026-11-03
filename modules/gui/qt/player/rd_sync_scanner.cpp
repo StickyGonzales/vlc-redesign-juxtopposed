@@ -68,6 +68,27 @@ bool isTextSubtitle(vlc_fourcc_t codec)
     }
 }
 
+// a packet that clears the screen instead of showing a line: MP4 fills the gaps between lines
+// with empty samples (tx3g: a text length of 0; WebVTT: a lone "vtte" box), and some muxers
+// send an empty SubRip line
+bool isEmptyLine(vlc_fourcc_t codec, const block_t* block)
+{
+    if (block->i_buffer == 0)
+        return true;
+    switch (codec)
+    {
+    case VLC_CODEC_TX3G:
+        return block->i_buffer < 2 || GetWBE(block->p_buffer) == 0;
+    case VLC_CODEC_WEBVTT:
+        return block->i_buffer >= 8 && block->i_buffer == GetDWBE(block->p_buffer)
+               && std::memcmp(block->p_buffer + 4, "vtte", 4) == 0;
+    case VLC_CODEC_SUBT:
+        return block->p_buffer[0] == '\0';
+    default:
+        return false;
+    }
+}
+
 bool supportedFormat(vlc_fourcc_t format)
 {
     switch (format)
@@ -123,6 +144,10 @@ struct RdSyncScanner::Scan
     double position = 0;
     std::vector<float> mono;
     std::map<int, std::vector<rdsync::Cue>> cues;
+    // the time the demuxer calls the media's start (MPEG-TS: its first clock reference); VLC
+    // shows and shifts external subtitles from it (src/input/es_out.c), so every time is counted
+    // from it
+    vlc_tick_t normalTime = VLC_TICK_0;
     bool overBudget = false;
     bool failed = false;
 };
@@ -480,7 +505,7 @@ void RdSyncScanner::Scan::consume(const audio_format_t& fmt, const block_t* fram
     // after a gap; within kJumpSeconds the samples counted are followed
     if (frame->i_pts != VLC_TICK_INVALID)
     {
-        const double time = secf_from_vlc_tick(frame->i_pts - VLC_TICK_0);
+        const double time = std::max(0.0, secf_from_vlc_tick(frame->i_pts - normalTime));
         if (!positionKnown || time - position > kJumpSeconds)
         {
             position = std::max(position, time);
@@ -518,10 +543,10 @@ void RdSyncScanner::Scan::consume(const audio_format_t& fmt, const block_t* fram
 void RdSyncScanner::Scan::keepCue(Track* track, const block_t* block)
 {
     const vlc_tick_t pts = block->i_pts != VLC_TICK_INVALID ? block->i_pts : block->i_dts;
-    if (pts == VLC_TICK_INVALID || block->i_buffer == 0)
+    if (pts == VLC_TICK_INVALID || isEmptyLine(track->fmt.i_codec, block))
         return;
     rdsync::Cue cue;
-    cue.startMs = MS_FROM_VLC_TICK(pts - VLC_TICK_0);
+    cue.startMs = MS_FROM_VLC_TICK(pts - normalTime);
     // a line without a length (some MP4 and Matroska muxers) shows until the next one, at most
     // a few seconds: closed when the next line comes
     cue.endMs = block->i_length > 0 ? cue.startMs + MS_FROM_VLC_TICK(block->i_length) : cue.startMs;
@@ -589,6 +614,9 @@ RdSyncScanner::Result RdSyncScanner::run()
         }
         else
         {
+            vlc_tick_t normalTime;
+            if (demux_Control(demux, DEMUX_GET_NORMAL_TIME, &normalTime) == VLC_SUCCESS)
+                scan.normalTime = normalTime;
             int calls = 0;
             while (!scan.stopped())
             {
