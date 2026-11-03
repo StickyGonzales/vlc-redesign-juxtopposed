@@ -40,6 +40,7 @@
 #include "player/rd_waveform.hpp"
 #include "player/rd_waveform_item.hpp"
 #include "player/rd_subtitle_lift.hpp"
+#include "player/rd_osd.hpp"
 #include "player/rd_subtitle_timeline.hpp"
 #include "player/rd_subtitle_timeline_item.hpp"
 #include "player/rd_now_playing.hpp"
@@ -430,6 +431,8 @@ void MainUI::registerQMLTypes()
         // redesign: subtitles above the control bar while it covers the picture (beta)
         qmlRegisterSingletonInstance<RdSubtitleLift>(uri, versionMajor, versionMinor, "RdSubtitleLift",
                                                      new RdSubtitleLift(m_intf->p_mainPlayerController, this));
+        // redesign: the on-screen messages in Cone's style (redesign/OSD_INVENTORY.md "Final style")
+        qmlRegisterSingletonInstance<RdOsd>(uri, versionMajor, versionMinor, "RdOsd", new RdOsd(m_intf, this));
         qmlRegisterType<RdWaveformItem>(uri, versionMajor, versionMinor, "RdWaveformItem");
         // redesign: subtitle timeline seek bar (P3-16): the selected external subtitle file's
         // cue times, and their blocks

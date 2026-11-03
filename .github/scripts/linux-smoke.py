@@ -238,6 +238,47 @@ def check_time(s):
     return check(f'{s.tag}: playback time advances', body)
 
 
+def osd_message():
+    """Cone's on-screen message (RdOsdMessage.qml): its description ("Volume 80%"), None while hidden"""
+    app = cone_app()
+    for acc in _walk(app):
+        try:
+            if acc.name != 'On-screen message':
+                continue
+            x, y, w, h = acc.queryComponent().getExtents(pyatspi.DESKTOP_COORDS)
+            if w > 0 and h > 0:
+                return acc.description or ''
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
+def check_osd(s):
+    """a key shows Cone's own message (not VLC's text in the video), and it goes away. The speed
+    key: the smoke run's audio output (adummy) has no volume, so a volume key shows nothing"""
+    def body():
+        s.focus()
+        xdo('key', 'bracketright')
+        end = time.time() + 3
+        text = None
+        while time.time() < end and text is None:
+            text = osd_message()
+            time.sleep(0.1)
+        if text is None:
+            raise CheckFailed('no on-screen message within 3 s after ] (faster)')
+        shot(f'{s.tag}-osd')
+        if 'Speed' not in text:
+            raise CheckFailed(f'the message says "{text}", expected the speed')
+        end = time.time() + 6
+        while time.time() < end and osd_message() is not None:
+            time.sleep(0.25)
+        if osd_message() is not None:
+            raise CheckFailed('the message is still shown 6 s later')
+        xdo('key', 'equal')   # back to the normal speed for the next checks
+        return f'"{text}", gone again'
+    return check(f'{s.tag}: a key shows Cone\'s on-screen message', body)
+
+
 def check_subtitle(s):
     def body():
         out = rc('strack')
@@ -638,6 +679,7 @@ def session(exe, codec, tag, full, env=None):
         check_time(s)
         if full:
             check_subtitle(s)
+            check_osd(s)
             check_settings(s)
             check_seek(s)
             check_menu(s)

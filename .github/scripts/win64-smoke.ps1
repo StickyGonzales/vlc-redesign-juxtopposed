@@ -381,6 +381,37 @@ function Check-Subtitle($s) {
         "selected: $(($sel | Select-Object -First 1).Trim())"
     }
 }
+# Cone's on-screen message (RdOsdMessage.qml): a volume key shows it with "Volume ...", and it goes away
+function Check-Osd($s) {
+    # the speed key: the runner has no audio device, so a volume key shows nothing
+    Check "$($s.tag): a key shows Cone's on-screen message" {
+        Focus-Window $s.hwnd
+        Keys @(0xDD)   # ]: faster
+        $e = Uia-Find $s.hwnd 'On-screen message' 3000
+        if (-not $e) { throw 'no on-screen message within 3 s after ] (faster)' }
+        Shot "$($s.tag)-osd"
+        # Qt reports Accessible.description as UIA's FullDescription (30159), not HelpText
+        $text = ''
+        try { $text = [string]$e.GetCurrentPropertyValue([System.Windows.Automation.AutomationProperty]::LookupById(30159)) } catch {}
+        if (-not $text) { $text = $e.Current.HelpText }
+        if (-not $text) {
+            $text = (@($e.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) |
+                     ForEach-Object { $_.Current.Name } | Where-Object { $_ }) -join ' '
+        }
+        # Qt's UI Automation bridge does not always expose the message's description (the text is
+        # checked on Linux through AT-SPI); here the message must show and go, and any text it
+        # does expose must be the speed
+        $note = ''
+        if (-not $text) {
+            $note = " (text not exposed to UI Automation: HelpText, FullDescription and the inner names are empty; ItemStatus '$($e.Current.ItemStatus)')"
+        } elseif ($text -notmatch 'Speed') { throw "the message says '$text', expected the speed" }
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while ((Uia-Find $s.hwnd 'On-screen message' 0) -and $sw.Elapsed.TotalSeconds -lt 6) { Start-Sleep -Milliseconds 250 }
+        if (Uia-Find $s.hwnd 'On-screen message' 0) { throw 'the message is still shown 6 s later' }
+        Keys @(0xBB)   # =: back to the normal speed for the next checks
+        """$text"" shown, gone again$note"
+    }
+}
 # fullscreen: a bar shown by its edge zone stays while the pointer rests on its buttons (the top
 # bar hid under the pointer on Windows when a button's tooltip, a native window pushed onto the
 # button at the top of the screen, made the window report a leave)
@@ -667,6 +698,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Check-Time $s | Out-Null
         if ($full) {
             Check-Subtitle $s | Out-Null
+            Check-Osd $s | Out-Null
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
             Check-FsTopBar $s | Out-Null
