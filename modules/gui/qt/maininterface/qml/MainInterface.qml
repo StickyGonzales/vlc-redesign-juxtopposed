@@ -445,7 +445,11 @@ Item {
                     Onboarding {
                         id: onboarding
 
-                        onDone: Qt.callLater(() => { onboardingLoader.active = false })
+                        onDone: {
+                            // the files of a first start waited for it: they play now
+                            MainCtx.releaseFirstStartPlayback()
+                            Qt.callLater(() => { onboardingLoader.active = false })
+                        }
                     }
                 }
             }
