@@ -85,7 +85,7 @@ Branch `wip/subtitle-auto-sync`, made from `origin/wip/next-test`. Draft pull re
 
 ![Sandbox](fix-shots/auto_sync_sandbox.jpg)
 - **Found while testing:** VLC also loads a subtitle file named like the video from its folder (`tos24.en.srt` next to `tos24.mkv`), and selects it. Auto-sync then works on that track, as it should (case 4 runs from its own folder).
-- **One-row layout on build-linux #89** (same four cases, same results: -2.36 s, factor 25/23.976 with +60 ms, +3.72 s from the English track, no match). Undo is the button itself, exposed to AT-SPI as "Undo Auto-sync"; clicking it puts the delay back to 0.000 s and the row back to "Automatic Sync".
+- **One-row layout on build-linux #89, then #90 with the label staying "Automatic Sync" after a move (StickyGonzales approved the mockup)** (same four cases, same results: -2.36 s, factor 25/23.976 with +60 ms, +3.72 s from the English track, no match). Undo is the button itself, exposed to AT-SPI as "Undo Auto-sync"; clicking it puts the delay back to 0.000 s and the row back to "Automatic Sync".
 
 ![One row](fix-shots/auto_sync_row.jpg)
 - **Changed after the sandbox:** the result line under the button (shots above) is gone. The outcome is now the row's label and Undo is the button, which also fixes a found bug: the result line and its Undo were missing from the accessibility tree (AT-SPI). The Auto-sync row was always exposed.
@@ -116,6 +116,8 @@ A fresh agent reviewed the whole diff. It found no deadlock, lifetime or ownersh
 | build-linux, build-windows (4a01e7b99f) | the accessibility fix | superseded by the one-row layout, cancelled |
 | build-linux #89 (run 41703941299) | 6fe216ee38 | green, smoke included; sandbox below |
 | build-windows #191 (run 41703946938) | 6fe216ee38 | green, smoke included |
+| build-linux #90 (run 41712060158) | 5ddf1dc324 (a move shows on the sliders only) | green, smoke included; sandbox: same four results, shots in fix-shots/auto_sync_row.jpg |
+| build-windows #192 (run 41712066560) | 5ddf1dc324 | green, smoke included |
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/subtitle-auto-sync`), Cone (portable). Use an episode or film with dialogue, plus its matching .srt.
