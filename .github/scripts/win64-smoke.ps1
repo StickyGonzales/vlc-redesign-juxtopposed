@@ -390,7 +390,14 @@ function Check-Osd($s) {
         $e = Uia-Find $s.hwnd 'On-screen message' 3000
         if (-not $e) { throw 'no on-screen message within 3 s after ] (faster)' }
         Shot "$($s.tag)-osd"
-        $text = $e.Current.HelpText
+        # Qt reports Accessible.description as UIA's FullDescription (30159), not HelpText
+        $text = ''
+        try { $text = [string]$e.GetCurrentPropertyValue([System.Windows.Automation.AutomationProperty]::LookupById(30159)) } catch {}
+        if (-not $text) { $text = $e.Current.HelpText }
+        if (-not $text) {
+            $text = (@($e.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) |
+                     ForEach-Object { $_.Current.Name } | Where-Object { $_ }) -join ' '
+        }
         if ($text -notmatch 'Speed') { throw "the message says '$text', expected the speed" }
         $sw = [Diagnostics.Stopwatch]::StartNew()
         while ((Uia-Find $s.hwnd 'On-screen message' 0) -and $sw.Elapsed.TotalSeconds -lt 6) { Start-Sleep -Milliseconds 250 }

@@ -53,8 +53,9 @@ Branch `wip/osd-cone-style`, made from `origin/wip/next-test`. Draft pull reques
 |---|---|---|
 | build-linux #81 (run 41543413846) | fb67ed8ed8 | red: only the new check (Ctrl+Up shows nothing without an audio output); build and every other check green |
 | build-windows #179 (run 41543418682) | fb67ed8ed8 | red: the same check; build and every other check green |
-| build-linux (rerun) | the smoke check fix | running |
-| build-windows (rerun) | the smoke check fix | running |
+| build-linux #84 (run 41556887044) | 7351bfc7ce | green, smoke included ("a key shows Cone's on-screen message" passes) |
+| build-windows #183 (run 41556882141) | 7351bfc7ce | red in the check only: the message was found, but its text read as empty (Qt reports the description as UIA's FullDescription, not HelpText); the check now reads FullDescription |
+| build-windows (rerun) | the FullDescription fix | running |
 
 ## Sandbox (build #81, Linux, Xvfb, a real audio output)
 ![Cone's messages in the sandbox](fix-shots/osd_sandbox.jpg)
