@@ -37,8 +37,9 @@ Branch `wip/fix-fullscreen-exit`, made from `origin/wip/next-test`. Draft pull r
 ## Runs
 | Run | Head | Result |
 |---|---|---|
-| build-windows | see the PR | |
-| build-linux | see the PR | |
+| build-windows #182 (run 41551449627) | e71a22c05f | red in the check only: the new check passed on H.264 (F then the button: windowed; the button then Escape: windowed); on HEVC the pointer at y 4 and 6 did not bring up the top bar (H.264 passed because both bars were still shown after the F key). Every other check green |
+| build-linux #83 (run 41551454130) | e71a22c05f | green |
+| build-windows (rerun) | the check moves the pointer up to the top edge and takes the top bar's button | running |
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch, Cone (portable), an episode.

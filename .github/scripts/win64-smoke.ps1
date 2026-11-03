@@ -392,13 +392,36 @@ function Is-Fullscreen($h) {
     $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($h, [ref]$w) | Out-Null
     return ($w.Left -le $b.Left -and $w.Top -le $b.Top -and $w.Right -ge $b.Right -and $w.Bottom -ge $b.Bottom)
 }
+# the top bar's "Fullscreen" button (the control bar's button has the same name: take the one at
+# the window's top). The pointer goes up to the top edge as a hand does, from the middle of the
+# window, and rests there: in fullscreen only the top edge shows the top bar, in a window any move
+function Find-TopBarFullscreen($s, [int]$timeoutMs) {
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($s.hwnd)
+    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'Fullscreen')
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+        foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+            try {
+                $r = $e.Current.BoundingRectangle
+                if (-not $e.Current.IsOffscreen -and $r.Width -gt 0 -and $r.Top -lt $w.Top + 80) { return $e }
+            } catch {}
+        }
+        Start-Sleep -Milliseconds 250
+    } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
+    return $null
+}
 function Click-TopBarFullscreen($s) {
-    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-    # the top edge shows the top bar in fullscreen; in a window any move shows it
-    [RdSmoke]::SetCursorPos([int]($b.Left + $b.Width / 2), $b.Top + 4) | Out-Null; Start-Sleep -Milliseconds 150
-    [RdSmoke]::SetCursorPos([int]($b.Left + $b.Width / 2) + 6, $b.Top + 6) | Out-Null
-    $btn = Uia-Find $s.hwnd 'Fullscreen' 3000
-    if (-not $btn) { throw 'no "Fullscreen" button in the top bar' }
+    $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+    $cx = [int](($w.Left + $w.Right) / 2); $cy = [int](($w.Top + $w.Bottom) / 2)
+    $btn = $null
+    foreach ($try in 1, 2) {
+        for ($y = $cy; $y -ge $w.Top; $y -= 8) { [RdSmoke]::SetCursorPos($cx, $y) | Out-Null; Start-Sleep -Milliseconds 15 }
+        [RdSmoke]::SetCursorPos($cx, [Math]::Max($w.Top, 0)) | Out-Null
+        $btn = Find-TopBarFullscreen $s 3000
+        if ($btn) { break }
+    }
+    if (-not $btn) { throw 'no "Fullscreen" button in the top bar (pointer at the top edge)' }
     Click-Element $btn
 }
 function Check-FsExit($s) {
