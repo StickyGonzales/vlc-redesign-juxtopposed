@@ -644,10 +644,13 @@ void RdSubSync::clearForNewMedia()
     // (directly on the player: PlayerController ignores a change while it switches media)
     if (m_undo.valid && m_undo.fpsChanged)
     {
-        vlc_player_t* player = m_player->getPlayer();
-        vlc_player_locker lock{ player };
-        if (std::abs(vlc_player_GetAssociatedSubsFPS(player) - m_undo.appliedFps) < 0.0005f)
+        // (vlc_player_GetAssociatedSubsFPS is not exported; PlayerController keeps the value)
+        if (std::abs(m_player->getSubtitleFPS() - m_undo.appliedFps) < 0.0005f)
+        {
+            vlc_player_t* player = m_player->getPlayer();
+            vlc_player_locker lock{ player };
             vlc_player_SetAssociatedSubsFPS(player, m_undo.fps);
+        }
     }
 
     m_mediaUri = mediaUri;
