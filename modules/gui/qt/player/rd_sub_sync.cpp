@@ -137,6 +137,8 @@ struct RdSubSync::Outcome
 {
     bool ok = false;
     QString error;
+    // the error in a few words, for the row's label
+    QString errorShort;
     rdsync::Match match;
     bool automatic = false;
     QByteArray mediaUri;
@@ -180,10 +182,11 @@ private:
             scan = m_scanner->run();
             if (!scan.ok)
             {
+                const bool slow = std::strcmp(scan.reason, "over the time budget") == 0;
                 out.error = m_scanner->cancelled() ? QString()
-                            : std::strcmp(scan.reason, "over the time budget") == 0
-                                ? qtr("The file took too long to read.")
-                                : qtr("The file could not be read.");
+                            : slow ? qtr("The file took too long to read.")
+                                   : qtr("The file could not be read.");
+                out.errorShort = slow ? qtr("File too slow to read") : qtr("File could not be read");
                 return;
             }
         }
@@ -202,6 +205,7 @@ private:
         {
             out.error = readable ? qtr("Auto-sync needs a text subtitle track (SRT, ASS, WebVTT).")
                                  : qtr("The subtitle file could not be read.");
+            out.errorShort = readable ? qtr("Needs text subtitles") : qtr("Subtitle file unreadable");
             return;
         }
 
@@ -212,6 +216,7 @@ private:
             if (reference.empty())
             {
                 out.error = qtr("This file has no audio to sync to.");
+                out.errorShort = qtr("No audio to sync to");
                 return;
             }
         }
@@ -221,6 +226,7 @@ private:
             if (refCues.empty())
             {
                 out.error = qtr("The other subtitle track has no lines to sync to.");
+                out.errorShort = qtr("Other track is empty");
                 return;
             }
             const int64_t end = refCues.back().endMs + kReferenceTailMs;
@@ -514,7 +520,7 @@ void RdSubSync::finish(int generation, std::shared_ptr<Outcome> outcome)
 
     if (!outcome->ok)
     {
-        setResult(outcome->error, false);
+        setResult(outcome->error, false, outcome->errorShort);
         if (outcome->automatic && !outcome->error.isEmpty())
             emit notice(qtr("Auto-sync: %1").arg(outcome->error));
         return;
@@ -526,7 +532,7 @@ void RdSubSync::finish(int generation, std::shared_ptr<Outcome> outcome)
             match.score, match.confidence);
     if (!match.found)
     {
-        setResult(qtr("No match found. The subtitles were not changed."), false);
+        setResult(qtr("No match found. The subtitles were not changed."), false, qtr("No match found"));
         if (outcome->automatic)
             emit notice(qtr("Auto-sync found no match for the downloaded subtitles"));
         return;
@@ -548,7 +554,7 @@ void RdSubSync::finish(int generation, std::shared_ptr<Outcome> outcome)
 
     if (std::abs(newDelay - oldDelay) < kAlreadyInSyncMs && !fpsChange)
     {
-        setResult(qtr("Already in sync"), false);
+        setResult(qtr("Already in sync"), false, qtr("Already in sync"));
         if (outcome->automatic)
             emit notice(qtr("Downloaded subtitles are in sync"));
         return;
@@ -575,7 +581,10 @@ void RdSubSync::finish(int generation, std::shared_ptr<Outcome> outcome)
     if (scaled && frameRatePair(match.scale, &from, &to))
         text = qtr("Moved %1 s, frame rate %2 to %3 fps").arg(signedSeconds(newDelay - oldDelay),
                                                               fpsText(from), fpsText(to));
-    setResult(text, true);
+    // the row's label: the move, and that the frame rate was fixed (the speed slider shows it)
+    const QString shortText = scaled ? qtr("Moved %1 s \u00b7 fps fixed").arg(signedSeconds(newDelay - oldDelay))
+                                     : text;
+    setResult(text, true, shortText);
     if (outcome->automatic)
         emit notice(qtr("Subtitles auto-synced: %1").arg(text));
 }
@@ -603,8 +612,9 @@ void RdSubSync::cancel()
     setBusy(false);
 }
 
-void RdSubSync::setResult(const QString& text, bool moved)
+void RdSubSync::setResult(const QString& text, bool moved, const QString& shortText)
 {
+    m_resultShort = shortText.isEmpty() ? text : shortText;
     if (text == m_resultText && moved == m_moved)
     {
         emit stateChanged();

@@ -47,6 +47,8 @@ class RdSubSync : public QObject
     Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged FINAL)
     // the last run's outcome ("Moved +2.4 s"), empty when there is none to show
     Q_PROPERTY(QString resultText READ resultText NOTIFY stateChanged FINAL)
+    // the same in a few words, for the row's label ("Moved +2.4 s", "No match found")
+    Q_PROPERTY(QString resultShort READ resultShort NOTIFY stateChanged FINAL)
     // the outcome moved the subtitles (not a "no match" or an error)
     Q_PROPERTY(bool moved READ moved NOTIFY stateChanged FINAL)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY stateChanged FINAL)
@@ -63,6 +65,7 @@ public:
     bool busy() const { return m_busy; }
     qreal progress() const { return m_progress; }
     QString resultText() const { return m_resultText; }
+    QString resultShort() const { return m_resultShort; }
     bool moved() const { return m_moved; }
     bool canUndo() const { return m_undo.valid; }
     QStringList references() const;
@@ -107,7 +110,7 @@ private:
     void updateTracks();
     void start(const TrackRef& track, const QByteArray& referenceStrId, bool automatic);
     void finish(int generation, std::shared_ptr<Outcome> outcome);
-    void setResult(const QString& text, bool moved);
+    void setResult(const QString& text, bool moved, const QString& shortText = QString());
     void setBusy(bool busy);
     void clearForNewMedia();
 
@@ -121,6 +124,7 @@ private:
     bool m_busy = false;
     qreal m_progress = 0;
     QString m_resultText;
+    QString m_resultShort;
     bool m_moved = false;
     int m_generation = 0;
     std::shared_ptr<RdSyncScanner> m_scanner;

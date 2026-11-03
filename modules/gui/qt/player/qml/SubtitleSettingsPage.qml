@@ -161,62 +161,35 @@ RdSidePanelPage {
             }
         }
 
+        // one row: the label tells the state ("Analyzing 40 %", "Moved +2.4 s", "No match found"),
+        // the button what can be done next (Auto-sync, Cancel, Undo). The full sentence is the
+        // button's description for screen readers
         Widgets.RdSettingRow {
+            id: autoSyncRow
+
+            readonly property bool _undo: RdSubSync.canUndo && !RdSubSync.busy
+
             text: RdSubSync.busy ? qsTr("Analyzing %1 %").arg(Math.round(RdSubSync.progress * 100))
-                                 : qsTr("Automatic Sync")
+                                 : RdSubSync.resultShort !== "" ? RdSubSync.resultShort
+                                                                : qsTr("Automatic Sync")
             visible: Brand.isPublic
 
             Widgets.RdButton {
                 style: Widgets.RdButton.Style.Plain
-                text: RdSubSync.busy ? qsTr("Cancel") : qsTr("Auto-sync")
-                enabled: RdSubSync.busy || RdSubSync.available
-                Accessible.name: RdSubSync.busy ? qsTr("Cancel Auto-sync") : qsTr("Auto-sync")
-                // the outcome too, for screen readers ("Moved +2.4 s")
+                text: RdSubSync.busy ? qsTr("Cancel") : autoSyncRow._undo ? qsTr("Undo") : qsTr("Auto-sync")
+                enabled: RdSubSync.busy || autoSyncRow._undo || RdSubSync.available
+                Accessible.name: RdSubSync.busy ? qsTr("Cancel Auto-sync")
+                                                : autoSyncRow._undo ? qsTr("Undo Auto-sync") : qsTr("Auto-sync")
                 Accessible.description: !RdSubSync.available ? qsTr("Select a subtitle track to sync")
                                                              : RdSubSync.resultText
                 onClicked: {
                     if (RdSubSync.busy)
                         RdSubSync.cancel()
+                    else if (autoSyncRow._undo)
+                        RdSubSync.undo()
                     else
                         RdSubSync.sync()
                 }
-            }
-        }
-
-        // the outcome: "Moved +2.4 s" with Undo, or why nothing moved (wrapped: a frame-rate
-        // fix or a reason is longer than a row's label)
-        // Always in the item tree and collapsed when there is nothing to show: a row made visible
-        // later was missing from the accessibility tree (Linux sandbox, AT-SPI)
-        RowLayout {
-            readonly property bool _shown: Brand.isPublic && RdSubSync.resultText !== "" && !RdSubSync.busy
-
-            Layout.fillWidth: true
-            Layout.leftMargin: VLCStyle.dp(4)
-            Layout.bottomMargin: _shown ? VLCStyle.dp(6) : 0
-            Layout.preferredHeight: _shown ? implicitHeight : 0
-            visible: Brand.isPublic
-            opacity: _shown ? 1 : 0
-            clip: true
-            spacing: VLCStyle.dp(10)
-
-            Text {
-                Layout.fillWidth: true
-                text: RdSubSync.resultText
-                wrapMode: Text.WordWrap
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_label
-                color: RdSubSync.moved ? VLCStyle.palette.rdFgA2 : VLCStyle.palette.rdFgA3
-                Accessible.role: Accessible.StaticText
-                Accessible.name: text
-            }
-
-            Widgets.RdButton {
-                style: Widgets.RdButton.Style.Link
-                visible: RdSubSync.canUndo
-                enabled: parent._shown
-                text: qsTr("Undo")
-                Accessible.name: qsTr("Undo Auto-sync")
-                onClicked: RdSubSync.undo()
             }
         }
 
