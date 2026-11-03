@@ -46,6 +46,8 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 |---|---|---|
 | build-linux #79 (run 41535409514) | 1fe7791682 | green, smoke included |
 | build-windows #176 (run 41535414370) | 1fe7791682 | green, smoke included |
+| build-linux #82 (run 41550937673) | 9b61c57c15 (low place, 1b) | green, smoke included |
+| build-windows #181 (run 41550932884) | 9b61c57c15 (low place, 1b) | green, smoke included |
 
 **Linux sandbox on build-linux #79** (Xvfb + openbox, the generated "Plain Show" 10 min episodes, card at 9:05):
 | Check | Result |
@@ -58,7 +60,16 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 | no QML warning or error for RdUpNextCard in the log | pass |
 
 - **The test's own mouse move:** in a window, any mouse move over the video shows the bars (Decision 30), so a test that moves onto the card shows them by moving. The check presses only once the pointer has rested on the card and the bars have hidden.
-- **Screenshots:** `redesign/fix-shots/up_next_fill.jpg` (generated test video).
+**Linux sandbox on build-linux #82** (the low place, 1b; same media and steps):
+| Check | Result |
+|---|---|
+| the card shows, bars hidden: extents 856, 484, 400 x 158 in the 1280 x 720 window, its bottom 78 px above the window's bottom (24 px above the control bar's place) | pass |
+| press and release on the card's text: no control bar, the card does not move | pass |
+| a mouse move shows the bars: the card stays at the same place, just above the bar | pass |
+| countdown: "Playing in 4 seconds" | pass |
+| no QML warning or error for RdUpNextCard | pass |
+
+- **Screenshots:** `redesign/fix-shots/up_next_fill.jpg` (the fill, build #79) and `redesign/fix-shots/up_next_low.jpg` (build #82: top, bars hidden; bottom, bars shown, the card at the same place) (generated test video).
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/up-next-card-click-fill`), Cone (portable), the 11-min test episodes of the #87 retest (strong names).
