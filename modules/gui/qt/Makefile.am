@@ -1847,6 +1847,7 @@ libqml_module_widgets_a_QML = \
 	widgets/qml/RdEndlessSlider.qml \
 	widgets/qml/RdSliderWheel.qml \
 	widgets/qml/RdWheelSink.qml \
+	widgets/qml/RdAccentEditor.qml \
 	widgets/qml/RdButton.qml \
 	widgets/qml/RdTextField.qml \
 	widgets/qml/RdOptionRow.qml \
