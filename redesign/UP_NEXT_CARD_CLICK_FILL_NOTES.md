@@ -11,7 +11,21 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 - **Fix:**
   - **No focus on a click:** the card's buttons (Next episode, Cancel, Turn off autoplay, the pill's buttons) take the focus only by Tab (`Qt.TabFocus`). A click on them, on the picture or on the card does not focus the card, so it does not show the bar. Tab still reaches them, holds the bar up while they have the focus, and Escape cancels.
   - **The card holds still:** its place counts the control bar as shown, whether it is or not: 24 px above the bar's height, or 16 px above the subtitle band with the bar's lift. The place is held from the moment the card appears until it is gone, so nothing under it (a bar showing or hiding, the subtitles rising) moves it. Hide UI places it 24 px above the bottom edge.
-  - **What changes for the place:** with the bars hidden, the card now waits where it sits when they are shown (a bar's height higher than before), so it never has to move when they come.
+  - **What changes for the place:** with the bars hidden, the card waits where it sits when they are shown, so it never has to move when they come (see 1b for the height).
+
+## 1b. The card sat too high (StickyGonzales, 1.2.0, 2026-11-03)
+- **Found by StickyGonzales on 1.2.0** (screenshots: a Punisher episode, the dual-audio files with subtitles on): the card sat about a third of the screen up, with the bars shown and hidden.
+- **Cause:** with a subtitle track on, the card reserved the subtitle band above the control bar: the bar's lift, sub-margin and two subtitle lines at the current size. At 1080p a line is about 88 px, so the card rose about 190 px above its usual place, also during the credits, which rarely have subtitles.
+- **Reference:** Netflix shows its "Next Episode" button low in the bottom right corner, by the controls, and does not move it for subtitles. Netflix's other post-play layout shrinks the credits into a corner, which Cone does not do.
+- **Fix:** the card always sits 24 px above the control bar's place, and 24 px from the right edge (or left of an open panel). This holds with or without subtitles, with the bars shown or hidden. Hide UI places it 24 px above the bottom edge. Its place is still held while it shows (section 1).
+- **Trade-off:** centered subtitles pass beside the card. Only a long subtitle line that reaches the right quarter of the picture can meet the card's left part, for the seconds the card shows.
+
+## 1c. "Sometimes a click on the card leads to the home page" (investigated)
+- **What leads to the home page:** the main window leaves the player for the library when the player stops (`MainInterface.qml`: a stopped `Player.playingState` sets `MainCtx.playerView = false`). This happens when nothing plays any more, for example after the last episode, after Stop, or when the next file fails to open.
+- **"Next episode" does not pass through stopped:** it calls the playlist's next, and the core sets the next file before it stops the current one (`vlc_player_SetCurrentMedia`: `next_media` first, so neither STOPPING nor STOPPED reaches the interface).
+- **Tried on build-linux #79 in the sandbox** with a generated 5-episode show: Next episode in the waiting phase, Next episode in the last second as the episode ends, the thumbnail during the countdown, a double click on Next episode. Each time the next episode played and the player stayed up. Not reproduced.
+- **Likely in 1.2.0:** the click itself showed the control bar and moved the card up (section 1). The press then landed on the button and the release beside it, so no click was made, or the click landed on what was under the pointer after the jump. The fix in section 1 removes that.
+- **If it happens again on this build:** turn on Settings > Advanced > "Save a log", reproduce, and send the log. Its "up next:" and player state lines show whether the next file failed to open or the queue ended.
 
 ## 2. Netflix-style countdown
 - **During the credits** (no countdown yet): unchanged. "Next episode" in the accent color, "Plays at the end of the episode".
@@ -54,6 +68,7 @@ Build: the build-windows run of this branch (or `gh workflow run build-windows.y
 4. **Countdown fill.** Seek to 0:15 before the end: in the last 10 s "Next episode" turns dim and fills from left to right with "Playing in 10 s ... 1 s"; S01E02 starts as it is full. Hover the button during the countdown: the filled part is brighter.
 5. **Narrow window.** Make the window under 900 px wide: the pill's Next episode button fills the same way, the heading counts "Up next in N s".
 6. **Keyboard.** During the card, press Tab until Next episode has the focus ring: the control bar shows and stays while it has the focus; Enter plays the next episode. Escape on a focused card button cancels.
-7. **Subtitles.** With a subtitle track on, the card sits above the subtitle band and does not move when the bars show or hide; the subtitles never go under it.
+7. **Subtitles and height.** With a subtitle track on (the dual-audio Punisher files), the card sits low in the bottom right, 24 px above the control bar's place, as without subtitles, and does not move when the bars show or hide.
+7b. **Click to the next episode, several times.** In the waiting phase, during the countdown and in the last second: the next episode plays every time, the player never goes to the home page.
 8. **Hide UI.** Ctrl+\: the card sits 24 px above the bottom edge and stays there.
 9. **Turn off autoplay.** Click it: autoplay turns off, no bar on the click.
