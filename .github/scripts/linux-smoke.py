@@ -254,27 +254,29 @@ def osd_message():
 
 
 def check_osd(s):
-    """a volume key shows Cone's own message (not VLC's text in the video), and it goes away"""
+    """a key shows Cone's own message (not VLC's text in the video), and it goes away. The speed
+    key: the smoke run's audio output (adummy) has no volume, so a volume key shows nothing"""
     def body():
         s.focus()
-        xdo('key', 'ctrl+Up')
+        xdo('key', 'bracketright')
         end = time.time() + 3
         text = None
         while time.time() < end and text is None:
             text = osd_message()
             time.sleep(0.1)
         if text is None:
-            raise CheckFailed('no on-screen message within 3 s after Ctrl+Up')
+            raise CheckFailed('no on-screen message within 3 s after ] (faster)')
         shot(f'{s.tag}-osd')
-        if 'Volume' not in text:
-            raise CheckFailed(f'the message says "{text}", expected the volume')
+        if 'Speed' not in text:
+            raise CheckFailed(f'the message says "{text}", expected the speed')
         end = time.time() + 6
         while time.time() < end and osd_message() is not None:
             time.sleep(0.25)
         if osd_message() is not None:
             raise CheckFailed('the message is still shown 6 s later')
+        xdo('key', 'equal')   # back to the normal speed for the next checks
         return f'"{text}", gone again'
-    return check(f'{s.tag}: a volume key shows Cone\'s on-screen message', body)
+    return check(f'{s.tag}: a key shows Cone\'s on-screen message', body)
 
 
 def check_subtitle(s):

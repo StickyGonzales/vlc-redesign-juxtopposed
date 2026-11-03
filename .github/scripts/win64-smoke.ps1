@@ -383,17 +383,19 @@ function Check-Subtitle($s) {
 }
 # Cone's on-screen message (RdOsdMessage.qml): a volume key shows it with "Volume ...", and it goes away
 function Check-Osd($s) {
-    Check "$($s.tag): a volume key shows Cone's on-screen message" {
+    # the speed key: the runner has no audio device, so a volume key shows nothing
+    Check "$($s.tag): a key shows Cone's on-screen message" {
         Focus-Window $s.hwnd
-        Keys @(0x11, 0x26)   # Ctrl+Up: volume up
+        Keys @(0xDD)   # ]: faster
         $e = Uia-Find $s.hwnd 'On-screen message' 3000
-        if (-not $e) { throw 'no on-screen message within 3 s after Ctrl+Up' }
+        if (-not $e) { throw 'no on-screen message within 3 s after ] (faster)' }
         Shot "$($s.tag)-osd"
         $text = $e.Current.HelpText
-        if ($text -notmatch 'Volume') { throw "the message says '$text', expected the volume" }
+        if ($text -notmatch 'Speed') { throw "the message says '$text', expected the speed" }
         $sw = [Diagnostics.Stopwatch]::StartNew()
         while ((Uia-Find $s.hwnd 'On-screen message' 0) -and $sw.Elapsed.TotalSeconds -lt 6) { Start-Sleep -Milliseconds 250 }
         if (Uia-Find $s.hwnd 'On-screen message' 0) { throw 'the message is still shown 6 s later' }
+        Keys @(0xBB)   # =: back to the normal speed for the next checks
         """$text"", gone again"
     }
 }

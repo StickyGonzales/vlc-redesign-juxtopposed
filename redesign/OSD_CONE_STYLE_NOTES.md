@@ -44,22 +44,30 @@ Branch `wip/osd-cone-style`, made from `origin/wip/next-test`. Draft pull reques
 - **Unit test** `test_rd_osd_parse`: 37 of 37, compiled and run locally against Qt 6.
 - `qmlcheck.py`: errors 1 (the known HighResolutionTimeWidget stub limit), crashed 0.
 - `buildlists.py`: 0 problems. `privacycheck.py`: 0 problems.
-- **New smoke check:** during playback, Ctrl+Up shows "On-screen message" with "Volume ..." and it goes away again.
+- **New smoke check:** during playback, ] (faster) shows "On-screen message" with "Speed ..." and it goes away again; = puts the speed back for the next checks. Not a volume key: the smoke runs have no working audio output (adummy on Linux, no audio device on the Windows runner), so the volume has no value and a volume key shows nothing (the first runs #81 and #179 failed on exactly that).
   - Linux: `check_osd`, through AT-SPI.
   - Windows: `Check-Osd`, through UI Automation, on the zip's H.264 and HEVC sessions.
 
 ## Runs
 | Run | Head | Result |
 |---|---|---|
-| build-linux | see the PR | |
-| build-windows | see the PR | |
+| build-linux #81 (run 41543413846) | fb67ed8ed8 | red: only the new check (Ctrl+Up shows nothing without an audio output); build and every other check green |
+| build-windows #179 (run 41543418682) | fb67ed8ed8 | red: the same check; build and every other check green |
+| build-linux (rerun) | the smoke check fix | running |
+| build-windows (rerun) | the smoke check fix | running |
+
+## Sandbox (build #81, Linux, Xvfb, a real audio output)
+![Cone's messages in the sandbox](fix-shots/osd_sandbox.jpg)
+- Volume, Muted, unmute, Speed, Subtitles, Aspect ratio and a jump each show their box at the top center, with the key cap; no VLC text, no slider.
+- No QML warning from RdOsdMessage.
+- Turning subtitles off (V past the last track) and B with only one audio track show no message: VLC 4's core sends a track message only when a track is selected (src/player/osd.c), the same as before.
 
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/osd-cone-style`), Cone (portable), a landscape episode.
 1. **Volume.** Ctrl+Up and Ctrl+Down: the box at the top center shows the cone filling and "N%", key cap "Ctrl + ↑". No white VLC text, no orange bar on the right in fullscreen. Above 100 % the cone turns orange to red.
 2. **Mute.** M: "Muted", empty cone, key cap "M". M again: the volume message.
 3. **Speed.** + / - / ]: "Speed 1.5×", no slider.
-4. **Tracks.** V and B: "Subtitles English", "Audio English"; Shift+V: "Subtitles Off".
+4. **Tracks.** V and B with several tracks: "Subtitles English", "Audio English". Turning subtitles off shows no message (as in VLC 4).
 5. **Seek.** Shift+→ in fullscreen: "00:12:40 / 00:42:10", no orange line at the bottom (#102).
 6. **Others.** A (aspect ratio), C (crop), Z (zoom), L (loop), R (shuffle), Shift+N (next chapter), Space (Paused / Playing): each shows its icon, name and value.
 7. **Place.** Windowed and fullscreen, with the bars shown and hidden: the box stays at the same place, never under the top bar; in fullscreen it is a little bigger. With the Up Next card on screen, both are readable.
