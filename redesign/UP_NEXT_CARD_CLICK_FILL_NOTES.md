@@ -25,7 +25,7 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 - **"Next episode" does not pass through stopped:** it calls the playlist's next, and the core sets the next file before it stops the current one (`vlc_player_SetCurrentMedia`: `next_media` first, so neither STOPPING nor STOPPED reaches the interface).
 - **Tried on build-linux #79 in the sandbox** with a generated 5-episode show: Next episode in the waiting phase, Next episode in the last second as the episode ends, the thumbnail during the countdown, a double click on Next episode. Each time the next episode played and the player stayed up. Not reproduced.
 - **Likely in 1.2.0:** the click itself showed the control bar and moved the card up (section 1). The press then landed on the button and the release beside it, so no click was made, or the click landed on what was under the pointer after the jump. The fix in section 1 removes that.
-- **If it happens again on this build:** turn on Settings > Advanced > "Save a log", reproduce, and send the log. Its "up next:" and player state lines show whether the next file failed to open or the queue ended.
+- **If it happens again on this build:** turn on Settings > General > "Save a log", reproduce, and send the log. Its "up next:" and player state lines show whether the next file failed to open or the queue ended.
 
 ## 2. Netflix-style countdown
 - **During the credits** (no countdown yet): unchanged. "Next episode" in the accent color, "Plays at the end of the episode".
