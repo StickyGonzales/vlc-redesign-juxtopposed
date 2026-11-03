@@ -1044,6 +1044,27 @@ void MainCtx::toggleToolbarMenu()
 
 void MainCtx::toggleInterfaceFullScreen()
 {
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the window is fullscreen while the
+     * interface or the video holds it (WindowStateHolder). The video's hold comes from F, a
+     * double click or the control bar's button, the interface's from the top bar's and the window
+     * frame's button, F11 and the menu; leaving one way kept the other's hold, so fullscreen
+     * sometimes could not be left. Cone's buttons leave both, and enter through the video's
+     * fullscreen while a video plays, so F, Escape and a double click leave it again */
+    PlayerController* const player = p_intf->p_mainPlayerController;
+    if (m_windowVisibility == QWindow::FullScreen)
+    {
+        if (player && player->isFullscreen())
+            player->setFullscreen(false);
+        emit setInterfaceFullScreen(false);
+        return;
+    }
+    if (player && m_hasEmbededVideo)
+    {
+        player->setFullscreen(true);
+        return;
+    }
+#endif
     emit setInterfaceFullScreen( m_windowVisibility != QWindow::FullScreen );
 }
 

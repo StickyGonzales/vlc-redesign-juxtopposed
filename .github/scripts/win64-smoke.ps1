@@ -381,6 +381,50 @@ function Check-Subtitle($s) {
         "selected: $(($sel | Select-Object -First 1).Trim())"
     }
 }
+# fullscreen is left whichever way it was entered (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): F then
+# the top bar's button, and the top bar's button then Escape
+function Click-Element($e) {
+    $r = $e.Current.BoundingRectangle
+    Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+}
+function Is-Fullscreen($h) {
+    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($h, [ref]$w) | Out-Null
+    return ($w.Left -le $b.Left -and $w.Top -le $b.Top -and $w.Right -ge $b.Right -and $w.Bottom -ge $b.Bottom)
+}
+function Click-TopBarFullscreen($s) {
+    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    # the top edge shows the top bar in fullscreen; in a window any move shows it
+    [RdSmoke]::SetCursorPos([int]($b.Left + $b.Width / 2), $b.Top + 4) | Out-Null; Start-Sleep -Milliseconds 150
+    [RdSmoke]::SetCursorPos([int]($b.Left + $b.Width / 2) + 6, $b.Top + 6) | Out-Null
+    $btn = Uia-Find $s.hwnd 'Fullscreen' 3000
+    if (-not $btn) { throw 'no "Fullscreen" button in the top bar' }
+    Click-Element $btn
+}
+function Check-FsExit($s) {
+    Check "$($s.tag): fullscreen is left whichever way it was entered" {
+        Focus-Window $s.hwnd
+        try {
+            Keys @(0x46)   # F: the video's fullscreen
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'F did not enter fullscreen' }
+            Click-TopBarFullscreen $s
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'entered with F, the top bar''s Fullscreen button did not leave fullscreen' }
+            Click-TopBarFullscreen $s
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'the top bar''s Fullscreen button did not enter fullscreen' }
+            Focus-Window $s.hwnd
+            Keys @(0x1B)   # Escape
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'entered with the top bar''s button, Escape did not leave fullscreen' }
+            'F then the button: windowed; the button then Escape: windowed'
+        } finally {
+            if (Is-Fullscreen $s.hwnd) { Keys @(0x7A); Start-Sleep -Seconds 1 }   # F11 back to the window
+            [RdSmoke]::SetCursorPos(500, 400) | Out-Null
+        }
+    }
+}
 # fullscreen: a bar shown by its edge zone stays while the pointer rests on its buttons (the top
 # bar hid under the pointer on Windows when a button's tooltip, a native window pushed onto the
 # button at the top of the screen, made the window report a leave)
@@ -670,6 +714,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
             Check-FsTopBar $s | Out-Null
+            Check-FsExit $s | Out-Null
             Check-MenuClick $s | Out-Null
             Check-FsMenuClick $s | Out-Null
             # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
