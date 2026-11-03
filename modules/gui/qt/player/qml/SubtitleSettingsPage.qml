@@ -144,6 +144,72 @@ RdSidePanelPage {
     Widgets.RdSettingsSection {
         title: qsTr("Synchronization")
 
+        // Cone build (redesign/SUBTITLE_AUTO_SYNC_NOTES.md): Auto-sync lines the selected track
+        // up with the speech in the audio, or with another subtitle track, and moves it with the
+        // delay below (and the speed, for a file timed for another frame rate)
+        Widgets.RdSettingRow {
+            text: qsTr("Sync to")
+            visible: Brand.isPublic && RdSubSync.references.length > 1
+
+            Widgets.RdDropdown {
+                implicitWidth: VLCStyle.dp(220)
+                model: RdSubSync.references
+                currentIndex: RdSubSync.reference
+                enabled: !RdSubSync.busy
+                Accessible.name: qsTr("Sync to")
+                onActivated: (index) => RdSubSync.reference = index
+            }
+        }
+
+        Widgets.RdSettingRow {
+            text: RdSubSync.busy ? qsTr("Analyzing %1 %").arg(Math.round(RdSubSync.progress * 100))
+                                 : qsTr("Automatic Sync")
+            visible: Brand.isPublic
+
+            Widgets.RdButton {
+                style: Widgets.RdButton.Style.Plain
+                text: RdSubSync.busy ? qsTr("Cancel") : qsTr("Auto-sync")
+                enabled: RdSubSync.busy || RdSubSync.available
+                Accessible.name: RdSubSync.busy ? qsTr("Cancel Auto-sync") : qsTr("Auto-sync")
+                Accessible.description: RdSubSync.available ? "" : qsTr("Select a subtitle track to sync")
+                onClicked: {
+                    if (RdSubSync.busy)
+                        RdSubSync.cancel()
+                    else
+                        RdSubSync.sync()
+                }
+            }
+        }
+
+        // the outcome: "Moved +2.4 s" with Undo, or why nothing moved (wrapped: a frame-rate
+        // fix or a reason is longer than a row's label)
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: VLCStyle.dp(4)
+            Layout.bottomMargin: VLCStyle.dp(6)
+            visible: Brand.isPublic && RdSubSync.resultText !== "" && !RdSubSync.busy
+            spacing: VLCStyle.dp(10)
+
+            Text {
+                Layout.fillWidth: true
+                text: RdSubSync.resultText
+                wrapMode: Text.WordWrap
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.rd_fontSize_label
+                color: RdSubSync.moved ? VLCStyle.palette.rdFgA2 : VLCStyle.palette.rdFgA3
+                Accessible.role: Accessible.StaticText
+                Accessible.name: text
+            }
+
+            Widgets.RdButton {
+                style: Widgets.RdButton.Style.Link
+                visible: RdSubSync.canUndo
+                text: qsTr("Undo")
+                Accessible.name: qsTr("Undo Auto-sync")
+                onClicked: RdSubSync.undo()
+            }
+        }
+
         Widgets.RdParamSlider {
             id: delaySlider
 
