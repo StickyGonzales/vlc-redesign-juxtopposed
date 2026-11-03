@@ -5,7 +5,7 @@ Branch `wip/subtitle-auto-sync`, made from `origin/wip/next-test`. Draft pull re
 ## 1. What it does
 - **Where:** Settings sidebar > Subtitles > Synchronization, above "Subtitle Track Delay".
   - **One row** (StickyGonzales: the first version, with a result line under the button, was too cluttered).
-    - **Label:** "Automatic Sync", then "Analyzing N %", then the outcome in a few words: "Moved +2.4 s", "Moved +0.1 s · fps fixed", "Already in sync", "No match found", or a short reason ("Needs text subtitles", "No audio to sync to").
+    - **Label:** "Automatic Sync", and "Analyzing N %" while it works. A move is shown by the sliders below, not by text (StickyGonzales): the delay slider (and Subtitle Speed, for a frame-rate fix) moves, and the label stays "Automatic Sync". Only when nothing moved does the label say why: "Already in sync", "No match found", or a short reason ("Needs text subtitles", "No audio to sync to").
     - **Button:** **Auto-sync**, **Cancel** while it analyses, and **Undo** after a move. Undo puts back the delay and the subtitle speed from before the first sync of this file.
     - The full sentence ("Moved -1.0 s, frame rate 25 to 23.976 fps", "No match found. The subtitles were not changed.") is the button's accessible description, and the automatic sync's notification.
     - The delay box and the Subtitle Speed slider below show the new values.

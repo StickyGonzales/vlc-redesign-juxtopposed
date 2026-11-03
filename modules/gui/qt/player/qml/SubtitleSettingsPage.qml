@@ -161,7 +161,7 @@ RdSidePanelPage {
             }
         }
 
-        // one row: the label tells the state ("Analyzing 40 %", "Moved +2.4 s", "No match found"),
+        // one row: the label tells the state ("Analyzing 40 %", "No match found"),
         // the button what can be done next (Auto-sync, Cancel, Undo). The full sentence is the
         // button's description for screen readers
         Widgets.RdSettingRow {
@@ -169,9 +169,11 @@ RdSidePanelPage {
 
             readonly property bool _undo: RdSubSync.canUndo && !RdSubSync.busy
 
+            // a move shows on the sliders below (StickyGonzales): the label only speaks when
+            // nothing moved ("No match found", a short reason)
             text: RdSubSync.busy ? qsTr("Analyzing %1 %").arg(Math.round(RdSubSync.progress * 100))
-                                 : RdSubSync.resultShort !== "" ? RdSubSync.resultShort
-                                                                : qsTr("Automatic Sync")
+                                 : !RdSubSync.moved && RdSubSync.resultShort !== "" ? RdSubSync.resultShort
+                                                                                    : qsTr("Automatic Sync")
             visible: Brand.isPublic
 
             Widgets.RdButton {
