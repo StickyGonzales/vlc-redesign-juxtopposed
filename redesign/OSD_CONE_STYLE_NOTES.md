@@ -55,7 +55,8 @@ Branch `wip/osd-cone-style`, made from `origin/wip/next-test`. Draft pull reques
 | build-windows #179 (run 41543418682) | fb67ed8ed8 | red: the same check; build and every other check green |
 | build-linux #84 (run 41556887044) | 7351bfc7ce | green, smoke included ("a key shows Cone's on-screen message" passes) |
 | build-windows #183 (run 41556882141) | 7351bfc7ce | red in the check only: the message was found, but its text read as empty (Qt reports the description as UIA's FullDescription, not HelpText); the check now reads FullDescription |
-| build-windows (rerun) | the FullDescription fix | running |
+| build-windows #185 (run 41561915405) | 1b795dcd59 | red in the check only: the text still read as empty through FullDescription and the inner names; Qt's UI Automation bridge does not expose this message's description. The Windows check now needs the message to show and go (and any text it exposes to be the speed); the text is checked on Linux |
+| build-windows (rerun) | the message shows and goes | running |
 
 ## Sandbox (build #81, Linux, Xvfb, a real audio output)
 ![Cone's messages in the sandbox](fix-shots/osd_sandbox.jpg)
