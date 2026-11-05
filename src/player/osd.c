@@ -147,8 +147,13 @@ vlc_player_osd_Position(vlc_player_t *player,
             vouts_osd_Message(vouts, count, "%s", time_text);
     }
 
+#ifndef VLC_BRAND_PUBLIC
+    /* redesign: Cone's control bar already shows the position; VLC's slider (an orange line over
+     * the bottom of the video, redesign/HIDE_OSD_SEEK_SLIDER_NOTES.md) stayed there after a seek
+     * in fullscreen once the bar had hidden. The "time / length" message above still shows */
     if (vlc_player_vout_IsFullscreen(player))
         vouts_osd_Slider(vouts, count, position * 100, OSD_HOR_SLIDER);
+#endif
     vlc_player_osd_ReleaseAll(player, vouts, count);
 }
 
