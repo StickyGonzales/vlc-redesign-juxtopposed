@@ -686,6 +686,53 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     }
 }
 
+# Explorer's Open with / a double-click while Cone plays (redesign/FIX_OPEN_IN_RUNNING_WINDOW_NOTES.md):
+# a second start with --started-from-file hands its file to the running window and exits; the
+# running window must play it at once (it was only added to the end of the queue). The first Cone
+# here is started without --started-from-file, like one opened from the Start menu
+function Run-OpenInRunning([string]$exe) {
+    $tag = 'open-in-running'
+    $first = Join-Path $Media 'test-h264.mp4'
+    $second = Join-Path $Media 'test-hevc.mp4'
+    $s = Start-Cone $exe $first (Join-Path $Media 'test.srt') $tag
+    try {
+        if (-not (Check-Window $s)) { return }
+        Check "$tag`: a second start with a file plays it in the running window" {
+            Wait-Rc 20
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ((Rc 'status') -notmatch 'test-h264') {
+                if ($sw.Elapsed.TotalSeconds -gt 15) { throw "the first file does not play: '$((Rc 'status').Trim())'" }
+                Start-Sleep -Milliseconds 500
+            }
+            Log "start (second) $exe --started-from-file $second"
+            $p2 = Start-Process -FilePath $exe -ArgumentList @('--started-from-file', "`"$second`"") -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+            if (-not $p2.WaitForExit(15000)) {
+                try { $p2.Kill() } catch {}
+                throw 'the second start did not exit within 15 s (no hand-over to the running window)'
+            }
+            $sw.Restart()
+            $status = ''
+            while ($sw.Elapsed.TotalSeconds -lt 8) {
+                $status = Rc 'status'
+                if ($status -match 'test-hevc' -and $status -match 'play state: 3') { break }
+                Start-Sleep -Milliseconds 500
+            }
+            if ($s.proc.HasExited) { throw 'the running Cone exited' }
+            if ($status -notmatch 'test-hevc') {
+                $queue = (Rc 'playlist') -split "`n" | Where-Object { $_ -match 'test-' } | ForEach-Object { $_.Trim() }
+                throw "the running window still plays the first file after 8 s (queue: $($queue -join ' / '))"
+            }
+            if ($status -notmatch 'play state: 3') { throw "the second file is current but not playing: '$($status.Trim())'" }
+            Shot "$tag-second"
+            "the second start exited, the running window plays test-hevc.mp4 after $([math]::Round($sw.Elapsed.TotalSeconds, 1)) s"
+        } | Out-Null
+    } catch {
+        Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
 # ---------------------------------------------------------------- runs
 
 Log "screen $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds), Windows $([Environment]::OSVersion.Version)"
@@ -709,6 +756,7 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+    Run-OpenInRunning $zipExe.FullName
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall

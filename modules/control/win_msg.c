@@ -72,7 +72,16 @@ static void add_to_playlist(intf_thread_t *intf, const char *uri,
     vlc_playlist_Lock(playlist);
     vlc_playlist_AppendOne(playlist, media);
     if (play_now)
+    {
+#ifdef VLC_BRAND_PUBLIC
+        /* redesign (redesign/FIX_OPEN_IN_RUNNING_WINDOW_NOTES.md): Start alone does nothing while
+         * something plays, so a file opened from Explorer only went to the end of the queue. The
+         * new item becomes the current one: it plays at once (the one it replaces is stopped, and
+         * its resume position saved, as on Next) */
+        vlc_playlist_GoTo(playlist, vlc_playlist_Count(playlist) - 1);
+#endif
         vlc_playlist_Start(playlist);
+    }
     vlc_playlist_Unlock(playlist);
     input_item_Release(media);
 }
@@ -135,6 +144,11 @@ static LRESULT CALLBACK WMCOPYWNDPROC(HWND hwnd, UINT uMsg,
             }
 
             free( ppsz_argv );
+#ifdef VLC_BRAND_PUBLIC
+            /* the running window comes to the front with the file (the second start allowed it,
+             * src/win32/specific.c); Qt's MainCtx listens to intf-show */
+            var_TriggerCallback( vlc_object_instance(intf), "intf-show" );
+#endif
         }
     }
 
