@@ -34,10 +34,15 @@ public:
         Scale,
         MinimalView,
         // redesign: Ctrl+B and the Bookmarks tab "+" (P7-04)
-        Bookmark
+        Bookmark,
+        // redesign (Cone build): Auto-sync of a downloaded subtitle file (SUBTITLE_AUTO_SYNC_NOTES.md)
+        SubtitleSync
     };
 
     Q_ENUM(ID)
+
+    // a notification from the interface itself
+    Q_INVOKABLE void notify(ID id, const QString& text) { emit showNotification(id, text); }
 
 signals:
     void showNotification(ID id, const QString &text);

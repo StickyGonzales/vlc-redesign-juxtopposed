@@ -1831,6 +1831,16 @@ FocusScope {
         }
     }
 
+    // Cone build: the outcome of an automatic subtitle sync (a download from OpenSubtitles), seen
+    // without the sidebar (SUBTITLE_AUTO_SYNC_NOTES.md)
+    Connections {
+        target: RdSubSync
+
+        function onNotice(text) {
+            UINotifier.notify(UINotifier.SubtitleSync, text)
+        }
+    }
+
     Widgets.FloatingNotification {
         id: notif
 
