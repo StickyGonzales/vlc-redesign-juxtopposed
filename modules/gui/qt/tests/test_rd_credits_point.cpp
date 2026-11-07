@@ -94,64 +94,245 @@ void testChapterNames()
     check(!isCreditsChapterName(QStringLiteral("Post Credits")), "post credits");
 }
 
+Inputs inputs(qint64 learned, qint64 setting, qint64 dialogue)
+{
+    Inputs in;
+    in.learnedLeadMs = learned;
+    in.settingLeadMs = setting;
+    in.dialogueEndMs = dialogue;
+    return in;
+}
+
 void testDecideChapter()
 {
     const qint64 L = 56 * M;
-    // a credits chapter in the window: exact, whatever else is known
-    Point p = decide(L, { { QStringLiteral("Chapter 1"), 0 }, { QStringLiteral("End Credits"), 54 * M } },
-                     3 * M, 60 * S, 52 * M);
+    // a credits chapter in the window wins over the audio match, subtitles, learned and setting
+    Inputs in = inputs(3 * M, 60 * S, 52 * M);
+    in.chapters = { { QStringLiteral("Chapter 1"), 0 }, { QStringLiteral("End Credits"), 54 * M } };
+    in.audioMs = 53 * M;
+    Point p = decide(L, in);
     checkEqual(p.timeMs, 54 * M, "credits chapter point");
     check(p.source == Source::Chapter, "credits chapter source");
-    check(!p.tuned, "a chapter is not tuned");
 
     // "Ending" in the middle of the episode: ignored, the setting decides
-    p = decide(L, { { QStringLiteral("Ending"), 20 * M } }, -1, 60 * S, -1);
+    in = inputs(-1, 60 * S, -1);
+    in.chapters = { { QStringLiteral("Ending"), 20 * M } };
+    p = decide(L, in);
     checkEqual(p.timeMs, 55 * M, "a mid-episode Ending chapter is ignored");
     check(p.source == Source::Setting, "setting after an ignored chapter");
 
     // a credits chapter just before the window: ignored as well
-    p = decide(L, { { QStringLiteral("Credits"), 47 * M } }, -1, 60 * S, -1);
-    checkEqual(p.timeMs, 55 * M, "a credits chapter before the window is ignored");
+    in.chapters = { { QStringLiteral("Credits"), 47 * M } };
+    checkEqual(decide(L, in).timeMs, 55 * M, "a credits chapter before the window is ignored");
+}
+
+void testDecideFixed()
+{
+    const qint64 L = 56 * M;
+    // Fixed wins over everything, the chapter included
+    Inputs in = inputs(3 * M, 60 * S, 52 * M);
+    in.chapters = { { QStringLiteral("End Credits"), 54 * M } };
+    in.audioMs = 53 * M;
+    in.blackMs = 52 * M;
+    in.fixedLeadMs = 90 * S;
+    Point p = decide(L, in);
+    checkEqual(p.timeMs, L - 90 * S, "fixed point");
+    check(p.source == Source::Fixed, "fixed source");
+    // held inside the window: never mid-episode (a 10 min episode has a 90 s window)
+    in.fixedLeadMs = 5 * M;
+    checkEqual(decide(10 * M, in).timeMs, 10 * M - 90 * S, "fixed held in the window");
+}
+
+void testDecideAudio()
+{
+    const qint64 L = 56 * M;
+    Inputs in = inputs(3 * M, 60 * S, 52 * M);
+    in.blackMs = 52 * M;
+    in.audioMs = 53 * M + 10 * S;
+    Point p = decide(L, in);
+    checkEqual(p.timeMs, 53 * M + 10 * S, "audio match point");
+    check(p.source == Source::Audio, "audio match wins over subtitles, black frames, learned");
+    // an audio match before the window is no point
+    in.audioMs = 40 * M;
+    check(decide(L, in).source != Source::Audio, "audio match before the window ignored");
+}
+
+void testDecideCombined()
+{
+    const qint64 L = 56 * M;
+    // subtitles and black frames agree within 90 s: the subtitles' point
+    Inputs in = inputs(-1, 60 * S, 53 * M);
+    in.blackMs = 53 * M + 40 * S;
+    Point p = decide(L, in);
+    checkEqual(p.timeMs, 53 * M, "subtitles and black frames agree");
+    check(p.source == Source::Agreement, "agreement source");
+
+    // black frames and the learned point agree: the black frames' point
+    in = inputs(2 * M + 30 * S, 60 * S, -1);
+    in.blackMs = 54 * M;
+    p = decide(L, in);
+    checkEqual(p.timeMs, 54 * M, "black frames and learned agree");
+
+    // a dark scene 4 min before the credits: black frames disagree with the learned point,
+    // which is used
+    in = inputs(2 * M, 60 * S, -1);
+    in.blackMs = 50 * M;
+    p = decide(L, in);
+    checkEqual(p.timeMs, 54 * M, "a dark scene does not fool black frames: the learned point");
+    check(p.source == Source::Learned, "learned when they disagree");
+
+    // black frames alone are never used (a dark scene would fool them)
+    in = inputs(-1, 60 * S, -1);
+    in.blackMs = 50 * M;
+    p = decide(L, in);
+    check(p.source == Source::Setting, "black frames alone are not used");
+
+    // the subtitles alone are used
+    in = inputs(-1, 60 * S, 52 * M + 30 * S);
+    p = decide(L, in);
+    checkEqual(p.timeMs, 52 * M + 30 * S, "subtitles alone");
+    check(p.source == Source::Subtitles, "subtitles source");
+
+    // subtitles and the learned point disagree: the learned point
+    in = inputs(2 * M, 60 * S, 49 * M);
+    checkEqual(decide(L, in).timeMs, 54 * M, "learned when subtitles disagree");
 }
 
 void testDecideLearned()
 {
     const qint64 L = 56 * M;
-    Point p = decide(L, {}, 2 * M, 60 * S, -1);
+    Point p = decide(L, inputs(2 * M, 60 * S, -1));
     checkEqual(p.timeMs, 54 * M, "learned 2 min before the end");
     check(p.source == Source::Learned, "learned source");
 
     // learned on a longer episode, outside this one's window (10 min, window 90 s): ignored
-    p = decide(10 * M, {}, 2 * M, 60 * S, -1);
+    p = decide(10 * M, inputs(2 * M, 60 * S, -1));
     checkEqual(p.timeMs, 9 * M, "a learned lead past the window falls back to the setting");
     check(p.source == Source::Setting, "setting source");
 }
 
 void testDecideSetting()
 {
-    checkEqual(decide(56 * M, {}, -1, 30 * S, -1).timeMs, 56 * M - 30 * S, "last 30 s");
-    checkEqual(decide(56 * M, {}, -1, 2 * M, -1).timeMs, 54 * M, "last 2 min");
+    checkEqual(decide(56 * M, inputs(-1, 30 * S, -1)).timeMs, 56 * M - 30 * S, "last 30 s");
+    checkEqual(decide(56 * M, inputs(-1, 2 * M, -1)).timeMs, 54 * M, "last 2 min");
     // a short episode: the setting is held inside the window (10 min: 90 s)
-    checkEqual(decide(10 * M, {}, -1, 2 * M, -1).timeMs, 10 * M - 90 * S, "2 min held in a 90 s window");
-    check(decide(0, {}, -1, 60 * S, -1).source == Source::None, "no length, no point");
+    checkEqual(decide(10 * M, inputs(-1, 2 * M, -1)).timeMs, 10 * M - 90 * S, "2 min held in a 90 s window");
+    check(decide(0, inputs(-1, 60 * S, -1)).source == Source::None, "no length, no point");
+    check(decide(56 * M, inputs(-1, -1, -1)).source == Source::None, "nothing known, no point");
 }
 
-void testDecideTune()
+void testLearning()
 {
-    const qint64 L = 56 * M;
-    // the dialogue ends 2 min before the end: the 1 min setting moves there
-    Point p = decide(L, {}, -1, 60 * S, 54 * M);
-    checkEqual(p.timeMs, 54 * M, "tuned to the end of the dialogue");
-    check(p.tuned && p.source == Source::Setting, "tuned setting");
-    // too far from the point (5 min): not used
-    p = decide(L, {}, -1, 60 * S, 50 * M);
-    checkEqual(p.timeMs, 55 * M, "a dialogue end far from the point is not used");
-    check(!p.tuned, "not tuned");
-    // before the window: never
-    p = decide(L, {}, -1, 8 * M, 47 * M);
-    checkEqual(p.timeMs, 48 * M, "a dialogue end before the window is not used");
-    // subtitles alone are never a reason: no learned point, no setting
-    check(decide(L, {}, -1, -1, 54 * M).source == Source::None, "subtitles alone give no point");
+    const qint64 L = 44 * M;
+    // the drift: five episodes where the user clicks the card's Next episode button 20 s after
+    // it showed; the point stays where it was
+    qint64 saved = 90 * S;
+    for (int episode = 0; episode < 5; ++episode)
+    {
+        Move move;
+        move.lengthMs = L;
+        move.timeMs = L - saved + 20 * S;
+        move.fromCard = true;
+        move.cardShown = true;
+        move.countdownSec = 10;
+        move.savedLeadMs = saved;
+        const qint64 learned = learnedLead(move);
+        if (learned > 0)
+            saved = learned;
+    }
+    checkEqual(saved, 90 * S, "five card clicks keep the point");
+
+    // Next pressed before the card showed, earlier than the saved point: moves it earlier
+    Move early;
+    early.lengthMs = L;
+    early.timeMs = L - 150 * S;
+    early.countdownSec = 10;
+    early.savedLeadMs = 90 * S;
+    checkEqual(learnedLead(early), 150 * S, "an early Next moves the point earlier");
+    // ... but never later
+    early.timeMs = L - 60 * S;
+    checkEqual(learnedLead(early), -1, "a Next before the card, later than the point: kept");
+    // with nothing saved, the first Next inside the window is learned
+    early.savedLeadMs = -1;
+    checkEqual(learnedLead(early), 60 * S, "first point learned");
+
+    // Cancel on the card, then Next later: the point moves later, to that press
+    Move cancel;
+    cancel.lengthMs = L;
+    cancel.timeMs = L - 40 * S;
+    cancel.cardShown = true;
+    cancel.cancelled = true;
+    cancel.countdownSec = 10;
+    cancel.savedLeadMs = 90 * S;
+    checkEqual(learnedLead(cancel), 40 * S, "Cancel then a later Next moves the point later");
+
+    // the card showed, no Cancel, the user pressed the Next key: kept
+    Move key = cancel;
+    key.cancelled = false;
+    checkEqual(learnedLead(key), -1, "Next key while the card shows: kept");
+
+    // the countdown and the natural end are never learned
+    Move end = early;
+    end.savedLeadMs = 90 * S;
+    end.timeMs = L - 8 * S;
+    checkEqual(learnedLead(end), -1, "the countdown is not learned");
+    end.timeMs = L - 1 * S;
+    checkEqual(learnedLead(end), -1, "the natural end is not learned");
+    // outside the window (mid-episode): never
+    end.timeMs = 20 * M;
+    checkEqual(learnedLead(end), -1, "mid-episode Next is not learned");
+}
+
+void testScanPlan()
+{
+    // no music kept yet: full scan
+    check(planScan(false, 44 * M, 44 * M) == ScanKind::Full, "first episodes: full scan");
+    // music kept, length within 5 min of the usual one (a few minutes shorter or longer)
+    check(planScan(true, 44 * M, 44 * M) == ScanKind::Quick, "same length: quick check");
+    check(planScan(true, 44 * M, 41 * M) == ScanKind::Quick, "3 min shorter: quick check");
+    check(planScan(true, 44 * M, 48 * M + 30 * S) == ScanKind::Quick, "4.5 min longer: quick check");
+    // more than 5 min off: a finale or a special, full scan at once
+    check(planScan(true, 44 * M, 52 * M) == ScanKind::Full, "8 min longer: full scan");
+    check(planScan(true, 44 * M, 38 * M) == ScanKind::Full, "6 min shorter: full scan");
+}
+
+void testScannable()
+{
+    check(isScannableVideo(QStringLiteral("Show.S01E01.mkv")), "mkv");
+    check(isScannableVideo(QStringLiteral("episode.MP4")), "MP4");
+    check(isScannableVideo(QStringLiteral("a.ts")) && isScannableVideo(QStringLiteral("a.webm")), "ts, webm");
+    check(!isScannableVideo(QStringLiteral("song.mp3")), "mp3 is never scanned");
+    check(!isScannableVideo(QStringLiteral("song.flac")) && !isScannableVideo(QStringLiteral("a.m4a")), "audio files");
+    check(!isScannableVideo(QStringLiteral("cover.jpg")) && !isScannableVideo(QStringLiteral("noext")), "others");
+}
+
+QVector<FrameSample> frames(qint64 from, qint64 to, float dark)
+{
+    QVector<FrameSample> samples;
+    for (qint64 t = from; t < to; t += 250)
+        samples.append({ t, dark });
+    return samples;
+}
+
+void testBlackFrames()
+{
+    // picture to 52:00, then black credits with white text (80 % dark... above the share) to the end
+    QVector<FrameSample> samples = frames(48 * M, 52 * M, 0.2f) + frames(52 * M, 56 * M, 0.92f);
+    checkEqual(blackStart(samples), 52 * M, "black credits start");
+    // a 20 s dark scene at 49:00 is too short: the credits are found
+    samples = frames(48 * M, 49 * M, 0.2f) + frames(49 * M, 49 * M + 20 * S, 0.95f)
+              + frames(49 * M + 20 * S, 52 * M, 0.2f) + frames(52 * M, 56 * M, 0.92f);
+    checkEqual(blackStart(samples), 52 * M, "a short dark scene is skipped");
+    // a long dark scene is found by black frames (decide() never uses them alone for that)
+    samples = frames(48 * M, 49 * M, 0.2f) + frames(49 * M, 50 * M, 0.95f) + frames(50 * M, 56 * M, 0.2f);
+    checkEqual(blackStart(samples), 49 * M, "a long dark scene looks like black frames");
+    // no black: none
+    checkEqual(blackStart(frames(48 * M, 56 * M, 0.3f)), -1, "no black frames");
+    // a few bright frames inside the black (a logo) do not break it
+    samples = frames(52 * M, 52 * M + 20 * S, 0.95f) + frames(52 * M + 20 * S, 52 * M + 21 * S, 0.1f)
+              + frames(52 * M + 21 * S, 56 * M, 0.95f);
+    samples = frames(48 * M, 52 * M, 0.2f) + samples;
+    checkEqual(blackStart(samples), 52 * M, "a logo in the black");
 }
 
 void testSubtitleLines()
@@ -247,7 +428,13 @@ int main()
     testDecideChapter();
     testDecideLearned();
     testDecideSetting();
-    testDecideTune();
+    testDecideFixed();
+    testDecideAudio();
+    testDecideCombined();
+    testLearning();
+    testScanPlan();
+    testScannable();
+    testBlackFrames();
     testSubtitleLines();
     testDialogueEnd();
     testParsers();

@@ -270,65 +270,145 @@ QString assPacketText(const QString& packet)
     return packet;
 }
 
-Point decide(qint64 lengthMs, const QVector<Chapter>& chapters, qint64 learnedLeadMs,
-             qint64 settingLeadMs, qint64 dialogueEndMs)
+Point decide(qint64 lengthMs, const Inputs& in)
 {
     Point point;
     if (lengthMs <= 0)
         return point;
     const qint64 start = windowStart(lengthMs);
     const qint64 window = windowLength(lengthMs);
+    const auto inside = [start, lengthMs](qint64 t) { return t >= start && t < lengthMs; };
+    const auto set = [&point](qint64 t, Source source) {
+        point.timeMs = t;
+        point.source = source;
+        return point;
+    };
 
-    // 1. a credits chapter that starts inside the window: exact
+    // 1. the show's Fixed point, held inside the window (never mid-episode)
+    if (in.fixedLeadMs > 0)
+        return set(lengthMs - std::min(in.fixedLeadMs, window), Source::Fixed);
+
+    // 2. a credits chapter that starts inside the window: exact
     qint64 chapterStart = -1;
-    for (const Chapter& chapter : chapters)
+    for (const Chapter& chapter : in.chapters)
     {
-        if (chapter.startMs >= start && chapter.startMs < lengthMs && isCreditsChapterName(chapter.name)
+        if (inside(chapter.startMs) && isCreditsChapterName(chapter.name)
                 && (chapterStart < 0 || chapter.startMs < chapterStart))
             chapterStart = chapter.startMs;
     }
     if (chapterStart >= 0)
-    {
-        point.timeMs = chapterStart;
-        point.source = Source::Chapter;
-        return point;
-    }
+        return set(chapterStart, Source::Chapter);
 
-    // 2. the point learned for the show, when it falls inside this episode's window; 3. the
-    // setting, held inside the window
-    if (learnedLeadMs > 0 && learnedLeadMs <= window)
-    {
-        point.timeMs = lengthMs - learnedLeadMs;
-        point.source = Source::Learned;
-    }
-    else if (settingLeadMs > 0)
-    {
-        point.timeMs = lengthMs - std::min(settingLeadMs, window);
-        point.source = Source::Setting;
-    }
-    else
-    {
-        return point;
-    }
+    // 3. the credits music found by the audio match
+    if (inside(in.audioMs))
+        return set(in.audioMs, Source::Audio);
 
-    // the subtitles fine-tune it, never more than kSubtitleTuneMs and never out of the window
-    if (dialogueEndMs >= start && dialogueEndMs < lengthMs
-            && std::llabs(dialogueEndMs - point.timeMs) <= kSubtitleTuneMs)
-    {
-        point.tuned = dialogueEndMs != point.timeMs;
-        point.timeMs = dialogueEndMs;
-    }
+    // 4. subtitles, black frames and the learned point
+    const qint64 subs = inside(in.dialogueEndMs) ? in.dialogueEndMs : -1;
+    const qint64 black = inside(in.blackMs) ? in.blackMs : -1;
+    const qint64 learned = in.learnedLeadMs > 0 && in.learnedLeadMs <= window ? lengthMs - in.learnedLeadMs : -1;
+    const auto agree = [](qint64 a, qint64 b) { return a >= 0 && b >= 0 && std::llabs(a - b) <= kAgreeMs; };
+    // the most precise member of an agreeing pair: the subtitles, then the black frames
+    if (agree(subs, black) || agree(subs, learned))
+        return set(subs, Source::Agreement);
+    if (agree(black, learned))
+        return set(black, Source::Agreement);
+    if (learned >= 0)
+        return set(learned, Source::Learned);
+    if (subs >= 0)
+        return set(subs, Source::Subtitles);
+
+    // 5. the setting, held inside the window
+    if (in.settingLeadMs > 0)
+        return set(lengthMs - std::min(in.settingLeadMs, window), Source::Setting);
     return point;
+}
+
+qint64 learnedLead(const Move& move)
+{
+    if (!inWindow(move.timeMs, move.lengthMs))
+        return -1;
+    const qint64 lead = move.lengthMs - move.timeMs;
+    if (lead <= qint64(move.countdownSec) * 1000 + kNaturalEndMs)
+        return -1;
+    if (move.fromCard)
+        return -1;
+    if (move.cancelled)
+        return lead;
+    if (!move.cardShown)
+        return move.savedLeadMs <= 0 || lead > move.savedLeadMs ? lead : -1;
+    // the card was showing and the user moved on some other way (the Next key): it says nothing
+    // the card did not already know
+    return -1;
+}
+
+bool isScannableVideo(const QString& fileName)
+{
+    static const QStringList extensions {
+        QStringLiteral("mkv"), QStringLiteral("mp4"), QStringLiteral("m4v"), QStringLiteral("avi"),
+        QStringLiteral("mov"), QStringLiteral("webm"), QStringLiteral("ts"), QStringLiteral("m2ts"),
+        QStringLiteral("mts"), QStringLiteral("wmv"), QStringLiteral("mpg"), QStringLiteral("mpeg"),
+        QStringLiteral("ogv"), QStringLiteral("flv"), QStringLiteral("3gp"), QStringLiteral("vob"),
+        QStringLiteral("divx"), QStringLiteral("xvid"), QStringLiteral("asf")
+    };
+    const int dot = fileName.lastIndexOf(QLatin1Char('.'));
+    return dot >= 0 && extensions.contains(fileName.mid(dot + 1).toLower());
+}
+
+ScanKind planScan(bool showHasMusic, qint64 usualLengthMs, qint64 lengthMs)
+{
+    if (showHasMusic && usualLengthMs > 0 && lengthMs > 0
+            && std::llabs(lengthMs - usualLengthMs) <= kUsualLengthSlackMs)
+        return ScanKind::Quick;
+    return ScanKind::Full;
+}
+
+qint64 blackStart(const QVector<FrameSample>& samples)
+{
+    if (samples.isEmpty())
+        return -1;
+    const qint64 last = samples.last().timeMs;
+    // two pointers over the stretch [samples[i], samples[i] + kBlackRunMs]
+    qsizetype j = 0;
+    int blackInRun = 0;
+    for (qsizetype i = 0; i < samples.size(); ++i)
+    {
+        if (j < i)
+        {
+            j = i;
+            blackInRun = 0;
+        }
+        while (j < samples.size() && samples[j].timeMs < samples[i].timeMs + kBlackRunMs)
+        {
+            blackInRun += samples[j].darkShare >= kBlackFrameShare ? 1 : 0;
+            ++j;
+        }
+        const qint64 span = (j < samples.size() ? samples[i].timeMs + kBlackRunMs : last) - samples[i].timeMs;
+        const qsizetype count = j - i;
+        if (samples[i].darkShare >= kBlackFrameShare && count > 0 && span >= kBlackMinMs
+                && double(blackInRun) / double(count) >= kBlackRunShare)
+            return samples[i].timeMs;
+        blackInRun -= samples[i].darkShare >= kBlackFrameShare ? 1 : 0;
+    }
+    return -1;
 }
 
 QString sourceName(Source source)
 {
     switch (source)
     {
+    case Source::Fixed:
+        return QStringLiteral("fixed");
     case Source::Chapter:
         return QStringLiteral("chapter");
+    case Source::Audio:
+        return QStringLiteral("audio match");
+    case Source::Agreement:
+        return QStringLiteral("subtitles, black frames and the learned point");
     case Source::Learned:
         return QStringLiteral("learned");
+    case Source::Subtitles:
+        return QStringLiteral("subtitles");
     case Source::Setting:
         return QStringLiteral("setting");
     case Source::None:
