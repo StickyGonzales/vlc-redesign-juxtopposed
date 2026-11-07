@@ -85,9 +85,9 @@ FocusScope {
     readonly property string _heading: _still ? qsTr("Still watching?")
                                               : (_season ? qsTr("Up next · Season %1").arg(shownState.nextSeason)
                                                          : qsTr("Up next"))
-    // a weak name pattern (01 02, "Part 2") never plays by itself: the card waits for a click
-    readonly property string _waitingText: shownState.autoplays ? qsTr("Plays at the end of the episode")
-                                                              : qsTr("Plays when you choose")
+    // a weak name pattern (01 02, "Part 2") never plays by itself: the card waits for a click; an episode
+    // that plays by itself needs no line while it waits (StickyGonzales, 2026-11-08)
+    readonly property string _waitingText: shownState.autoplays ? "" : qsTr("Plays when you choose")
     readonly property string _countdownText: _waiting ? _waitingText
                                                       : qsTr("Playing in %1 s").arg(shownState.secondsLeft)
     readonly property string _playText: _still ? qsTr("Keep watching")
@@ -111,8 +111,10 @@ FocusScope {
 
     Accessible.role: Accessible.Dialog
     Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(shownState.cardLine)
-                            : _waiting ? qsTr("Up next: %1, %2. %3.")
-                                             .arg(shownState.showName).arg(shownState.cardLine).arg(_waitingText)
+                            : _waiting ? (_waitingText ? qsTr("Up next: %1, %2. %3.")
+                                                             .arg(shownState.showName).arg(shownState.cardLine).arg(_waitingText)
+                                                       : qsTr("Up next: %1, %2.")
+                                                             .arg(shownState.showName).arg(shownState.cardLine))
                                        : qsTr("Up next: %1, %2. Playing in %3 seconds.")
                                              .arg(shownState.showName).arg(shownState.cardLine).arg(shownState.secondsLeft)
 
