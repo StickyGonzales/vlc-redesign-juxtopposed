@@ -508,6 +508,8 @@ qt_plugin_sources = files(
     'player/rd_episode_parser.hpp',
     'player/rd_credits_point.cpp',
     'player/rd_credits_point.hpp',
+    'player/rd_show_tracks.cpp',
+    'player/rd_show_tracks.hpp',
     'player/rd_credits_subtitles.cpp',
     'player/rd_credits_subtitles.hpp',
     'player/rd_up_next.cpp',
@@ -1697,6 +1699,20 @@ if qt6_dep.found()
                 'tests/test_rd_credits_point.cpp',
                 'player/rd_credits_point.cpp',
                 'player/rd_credits_point.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone extra (Up Next): a show's tracks by language, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_show_tracks',
+            'sources': files(
+                'tests/test_rd_show_tracks.cpp',
+                'player/rd_show_tracks.cpp',
+                'player/rd_show_tracks.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,

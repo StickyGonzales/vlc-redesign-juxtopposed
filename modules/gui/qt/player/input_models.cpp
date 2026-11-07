@@ -149,6 +149,10 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
         return track.m_external;
     else if (role == ExternalUriRole)
         return track.m_external ? QString::fromUtf8(externalUri(track.m_id.get())) : QString();
+    else if (role == LanguageRole)
+        return track.m_language;
+    else if (role == TitleRole)
+        return track.m_title;
     return QVariant{};
 }
 
@@ -291,6 +295,8 @@ QHash<int, QByteArray> TrackListModel::roleNames() const
     roleNames[Qt::CheckStateRole] = QByteArrayLiteral("checked");
     roleNames[ExternalRole] = QByteArrayLiteral("external");
     roleNames[ExternalUriRole] = QByteArrayLiteral("externalUri");
+    roleNames[LanguageRole] = QByteArrayLiteral("language");
+    roleNames[TitleRole] = QByteArrayLiteral("title");
     return roleNames;
 }
 
