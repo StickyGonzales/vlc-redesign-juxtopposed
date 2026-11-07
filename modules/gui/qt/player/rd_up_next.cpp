@@ -459,6 +459,9 @@ void RdUpNext::startDetection()
 
     if (m_mode == ModeOff || m_path.isEmpty())
     {
+        // nothing runs while Up Next is off: a scan in progress stops, the queue goes
+        if (m_mode == ModeOff)
+            m_scans->stop();
         evaluate();
         return;
     }
@@ -505,6 +508,9 @@ void RdUpNext::requestCreditsScans()
     // local video files of a show folder with enough videos only: never a movie, a small folder,
     // an audio file or a stream (m_path is empty for anything but a local file)
     if (!m_show.isShow || m_path.isEmpty() || !rdcredits::isScannableVideo(m_path))
+        return;
+    // a show the user said No to gets no card, so nothing is read for it
+    if (!showEnabled())
         return;
     int videos = 0;
     for (const rdepisode::Episode& episode : m_show.episodes)
@@ -1028,6 +1034,8 @@ void RdUpNext::setShowEnabled(bool enabled)
     if (enabled)
         m_cancelled = false;
     setAnswer(enabled);
+    if (enabled)
+        requestCreditsScans();
     evaluate();
 }
 
@@ -1036,7 +1044,7 @@ void RdUpNext::forgetAll()
     // before the file is read: its answers are dropped when they arrive
     if (!m_storeLoaded)
         m_forgotten = true;
-    if (m_answers.isEmpty() && m_learned.isEmpty() && m_scans->fixedCount() == 0 && m_storeLoaded)
+    if (m_answers.isEmpty() && m_learned.isEmpty() && !m_scans->hasData() && m_storeLoaded)
         return;
     m_answers.clear();
     m_learned.clear();
@@ -1128,7 +1136,9 @@ void RdUpNext::resetCredits()
 
 void RdUpNext::setSeekBarBusy(bool busy)
 {
-    m_scans->setPaused(busy);
+    // each seek bar (the player's, the mini player's) says when it starts and stops
+    m_seekBarsBusy = std::max(0, m_seekBarsBusy + (busy ? 1 : -1));
+    m_scans->setPaused(m_seekBarsBusy > 0);
 }
 
 // ------------------------------------------------------------------------- autoplay item
@@ -1591,6 +1601,9 @@ void RdUpNext::loadStore(const QJsonObject& data)
     if (!m_path.isEmpty())
         m_found = m_scans->found(m_path);
     m_storeLoaded = true;
+    // a show detected before the answers were known is scanned now (if it is on)
+    if (m_showKnown)
+        requestCreditsScans();
     // answers given before the file was read are written now, with the stored ones
     if (m_storeDirty)
         saveStore();

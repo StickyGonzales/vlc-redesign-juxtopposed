@@ -101,9 +101,10 @@ QString assPacketText(const QString& packet);
 //   3. the credits music matched across episodes (audio fingerprint, full scan or quick check)
 //   4. the end of the dialogue (subtitles), black frames and the learned point: where at least
 //      two of them agree within kAgreeMs (the most precise of them: subtitles, then black
-//      frames, then the learned point); else the learned point; else the subtitles alone;
-//      black frames are never used alone (a dark scene would fool them)
-//   5. the global setting ("Show the card": the last 30 / 60 / 120 s)
+//      frames, then the learned point); else the learned point; black frames are never used
+//      alone (a dark scene would fool them)
+//   5. the global setting ("Show the card": the last 30 / 60 / 120 s), moved to the end of the
+//      dialogue when the subtitles alone put it within kSubtitleAloneMs of it
 enum class Source { None, Fixed, Chapter, Audio, Agreement, Learned, Subtitles, Setting };
 
 struct Point
@@ -115,6 +116,9 @@ struct Point
 
 // two points this close agree
 constexpr qint64 kAgreeMs = 90 * 1000;
+// the end of the dialogue alone (no learned point, no black frames agreeing) moves the setting's
+// point by this much at most: high confidence near the expected end only
+constexpr qint64 kSubtitleAloneMs = 2 * 60 * 1000;
 
 struct Inputs
 {

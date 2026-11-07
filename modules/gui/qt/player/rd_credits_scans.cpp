@@ -126,6 +126,8 @@ struct RdCreditsScans::Outcome
 {
     bool ok = false;
     QString reason;
+    // the reason may not hold next time: the file is tried again in a later session
+    bool transient = false;
     qint64 lengthMs = -1;
     bool full = false;
     bool quickMissed = false;
@@ -178,7 +180,10 @@ void RdCreditsScans::request(const QString& showKey, const QString& showName, co
 {
     if (m_shutdown || showKey.isEmpty() || path.isEmpty())
         return;
-    const auto file = m_files.find(fileKey(path));
+    const QString key = fileKey(path);
+    if (m_skipped.contains(key))
+        return;
+    const auto file = m_files.find(key);
     if (file != m_files.end())
     {
         file->seenAt = QDateTime::currentMSecsSinceEpoch();
@@ -264,14 +269,26 @@ void RdCreditsScans::shutdown()
     m_current.reset();
 }
 
-void RdCreditsScans::clear()
+void RdCreditsScans::stop()
 {
-    m_shows.clear();
-    m_files.clear();
+    ++m_generation;
     m_queue.clear();
     if (m_current)
         m_current->cancel();
+}
+
+void RdCreditsScans::clear()
+{
+    stop();
+    m_shows.clear();
+    m_files.clear();
+    m_skipped.clear();
     emit changed();
+}
+
+bool RdCreditsScans::hasData() const
+{
+    return !m_shows.isEmpty() || !m_files.isEmpty();
 }
 
 void RdCreditsScans::startNext()
@@ -288,7 +305,7 @@ void RdCreditsScans::startNext()
     const Request request = m_queue.front();
     m_queue.pop_front();
     const QString key = fileKey(request.path);
-    if (m_files.contains(key) || !QFileInfo::exists(request.path))
+    if (m_files.contains(key) || m_skipped.contains(key) || !QFileInfo::exists(request.path))
     {
         startNext();
         return;
@@ -310,18 +327,21 @@ void RdCreditsScans::startNext()
     m_running = true;
 
     QPointer<RdCreditsScans> self(this);
-    m_pool.start([self, request, key, show, usual, others, scanner]() {
+    const int generation = m_generation;
+    m_pool.start([self, request, key, show, usual, others, scanner, generation]() {
         // a background scan never takes time from playback
         QThread::currentThread()->setPriority(QThread::LowestPriority);
         const Outcome outcome = scan(*scanner, request, show, usual, others);
-        QMetaObject::invokeMethod(self.data(), [self, request, key, outcome]() {
+        QMetaObject::invokeMethod(self.data(), [self, request, key, outcome, generation]() {
             if (!self)
                 return;
             self->m_running = false;
             self->m_current.reset();
             if (self->m_shutdown)
                 return;
-            self->merge(request, key, outcome);
+            // a result of before a Forget all or a stop is dropped
+            if (generation == self->m_generation)
+                self->merge(request, key, outcome);
             self->startNext();
         }, Qt::QueuedConnection);
     });
@@ -368,6 +388,7 @@ RdCreditsScans::Outcome RdCreditsScans::scan(RdCreditsScanner& scanner, const Re
     else if (quick.lengthMs <= 0)
     {
         outcome.reason = QString::fromUtf8(quick.reason);
+        outcome.transient = quick.transient;
         return outcome;
     }
 
@@ -394,6 +415,7 @@ RdCreditsScans::Outcome RdCreditsScans::scan(RdCreditsScanner& scanner, const Re
     if (!full.ok)
     {
         outcome.reason = QString::fromUtf8(full.reason);
+        outcome.transient = full.transient;
         return outcome;
     }
     outcome.ok = true;
@@ -446,19 +468,26 @@ void RdCreditsScans::merge(const Request& request, const QString& key, const Out
     {
         // a file that cannot be read is not tried again this session (a cancel is, next time)
         msg_Dbg(m_parent, "up next: credits scan of an episode gave nothing (%s)", qtu(outcome.reason));
-        if (!outcome.reason.isEmpty())
+        if (outcome.reason.isEmpty())
+            return;
+        if (outcome.transient)
         {
-            FileInfo& file = m_files[key];
-            file.path = request.path;
-            file.showKey = request.showKey;
-            file.seenAt = QDateTime::currentMSecsSinceEpoch();
+            // not again this session, but in a later one (it may be slow today only)
+            m_skipped.insert(key);
+            return;
         }
+        FileInfo& file = m_files[key];
+        file.path = request.path;
+        file.showKey = request.showKey;
+        file.seenAt = QDateTime::currentMSecsSinceEpoch();
+        emit changed();
         return;
     }
     ShowInfo& show = m_shows[request.showKey];
     if (!request.showName.isEmpty())
         show.name = request.showName;
 
+    QString pairedPath;
     FileInfo& file = m_files[key];
     file.path = request.path;
     file.showKey = request.showKey;
@@ -480,7 +509,11 @@ void RdCreditsScans::merge(const Request& request, const QString& key, const Out
         // the other episode's credits start where the music starts in it
         const auto other = m_files.find(outcome.pairedKey);
         if (other != m_files.end() && other->audioMs < 0)
+        {
             other->audioMs = outcome.pairedAudioMs;
+            // the episode playing may be that one: its card takes the point now
+            pairedPath = other->path;
+        }
         show.music = outcome.music;
     }
     // the show's credits length follows its latest full scan that found the music
@@ -520,6 +553,8 @@ void RdCreditsScans::merge(const Request& request, const QString& key, const Out
             outcome.pairedKey.isEmpty() ? "" : " (credits music matched with another episode)");
     prune();
     emit resultReady(request.path);
+    if (!pairedPath.isEmpty())
+        emit resultReady(pairedPath);
     emit changed();
 }
 
@@ -584,9 +619,6 @@ void RdCreditsScans::load(const QJsonObject& data)
     for (auto it = shows.begin(); it != shows.end(); ++it)
     {
         const QJsonObject entry = it.value().toObject();
-        // what was set while the file was read wins
-        if (m_shows.contains(it.key()))
-            continue;
         ShowInfo show;
         show.name = entry.value(QStringLiteral("name")).toString();
         show.creditsLeadMs = entry.value(QStringLiteral("creditsLeadMs")).toInteger(-1);
@@ -596,6 +628,14 @@ void RdCreditsScans::load(const QJsonObject& data)
         {
             if (length.toInteger() > 0)
                 show.lengths.append(length.toInteger());
+        }
+        // a Fixed point set (or reset) while the file was read wins; the rest comes from the file
+        const auto set = m_shows.constFind(it.key());
+        if (set != m_shows.constEnd())
+        {
+            show.fixedLeadMs = set->fixedLeadMs;
+            if (!set->name.isEmpty())
+                show.name = set->name;
         }
         m_shows.insert(it.key(), show);
     }

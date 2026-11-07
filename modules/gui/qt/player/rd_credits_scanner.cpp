@@ -54,6 +54,8 @@ constexpr int kDarkLuma = 40;
 constexpr qint64 kPastEndMs = 1000;
 // a pause (the seek bar in use) is checked this often
 constexpr int kPauseStepMs = 50;
+// a file with no audio track the scan can decode after this many packets is given up
+constexpr int kNoAudioPackets = 500;
 
 struct Track
 {
@@ -125,6 +127,9 @@ struct RdCreditsScanner::Scan
     void consumeAudio(const audio_format_t& fmt, const block_t* frame);
     void consumePicture(picture_t* picture);
     void keepLine(const block_t* block);
+    // a decoder could not be (re)loaded or failed: without video the scan goes on (no black
+    // frames), without audio it stops
+    void trackFailed(Track* track);
 
     bool stopped() const { return scanner.cancelled() || overBudget || failed; }
     qint64 msOf(vlc_tick_t tick) const { return MS_FROM_VLC_TICK(tick - normalTime); }
@@ -150,6 +155,9 @@ struct RdCreditsScanner::Scan
     QVector<rdcredits::Line> lines;
     bool overBudget = false;
     bool failed = false;
+    bool videoFailed = false;
+    unsigned printerRate = 0;
+    int packets = 0;
 };
 
 namespace {
@@ -331,8 +339,9 @@ void RdCreditsScanner::Scan::chooseTracks()
 void RdCreditsScanner::Scan::sendBlock(Track* track, block_t* block)
 {
     const vlc_tick_t time = block->i_pts != VLC_TICK_INVALID ? block->i_pts : block->i_dts;
-    if (time != VLC_TICK_INVALID && (track == audio || track == video))
+    if (time != VLC_TICK_INVALID)
         reachedMs = std::max(reachedMs, msOf(time));
+    ++packets;
     if (stopped() || !planned)
     {
         block_Release(block);
@@ -389,11 +398,11 @@ int RdCreditsScanner::Scan::control(int query, va_list args)
     case ES_OUT_RESTART_ES:
     {
         Track* track = trackOf(va_arg(args, es_out_id_t*));
-        if (track == audio || track == video)
+        if (track && (track == audio || track == video))
         {
             closeDecoders(track);
             if (!openDecoders(track))
-                failed = true;
+                trackFailed(track);
         }
         return VLC_SUCCESS;
     }
@@ -401,13 +410,15 @@ int RdCreditsScanner::Scan::control(int query, va_list args)
     {
         Track* track = trackOf(va_arg(args, es_out_id_t*));
         const es_format_t* fmt = va_arg(args, es_format_t*);
+        if (!track || !fmt)
+            return VLC_EGENERIC;
         es_format_Clean(&track->fmt);
         es_format_Copy(&track->fmt, fmt);
         if (track == audio || track == video)
         {
             closeDecoders(track);
             if (!openDecoders(track))
-                failed = true;
+                trackFailed(track);
         }
         return VLC_SUCCESS;
     }
@@ -493,7 +504,7 @@ void RdCreditsScanner::Scan::process(Track* track, block_t* block)
     block_t* packets;
     while ((packets = packetizer->pf_packetize(packetizer, blockRef)) != nullptr)
     {
-        if (stopped())
+        if (stopped() || !track->decoder)
         {
             block_ChainRelease(packets);
             continue;
@@ -505,8 +516,8 @@ void RdCreditsScanner::Scan::process(Track* track, block_t* block)
             track->decoder = loadDecoder(false, &packetizer->fmt_out);
             if (!track->decoder)
             {
-                failed = true;
                 block_ChainRelease(packets);
+                trackFailed(track);
                 continue;
             }
         }
@@ -516,8 +527,8 @@ void RdCreditsScanner::Scan::process(Track* track, block_t* block)
             packets->p_next = nullptr;
             if (track->decoder->pf_decode(track->decoder, packets) == VLCDEC_ECRITICAL)
             {
-                failed = true;
                 block_ChainRelease(next);
+                trackFailed(track);
                 break;
             }
             packets = next;
@@ -525,6 +536,24 @@ void RdCreditsScanner::Scan::process(Track* track, block_t* block)
     }
     if (draining && track->decoder && !stopped())
         track->decoder->pf_decode(track->decoder, nullptr);
+}
+
+void RdCreditsScanner::Scan::trackFailed(Track* track)
+{
+    if (track == audio)
+    {
+        failed = true;
+        return;
+    }
+    // the decoder goes once the packetizer loop is done with it (process() checks it); the
+    // samples taken so far are dropped: black frames need the whole stretch
+    videoFailed = true;
+    frames.clear();
+    if (track->decoder)
+    {
+        destroyDecoder(track->decoder);
+        track->decoder = nullptr;
+    }
 }
 
 void RdCreditsScanner::Scan::consumeAudio(const audio_format_t& fmt, const block_t* frame)
@@ -544,8 +573,12 @@ void RdCreditsScanner::Scan::consumeAudio(const audio_format_t& fmt, const block
     if (!printer)
     {
         printer = std::make_unique<rdcredits::AudioPrinter>(fmt.i_rate);
+        printerRate = fmt.i_rate;
         audioNextMs = plan.fromMs;
     }
+    // a rate change on the way (a decoder reload) would shift the fingerprint's times
+    if (fmt.i_rate != printerRate)
+        return;
     // the samples before the stretch are left out; a gap in the audio is filled with silence
     size_t skip = 0;
     if (startMs < plan.fromMs)
@@ -582,7 +615,7 @@ void RdCreditsScanner::Scan::consumeAudio(const audio_format_t& fmt, const block
 
 void RdCreditsScanner::Scan::consumePicture(picture_t* picture)
 {
-    if (stopped() || picture->date == VLC_TICK_INVALID || picture->i_planes < 1)
+    if (stopped() || videoFailed || picture->date == VLC_TICK_INVALID || picture->i_planes < 1)
         return;
     const qint64 timeMs = msOf(picture->date);
     if (timeMs < plan.fromMs || timeMs >= plan.toMs || (nextFrameMs >= 0 && timeMs < nextFrameMs))
@@ -703,6 +736,11 @@ RdCreditsScanner::Result RdCreditsScanner::run(const Planner& planner)
             var_SetInteger(obj, "avcodec-skiploopfilter", kSkipAll);
         if (var_Create(obj, "avcodec-hw", VLC_VAR_STRING) == VLC_SUCCESS)
             var_SetString(obj, "avcodec-hw", "none");
+        // AV1 goes to dav1d, which decodes every frame: one thread, beside playback
+        if (var_Create(obj, "dav1d-thread-frames", VLC_VAR_INTEGER) == VLC_SUCCESS)
+            var_SetInteger(obj, "dav1d-thread-frames", 1);
+        if (var_Create(obj, "dav1d-thread-tiles", VLC_VAR_INTEGER) == VLC_SUCCESS)
+            var_SetInteger(obj, "dav1d-thread-tiles", 1);
 
         Scan scan(*this);
         scan.obj = obj;
@@ -740,15 +778,23 @@ RdCreditsScanner::Result RdCreditsScanner::run(const Planner& planner)
             {
                 scan.planned = true;
                 scan.chooseTracks();
-                const vlc_tick_t deadline = start + VLC_TICK_FROM_SEC(scan.plan.budgetSeconds);
+                // the time paused (the seek bar in use) is not counted
+                vlc_tick_t deadline = vlc_tick_now() + VLC_TICK_FROM_SEC(scan.plan.budgetSeconds);
                 const vlc_tick_t seekTo = VLC_TICK_0 + VLC_TICK_FROM_MS(scan.plan.fromMs);
-                if (scan.plan.fromMs > 0 && demux_Control(demux, DEMUX_SET_TIME, seekTo, false) != VLC_SUCCESS)
-                    scan.failed = true;
-                while (!scan.stopped())
+                bool seeked = scan.plan.fromMs <= 0
+                              || demux_Control(demux, DEMUX_SET_TIME, seekTo, false) == VLC_SUCCESS;
+                // a demuxer without a time index may still seek by position
+                if (!seeked)
+                    seeked = demux_Control(demux, DEMUX_SET_POSITION,
+                                           double(scan.plan.fromMs) / double(result.lengthMs), false) == VLC_SUCCESS;
+                bool noAudio = false;
+                while (seeked && !scan.stopped())
                 {
                     // the seek bar is in use: the read waits, so seek previews stay fast
+                    const vlc_tick_t pausedAt = vlc_tick_now();
                     while (m_paused && m_paused->load(std::memory_order_relaxed) && !cancelled())
                         vlc_msleep_i11e(VLC_TICK_FROM_MS(kPauseStepMs));
+                    deadline += vlc_tick_now() - pausedAt;
                     if (cancelled())
                         break;
                     if (vlc_tick_now() > deadline)
@@ -760,8 +806,15 @@ RdCreditsScanner::Result RdCreditsScanner::run(const Planner& planner)
                         break;
                     if (scan.reachedMs >= scan.plan.toMs + kPastEndMs)
                         break;
+                    if (!scan.audio && scan.packets >= kNoAudioPackets)
+                    {
+                        noAudio = true;
+                        break;
+                    }
                 }
-                if (!scan.audio)
+                if (!seeked)
+                    result.reason = "cannot seek";
+                else if (noAudio || !scan.audio)
                     result.reason = "no audio";
             }
             // the demuxer deletes its tracks (es_out del, which drains the decoders)
@@ -774,13 +827,24 @@ RdCreditsScanner::Result RdCreditsScanner::run(const Planner& planner)
             }
             scan.tracks.clear();
 
+            // a cancel, the time budget or a failing decoder may not happen next time: the
+            // manager does not keep these
             if (cancelled())
+            {
                 result.reason = "cancelled";
+                result.transient = true;
+            }
             else if (scan.overBudget)
+            {
                 result.reason = "over the time budget";
+                result.transient = true;
+            }
             else if (scan.failed)
-                result.reason = "a decoder failed";
-            else if (scan.planned && scan.printer)
+            {
+                result.reason = "the audio decoder failed";
+                result.transient = true;
+            }
+            else if (scan.planned && scan.printer && *result.reason == '\0')
             {
                 result.ok = true;
                 result.prints = scan.printer->prints();

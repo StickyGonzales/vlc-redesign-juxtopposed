@@ -61,6 +61,8 @@ public:
     {
         bool ok = false;
         const char* reason = "";
+        // the reason may not hold next time (cancelled, over the time budget, a decoder failed)
+        bool transient = false;
         qint64 lengthMs = 0;
         Plan plan;
         // fingerprint values from plan.fromMs, one each rdcredits::kPrintMs

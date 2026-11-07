@@ -183,7 +183,8 @@ public:
     // back to Automatic
     Q_INVOKABLE void setCreditsFixed(int secondsBeforeEnd);
     Q_INVOKABLE void resetCredits();
-    // the seek bar is hovered or dragged: the background scans wait (seek previews stay fast)
+    // a seek bar is hovered or dragged (true), or no longer (false): the background scans wait
+    // while any is (seek previews stay fast)
     Q_INVOKABLE void setSeekBarBusy(bool busy);
 
 public slots:
@@ -348,6 +349,8 @@ private:
     RdCreditsScans* m_scans = nullptr;
     // what the scans found in the episode playing (read again when a result comes)
     RdCreditsScans::Found m_found;
+    // the seek bars hovered or dragged now (the scans wait while any is)
+    int m_seekBarsBusy = 0;
     // learning (UP_NEXT_CREDITS_SCAN_NOTES.md section 1), per episode: the credits card showed,
     // Cancel was pressed on it, its Next episode button moved on
     bool m_cardShownEpisode = false;

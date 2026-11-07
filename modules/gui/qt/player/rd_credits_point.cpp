@@ -315,12 +315,14 @@ Point decide(qint64 lengthMs, const Inputs& in)
         return set(black, Source::Agreement);
     if (learned >= 0)
         return set(learned, Source::Learned);
-    if (subs >= 0)
-        return set(subs, Source::Subtitles);
 
-    // 5. the setting, held inside the window
-    if (in.settingLeadMs > 0)
-        return set(lengthMs - std::min(in.settingLeadMs, window), Source::Setting);
+    // 5. the setting, held inside the window; the end of the dialogue alone only moves it by up
+    // to kSubtitleAloneMs (a quiet stretch earlier in the window is not the credits), as before
+    const qint64 setting = in.settingLeadMs > 0 ? lengthMs - std::min(in.settingLeadMs, window) : -1;
+    if (subs >= 0 && (setting < 0 || std::llabs(subs - setting) <= kSubtitleAloneMs))
+        return set(subs, Source::Subtitles);
+    if (setting >= 0)
+        return set(setting, Source::Setting);
     return point;
 }
 

@@ -36,6 +36,7 @@
 #include <QHash>
 #include <QJsonObject>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QThreadPool>
@@ -84,8 +85,11 @@ public:
     void setPaused(bool paused);
     // stops at once: the scan in progress is cancelled, the queue dropped, nothing runs again
     void shutdown();
+    // the queue goes and the scan in progress stops (Up Next switched off); the cache stays
+    void stop();
     // Forget all: every show and file
     void clear();
+    bool hasData() const;
 
     QJsonObject toJson() const;
     // `data`: as toJson() wrote it; what was set before (a Fixed point) wins. No scan starts
@@ -147,6 +151,10 @@ private:
     QHash<QString, FileInfo> m_files;
     std::deque<Request> m_queue;
     bool m_loaded = false;
+    // stop() and clear() drop a result still on its way
+    int m_generation = 0;
+    // files whose scan failed for a reason that may not hold next time (not kept in the file)
+    QSet<QString> m_skipped;
     bool m_running = false;
     bool m_shutdown = false;
     std::shared_ptr<std::atomic<bool>> m_paused;

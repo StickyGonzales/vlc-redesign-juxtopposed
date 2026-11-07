@@ -187,11 +187,17 @@ void testDecideCombined()
     p = decide(L, in);
     check(p.source == Source::Setting, "black frames alone are not used");
 
-    // the subtitles alone are used
-    in = inputs(-1, 60 * S, 52 * M + 30 * S);
+    // the subtitles alone move the setting's point (55:00) by up to 2 minutes
+    in = inputs(-1, 60 * S, 53 * M + 30 * S);
     p = decide(L, in);
-    checkEqual(p.timeMs, 52 * M + 30 * S, "subtitles alone");
+    checkEqual(p.timeMs, 53 * M + 30 * S, "subtitles alone near the setting's point");
     check(p.source == Source::Subtitles, "subtitles source");
+    // a quiet stretch 5 minutes before the setting's point is not the credits: the setting, as
+    // before the scans (no card mid-scene for a show the scans never see)
+    in = inputs(-1, 60 * S, 50 * M);
+    p = decide(L, in);
+    checkEqual(p.timeMs, 55 * M, "subtitles alone far from the setting's point: the setting");
+    check(p.source == Source::Setting, "setting source");
 
     // subtitles and the learned point disagree: the learned point
     in = inputs(2 * M, 60 * S, 49 * M);
