@@ -81,9 +81,26 @@ typedef struct
 void system_Configure( libvlc_int_t *p_this, int i_argc, const char *const ppsz_argv[] )
 {
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-    if( var_InheritBool( p_this, "one-instance" )
+    const bool hand_over = var_InheritBool( p_this, "one-instance" )
      || ( var_InheritBool( p_this, "one-instance-when-started-from-file" )
-       && var_InheritBool( p_this, "started-from-file" ) ) )
+       && var_InheritBool( p_this, "started-from-file" ) );
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (redesign/FIX_OPEN_IN_RUNNING_WINDOW_NOTES.md): the first Cone always takes the
+     * files opened from Explorer later, also when it was started from the Start menu; a later
+     * start that does not hand its files over (no file, no one-instance) opens its own window as
+     * before */
+    if( !hand_over )
+    {
+        HANDLE hmutex = CreateMutex( 0, TRUE, IPC_NAME );
+        if( hmutex == NULL )
+            return;
+        if( GetLastError() != ERROR_ALREADY_EXISTS )
+            libvlc_InternalAddIntf( p_this, "win_msg,none" );
+        ReleaseMutex( hmutex );
+        return;
+    }
+#endif
+    if( hand_over )
     {
         HANDLE hmutex;
 
@@ -154,6 +171,15 @@ void system_Configure( libvlc_int_t *p_this, int i_argc, const char *const ppsz_
                 }
                 i_data += sizeof (*p_data);
 
+#ifdef VLC_BRAND_PUBLIC
+                /* redesign: this start was the user's (Explorer's Open with, a double-click), so
+                 * it may give the foreground away: the 1st instance brings its window to the
+                 * front with the file (modules/control/win_msg.c) */
+                DWORD first_pid = 0;
+                GetWindowThreadProcessId( ipcwindow, &first_pid );
+                if( first_pid != 0 )
+                    AllowSetForegroundWindow( first_pid );
+#endif
                 /* Send our playlist items to the 1st instance */
                 wm_data.dwData = 0;
                 wm_data.cbData = i_data;
