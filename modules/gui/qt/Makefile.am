@@ -353,8 +353,14 @@ libqt_plugin_la_SOURCES = \
 	player/rd_presets.hpp \
 	player/rd_episode_parser.cpp \
 	player/rd_episode_parser.hpp \
+	player/rd_credits_audio.cpp \
+	player/rd_credits_audio.hpp \
 	player/rd_credits_point.cpp \
 	player/rd_credits_point.hpp \
+	player/rd_credits_scanner.cpp \
+	player/rd_credits_scanner.hpp \
+	player/rd_credits_scans.cpp \
+	player/rd_credits_scans.hpp \
 	player/rd_credits_subtitles.cpp \
 	player/rd_credits_subtitles.hpp \
 	player/rd_up_next.cpp \
@@ -592,6 +598,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	player/rd_media_info.moc.cpp \
 	player/rd_presets.moc.cpp \
 	player/rd_up_next.moc.cpp \
+	player/rd_credits_scans.moc.cpp \
 	player/input_models.moc.cpp \
 	player/player_controller.moc.cpp \
 	player/player_controlbar_model.moc.cpp \
@@ -2370,6 +2377,18 @@ test_rd_credits_point_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_credits_point_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_rd_credits_point
 TESTS += test_rd_credits_point
+
+# test_rd_credits_audio (Cone extra, Up Next): the credits music fingerprint, the standard
+# library only
+test_rd_credits_audio_SOURCES = \
+	tests/test_rd_credits_audio.cpp \
+	player/rd_credits_audio.cpp player/rd_credits_audio.hpp
+test_rd_credits_audio_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_credits_audio_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_credits_audio_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_credits_audio_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_credits_audio
+TESTS += test_rd_credits_audio
 
 # test_vlc_dialog_model
 

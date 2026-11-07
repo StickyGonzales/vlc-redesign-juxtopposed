@@ -210,6 +210,115 @@ RdSidePanelPage {
             }
         }
 
+        // Cone extra (UP_NEXT_CREDITS_SCAN_NOTES.md section 2): where the Up Next card shows for
+        // the show playing (all its seasons). Automatic names the point in use and where it comes
+        // from; Fixed takes a time before the end, pre-filled with the current point, and always
+        // wins for the show; Automatic again (or Reset) drops it. Styled like the Flip row
+        // (label, segments under it) with the Rotate row's value box.
+        Widgets.RdSettingRow {
+            id: creditsRow
+
+            // the point in use as m:ss, "1:00" before one is known
+            readonly property int _lead: RdUpNext.creditsLeadSeconds > 0 ? RdUpNext.creditsLeadSeconds : 60
+
+            function leadText(seconds) {
+                return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0")
+            }
+
+            // "1:52", "112", "1m52" or "1 52": seconds before the end, NaN when it is none
+            function parseLead(value) {
+                const parts = value.trim().split(/[^0-9]+/).filter((p) => p !== "")
+                if (parts.length === 1)
+                    return parseInt(parts[0])
+                if (parts.length === 2)
+                    return parseInt(parts[0]) * 60 + parseInt(parts[1])
+                return NaN
+            }
+
+            visible: RdUpNext.showActive
+            text: qsTr("Up Next for %1").arg(RdUpNext.showName)
+            Layout.topMargin: visible ? VLCStyle.dp(4) : 0
+            Layout.bottomMargin: visible ? VLCStyle.dp(16) : 0
+            rowHeight: VLCStyle.dp(29)
+            spacing: VLCStyle.dp(14)
+
+            below: Column {
+                width: parent.width
+                spacing: VLCStyle.dp(10)
+
+                Widgets.RdSegmented {
+                    width: parent.width
+                    model: [qsTr("Automatic"), qsTr("Fixed")]
+                    currentIndex: RdUpNext.creditsFixed ? 1 : 0
+                    Accessible.name: creditsRow.text
+                    onActivated: (index) => {
+                        if (index === 1)
+                            RdUpNext.setCreditsFixed(creditsRow._lead)
+                        else
+                            RdUpNext.resetCredits()
+                    }
+                }
+
+                Text {
+                    visible: !RdUpNext.creditsFixed
+                    width: parent.width
+                    leftPadding: VLCStyle.dp(4)
+                    text: RdUpNext.creditsSource !== "" ? RdUpNext.creditsSource
+                                                        : qsTr("Found while the show plays")
+                    wrapMode: Text.WordWrap
+                    font.family: VLCStyle.rd_fontFamily
+                    font.pixelSize: VLCStyle.rd_fontSize_toggle
+                    color: VLCStyle.palette.rdFgA4
+                }
+
+                Item {
+                    visible: RdUpNext.creditsFixed
+                    width: parent.width
+                    height: leadBox.implicitHeight
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: VLCStyle.dp(4)
+                        anchors.right: leadBox.left
+                        anchors.rightMargin: VLCStyle.dp(10)
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Before the end")
+                        elide: Text.ElideRight
+                        font.family: VLCStyle.rd_fontFamily
+                        font.pixelSize: VLCStyle.rd_fontSize_label
+                        color: VLCStyle.palette.rdFgA3
+                    }
+
+                    Widgets.RdValueBox {
+                        id: leadBox
+
+                        anchors.right: resetButton.left
+                        anchors.rightMargin: VLCStyle.dp(8)
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: VLCStyle.dp(90)
+                        text: creditsRow.leadText(creditsRow._lead)
+                        Accessible.name: qsTr("Show the card this long before the end")
+                        onEdited: (value) => {
+                            const seconds = creditsRow.parseLead(value)
+                            if (!isNaN(seconds) && seconds > 0)
+                                RdUpNext.setCreditsFixed(seconds)
+                        }
+                    }
+
+                    Widgets.RdButton {
+                        id: resetButton
+
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        style: Widgets.RdButton.Style.Plain
+                        text: qsTr("Reset")
+                        Accessible.description: qsTr("Back to Automatic")
+                        onClicked: RdUpNext.resetCredits()
+                    }
+                }
+            }
+        }
+
         // Figma "Frame 111": the 48 px dropdown row with 20 px under it
         Widgets.RdSettingRow {
             text: qsTr("Audio Visualizer")

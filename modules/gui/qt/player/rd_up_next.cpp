@@ -57,6 +57,7 @@
 #include "player/input_models.hpp"
 #include "player/player_controller.hpp"
 #include "player/rd_credits_point.hpp"
+#include "player/rd_credits_scans.hpp"
 #include "player/rd_credits_subtitles.hpp"
 #include "player/rd_effects.hpp"
 #include "playlist/playlist_controller.hpp"
@@ -149,6 +150,15 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     m_scanPool.setMaxThreadCount(1);
     m_storePool.setMaxThreadCount(1);
 
+    m_scans = new RdCreditsScans(VLC_OBJECT(intf), this);
+    connect(m_scans, &RdCreditsScans::resultReady, this, [this](const QString& path) {
+        if (m_path.isEmpty() || normalizedPath(path) != normalizedPath(m_path))
+            return;
+        m_found = m_scans->found(m_path);
+        updateCard();
+    });
+    connect(m_scans, &RdCreditsScans::changed, this, &RdUpNext::saveStore);
+
     readSettings();
     connect(effects, &RdEffects::changed, this, &RdUpNext::reloadSettings);
 
@@ -224,6 +234,8 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
 RdUpNext::~RdUpNext()
 {
     qApp->removeEventFilter(this);
+    // a credits scan in progress stops at once: the quit never waits for it
+    m_scans->shutdown();
     if (m_subtitleScan)
         m_subtitleScan->cancel();
     m_scanPool.waitForDone();
@@ -398,7 +410,14 @@ void RdUpNext::onInputChanged(bool hasInput)
     }
     m_lastSingleAdd = SharedInputItem();
     m_cancelled = false;
+    m_cardShownEpisode = false;
+    m_cardCancelled = false;
+    m_nextFromCard = false;
     m_creditsPointMs = -1;
+    m_creditsSourceKind = rdcredits::Source::None;
+    m_creditsLengthMs = -1;
+    m_found = RdCreditsScans::Found();
+    emit creditsChanged();
     m_dialogueEndMs = -1;
     m_subtitleScanStarted = false;
     if (m_subtitleScan)
@@ -475,7 +494,51 @@ void RdUpNext::onDetected(int generation, const rdepisode::Show& show)
     m_showKnown = true;
     if (!m_show.isShow)
         msg_Dbg(m_intf, "up next: not a show (%s)", qtu(m_show.reason));
+    requestCreditsScans();
+    m_found = m_path.isEmpty() ? RdCreditsScans::Found() : m_scans->found(m_path);
     evaluate();
+    emit creditsChanged();
+}
+
+void RdUpNext::requestCreditsScans()
+{
+    // local video files of a show folder with enough videos only: never a movie, a small folder,
+    // an audio file or a stream (m_path is empty for anything but a local file)
+    if (!m_show.isShow || m_path.isEmpty() || !rdcredits::isScannableVideo(m_path))
+        return;
+    int videos = 0;
+    for (const rdepisode::Episode& episode : m_show.episodes)
+        videos += rdcredits::isScannableVideo(episode.fileName) ? 1 : 0;
+    if (videos < rdcredits::kMinShowVideos)
+    {
+        msg_Dbg(m_intf, "up next: no credits scans (%d video files in the show)", videos);
+        return;
+    }
+
+    // the episode playing (with the subtitle files VLC loaded for it), then the next one
+    QStringList slaves;
+    {
+        vlc_player_t* player = m_player->getPlayer();
+        vlc_player_locker lock{ player };
+        input_item_t* item = vlc_player_GetCurrentMedia(player);
+        if (item)
+        {
+            vlc_mutex_locker itemLock{ &item->lock };
+            for (int i = 0; i < item->i_slaves; ++i)
+            {
+                if (item->pp_slaves[i]->i_type != SLAVE_TYPE_SPU)
+                    continue;
+                const QString path = localPath(QUrl::fromEncoded(QByteArray(item->pp_slaves[i]->psz_uri)));
+                if (!path.isEmpty())
+                    slaves.append(path);
+            }
+        }
+    }
+    const QString key = showKey();
+    m_scans->request(key, m_show.name, m_path, slaves, true);
+    const int next = m_show.next();
+    if (next >= 0 && rdcredits::isScannableVideo(m_show.episodes.at(next).fileName))
+        m_scans->request(key, m_show.name, m_show.episodes.at(next).path, {}, false);
 }
 
 // --------------------------------------------------------------------------------- guards
@@ -610,6 +673,9 @@ void RdUpNext::updateCard()
             m_lastShowRoot = m_show.root;
             m_lastShowName = m_show.name;
             m_lastNextPath = localPath(nextUrl());
+            // the sidebar row shows the point in use, also while the card is not armed
+            if (showActive())
+                creditsPoint(length.toMilliseconds());
         }
     }
 
@@ -687,26 +753,38 @@ void RdUpNext::updateCard()
 
 qint64 RdUpNext::creditsPoint(qint64 lengthMs)
 {
-    QVector<rdcredits::Chapter> chapters;
+    rdcredits::Inputs inputs;
     ChapterListModel* model = m_player->getChapters();
     for (int i = 0; model && i < model->rowCount(); ++i)
     {
         const QModelIndex index = model->index(i);
         const VLCTime start = model->data(index, ChapterListModel::TimeRole).value<VLCTime>();
         if (start.valid())
-            chapters.append({ model->data(index, Qt::DisplayRole).toString(), start.toMilliseconds() });
+            inputs.chapters.append({ model->data(index, Qt::DisplayRole).toString(), start.toMilliseconds() });
     }
-    const auto learned = m_learned.constFind(showKey());
-    const qint64 learnedLead = learned != m_learned.constEnd() ? learned->leadMs : -1;
-    const rdcredits::Point point = rdcredits::decide(lengthMs, chapters, learnedLead, m_creditsLeadMs,
-                                                     m_dialogueEndMs);
-    if (point.timeMs != m_creditsPointMs)
+    const QString key = showKey();
+    const auto learned = m_learned.constFind(key);
+    inputs.learnedLeadMs = learned != m_learned.constEnd() ? learned->leadMs : -1;
+    inputs.fixedLeadMs = m_scans->fixedLead(key);
+    inputs.settingLeadMs = m_creditsLeadMs;
+    // the background scans of this file, else the subtitle lines read for the card
+    inputs.audioMs = m_found.audioMs;
+    inputs.blackMs = m_found.blackMs;
+    inputs.dialogueEndMs = m_found.scanned && m_found.dialogueEndMs >= 0 ? m_found.dialogueEndMs : m_dialogueEndMs;
+
+    const rdcredits::Point point = rdcredits::decide(lengthMs, inputs);
+    if (point.timeMs != m_creditsPointMs || point.source != m_creditsSourceKind || lengthMs != m_creditsLengthMs)
     {
+        const bool logged = point.timeMs != m_creditsPointMs || point.source != m_creditsSourceKind;
         m_creditsPointMs = point.timeMs;
-        msg_Dbg(m_intf, "up next: credits point %lld ms of %lld (%s%s), window from %lld ms",
-                static_cast<long long>(point.timeMs), static_cast<long long>(lengthMs),
-                qtu(rdcredits::sourceName(point.source)), point.tuned ? ", tuned by the subtitles" : "",
-                static_cast<long long>(rdcredits::windowStart(lengthMs)));
+        m_creditsSourceKind = point.source;
+        m_creditsLengthMs = lengthMs;
+        if (logged)
+            msg_Dbg(m_intf, "up next: credits point %lld ms of %lld (%s), window from %lld ms",
+                    static_cast<long long>(point.timeMs), static_cast<long long>(lengthMs),
+                    qtu(rdcredits::sourceName(point.source)),
+                    static_cast<long long>(rdcredits::windowStart(lengthMs)));
+        emit creditsChanged();
     }
     return point.timeMs;
 }
@@ -714,6 +792,9 @@ qint64 RdUpNext::creditsPoint(qint64 lengthMs)
 void RdUpNext::startSubtitleScan(qint64 lengthMs)
 {
     if (m_subtitleScanStarted || m_path.isEmpty() || lengthMs <= 0)
+        return;
+    // the full credits scan read the subtitles already
+    if (m_found.scanned && m_found.dialogueEndMs >= 0)
         return;
     m_subtitleScanStarted = true;
 
@@ -764,8 +845,13 @@ void RdUpNext::learnCreditsPoint(const QString& newPath)
     const QString key = m_lastShowKey;
     const QString root = m_lastShowRoot;
     const QString nextPath = m_lastNextPath;
-    const qint64 timeMs = m_lastTimeMs;
-    const qint64 lengthMs = m_lastLengthMs;
+    rdcredits::Move move;
+    move.timeMs = m_lastTimeMs;
+    move.lengthMs = m_lastLengthMs;
+    move.fromCard = m_nextFromCard;
+    move.cardShown = m_cardShownEpisode;
+    move.cancelled = m_cardCancelled;
+    move.countdownSec = m_countdown;
     m_lastShowKey.clear();
     m_lastShowRoot.clear();
     m_lastNextPath.clear();
@@ -778,15 +864,17 @@ void RdUpNext::learnCreditsPoint(const QString& newPath)
     if (nextPath.isEmpty() || normalizedPath(newPath) != normalizedPath(nextPath)
             || !normalizedPath(newPath).startsWith(normalizedPath(QDir::cleanPath(root) + QLatin1Char('/'))))
         return;
-    // only inside the credits window, and never in the countdown: a Play now there, or the episode
-    // simply ending (a container a few seconds longer than its picture), says nothing about the
-    // credits
-    const qint64 leadMs = lengthMs - timeMs;
-    const qint64 countdownMs = qint64(m_countdown) * 1000 + rdcredits::kNaturalEndMs;
-    if (!rdcredits::inWindow(timeMs, lengthMs) || leadMs <= countdownMs)
+    // the drift fix (UP_NEXT_CREDITS_SCAN_NOTES.md section 1): a click on the card is never
+    // learned, a move before the card showed only moves the point earlier, Cancel then a later
+    // move moves it later; the countdown and the episode simply ending are never learned
+    const auto saved = m_learned.constFind(key);
+    move.savedLeadMs = saved != m_learned.constEnd() ? saved->leadMs : -1;
+    const qint64 leadMs = rdcredits::learnedLead(move);
+    if (leadMs < 0)
         return;
-    msg_Dbg(m_intf, "up next: credits point learned for the show: %lld ms before the end",
-            static_cast<long long>(leadMs));
+    msg_Dbg(m_intf, "up next: credits point learned for the show: %lld ms before the end (%s)",
+            static_cast<long long>(leadMs),
+            move.cancelled ? "after Cancel" : "before the card showed");
     setLearnedLead(key, leadMs);
 }
 
@@ -827,6 +915,8 @@ void RdUpNext::setCard(bool visible, int mode)
     }
     m_cardVisible = visible;
     m_cardMode = mode;
+    if (visible && mode == CardNext)
+        m_cardShownEpisode = true;
     emit cardChanged();
     emit nextChanged();
 }
@@ -872,6 +962,8 @@ void RdUpNext::playNow()
         return;
     // the card hides before the queue changes, so it never shows a changed episode while it fades
     setCard(false, CardNext);
+    // a move from the card is never learned (UP_NEXT_CREDITS_SCAN_NOTES.md section 1)
+    m_nextFromCard = true;
     if (queueWeak)
         queueNext(false);
     if (!queuedPresent())
@@ -884,6 +976,9 @@ void RdUpNext::playNow()
 void RdUpNext::cancel()
 {
     m_cancelled = true;
+    // only when the card showed: a later move to the next episode then moves the point later
+    if (m_cardVisible && m_cardMode == CardNext)
+        m_cardCancelled = true;
     m_stillPending = false;
     setCard(false, CardNext);
     removeQueued();
@@ -941,13 +1036,99 @@ void RdUpNext::forgetAll()
     // before the file is read: its answers are dropped when they arrive
     if (!m_storeLoaded)
         m_forgotten = true;
-    if (m_answers.isEmpty() && m_learned.isEmpty() && m_storeLoaded)
+    if (m_answers.isEmpty() && m_learned.isEmpty() && m_scans->fixedCount() == 0 && m_storeLoaded)
         return;
     m_answers.clear();
     m_learned.clear();
+    // the credits scans' results and the fixed points go too (saveStore() follows)
+    {
+        const QSignalBlocker blocker(m_scans);
+        m_scans->clear();
+    }
+    m_found = RdCreditsScans::Found();
+    m_creditsPointMs = -1;
+    m_creditsSourceKind = rdcredits::Source::None;
+    emit creditsChanged();
     saveStore();
     emit storeChanged();
     evaluate();
+}
+
+int RdUpNext::rememberedCredits() const
+{
+    QStringList shows = m_learned.keys();
+    for (const QString& key : m_scans->fixedShows())
+    {
+        if (!shows.contains(key))
+            shows.append(key);
+    }
+    return int(shows.size());
+}
+
+bool RdUpNext::creditsFixed() const
+{
+    return showActive() && m_scans->fixedLead(showKey()) > 0;
+}
+
+int RdUpNext::creditsLeadSeconds() const
+{
+    if (m_creditsPointMs < 0 || m_creditsLengthMs <= 0)
+        return -1;
+    return int((m_creditsLengthMs - m_creditsPointMs + 500) / 1000);
+}
+
+QString RdUpNext::creditsSource() const
+{
+    const int lead = creditsLeadSeconds();
+    if (lead < 0)
+        return {};
+    const QString time = QStringLiteral("%1:%2").arg(lead / 60).arg(lead % 60, 2, 10, QLatin1Char('0'));
+    switch (m_creditsSourceKind)
+    {
+    case rdcredits::Source::Fixed:
+        return qtr("Fixed: %1 before the end").arg(time);
+    case rdcredits::Source::Chapter:
+        return qtr("from the credits chapter: %1 before the end").arg(time);
+    case rdcredits::Source::Audio:
+        return qtr("from audio match: %1 before the end").arg(time);
+    case rdcredits::Source::Agreement:
+        return qtr("from subtitles, black frames and your past choices: %1 before the end").arg(time);
+    case rdcredits::Source::Learned:
+        return qtr("from your past choices: %1 before the end").arg(time);
+    case rdcredits::Source::Subtitles:
+        return qtr("from the end of the dialogue: %1 before the end").arg(time);
+    case rdcredits::Source::Setting:
+        return qtr("from the setting: %1 before the end").arg(time);
+    case rdcredits::Source::None:
+        break;
+    }
+    return {};
+}
+
+void RdUpNext::setCreditsFixed(int secondsBeforeEnd)
+{
+    if (!showActive() || secondsBeforeEnd <= 0)
+        return;
+    msg_Dbg(m_intf, "up next: credits point fixed for the show: %d s before the end", secondsBeforeEnd);
+    m_scans->setFixedLead(showKey(), m_show.name, qint64(secondsBeforeEnd) * 1000);
+    emit storeChanged();
+    emit creditsChanged();
+    updateCard();
+}
+
+void RdUpNext::resetCredits()
+{
+    if (!showActive())
+        return;
+    m_scans->setFixedLead(showKey(), m_show.name, -1);
+    emit storeChanged();
+    emit creditsChanged();
+    updateCard();
+}
+
+void RdUpNext::setSeekBarBusy(bool busy)
+{
+    m_scans->setPaused(busy);
 }
 
 // ------------------------------------------------------------------------- autoplay item
@@ -1406,6 +1587,9 @@ void RdUpNext::loadStore(const QJsonObject& data)
             continue;
         m_learned.insert(it.key(), { lead, entry.value(QStringLiteral("name")).toString() });
     }
+    m_scans->load(m_forgotten ? QJsonObject() : data.value(QStringLiteral("creditsScan")).toObject());
+    if (!m_path.isEmpty())
+        m_found = m_scans->found(m_path);
     m_storeLoaded = true;
     // answers given before the file was read are written now, with the stored ones
     if (m_storeDirty)
@@ -1444,6 +1628,7 @@ void RdUpNext::saveStore()
     root.insert(QStringLiteral("version"), 1);
     root.insert(QStringLiteral("shows"), shows);
     root.insert(QStringLiteral("credits"), credits);
+    root.insert(QStringLiteral("creditsScan"), m_scans->toJson());
     const QByteArray json = QJsonDocument(root).toJson(QJsonDocument::Indented);
     m_storePool.start([json]() {
         const QString path = storePath();

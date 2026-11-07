@@ -229,7 +229,14 @@ T.ProgressBar {
     Component.onDestruction: {
         if (control._previewShown)
             RdSeekThumbnailer?.stop()
+        if (control.scrubbing)
+            RdUpNext.setSeekBarBusy(false)
     }
+
+    // Cone extra (UP_NEXT_CREDITS_SCAN_NOTES.md section 5): a background credits scan waits while
+    // the bar is hovered or dragged, so the seek previews keep the disk and the decoder to
+    // themselves
+    onScrubbingChanged: RdUpNext.setSeekBarBusy(control.scrubbing)
 
     // frames are made at the card's size in device pixels
     readonly property real _devicePixelRatio: Screen.devicePixelRatio
