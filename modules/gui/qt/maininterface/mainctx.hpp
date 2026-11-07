@@ -547,6 +547,8 @@ protected:
     int m_osVersion;
 
     bool m_bgCone = true;
+    // redesign: the files of a first start wait for the first-run dialog (holdFirstStartPlayback)
+    bool m_firstStartHold = false;
     bool m_windowSuportExtendedFrame = false;
     unsigned m_windowExtendedMargin = 0;
 
@@ -561,6 +563,9 @@ protected:
 #endif
 
     ThreadRunner* m_threadRunner = nullptr;
+
+private:
+    void holdFirstStartPlayback();
 
 public slots:
     void toggleToolbarMenu();
@@ -600,6 +605,10 @@ public slots:
     VLCVarChoiceModel* getExtraInterfaces();
 
     bool pasteFromClipboard();
+
+    // redesign: the first-run dialog (the onboarding or VLC's wizard) closed: the files given on
+    // the command line start now, from the beginning (holdFirstStartPlayback)
+    void releaseFirstStartPlayback();
 
 protected slots:
     void onInputChanged( bool );
