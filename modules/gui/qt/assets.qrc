@@ -305,6 +305,7 @@
         <file alias="view_state-active.svg">pixmaps/redesign/view_state-active.svg</file>
         <file alias="vlc.svg">pixmaps/redesign/vlc.svg</file>
         <file alias="volume_value-high.svg">pixmaps/redesign/volume_value-high.svg</file>
+        <file alias="volume_value-muted.svg">pixmaps/redesign/volume_value-muted.svg</file>
         <file alias="waveform_two-tone-yes.svg">pixmaps/redesign/waveform_two-tone-yes.svg</file>
         <file alias="window.svg">pixmaps/redesign/window.svg</file>
         <file alias="window_two-tone-yes.svg">pixmaps/redesign/window_two-tone-yes.svg</file>

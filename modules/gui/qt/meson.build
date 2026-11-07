@@ -137,6 +137,7 @@ moc_headers = files(
     'player/rd_waveform.hpp',
     'player/rd_waveform_item.hpp',
     'player/rd_subtitle_lift.hpp',
+    'player/rd_osd.hpp',
     'player/rd_subtitle_timeline.hpp',
     'player/rd_subtitle_timeline_item.hpp',
     'player/rd_now_playing.hpp',
@@ -488,6 +489,10 @@ qt_plugin_sources = files(
     'player/rd_waveform_item.hpp',
     'player/rd_subtitle_lift.cpp',
     'player/rd_subtitle_lift.hpp',
+    'player/rd_osd.cpp',
+    'player/rd_osd.hpp',
+    'player/rd_osd_parse.cpp',
+    'player/rd_osd_parse.hpp',
     'player/rd_subtitle_timeline.cpp',
     'player/rd_subtitle_timeline.hpp',
     'player/rd_subtitle_timeline_item.cpp',
@@ -971,6 +976,7 @@ qml_modules += {
        'player/qml/RdMiniQueue.qml',
        'player/qml/RdMiniPlayer.qml',
        'player/qml/RdInfoPanel.qml',
+       'player/qml/RdOsdMessage.qml',
        'player/qml/RdUpNextCard.qml',
    ),
    'singletons' : files(
@@ -1713,6 +1719,20 @@ if qt6_dep.found()
                 'tests/test_rd_show_tracks.cpp',
                 'player/rd_show_tracks.cpp',
                 'player/rd_show_tracks.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone's on-screen messages: the core's texts sorted, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_osd_parse',
+            'sources': files(
+                'tests/test_rd_osd_parse.cpp',
+                'player/rd_osd_parse.cpp',
+                'player/rd_osd_parse.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,
