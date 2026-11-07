@@ -686,6 +686,21 @@ void MainCtx::setAccentColor(const QColor& color)
     emit accentColorChanged();
 }
 
+void MainCtx::restoreAccentOption(const QString& option)
+{
+    const QByteArray value = option.isEmpty() ? QByteArray("default") : option.toUtf8();
+    QColor color;
+    if (value != "default" && value != "system")
+        color = QColor(option);
+    if (color == m_accentColor && value == m_accentOption)
+        return;
+    m_accentColor = color;
+    m_accentOption = value;
+    config_PutPsz("qt-accent-color", value.constData());
+    scheduleConfigSave();
+    emit accentColorChanged();
+}
+
 void MainCtx::scheduleConfigSave()
 {
     // one save half a second after the last change (a drag through the accents writes once),

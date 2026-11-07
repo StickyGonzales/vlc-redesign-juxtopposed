@@ -93,7 +93,7 @@ SettingsPage {
 
         SettingsRow {
             text: qsTr("Accent color")
-            keywords: "accent color colour orange"
+            keywords: "accent color colour orange custom hex"
 
             SettingsAccentPicker { }
         }
