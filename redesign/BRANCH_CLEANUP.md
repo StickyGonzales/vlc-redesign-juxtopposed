@@ -101,3 +101,13 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/verify-harness` | `43961c6b60b73cc4e0c1e34917d1d25966f828fc` | 2026-10-18 | GitHub handle renamed: links and credits point to StickyGonzales [skip ci] |
 | `wip/verify-linux` | `771aae56f7db41cc822eb56d0a85877b1888610d` | 2026-10-18 | redesign: LINUX_VERIFY summary per screen [skip ci] |
 | `wip/verify-sheets` | `b07ef7ea3be16e89a912171f30a4382fb523fe68` | 2026-10-18 | redesign: SHEET_CONFIRMATIONS for the 45 verify sheets [skip ci] |
+
+## 2026-11-09, end of the morning round (CLAUDE.md branch rule)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/up-next-card-click-fill` | `7abd12173d8c09a69133078e67b64097be4c1a93` | PR #101 merged into wip/next-test |
+| `wip/fix-fullscreen-exit` | `58b0f4cac104fe08bc751696467b37ba3960fb86` | PR #105 merged into wip/next-test |
+| `wip/fix-autosync-message` | `dc3974528a235b856ec413d80bba857d2b23fe64` | PR #108 merged into wip/next-test |
+| `wip/macos-build` | `f144b3a889db0574351c31211e93bd5216a1e2b5` | PR #109 merged into wip/next-test |
+| `wip/round-2026-11-09` | `519d07e74cf65d0210ac986f2df0ce0004a50466` | combined test build of the round, merged into wip/next-test |
