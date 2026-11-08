@@ -570,11 +570,23 @@ FocusScope {
                         }
                     }
 
+                    // the pointer hides with the bars while the video plays; in the Cone build
+                    // it stays while a player panel, the "..." menu or a dialog is open (they
+                    // keep the bars too) and while the Up Next card shows
+                    // (redesign/FIX_CURSOR_HIDE_NOTES.md). Only the topmost item with a cursor
+                    // under the pointer sets it: the items above the video leave it unset
+                    // (panelDismissArea below)
                     Binding on cursorShape {
-                        when: playerToolbarVisibilityFSM.started
+                        when: Player.playingState === Player.PLAYING_STATE_PLAYING
+                            && playerToolbarVisibilityFSM.started
                             && !playerToolbarVisibilityFSM.isVisible
                             && !interactiveAutoHideTimer.running
                             && !rootPlayer._mouseNearTop && !rootPlayer._mouseNearBottom
+                            && (!Brand.isPublic
+                                || (RdPanels.current === ""
+                                    && RdPanels.modalCount === 0
+                                    && !playerMenu.shown
+                                    && !upNextCard.shown))
                         value: Qt.BlankCursor
                     }
 
@@ -1377,6 +1389,12 @@ FocusScope {
 
         enabled: RdPanels.current !== "" || dismissClickGuard.running || pressed
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        // Cone build: no cursor of its own. A MouseArea sets the arrow by default, and Qt takes
+        // the cursor of the topmost item under the pointer that has one, disabled or not, so this
+        // one over the whole player kept the video's hidden cursor (Qt.BlankCursor) from ever
+        // showing: the pointer never hid during playback since 0.1.0 (538627909e,
+        // redesign/FIX_CURSOR_HIDE_NOTES.md)
+        cursorShape: Brand.isPublic ? undefined : Qt.ArrowCursor
 
         onPressed: {
             if (RdPanels.current === "")
@@ -1813,8 +1831,42 @@ FocusScope {
         }
     }
 
+    // redesign (redesign/OSD_INVENTORY.md "Final style"): the on-screen messages, top center 16 px
+    // under the top bar's place whether the bars show or not, so it never moves and never sits
+    // under the top bar; the Up Next card is bottom right. A quarter bigger in fullscreen
+    RdOsdMessage {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: topBar.height + VLCStyle.dp(16, VLCStyle.scale)
+        z: 4
+        transformOrigin: Item.Top
+        scale: MainCtx.intfMainWindow && MainCtx.intfMainWindow.visibility === Window.FullScreen ? 1.25 : 1
+        enabled: false
+    }
+
+    // Cone build: the interface's own notifications (interface scale, Minimal View, bookmark
+    // added) use the same message in the player
+    Connections {
+        target: RdOsd.active ? UINotifier : null
+
+        function onShowNotification(id, text) {
+            RdOsd.showText(id === UINotifier.Bookmark ? "bookmark" : "interface", text)
+        }
+    }
+
+    // Cone build: the outcome of an automatic subtitle sync (a download from OpenSubtitles), seen
+    // without the sidebar (SUBTITLE_AUTO_SYNC_NOTES.md)
+    Connections {
+        target: RdSubSync
+
+        function onNotice(text) {
+            UINotifier.notify(UINotifier.SubtitleSync, text)
+        }
+    }
+
     Widgets.FloatingNotification {
         id: notif
+
+        visible: !RdOsd.active
 
         anchors {
             bottom: controlBar.top
@@ -2243,9 +2295,9 @@ FocusScope {
 
     Shortcut {
         sequences: [StandardKey.Cancel]
-        // a focused Up Next card or show prompt takes Escape itself (it cancels / dismisses)
+        // a focused Up Next card takes Escape itself (it cancels)
         enabled: (RdPanels.current !== "" || rootPlayer._escapeClosesLibrary || RdPanels.uiHidden)
-                 && !upNextCard.activeFocus && !showPrompt.activeFocus
+                 && !upNextCard.activeFocus
         onActivated: {
             if (RdPanels.current !== "") {
                 // the keyboard focus goes back to the panel's button (onCurrentChanged above)
@@ -2301,8 +2353,7 @@ FocusScope {
         onVisibleChanged: rootPlayer.lockUnlockAutoHide(visible)
     }
 
-    // Cone extra (Decision 71, UP_NEXT_PLAN.md 7.1): the Up Next card and the "Looks like a show"
-    // prompt never cover the subtitles. With a subtitle track on they sit 16 px above the subtitle
+    // Cone extra (Decision 71, UP_NEXT_PLAN.md 7.1): the Up Next card never covers the subtitles. With a subtitle track on they sit 16 px above the subtitle
     // band (the lift over the control bar + sub-margin + two lines at the current size, whether a
     // line shows or not, so they do not jump); without, 24 px above the control bar, or above
     // the bottom edge while the bars are hidden. They show in Hide UI too (Q4).
@@ -2344,26 +2395,6 @@ FocusScope {
         Navigation.parentItem: rootPlayer
 
         // the bars wait while a button of the card has the focus (like the resume toast)
-        onActiveFocusChanged: rootPlayer.lockUnlockAutoHide(activeFocus)
-    }
-
-    RdShowPrompt {
-        id: showPrompt
-
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.horizontalCenterOffset: (rootPlayer._videoInset - rootPlayer._toastRightInset) / 2
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: rootPlayer._upNextBottom
-        width: Math.min(implicitWidth, rootPlayer._toastRoom)
-        height: implicitHeight
-        z: 3
-
-        maxWidth: rootPlayer._toastRoom
-        // it waits for the resume toast (RdUpNext asks only once the toast is gone)
-        shown: RdUpNext.promptVisible && !resumeToast.visible && rootPlayer._toastRoom >= minimumWidth
-
-        Navigation.parentItem: rootPlayer
-
         onActiveFocusChanged: rootPlayer.lockUnlockAutoHide(activeFocus)
     }
 

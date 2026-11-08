@@ -22,6 +22,8 @@
 // the resume toast's 60 px pill with a 64x36 thumbnail, one line of text, Play now and the dark
 // close button. "Still watching?" (after 3 episodes in a row) drops the picture and the line and
 // asks Keep watching / Stop.
+// During the credits (UP_NEXT_PLAN.md 5.4) it waits without a countdown: Next episode and Cancel;
+// the countdown only runs in the last seconds, so a post-credits scene is never cut by itself.
 // It never takes the focus by itself (Space still pauses); Tab reaches its buttons, Escape cancels
 // while it has the focus.
 import QtQuick
@@ -39,8 +41,40 @@ FocusScope {
     // Variant C's pill (Player.qml: under 900 px of video width)
     property bool compact: false
 
-    readonly property bool _still: RdUpNext.cardMode === RdUpNext.CardStillWatching
-    readonly property bool _season: !_still && RdUpNext.nextIsNewSeason
+    // what the card shows, held while it fades out: when the next episode starts, the card fades
+    // out while RdUpNext already looks at the new episode (its name first empty, then the one
+    // after it, the PC session's retest of #87), so its texts stay those of the moment it began
+    // to hide. Shown or fully hidden, they follow RdUpNext
+    QtObject {
+        id: shownState
+
+        property int cardMode: RdUpNext.CardNext
+        property bool nextIsNewSeason: false
+        property int nextSeason: -1
+        property bool autoplays: true
+        property bool counting: false
+        property int secondsLeft: 0
+        property string showName: ""
+        property string cardLine: ""
+        property url nextThumbnail: ""
+        property real countdownProgress: 0
+    }
+
+    Binding { target: shownState; property: "cardMode"; value: RdUpNext.cardMode; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "nextIsNewSeason"; value: RdUpNext.nextIsNewSeason; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "nextSeason"; value: RdUpNext.nextSeason; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "autoplays"; value: RdUpNext.autoplays; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "counting"; value: RdUpNext.counting; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "secondsLeft"; value: RdUpNext.secondsLeft; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "showName"; value: RdUpNext.showName; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "cardLine"; value: RdUpNext.cardLine; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "nextThumbnail"; value: RdUpNext.nextThumbnail; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+    Binding { target: shownState; property: "countdownProgress"; value: RdUpNext.countdownProgress; when: root.shown || !root.visible; restoreMode: Binding.RestoreNone }
+
+    readonly property bool _still: shownState.cardMode === RdUpNext.CardStillWatching
+    readonly property bool _season: !_still && shownState.nextIsNewSeason
+    // shown during the credits, before the countdown
+    readonly property bool _waiting: !_still && !shownState.counting
 
     readonly property real _pad: VLCStyle.dp(12, VLCStyle.scale)
     readonly property real _thumbWidth: VLCStyle.dp(160, VLCStyle.scale)
@@ -49,9 +83,15 @@ FocusScope {
     readonly property real _lineHeight: VLCStyle.dp(3, VLCStyle.scale)
 
     readonly property string _heading: _still ? qsTr("Still watching?")
-                                              : (_season ? qsTr("Up next · Season %1").arg(RdUpNext.nextSeason)
+                                              : (_season ? qsTr("Up next · Season %1").arg(shownState.nextSeason)
                                                          : qsTr("Up next"))
-    readonly property string _countdownText: qsTr("Playing in %1 s").arg(RdUpNext.secondsLeft)
+    // a weak name pattern (01 02, "Part 2") never plays by itself: the card waits for a click; an episode
+    // that plays by itself needs no line while it waits (StickyGonzales, 2026-11-08)
+    readonly property string _waitingText: shownState.autoplays ? "" : qsTr("Plays when you choose")
+    readonly property string _countdownText: _waiting ? _waitingText
+                                                      : qsTr("Playing in %1 s").arg(shownState.secondsLeft)
+    readonly property string _playText: _still ? qsTr("Keep watching")
+                                               : (_waiting ? qsTr("Next episode") : qsTr("Play now"))
 
     implicitWidth: compact ? pill.implicitWidth : _cardWidth
     implicitHeight: compact ? pill.implicitHeight : full.implicitHeight
@@ -70,9 +110,13 @@ FocusScope {
     }
 
     Accessible.role: Accessible.Dialog
-    Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(RdUpNext.cardLine)
-                            : qsTr("Up next: %1, %2. Playing in %3 seconds.")
-                                  .arg(RdUpNext.showName).arg(RdUpNext.cardLine).arg(RdUpNext.secondsLeft)
+    Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(shownState.cardLine)
+                            : _waiting ? (_waitingText ? qsTr("Up next: %1, %2. %3.")
+                                                             .arg(shownState.showName).arg(shownState.cardLine).arg(_waitingText)
+                                                       : qsTr("Up next: %1, %2.")
+                                                             .arg(shownState.showName).arg(shownState.cardLine))
+                                       : qsTr("Up next: %1, %2. Playing in %3 seconds.")
+                                             .arg(shownState.showName).arg(shownState.cardLine).arg(shownState.secondsLeft)
 
     function _primary() {
         if (root._still)
@@ -153,7 +197,7 @@ FocusScope {
 
             Image {
                 anchors.fill: parent
-                source: RdUpNext.nextThumbnail
+                source: shownState.nextThumbnail
                 asynchronous: true
                 cache: false
                 fillMode: Image.PreserveAspectCrop
@@ -204,7 +248,7 @@ FocusScope {
 
             T.Label {
                 width: parent.width
-                text: RdUpNext.showName
+                text: shownState.showName
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdFgA2
                 font.family: VLCStyle.rd_fontFamily
@@ -214,7 +258,7 @@ FocusScope {
             // two lines, then elided (matrix row 115)
             T.Label {
                 width: parent.width
-                text: RdUpNext.cardLine
+                text: shownState.cardLine
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -247,7 +291,7 @@ FocusScope {
 
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
-                text: root._still ? qsTr("Keep watching") : qsTr("Play now")
+                text: root._playText
                 // 120 px wide at least (the design's Play now)
                 implicitWidth: Math.max(VLCStyle.dp(120, VLCStyle.scale), implicitContentWidth + leftPadding + rightPadding)
                 onClicked: root._primary()
@@ -265,6 +309,59 @@ FocusScope {
 
                 Navigation.parentItem: root
                 Navigation.leftItem: playButton
+                Navigation.rightItem: turnOffLink.visible ? turnOffLink : null
+            }
+        }
+
+        // "Turn off autoplay": the setting Play episodes in a row goes off (UP_NEXT_PLAN.md 2.3)
+        T.AbstractButton {
+            id: turnOffLink
+
+            anchors.right: parent.right
+            anchors.rightMargin: root._pad
+            anchors.verticalCenter: fullButtons.verticalCenter
+            visible: !root._still
+            focusPolicy: Qt.StrongFocus
+            text: qsTr("Turn off autoplay")
+            implicitWidth: linkLabel.implicitWidth
+            implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+
+            // a button to assistive technology, like the card's other buttons: the activate action
+            // (UI Automation's Invoke, Narrator) presses it as a click does; the underline is
+            // only its look
+            Accessible.role: Accessible.Button
+            Accessible.name: text
+            Accessible.description: qsTr("Turns off Play episodes in a row")
+            Accessible.onPressAction: turnOffLink.clicked()
+
+            onClicked: RdUpNext.turnOffAutoplay()
+
+            Navigation.parentItem: root
+            Navigation.leftItem: cancelButton
+            Keys.priority: Keys.AfterItem
+            // Space presses it (AbstractButton); Enter and Return as well, as on a link
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    event.accepted = true
+                    turnOffLink.clicked()
+                    return
+                }
+                turnOffLink.Navigation.defaultKeyAction(event)
+            }
+
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            contentItem: T.Label {
+                id: linkLabel
+
+                text: turnOffLink.text
+                verticalAlignment: Text.AlignVCenter
+                color: turnOffLink.hovered || turnOffLink.visualFocus ? VLCStyle.palette.rdFg2 : VLCStyle.palette.rdFgA3
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.dp(12, VLCStyle.scale)
+                font.underline: true
             }
         }
 
@@ -276,10 +373,12 @@ FocusScope {
             height: root._lineHeight
             radius: height / 2
             visible: !root._still
+            // during the credits there is no countdown yet (the card keeps its height)
+            opacity: root._waiting ? 0 : 1
             color: VLCStyle.palette.rdBgB2
 
             Rectangle {
-                width: parent.width * RdUpNext.countdownProgress
+                width: parent.width * shownState.countdownProgress
                 height: parent.height
                 radius: height / 2
                 color: VLCStyle.palette.rdAccentMain
@@ -329,7 +428,7 @@ FocusScope {
 
             Image {
                 anchors.fill: parent
-                source: RdUpNext.nextThumbnail
+                source: shownState.nextThumbnail
                 asynchronous: true
                 cache: false
                 fillMode: Image.PreserveAspectCrop
@@ -348,7 +447,8 @@ FocusScope {
                 id: pillHeading
 
                 width: parent.width
-                text: root._still ? qsTr("Still watching?") : qsTr("Up next in %1 s").arg(RdUpNext.secondsLeft)
+                text: root._still ? qsTr("Still watching?")
+                                  : (root._waiting ? qsTr("Up next") : qsTr("Up next in %1 s").arg(shownState.secondsLeft))
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdAccentMain
                 font.family: VLCStyle.rd_fontFamily
@@ -360,7 +460,7 @@ FocusScope {
                 id: pillEpisode
 
                 width: parent.width
-                text: RdUpNext.cardLine
+                text: shownState.cardLine
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdFg2
                 font.family: VLCStyle.rd_fontFamily
@@ -380,7 +480,7 @@ FocusScope {
                 anchors.verticalCenter: parent.verticalCenter
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
-                text: root._still ? qsTr("Keep watching") : qsTr("Play now")
+                text: root._playText
                 onClicked: root._primary()
 
                 Navigation.parentItem: root
@@ -433,11 +533,11 @@ FocusScope {
             y: pill.height - VLCStyle.dp(6, VLCStyle.scale)
             height: VLCStyle.dp(2, VLCStyle.scale)
             radius: height / 2
-            visible: !root._still
+            visible: !root._still && !root._waiting
             color: VLCStyle.palette.rdBgB2
 
             Rectangle {
-                width: parent.width * RdUpNext.countdownProgress
+                width: parent.width * shownState.countdownProgress
                 height: parent.height
                 radius: height / 2
                 color: VLCStyle.palette.rdAccentMain

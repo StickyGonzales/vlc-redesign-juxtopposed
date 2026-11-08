@@ -55,7 +55,7 @@ const QSet<QByteArray>& liveOptions()
         "qt-smooth-scrolling", "qt-max-volume", "qt-safe-area", "qt-video-double-click",
         "qt-cast-discovery", "qt-seek-thumbnails", "qt-seek-waveform", "qt-seek-subtitle-timeline",
         // RdUpNext reads them again on RdProfiles::applied
-        "qt-autoplay-next", "qt-autoplay-countdown", "qt-autoplay-card-point",
+        "qt-autoplay-next", "qt-autoplay-countdown", "qt-autoplay-credits-lead",
         "qt-autoplay-still-watching",
         "mouse-hide-timeout",
         // read for every on-screen message (src/video_output/video_text.c, Cone build)

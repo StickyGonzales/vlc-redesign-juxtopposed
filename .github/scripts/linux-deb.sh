@@ -45,7 +45,7 @@ exec /opt/cone-player/cone "$@"
 EOF
 chmod 755 "$ROOT/usr/bin/cone-player"
 
-sed -e 's|^Exec=.*|Exec=cone-player %U|' "$DIR/usr/share/applications/cone-player.desktop" \
+sed -e 's|^Exec=.*|Exec=cone-player --started-from-file %U|' "$DIR/usr/share/applications/cone-player.desktop" \
     > "$ROOT/usr/share/applications/cone-player.desktop"
 cp -a "$DIR/usr/share/icons/hicolor" "$ROOT/usr/share/icons/"
 
@@ -85,7 +85,11 @@ Description: media player with Juxtopposed's VLC redesign
 EOF
 
 mkdir -p "$OUT"
-DEB=$OUT/cone-player_${DEBVERSION}_amd64.deb
+# the file name takes the release's own version (1.2.0-beta, as in the tarball's name), never the
+# package version's "~": GitHub stores a release file's "~" as ".", which left SHA256SUMS.txt
+# naming a file that was not there (linux-v1.1.2-beta2). The package's Version keeps "~", so apt
+# still sorts the pre-release before its release (redesign/FIX_DEB_ASSET_NAME_NOTES.md)
+DEB=$OUT/cone-player_${VERSION}_amd64.deb
 dpkg-deb --root-owner-group -Zxz --build "$ROOT" "$DEB"
 rm -rf "$STAGE"
 dpkg-deb --info "$DEB"

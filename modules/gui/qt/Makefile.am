@@ -335,10 +335,20 @@ libqt_plugin_la_SOURCES = \
 	player/rd_waveform_item.hpp \
 	player/rd_subtitle_lift.cpp \
 	player/rd_subtitle_lift.hpp \
+	player/rd_osd.cpp \
+	player/rd_osd.hpp \
+	player/rd_osd_parse.cpp \
+	player/rd_osd_parse.hpp \
 	player/rd_subtitle_timeline.cpp \
 	player/rd_subtitle_timeline.hpp \
 	player/rd_subtitle_timeline_item.cpp \
 	player/rd_subtitle_timeline_item.hpp \
+	player/rd_sub_sync.cpp \
+	player/rd_sub_sync.hpp \
+	player/rd_sync_math.cpp \
+	player/rd_sync_math.hpp \
+	player/rd_sync_scanner.cpp \
+	player/rd_sync_scanner.hpp \
 	player/rd_waveform_scanner.cpp \
 	player/rd_waveform_scanner.hpp \
 	player/rd_now_playing.cpp \
@@ -353,6 +363,12 @@ libqt_plugin_la_SOURCES = \
 	player/rd_presets.hpp \
 	player/rd_episode_parser.cpp \
 	player/rd_episode_parser.hpp \
+	player/rd_credits_point.cpp \
+	player/rd_credits_point.hpp \
+	player/rd_show_tracks.cpp \
+	player/rd_show_tracks.hpp \
+	player/rd_credits_subtitles.cpp \
+	player/rd_credits_subtitles.hpp \
 	player/rd_up_next.cpp \
 	player/rd_up_next.hpp \
 	player/player_controller.cpp player/player_controller.hpp player/player_controller_p.hpp \
@@ -581,8 +597,10 @@ nodist_libqt_plugin_la_SOURCES = \
 	player/rd_waveform.moc.cpp \
 	player/rd_waveform_item.moc.cpp \
 	player/rd_subtitle_lift.moc.cpp \
+	player/rd_osd.moc.cpp \
 	player/rd_subtitle_timeline.moc.cpp \
 	player/rd_subtitle_timeline_item.moc.cpp \
+	player/rd_sub_sync.moc.cpp \
 	player/rd_now_playing.moc.cpp \
 	dialogs/toolbar/rd_profiles.moc.cpp \
 	player/rd_media_info.moc.cpp \
@@ -1104,6 +1122,7 @@ libqt_plugin_la_RES = \
 	pixmaps/redesign/view_state-active.svg \
 	pixmaps/redesign/vlc.svg \
 	pixmaps/redesign/volume_value-high.svg \
+	pixmaps/redesign/volume_value-muted.svg \
 	pixmaps/redesign/waveform_two-tone-yes.svg \
 	pixmaps/redesign/window.svg \
 	pixmaps/redesign/window_two-tone-yes.svg \
@@ -1605,8 +1624,8 @@ libqml_module_player_a_QML = \
 	player/qml/RdMiniQueue.qml \
 	player/qml/RdMiniPlayer.qml \
 	player/qml/RdInfoPanel.qml \
-	player/qml/RdUpNextCard.qml \
-	player/qml/RdShowPrompt.qml
+	player/qml/RdOsdMessage.qml \
+	player/qml/RdUpNextCard.qml
 
 libqml_module_player_a_Singleton_QML = \
 	player/qml/PlayerControlbarControls.qml \
@@ -1844,6 +1863,7 @@ libqml_module_widgets_a_QML = \
 	widgets/qml/RdEndlessSlider.qml \
 	widgets/qml/RdSliderWheel.qml \
 	widgets/qml/RdWheelSink.qml \
+	widgets/qml/RdAccentEditor.qml \
 	widgets/qml/RdButton.qml \
 	widgets/qml/RdTextField.qml \
 	widgets/qml/RdOptionRow.qml \
@@ -2340,6 +2360,19 @@ test_thread_runner_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_thread_runner
 TESTS += test_thread_runner
 
+# test_rd_sync_math (Cone build, Auto-sync): the standard library only
+
+test_rd_sync_math_SOURCES = \
+	tests/test_rd_sync_math.cpp \
+	player/rd_sync_math.cpp player/rd_sync_math.hpp
+
+test_rd_sync_math_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_sync_math_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_sync_math_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_sync_math_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_sync_math
+TESTS += test_rd_sync_math
+
 # test_rd_episode_parser (Cone extra, Up Next): QtCore only
 
 test_rd_episode_parser_SOURCES = \
@@ -2354,6 +2387,43 @@ test_rd_episode_parser_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_episode_parser_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_rd_episode_parser
 TESTS += test_rd_episode_parser
+
+# test_rd_credits_point (Cone extra, Up Next): QtCore only
+
+test_rd_credits_point_SOURCES = \
+	tests/test_rd_credits_point.cpp \
+	player/rd_credits_point.cpp player/rd_credits_point.hpp
+
+test_rd_credits_point_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_credits_point_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_credits_point_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_credits_point_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_credits_point
+TESTS += test_rd_credits_point
+
+# test_rd_show_tracks (Cone extra, Up Next): QtCore only
+check_PROGRAMS += test_rd_show_tracks
+test_rd_show_tracks_SOURCES = \
+	tests/test_rd_show_tracks.cpp \
+	player/rd_show_tracks.cpp player/rd_show_tracks.hpp
+test_rd_show_tracks_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_show_tracks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_show_tracks_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_show_tracks_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_show_tracks
+
+# test_rd_osd_parse (Cone's on-screen messages): QtCore only
+
+test_rd_osd_parse_SOURCES = \
+	tests/test_rd_osd_parse.cpp \
+	player/rd_osd_parse.cpp player/rd_osd_parse.hpp
+
+test_rd_osd_parse_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_osd_parse_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_osd_parse_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_osd_parse_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_osd_parse
+TESTS += test_rd_osd_parse
 
 # test_vlc_dialog_model
 

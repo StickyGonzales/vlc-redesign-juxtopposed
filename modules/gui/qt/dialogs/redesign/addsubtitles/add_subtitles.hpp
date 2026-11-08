@@ -91,6 +91,9 @@ class AddSubtitles : public QObject
     Q_PROPERTY(QString apiKey READ apiKey WRITE setApiKey NOTIFY accountChanged FINAL)
     Q_PROPERTY(QString username READ username WRITE setUsername NOTIFY accountChanged FINAL)
     Q_PROPERTY(QString password READ password WRITE setPassword NOTIFY accountChanged FINAL)
+    // redesign (Cone build, SUBTITLE_AUTO_SYNC_NOTES.md): a file downloaded from OpenSubtitles
+    // for the video playing is auto-synced to its speech (off by default)
+    Q_PROPERTY(bool autoSyncDownloads READ autoSyncDownloads WRITE setAutoSyncDownloads NOTIFY autoSyncDownloadsChanged FINAL)
 
 public:
     enum Target { TargetFile = 0, TargetFolder = 1, TargetPlaylist = 2 };
@@ -132,6 +135,8 @@ public:
     void setUsername(const QString& username);
     QString password() const { return m_account.password; }
     void setPassword(const QString& password);
+    bool autoSyncDownloads() const { return m_autoSyncDownloads; }
+    void setAutoSyncDownloads(bool on);
 
     // asks the dialog to open: { mrl, target ("file", "folder", "playlist"), folder (mrl),
     // items ([mrl], the playlist's media), title (of the playlist) }; without a media, for the
@@ -174,6 +179,10 @@ signals:
     void messageChanged();
     void canSaveChanged();
     void accountChanged();
+    void autoSyncDownloadsChanged();
+    // a subtitle file just downloaded from OpenSubtitles was added to the video playing and is
+    // being selected, and "Auto-sync downloaded subtitles" is on
+    void downloadAttached(const QByteArray& uri);
 
 private:
     struct Candidate
@@ -219,7 +228,8 @@ private:
     void onInputChanged(bool hasInput);
     void onPlayingStateChanged();
     void applyTo(const QString& mrl);
-    void attach(const QString& mrl, const QStringList& subtitles, bool select);
+    // `downloaded`: the files were just downloaded from OpenSubtitles
+    void attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded = false);
 
     qt_intf_t* m_intf;
     QThreadPool m_pool;
@@ -232,6 +242,7 @@ private:
     int m_rebuildSerial = 0;
     int m_busyCount = 0;
     bool m_saving = false;
+    bool m_autoSyncDownloads = false;
 
     int m_target = TargetFile;
     int m_source = SourceComputer;

@@ -183,18 +183,35 @@ void vout_OSDMessageVa(vout_thread_t *vout, int channel,
         const vlc_tick_t duration =
             VLC_TICK_FROM_MS(var_InheritInteger(vout, "osd-duration"));
         libvlc_int_t *libvlc = vlc_object_instance(vout);
-        char *hint = NULL;
+        char *key = NULL;
         const vlc_tick_t pressed = var_GetInteger(libvlc, "osd-key-hint-date");
         if (pressed > 0 && vlc_tick_now() - pressed < OSD_KEY_HINT_DELAY)
+            key = var_GetString(libvlc, "osd-key-hint");
+        const bool has_key = key != NULL && key[0] != '\0';
+        /* redesign (redesign/OSD_INVENTORY.md "Final style"): Cone's interface draws the
+         * messages in its own style. It listens on "cone-osd" (modules/gui/qt/player/rd_osd.cpp)
+         * and gets the text and the key that caused it ("msg", text, key, separated by \x1f).
+         * Without it (no Qt interface), VLC draws them as before */
+        if (var_Type(libvlc, "cone-osd") != 0)
         {
-            char *key = var_GetString(libvlc, "osd-key-hint");
-            if (key != NULL && key[0] != '\0' && asprintf(&hint, _("Pressed %s"), key) == -1)
-                hint = NULL;
-            free(key);
+            char *payload;
+            if (var_InheritBool(vout, "osd")
+             && asprintf(&payload, "msg\x1f%s\x1f%s", string, has_key ? key : "") != -1)
+            {
+                var_SetString(libvlc, "cone-osd", payload);
+                free(payload);
+            }
         }
-        OSDText(vout, channel, SUBPICTURE_ALIGN_TOP|SUBPICTURE_ALIGN_RIGHT, duration,
-                string, hint);
-        free(hint);
+        else
+        {
+            char *hint = NULL;
+            if (has_key && asprintf(&hint, _("Pressed %s"), key) == -1)
+                hint = NULL;
+            OSDText(vout, channel, SUBPICTURE_ALIGN_TOP|SUBPICTURE_ALIGN_RIGHT, duration,
+                    string, hint);
+            free(hint);
+        }
+        free(key);
 #else
         vout_OSDText(vout, channel,
                      SUBPICTURE_ALIGN_TOP|SUBPICTURE_ALIGN_RIGHT, VLC_TICK_FROM_SEC(1),

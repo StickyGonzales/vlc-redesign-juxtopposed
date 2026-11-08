@@ -391,28 +391,27 @@ static const char *const psz_process_priority_text[] =
     { N_( "Lowest" ), N_( "Low" ), N_( "Normal" ), N_( "High" ), N_( "Highest" ) };
 
 /* Cone extra (Decision 71, redesign/UP_NEXT_PLAN.md): RdUpNext */
-#define AUTOPLAY_NEXT_TEXT N_( "Autoplay next episode" )
-#define AUTOPLAY_NEXT_LONGTEXT N_( "Plays the next episode of a show folder when one ends. " \
-    "Single videos, clips and music are never treated as shows." )
+#define AUTOPLAY_NEXT_TEXT N_( "Play episodes in a row" )
+#define AUTOPLAY_NEXT_LONGTEXT N_( "Plays the next episode of a show folder when one ends " \
+    "(S01E02, 1x02 ...). With plain numbers or Part 2, the Up Next card offers the next episode " \
+    "and waits for a click. Single videos, clips and music are never treated as shows." )
 #define AUTOPLAY_COUNTDOWN_TEXT N_( "Countdown" )
 #define AUTOPLAY_COUNTDOWN_LONGTEXT N_( "How long the Up Next card counts down before the next " \
     "episode starts." )
-#define AUTOPLAY_CARD_POINT_TEXT N_( "Show Up Next" )
-#define AUTOPLAY_CARD_POINT_LONGTEXT N_( "When the Up Next card appears: in the last seconds of " \
-    "the episode, or at its credits chapter when it has one." )
+#define AUTOPLAY_CREDITS_LEAD_TEXT N_( "Show Up Next" )
+#define AUTOPLAY_CREDITS_LEAD_LONGTEXT N_( "When the Up Next card appears if Cone does not know " \
+    "where the credits start. A credits chapter, or where you went on to the next episode of the " \
+    "show before, comes first. The card never shows before the last 8 minutes." )
 #define AUTOPLAY_STILL_WATCHING_TEXT N_( "Ask if I'm still watching after 3 episodes" )
 #define AUTOPLAY_STILL_WATCHING_LONGTEXT N_( "After 3 episodes in a row without a key press or " \
     "a click, the next episode waits paused until you answer." )
 
-static const int i_autoplay_next_list[] = { 0, 1, 2 };
-static const char *const psz_autoplay_next_text[] =
-    { N_( "Off" ), N_( "Ask for each show" ), N_( "Always" ) };
 static const int i_autoplay_countdown_list[] = { 5, 10, 15 };
 static const char *const psz_autoplay_countdown_text[] =
     { N_( "5 seconds" ), N_( "10 seconds" ), N_( "15 seconds" ) };
-static const int i_autoplay_card_point_list[] = { 0, 1 };
-static const char *const psz_autoplay_card_point_text[] =
-    { N_( "At the end of the episode" ), N_( "When the credits start" ) };
+static const int i_autoplay_credits_lead_list[] = { 30, 60, 120 };
+static const char *const psz_autoplay_credits_lead_text[] =
+    { N_( "Last 30 s" ), N_( "Last 1 min" ), N_( "Last 2 min" ) };
 
 static const char *const compositor_vlc[] = {
     "auto",
@@ -627,18 +626,20 @@ vlc_module_begin ()
     add_bool( "qt-seek-subtitle-timeline", false, SEEK_SUBTITLE_TIMELINE_TEXT,
               SEEK_SUBTITLE_TIMELINE_LONGTEXT )
 
-    /* Cone extra (Decision 71): autoplay next episode; the vlc profile behaves like stock VLC
-     * (Off), Cone asks for each show (UP_NEXT_PLAN.md Q6) */
+    /* Cone extra (Decision 71): play episodes in a row; the vlc profile behaves like stock VLC
+     * (off), Cone plays them, with no question at the start (UP_NEXT_PLAN.md 2.3). Before, this
+     * was 0 Off / 1 Ask / 2 Always: a saved 0 stays off, 1 reads as on, and 2 (out of a bool's
+     * range) falls back to the default, on */
 #ifdef VLC_BRAND_PUBLIC
-    add_integer( "qt-autoplay-next", 1, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+    add_bool( "qt-autoplay-next", true, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
 #else
-    add_integer( "qt-autoplay-next", 0, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+    add_bool( "qt-autoplay-next", false, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
 #endif
-        change_integer_list( i_autoplay_next_list, psz_autoplay_next_text )
     add_integer( "qt-autoplay-countdown", 10, AUTOPLAY_COUNTDOWN_TEXT, AUTOPLAY_COUNTDOWN_LONGTEXT )
         change_integer_list( i_autoplay_countdown_list, psz_autoplay_countdown_text )
-    add_integer( "qt-autoplay-card-point", 0, AUTOPLAY_CARD_POINT_TEXT, AUTOPLAY_CARD_POINT_LONGTEXT )
-        change_integer_list( i_autoplay_card_point_list, psz_autoplay_card_point_text )
+    add_integer( "qt-autoplay-credits-lead", 60, AUTOPLAY_CREDITS_LEAD_TEXT,
+                 AUTOPLAY_CREDITS_LEAD_LONGTEXT )
+        change_integer_list( i_autoplay_credits_lead_list, psz_autoplay_credits_lead_text )
     add_bool( "qt-autoplay-still-watching", true, AUTOPLAY_STILL_WATCHING_TEXT,
               AUTOPLAY_STILL_WATCHING_LONGTEXT )
 

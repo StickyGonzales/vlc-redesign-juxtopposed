@@ -8,7 +8,8 @@
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
 #   watchdog ends is a warning (known HEVC quit stall, STATUS.md), only a process that outlives the
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
-#   installer: a silent install, the installed Cone plays, a silent uninstall removes it.
+#   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
+#   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
 # Input goes through UI Automation and Win32 (like redesign/tools/perf/vlcperf.ps1); playback state
 # comes from VLC's cli interface on 127.0.0.1. Results: <Out>\summary.md, <Out>\smoke-log.txt,
@@ -51,6 +52,33 @@ public static class RdSmoke {
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [StructLayout(LayoutKind.Sequential)] public struct CURSORINFO { public int cbSize; public int flags; public IntPtr hCursor; public int x; public int y; }
+  [DllImport("user32.dll")] static extern bool GetCursorInfo(ref CURSORINFO ci);
+  [DllImport("user32.dll")] static extern IntPtr GetCursor();
+  // the cursor the window under the pointer set (its handle, none for a hidden cursor). The
+  // CURSOR_SHOWING flag is not used: a runner has no mouse, so Windows never shows the pointer
+  // there, but it still keeps the cursor the app set
+  public static IntPtr ScreenCursor(out int flags) {
+    var ci = new CURSORINFO(); ci.cbSize = Marshal.SizeOf(typeof(CURSORINFO));
+    flags = -1;
+    if (!GetCursorInfo(ref ci)) return IntPtr.Zero;
+    flags = ci.flags;
+    return ci.hCursor;
+  }
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
+  [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
+  // the cursor set by the thread of the window under the screen point (the interface, or the
+  // video output's own window), read through that thread's input state; the window's class goes
+  // to cls for the check's message
+  public static IntPtr CursorAt(int x, int y, out string cls) {
+    POINT p; p.X = x; p.Y = y;
+    IntPtr h = WindowFromPoint(p);
+    StringBuilder sb = new StringBuilder(256); GetClassName(h, sb, sb.Capacity); cls = sb.ToString();
+    uint t = GetWindowThreadProcessId(h, IntPtr.Zero);
+    uint me = GetCurrentThreadId();
+    if (t == 0 || !AttachThreadInput(me, t, true)) return IntPtr.Zero;
+    try { return GetCursor(); } finally { AttachThreadInput(me, t, false); }
+  }
   delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
 
@@ -205,13 +233,109 @@ function Show-Bars($hwnd) {
     foreach ($d in 0, 20, 40, 60) { [RdSmoke]::SetCursorPos($cx + $d, $cy + $d) | Out-Null; Start-Sleep -Milliseconds 60 }
 }
 
+# the pixels of a cursor that are not transparent: 0 for none or Qt's blank cursor
+function Cursor-Pixels([IntPtr]$h) {
+    if ($h -eq [IntPtr]::Zero) { return 0 }
+    $icon = [System.Drawing.Icon]::FromHandle($h)
+    $bmp = $icon.ToBitmap()
+    try {
+        $n = 0
+        for ($x = 0; $x -lt $bmp.Width; $x++) {
+            for ($y = 0; $y -lt $bmp.Height; $y++) { if ($bmp.GetPixel($x, $y).A -gt 0) { $n++ } }
+        }
+        return $n
+    } finally { $bmp.Dispose(); $icon.Dispose() }
+}
+# the pointer over Cone at the screen point x, y: the pixels of the cursor set by the window under
+# it (its thread's cursor). A runner has no mouse: Windows suppresses the pointer there (flags 2,
+# no cursor on the screen), but the cursor the app set is kept. The screen cursor, the flags and
+# the window's class go into $script:PointerInfo for the check's message
+$script:PointerInfo = ''
+function Pointer-Pixels([int]$x, [int]$y) {
+    $flags = 0; $cls = ''
+    $screen = Cursor-Pixels ([RdSmoke]::ScreenCursor([ref]$flags))
+    $n = Cursor-Pixels ([RdSmoke]::CursorAt($x, $y, [ref]$cls))
+    $script:PointerInfo = "cursor of the window under the pointer ($cls) $n px; screen cursor $screen px, flags $flags"
+    return $n
+}
+
+# the pointer over the playing video: hidden with the bars after about 3 s in a window (VLC's
+# mouse-hide-timeout in fullscreen), shown again on a move, kept while paused
+# (redesign/FIX_CURSOR_HIDE_NOTES.md)
+function Check-Pointer($s) {
+    # near the start, so the clip (30 s, repeated) does not start over during the three checks
+    Rc 'seek 1' | Out-Null
+    Start-Sleep -Seconds 1
+    $mustPlay = {
+        if ((Rc 'status') -notmatch '\( play state:') { throw 'the video is not playing (cli status), so the pointer may stay' }
+    }
+    $still = {
+        param([int]$x, [int]$y)
+        foreach ($d in 0, 10, 20, 30) { [RdSmoke]::SetCursorPos($x + $d, $y + $d) | Out-Null; Start-Sleep -Milliseconds 60 }
+        Start-Sleep -Milliseconds 600
+        $moved = Pointer-Pixels ($x + 30) ($y + 30)
+        Start-Sleep -Milliseconds 4500
+        return @($moved, (Pointer-Pixels ($x + 30) ($y + 30)))
+    }
+    Check "$($s.tag): pointer hides while playing (window)" {
+        & $mustPlay
+        Focus-Window $s.hwnd
+        $r = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$r) | Out-Null
+        $cx = [int](($r.Left + $r.Right) / 2); $cy = [int](($r.Top + $r.Bottom) / 2)
+        $moved, $after = & $still $cx $cy
+        if ($moved -eq 0) { throw "the pointer is hidden right after a move ($script:PointerInfo)" }
+        if ($after -ne 0) { throw "the pointer still shows ($after pixels) 5 s after the last move while playing ($script:PointerInfo)" }
+        foreach ($d in 40, 50, 60) { [RdSmoke]::SetCursorPos($cx + $d, $cy + 30) | Out-Null; Start-Sleep -Milliseconds 60 }
+        Start-Sleep -Milliseconds 600
+        $again = Pointer-Pixels ($cx + 60) ($cy + 30)
+        if ($again -eq 0) { throw "the pointer did not show again on a move ($script:PointerInfo)" }
+        "shown after a move ($moved pixels), hidden 4.5 s later, shown again on a move ($again pixels)"
+    } | Out-Null
+    Check "$($s.tag): pointer stays while paused" {
+        Focus-Window $s.hwnd
+        $r = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$r) | Out-Null
+        Rc 'pause' | Out-Null
+        try {
+            $moved, $after = & $still ([int](($r.Left + $r.Right) / 2)) ([int](($r.Top + $r.Bottom) / 2))
+            if ($after -eq 0) { throw "the pointer hid while the video was paused ($script:PointerInfo)" }
+            "still shown ($after pixels) 4.5 s after the last move while paused"
+        } finally {
+            # 'pause' toggles; the cli's 'play' does not resume a paused player (vlc_player_Start
+            # returns at once on a started player)
+            Rc 'pause' | Out-Null
+            Start-Sleep -Seconds 1
+        }
+    } | Out-Null
+    Check "$($s.tag): pointer hides while playing (fullscreen)" {
+        & $mustPlay
+        Focus-Window $s.hwnd
+        $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        try {
+            Keys @(0x46)   # F: fullscreen
+            Start-Sleep -Seconds 2
+            $moved, $after = & $still ([int]($b.Left + $b.Width / 2)) ([int]($b.Top + $b.Height / 2))
+            if ($moved -eq 0) { throw "the pointer is hidden right after a move ($script:PointerInfo)" }
+            if ($after -ne 0) { throw "the pointer still shows ($after pixels) in fullscreen 4.5 s after the last move ($script:PointerInfo)" }
+            'hidden in fullscreen 4.5 s after the last move'
+        } finally {
+            $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+            if ($w.Left -le $b.Left -and $w.Top -le $b.Top -and $w.Right -ge $b.Right -and $w.Bottom -ge $b.Bottom) {
+                Keys @(0x46)
+                Start-Sleep -Seconds 1
+            }
+        }
+    } | Out-Null
+}
+
 # ---------------------------------------------------------------- one Cone session
 
 # starts Cone with a video and its subtitles; returns the process, its window and its log file
-function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag) {
+# $firstStart: Cone's first start (the onboarding), as on a fresh install
+function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [bool]$firstStart = $false) {
     $log = Join-Path $Out "cone-$tag.log"
     Remove-Item $log -ErrorAction SilentlyContinue
-    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--input-repeat=50',
+    $privacy = if ($firstStart) { '--qt-privacy-ask' } else { '--no-qt-privacy-ask' }
+    $a = @($privacy, '--no-qt-video-autoresize', '--input-repeat=50',
            '--file-logging', "--logfile=`"$log`"", '--log-verbose=2',
            '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet',
            "--sub-file=`"$subs`"", "`"$video`"")
@@ -257,6 +381,37 @@ function Check-Subtitle($s) {
         $sel = ($t -split "`n") | Where-Object { $_ -match '\|\s*\d+ - .+ \*\s*$' }
         if (-not $sel) { throw "no subtitle track selected: '$(($t -split "`n" | Where-Object { $_ -match '\|' }) -join ' / ')'" }
         "selected: $(($sel | Select-Object -First 1).Trim())"
+    }
+}
+# Cone's on-screen message (RdOsdMessage.qml): a volume key shows it with "Volume ...", and it goes away
+function Check-Osd($s) {
+    # the speed key: the runner has no audio device, so a volume key shows nothing
+    Check "$($s.tag): a key shows Cone's on-screen message" {
+        Focus-Window $s.hwnd
+        Keys @(0xDD)   # ]: faster
+        $e = Uia-Find $s.hwnd 'On-screen message' 3000
+        if (-not $e) { throw 'no on-screen message within 3 s after ] (faster)' }
+        Shot "$($s.tag)-osd"
+        # Qt reports Accessible.description as UIA's FullDescription (30159), not HelpText
+        $text = ''
+        try { $text = [string]$e.GetCurrentPropertyValue([System.Windows.Automation.AutomationProperty]::LookupById(30159)) } catch {}
+        if (-not $text) { $text = $e.Current.HelpText }
+        if (-not $text) {
+            $text = (@($e.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) |
+                     ForEach-Object { $_.Current.Name } | Where-Object { $_ }) -join ' '
+        }
+        # Qt's UI Automation bridge does not always expose the message's description (the text is
+        # checked on Linux through AT-SPI); here the message must show and go, and any text it
+        # does expose must be the speed
+        $note = ''
+        if (-not $text) {
+            $note = " (text not exposed to UI Automation: HelpText, FullDescription and the inner names are empty; ItemStatus '$($e.Current.ItemStatus)')"
+        } elseif ($text -notmatch 'Speed') { throw "the message says '$text', expected the speed" }
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while ((Uia-Find $s.hwnd 'On-screen message' 0) -and $sw.Elapsed.TotalSeconds -lt 6) { Start-Sleep -Milliseconds 250 }
+        if (Uia-Find $s.hwnd 'On-screen message' 0) { throw 'the message is still shown 6 s later' }
+        Keys @(0xBB)   # =: back to the normal speed for the next checks
+        """$text"" shown, gone again$note"
     }
 }
 # fullscreen: a bar shown by its edge zone stays while the pointer rests on its buttons (the top
@@ -545,6 +700,7 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Check-Time $s | Out-Null
         if ($full) {
             Check-Subtitle $s | Out-Null
+            Check-Osd $s | Out-Null
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
             Check-FsTopBar $s | Out-Null
@@ -553,9 +709,134 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
             # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
             Check "$tag`: Settings opens after a seek bar click" { Open-Settings $s } | Out-Null
             Check-SpeedDrag $s | Out-Null
+            if ($codec -eq 'h264') { Check-Pointer $s }
         }
         Check-Quit $s ($codec -eq 'hevc') $exe $video $subs | Out-Null
         Check-PluginsLoad $s | Out-Null
+    } catch {
+        Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
+# the playback time in seconds, $null while nothing plays (the cli gives no number)
+function Rc-Time {
+    try { return Rc-Number 'get_time' } catch { return $null }
+}
+# an element named $name inside $parent (the onboarding's own buttons, not the control bar's
+# "Next" under it, which UI Automation also reports as on screen)
+function Uia-FindIn($parent, [string]$name) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $name)
+    foreach ($e in $parent.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+        try { if (-not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { return $e } } catch {}
+    }
+    return $null
+}
+function Click-Element($e) {
+    $r = $e.Current.BoundingRectangle
+    Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+}
+# a first start with a file (F1): the onboarding shows, the file waits at 0 while it is open, and
+# plays from the beginning after Finish (on Linux the onboarding is closed with Escape)
+function Run-FirstStart([string]$exe) {
+    $tag = 'first-start'
+    $s = Start-Cone $exe (Join-Path $Media 'test-h264.mp4') (Join-Path $Media 'test.srt') $tag $true
+    try {
+        if (-not (Check-Window $s)) { return }
+        $shown = Check "$tag`: the onboarding shows" {
+            # the onboarding's screen (Onboarding.qml: Accessible.Dialog "Welcome")
+            if (-not (Uia-Find $s.hwnd 'Welcome' 15000)) { throw 'no onboarding (its "Welcome" dialog) within 15 s' }
+            Shot "$tag-onboarding"
+            'the onboarding is shown'
+        }
+        if (-not $shown) { return }
+        Check "$tag`: the file waits at 0 while the onboarding is open" {
+            Wait-Rc 20
+            $seen = @()
+            for ($i = 0; $i -lt 8; $i++) {
+                $t = Rc-Time
+                $seen += $(if ($null -eq $t) { '-' } else { "$t" })
+                if ($t) { throw "the file plays behind the onboarding: time $($seen -join ', ') s" }
+                Start-Sleep -Seconds 1
+            }
+            "time over 8 s: $($seen -join ' ') (- = not started)"
+        } | Out-Null
+        Check "$tag`: playback starts from 0 after Finish" {
+            Focus-Window $s.hwnd
+            # Next, Next, Finish (the media folder page only shows with the media library)
+            for ($i = 0; $i -lt 3; $i++) {
+                $dialog = Uia-Find $s.hwnd 'Welcome' 3000
+                if (-not $dialog) { throw "the onboarding is gone before screen $($i + 1)" }
+                $finish = Uia-FindIn $dialog 'Finish'
+                if ($finish) { Click-Element $finish; break }
+                $next = Uia-FindIn $dialog 'Next'
+                if (-not $next) { throw "no Next or Finish button on screen $($i + 1)" }
+                Click-Element $next
+                Start-Sleep -Milliseconds 700
+            }
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while (Uia-Find $s.hwnd 'Welcome' 0) {
+                if ($sw.Elapsed.TotalSeconds -gt 5) { throw 'the onboarding did not close after Finish' }
+                Start-Sleep -Milliseconds 300
+            }
+            $sw.Restart()
+            $t1 = Rc-Time
+            while ($null -eq $t1 -and $sw.Elapsed.TotalSeconds -lt 15) { Start-Sleep -Milliseconds 500; $t1 = Rc-Time }
+            if ($null -eq $t1) { throw 'nothing plays within 15 s after Finish' }
+            if ($t1 -gt 4) { throw "playback did not start from the beginning: $t1 s right after Finish" }
+            Start-Sleep -Seconds 3
+            $t2 = Rc-Time
+            if ($null -eq $t2 -or $t2 -le $t1) { throw "the time does not advance: $t1 s, then $t2 s" }
+            "$t1 s right after Finish, $t2 s three seconds later"
+        } | Out-Null
+    } catch {
+        Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
+# Explorer's Open with / a double-click while Cone plays (redesign/FIX_OPEN_IN_RUNNING_WINDOW_NOTES.md):
+# a second start with --started-from-file hands its file to the running window and exits; the
+# running window must play it at once (it was only added to the end of the queue). The first Cone
+# here is started without --started-from-file, like one opened from the Start menu
+function Run-OpenInRunning([string]$exe) {
+    $tag = 'open-in-running'
+    $first = Join-Path $Media 'test-h264.mp4'
+    $second = Join-Path $Media 'test-hevc.mp4'
+    $s = Start-Cone $exe $first (Join-Path $Media 'test.srt') $tag
+    try {
+        if (-not (Check-Window $s)) { return }
+        Check "$tag`: a second start with a file plays it in the running window" {
+            Wait-Rc 20
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ((Rc 'status') -notmatch 'test-h264') {
+                if ($sw.Elapsed.TotalSeconds -gt 15) { throw "the first file does not play: '$((Rc 'status').Trim())'" }
+                Start-Sleep -Milliseconds 500
+            }
+            Log "start (second) $exe --started-from-file $second"
+            $p2 = Start-Process -FilePath $exe -ArgumentList @('--started-from-file', "`"$second`"") -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+            if (-not $p2.WaitForExit(15000)) {
+                try { $p2.Kill() } catch {}
+                throw 'the second start did not exit within 15 s (no hand-over to the running window)'
+            }
+            $sw.Restart()
+            $status = ''
+            while ($sw.Elapsed.TotalSeconds -lt 8) {
+                $status = Rc 'status'
+                if ($status -match 'test-hevc' -and $status -match 'play state: 3') { break }
+                Start-Sleep -Milliseconds 500
+            }
+            if ($s.proc.HasExited) { throw 'the running Cone exited' }
+            if ($status -notmatch 'test-hevc') {
+                $queue = (Rc 'playlist') -split "`n" | Where-Object { $_ -match 'test-' } | ForEach-Object { $_.Trim() }
+                throw "the running window still plays the first file after 8 s (queue: $($queue -join ' / '))"
+            }
+            if ($status -notmatch 'play state: 3') { throw "the second file is current but not playing: '$($status.Trim())'" }
+            Shot "$tag-second"
+            "the second start exited, the running window plays test-hevc.mp4 after $([math]::Round($sw.Elapsed.TotalSeconds, 1)) s"
+        } | Out-Null
     } catch {
         Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
     } finally {
@@ -586,6 +867,8 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+    Run-FirstStart $zipExe.FullName
+    Run-OpenInRunning $zipExe.FullName
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall
@@ -601,6 +884,31 @@ $installed = Check 'installer: silent install' {
 }
 if ($installed) {
     Run-Session (Join-Path $installDir 'Cone.exe') 'h264' $false 'installed-h264'
+    # the desktop shortcut on a reinstall follows the install as it is (#73,
+    # redesign/FIX_UPGRADE_SHORTCUT_NOTES.md): kept when it is there, not brought back once removed
+    $lnk = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Cone Player.lnk'
+    function Reinstall-Silent {
+        $p = Start-Process -FilePath $Installer -ArgumentList '/S' -PassThru -Wait
+        if ($p.ExitCode -ne 0) { throw "the installer ended with exit code $($p.ExitCode)" }
+    }
+    Check 'installer: desktop shortcut on a fresh install' {
+        if (-not (Test-Path $lnk)) { throw "no $lnk after the install" }
+        $lnk
+    } | Out-Null
+    Check 'installer: reinstall keeps the desktop shortcut' {
+        if (-not (Test-Path $lnk)) { throw "no $lnk before the reinstall" }
+        Reinstall-Silent
+        if (-not (Test-Path $lnk)) { throw "the reinstall removed $lnk" }
+        'still there'
+    } | Out-Null
+    Check 'installer: reinstall does not bring back a removed desktop shortcut' {
+        Remove-Item $lnk -Force -ErrorAction SilentlyContinue
+        if (Test-Path $lnk) { throw "could not remove $lnk" }
+        Reinstall-Silent
+        if (Test-Path $lnk) { throw "the reinstall created $lnk again" }
+        if (-not (Test-Path (Join-Path $installDir 'Cone.exe'))) { throw "no $installDir\Cone.exe after the reinstall" }
+        'not created again'
+    } | Out-Null
     Check 'installer: silent uninstall' {
         $un = Join-Path $installDir 'uninstall.exe'
         if (-not (Test-Path $un)) { throw "no $un" }

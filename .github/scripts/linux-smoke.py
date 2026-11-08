@@ -9,6 +9,8 @@
 # interface on a Unix socket. Sound goes to VLC's dummy audio output; Qt renders in software.
 # Each failed check runs once more; every retry is listed in the summary.
 import argparse
+import ctypes
+import ctypes.util
 import glob
 import os
 import shutil
@@ -163,12 +165,13 @@ def rc_number(cmd):
 
 
 class Session:
-    def __init__(self, exe, video, tag, env=None):
+    def __init__(self, exe, video, tag, env=None, first_start=False):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
-        a = [exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+        # first_start: Cone's first start (the onboarding), as on a fresh install
+        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
              '--aout=adummy', '--input-repeat=50', '--file-logging', f'--logfile={self.log}',
              '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
              f'--sub-file={os.path.join(MEDIA, "test.srt")}', video]
@@ -236,6 +239,47 @@ def check_time(s):
     return check(f'{s.tag}: playback time advances', body)
 
 
+def osd_message():
+    """Cone's on-screen message (RdOsdMessage.qml): its description ("Volume 80%"), None while hidden"""
+    app = cone_app()
+    for acc in _walk(app):
+        try:
+            if acc.name != 'On-screen message':
+                continue
+            x, y, w, h = acc.queryComponent().getExtents(pyatspi.DESKTOP_COORDS)
+            if w > 0 and h > 0:
+                return acc.description or ''
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
+def check_osd(s):
+    """a key shows Cone's own message (not VLC's text in the video), and it goes away. The speed
+    key: the smoke run's audio output (adummy) has no volume, so a volume key shows nothing"""
+    def body():
+        s.focus()
+        xdo('key', 'bracketright')
+        end = time.time() + 3
+        text = None
+        while time.time() < end and text is None:
+            text = osd_message()
+            time.sleep(0.1)
+        if text is None:
+            raise CheckFailed('no on-screen message within 3 s after ] (faster)')
+        shot(f'{s.tag}-osd')
+        if 'Speed' not in text:
+            raise CheckFailed(f'the message says "{text}", expected the speed')
+        end = time.time() + 6
+        while time.time() < end and osd_message() is not None:
+            time.sleep(0.25)
+        if osd_message() is not None:
+            raise CheckFailed('the message is still shown 6 s later')
+        xdo('key', 'equal')   # back to the normal speed for the next checks
+        return f'"{text}", gone again'
+    return check(f'{s.tag}: a key shows Cone\'s on-screen message', body)
+
+
 def check_subtitle(s):
     def body():
         out = rc('strack')
@@ -284,6 +328,104 @@ def check_settings(s):
             time.sleep(0.25)
         return 'Ctrl+P opens the Settings dialog; Escape closes it'
     return check(f'{s.tag}: Settings opens', body)
+
+
+class _CursorImage(ctypes.Structure):
+    _fields_ = [('x', ctypes.c_short), ('y', ctypes.c_short), ('width', ctypes.c_ushort),
+                ('height', ctypes.c_ushort), ('xhot', ctypes.c_ushort), ('yhot', ctypes.c_ushort),
+                ('serial', ctypes.c_ulong), ('pixels', ctypes.POINTER(ctypes.c_ulong)),
+                ('atom', ctypes.c_ulong), ('name', ctypes.c_char_p)]
+
+
+def pointer_pixels():
+    """the pixels of the pointer the X server shows now that are not transparent (XFixes):
+    0 while the pointer is hidden"""
+    x11 = ctypes.CDLL(ctypes.util.find_library('X11'))
+    xfixes = ctypes.CDLL(ctypes.util.find_library('Xfixes'))
+    x11.XOpenDisplay.restype = ctypes.c_void_p
+    x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
+    xfixes.XFixesGetCursorImage.restype = ctypes.POINTER(_CursorImage)
+    xfixes.XFixesGetCursorImage.argtypes = [ctypes.c_void_p]
+    display = x11.XOpenDisplay(None)
+    try:
+        image = xfixes.XFixesGetCursorImage(display).contents
+        return sum(1 for i in range(image.width * image.height) if (image.pixels[i] >> 24) & 0xff)
+    finally:
+        x11.XCloseDisplay(display)
+
+
+def check_pointer(s):
+    """the pointer hides over the playing video with the bars (about 3 s in a window, VLC's
+    mouse-hide-timeout in fullscreen), shows again on a move, and stays while paused"""
+    def still_over_video(x, y, seconds):
+        xdo('mousemove', x, y)
+        time.sleep(0.1)
+        xdo('mousemove', x + 5, y + 5)
+        time.sleep(0.5)
+        moved = pointer_pixels()
+        time.sleep(seconds)
+        return moved, pointer_pixels()
+
+    # near the start, so the clip (30 s, repeated) does not start over during the three checks
+    rc('seek 1')
+    time.sleep(1)
+
+    def must_play():
+        if '( play state:' not in rc('status'):
+            raise CheckFailed('the video is not playing (cli status), so the pointer may stay')
+
+    def window():
+        must_play()
+        s.focus()
+        moved, still = still_over_video(640, 360, 4.5)
+        if not moved:
+            raise CheckFailed('the pointer is hidden right after a move')
+        if still:
+            raise CheckFailed(f'the pointer still shows ({still} pixels) 5 s after the last move while playing')
+        xdo('mousemove', 700, 400)
+        time.sleep(0.5)
+        again = pointer_pixels()
+        if not again:
+            raise CheckFailed('the pointer did not show again on a move')
+        return f'shown after a move ({moved} pixels), hidden 4.5 s later, shown again on a move'
+
+    def paused():
+        s.focus()
+        rc('pause')
+        try:
+            moved, still = still_over_video(640, 360, 4.5)
+            if not still:
+                raise CheckFailed('the pointer hid while the video was paused')
+            return f'still shown ({still} pixels) 4.5 s after the last move while paused'
+        finally:
+            # 'pause' toggles; the cli's 'play' does not resume a paused player (vlc_player_Start
+            # returns at once on a started player)
+            rc('pause')
+            time.sleep(1)
+
+    def fullscreen():
+        must_play()
+        s.focus()
+        xdo('key', 'f')
+        time.sleep(2)
+        try:
+            if not is_fullscreen(s):
+                raise CheckFailed('F did not make the window fullscreen')
+            w, h = (int(v) for v in xdo('getdisplaygeometry').split())
+            moved, still = still_over_video(w // 2, h // 2, 4.5)
+            if not moved:
+                raise CheckFailed('the pointer is hidden right after a move')
+            if still:
+                raise CheckFailed(f'the pointer still shows ({still} pixels) in fullscreen 4.5 s after the last move')
+            return 'hidden in fullscreen 4.5 s after the last move'
+        finally:
+            if is_fullscreen(s):
+                xdo('key', 'f')
+                time.sleep(1)
+
+    check(f'{s.tag}: pointer hides while playing (window)', window)
+    check(f'{s.tag}: pointer stays while paused', paused)
+    check(f'{s.tag}: pointer hides while playing (fullscreen)', fullscreen)
 
 
 def is_fullscreen(s):
@@ -460,6 +602,73 @@ def check_plugins(s):
     return check(f'{s.tag}: every plug-in loads', body)
 
 
+def check_handoff(s, exe, env):
+    """a file opened while Cone runs, as the menu entry and "Open with" start it
+    (--started-from-file): it plays in the running window, the second start exits at once"""
+    def body():
+        other = os.path.join(WORK, 'handoff.mp4')
+        if not os.path.exists(other):
+            shutil.copy(os.path.join(MEDIA, 'test-h264.mp4'), other)
+        t = time.time()
+        r = run([exe, '--started-from-file', other], timeout=30, env=env)
+        took = time.time() - t
+        if r.returncode:
+            raise CheckFailed(f'the second start exited with {r.returncode}')
+        end = time.time() + 15
+        while 'handoff.mp4' not in rc('status'):
+            if time.time() > end:
+                raise CheckFailed('the running window did not open the file: ' + ' | '.join(rc('status').split()))
+            time.sleep(0.5)
+        if s.proc.poll() is not None:
+            raise CheckFailed('the running Cone exited')
+        others = [w for w in xdo('search', '--onlyvisible', '--name', 'handoff.mp4').split()
+                  if xdo('getwindowpid', w).strip() != str(s.proc.pid)]
+        if others:
+            raise CheckFailed(f'another process shows the file in a window: {others}')
+        return f'the second start ended after {took:.1f} s; the running window plays handoff.mp4'
+    return check(f'{s.tag}: a second start opens the file in the running window', body)
+
+
+def check_identity(s, folder):
+    """the names the desktop matches against the menu entry: the window class (X11; Qt's
+    desktop file name is the Wayland app id), and the media controls' entry and name (MPRIS)"""
+    def body():
+        with open(os.path.join(folder, 'cone-player.desktop')) as f:
+            wmclass = [l.split('=', 1)[1].strip() for l in f if l.startswith('StartupWMClass=')]
+        prop = run(['xprop', '-id', s.win, 'WM_CLASS']).stdout.strip()
+        if not wmclass or f'"{wmclass[0]}"' not in prop:
+            raise CheckFailed(f'StartupWMClass {wmclass} does not match the window: {prop}')
+
+        def mpris(name):
+            r = run(['dbus-send', '--session', '--print-reply', '--dest=org.mpris.MediaPlayer2.cone',
+                     '/org/mpris/MediaPlayer2', 'org.freedesktop.DBus.Properties.Get',
+                     'string:org.mpris.MediaPlayer2', f'string:{name}'])
+            parts = r.stdout.split('"')
+            if r.returncode or len(parts) < 2:
+                raise CheckFailed(f'MPRIS {name}: {(r.stdout + r.stderr).strip()}')
+            return parts[1]
+        entry, identity = mpris('DesktopEntry'), mpris('Identity')
+        if entry != 'cone-player' or identity != 'Cone Player':
+            raise CheckFailed(f'MPRIS DesktopEntry "{entry}", Identity "{identity}" (cone-player, Cone Player expected)')
+        return f'{prop}; MPRIS DesktopEntry "{entry}", Identity "{identity}"'
+    return check(f'{s.tag}: window class and media controls name cone-player.desktop', body)
+
+
+def check_driver_paths(s):
+    """hardware decoding: the launcher names the system's VA-API driver folders that exist
+    (linux-package.sh), so the bundled libva finds the drivers outside Debian and Ubuntu too"""
+    def body():
+        with open(f'/proc/{s.proc.pid}/environ', 'rb') as f:
+            env = dict(e.split(b'=', 1) for e in f.read().split(b'\0') if b'=' in e)
+        want = [d for d in ('/usr/lib/x86_64-linux-gnu/dri', '/usr/lib64/dri', '/usr/lib/dri')
+                if os.path.isdir(d)]
+        got = env.get(b'LIBVA_DRIVERS_PATH', b'').decode()
+        if want and got.split(':')[:len(want)] != want:
+            raise CheckFailed(f'LIBVA_DRIVERS_PATH "{got}", expected the folders {want}')
+        return f'LIBVA_DRIVERS_PATH "{got}"' if want else 'no VA-API driver folder on this system'
+    return check(f'{s.tag}: the launcher names the VA-API driver folders', body)
+
+
 def session(exe, codec, tag, full, env=None):
     video = os.path.join(MEDIA, f'test-{codec}.mp4')
     s = Session(exe, video, tag, env)
@@ -471,10 +680,16 @@ def session(exe, codec, tag, full, env=None):
         check_time(s)
         if full:
             check_subtitle(s)
+            check_osd(s)
             check_settings(s)
             check_seek(s)
             check_menu(s)
             check_speed(s)
+            if codec == 'h264':
+                check_pointer(s)
+                check_driver_paths(s)
+                check_identity(s, os.path.dirname(os.path.realpath(exe)))
+                check_handoff(s, exe, env)
 
         def retry_quit():
             nonlocal s
@@ -484,6 +699,72 @@ def session(exe, codec, tag, full, env=None):
             time.sleep(4)
         check(f'{tag}: quit', lambda: quit_cone(s, codec == 'hevc'), retry_quit)
         check_plugins(s)
+    finally:
+        s.stop()
+
+
+def rc_time():
+    """the playback time in seconds, None while nothing plays (the cli gives no number)"""
+    try:
+        return rc_number('get_time')
+    except CheckFailed:
+        return None
+
+
+def first_start(exe, env):
+    """a first start with a file (F1): the onboarding shows, the file waits at 0 while it is open,
+    and plays from the beginning once it is closed (here with Escape, on Windows with Finish)"""
+    tag = 'first-start'
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), tag, env, first_start=True)
+    try:
+        if not check_window(s):
+            return
+
+        def shown():
+            if not find('Next', 15, role='push button'):
+                raise CheckFailed('no onboarding (its "Next" button) within 15 s')
+            shot(f'{tag}-onboarding')
+            return 'the onboarding is shown'
+        if not check(f'{tag}: the onboarding shows', shown):
+            return
+
+        def waits():
+            end = time.time() + 15
+            while not os.path.exists(RC_SOCK) and time.time() < end:
+                time.sleep(0.3)
+            seen = []
+            for _ in range(8):
+                t = rc_time()
+                seen.append('-' if t is None else str(t))
+                if t:
+                    raise CheckFailed(f'the file plays behind the onboarding: time {", ".join(seen)} s')
+                time.sleep(1)
+            return f'time over 8 s: {" ".join(seen)} (- = not started)'
+        check(f'{tag}: the file waits at 0 while the onboarding is open', waits)
+
+        def plays_after():
+            s.focus()
+            xdo('key', 'Escape')
+            end = time.time() + 5
+            while find('Next', 0, role='push button'):
+                if time.time() > end:
+                    raise CheckFailed('Escape did not close the onboarding')
+                time.sleep(0.3)
+            end = time.time() + 15
+            t1 = rc_time()
+            while t1 is None and time.time() < end:
+                time.sleep(0.5)
+                t1 = rc_time()
+            if t1 is None:
+                raise CheckFailed('nothing plays within 15 s after the onboarding closed')
+            if t1 > 4:
+                raise CheckFailed(f'playback did not start from the beginning: {t1} s right after the close')
+            time.sleep(3)
+            t2 = rc_time()
+            if t2 is None or t2 <= t1:
+                raise CheckFailed(f'the time does not advance: {t1} s, then {t2} s')
+            return f'{t1} s right after the close, {t2} s three seconds later'
+        check(f'{tag}: playback starts from 0 when the onboarding closes', plays_after)
     finally:
         s.stop()
 
@@ -510,6 +791,7 @@ env = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
            XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
 session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
+first_start(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():
@@ -528,6 +810,13 @@ def validate(desktop):
     errors = [l for l in out.splitlines() if 'error:' in l]
     if v.returncode or errors:
         raise CheckFailed('desktop-file-validate: ' + '; '.join(errors or [out]))
+
+
+def exec_line(desktop):
+    # files from the menu and "Open with" go to the running window (check_handoff)
+    lines = [l for l in open(desktop) if l.startswith('Exec=')]
+    if not lines or '--started-from-file %U' not in lines[0]:
+        raise CheckFailed(f'{os.path.basename(desktop)}: {lines[0].strip() if lines else "no Exec="} lacks --started-from-file')
 
 
 # 2. install.sh / uninstall.sh for one user (no sudo)
@@ -550,6 +839,7 @@ def install():
     if missing:
         raise CheckFailed('missing: ' + ', '.join(os.path.relpath(m, ihome) for m in missing))
     validate(os.path.join(idata, 'applications/cone-player.desktop'))
+    exec_line(os.path.join(idata, 'applications/cone-player.desktop'))
     # "Open with": the menu entry is listed for video, audio and subtitle types ...
     with open(os.path.join(idata, 'applications/mimeinfo.cache')) as f:
         cache = f.read()
@@ -592,6 +882,7 @@ def deb_install():
     if vlc_before != vlc_after or not os.path.exists('/usr/bin/vlc'):
         raise CheckFailed(f'VLC changed: vlc-bin {vlc_before} -> {vlc_after}')
     validate('/usr/share/applications/cone-player.desktop')
+    exec_line('/usr/share/applications/cone-player.desktop')
     return f'installed into /opt/cone-player with /usr/bin/cone-player; VLC {vlc_before} untouched'
 if not args.skip_deb and check('deb: install next to VLC', deb_install):
     session('/usr/bin/cone-player', 'h264', 'deb-h264', False, env)

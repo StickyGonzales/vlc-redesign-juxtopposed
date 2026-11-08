@@ -93,7 +93,7 @@ T.Button {
     readonly property color _fg: {
         switch (style) {
         case RdButton.Style.Save: return enabled ? rdPalette.rdAccentMain : rdPalette.rdFgA2
-        case RdButton.Style.Primary: return rdPalette.rdFgB1
+        case RdButton.Style.Primary: return rdPalette.rdFgOnAccent
         case RdButton.Style.Bar:
         case RdButton.Style.Link:
             return hovered ? rdPalette.rdFgA2 : rdPalette.rdFgA3

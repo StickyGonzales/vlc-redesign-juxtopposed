@@ -250,7 +250,9 @@ jobs:
         run: |
           TARBALL=$(ls linux/*-linux-x86_64.tar.xz | head -n 1)
           .github/scripts/linux-deb.sh "${TARBALL%.tar.xz}" linux
-          echo "Debian package: $(basename linux/*.deb) ($(du -h linux/*.deb | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+          echo "Debian package: $(basename linux/*.deb) ($(du -h linux/*.deb | cut -f1)), version $(dpkg-deb -f linux/*.deb Version)" >> "$GITHUB_STEP_SUMMARY"
+          # the names release-linux uploads: GitHub must store them as they are (no "~")
+          .github/scripts/release-asset-names.sh check linux/*-linux-x86_64.tar.xz linux/*.deb $(ls linux/*.AppImage 2>/dev/null)
 
       - uses: actions/upload-artifact@v4
         if: ${{ env.VLC_BRAND == 'public' }}

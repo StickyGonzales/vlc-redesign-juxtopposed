@@ -15,8 +15,8 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 | **What** | When an episode of a show ends, Cone offers the next one with an "Up next" card and a short countdown, like Netflix. |
 | **Why** | Her video, 9:24-9:28 (P5-01, row 150): an episode ends and the next one does not play because the folder was not queued. Her fix (P5-20 to P5-23, 11:24-11:47; drag to the queue W5.9) is manual: the show's folder in the top bar opens the compact library next to the video, and you drag the next episode into the queue. |
 | **How it fits her design** | It complements that design and replaces nothing. The compact library, "Unwatched First" (P5-13, 10:45) and the per-show presets (P4-04 / IA-34, 7:53) stay exactly as they are. The library marks the next episode, the queue shows it, and the folder preset follows it. |
-| **Setting** | Settings > Playback > Episodes > "Autoplay next episode": **Off / Ask for each show (default) / Always**. Off = Cone behaves exactly as today. |
-| **Per show** | Remembered per show folder. "Ask" asks once with a small prompt; a No is never asked again. The sidebar Playback tab has an on/off toggle for the show playing (under Sleep Timer). |
+| **Setting** | Settings > Playback > Episodes > "Play episodes in a row": **On (default) / Off** (decided 2026-11-01, section 2.3). Off = Cone behaves exactly as today. No question at the start of an episode. |
+| **Per show** | A show can be turned off in the sidebar Playback tab (toggle under Sleep Timer) or with the card's "Turn off autoplay" (which turns the setting off). Remembered per show folder. |
 | **Card** | Variant A (panel card, 400 wide), switching to Variant C's layout when the video area is narrow; decided (Q8). Images `01`/`02`/`05`. |
 | **Core changes** | None expected; everything fits in `modules/gui/qt` (section 6.6). |
 | **Decisions** | All 9 questions decided by StickyGonzales on 2026-10-24 (section 10). Nothing is built or merged before 1.0 (Decision 71). |
@@ -47,45 +47,56 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 
 ## 2. Behaviour
 
-### 2.1 The three modes
+### 2.1 On and Off (decided 2026-11-01, replaces the three modes)
 
-| Mode | First episode of a show Cone has not seen | A show answered "Yes" | A show answered "No" |
-|---|---|---|---|
-| **Off** | nothing | nothing | nothing |
-| **Ask for each show** (default in Cone; the vlc profile defaults to Off, Q6) | the "Looks like a show" prompt (section 2.3) | autoplay | nothing, never asked again |
-| **Always** | autoplay, no prompt (stored as "Yes") | autoplay | nothing |
+| Setting | A show nobody turned off | A show turned off (sidebar toggle, or answered No before) |
+|---|---|---|
+| **On** (default in Cone; the vlc profile defaults to Off, Q6) | strong name pattern: autoplay with the countdown; weak pattern: the card waits for a click (section 2.3) | nothing |
+| **Off** | nothing | nothing |
 
-- A per-folder "No" wins over "Always": the sidebar toggle switched off for a show keeps it off under every mode.
-- The sidebar toggle writes the same per-folder answer as the prompt.
+- There is **no question at the start of an episode** any more, like Netflix. Before, "Ask for each show" showed "Looks like a show. Play episodes in a row?"; that prompt is gone (section 2.3).
+- A per-folder "No" wins: the sidebar toggle switched off for a show keeps it off.
 - Off is a hard switch: the scanner does not run, and there is no card, no tag and no sidebar row. Cone behaves byte for byte as today.
 
 ### 2.2 Timeline of one episode (autoplay on for this show)
 
 1. **The episode starts.** On a worker thread Cone checks whether the file is an episode of a show (section 3). If it is, it works out the next episode and appends it to the queue as an **autoplay item** (section 4.2). The Next button now opens episode 2, the queue shows it, and the library tags it "Up next".
-2. **The Up Next point.** The card appears at one of two points:
-   - **"At the end of the episode"** (default): the last *countdown* seconds before the end.
-   - **"When the credits start"**: at the start of a chapter named Credits / End Credits / Ending / ED / Outro, falling back to the end when there is none.
-3. **The countdown** (5 / 10 / 15 s, default 10) runs in wall-clock seconds.
-   - It pauses while the player is paused.
-   - It runs at real speed when the playback speed is not 1x.
-4. **At 0, or on Play now,** the next episode starts:
-   - At 0 in "end" mode this is the normal end-of-file move to the next queue item, so no frame is skipped.
-   - In "credits" mode, or on Play now, Cone calls `next()` and marks the episode watched in the library (it may not have reached the library's own "watched" threshold).
+2. **The credits.** The card appears when the credits start (section 5.4, decided 2026-11-01): at a credits chapter, at the point learned for the show, or at the "Show Up Next" setting (the last 30 s / 1 min / 2 min), fine-tuned by a text subtitle track. Never before the credits window (the last 8 minutes, or the last 15 % of a shorter episode). During the credits it shows **Next episode** and **Cancel**, without a countdown.
+3. **The countdown** (5 / 10 / 15 s, default 10) only runs in the last seconds of the episode, as before. So nobody is skipped out of a post-credits scene by accident.
+   - It is counted in real seconds at any playback speed.
+4. **At 0, or on Next episode / Play now,** the next episode starts:
+   - At 0 this is the normal end-of-file move to the next queue item, so no frame is skipped.
+   - On Next episode / Play now, Cone calls `next()` and marks the episode watched in the library (it may not have reached the library's own "watched" threshold).
 5. **Cancel** closes the card and removes the autoplay item from the queue. The episode ends as it does today (stop, back to Home). Cancel only affects this episode.
 6. **Seeking:**
    - Seeking back before the Up Next point hides the card; it comes back when the point is reached again.
    - Seeking into the last seconds shows it with the time that is left.
 
-### 2.3 The "Looks like a show" prompt (mode "Ask")
+### 2.3 No start prompt; strong and weak names (decided 2026-11-01, StickyGonzales)
 
-- **Wording:** "Looks like a show. Play episodes in a row?" with **Yes** (primary) and **No**. A second line, "&lt;Show&gt; · you can change this in the Playback tab", names the show.
-- **When:** 10 s into the first episode of a show without an answer, and only after the resume toast has closed. It never overlaps the resume toast.
-- **Where:** centred like the resume toast, above the subtitle band (section 7.1).
-- **No answer:**
-  - It hides after 20 s, and no answer is stored, so the next episode of that show asks again.
-  - Until there is an answer the show behaves as Off: no card, no queue item.
-  - Timing decided (Q2): early in the first episode, as above.
-- **Keyboard:** the prompt does not steal keyboard focus (Space must still pause). Tab reaches it.
+This replaces the "Looks like a show" prompt (decided 2026-10-24, Q2), which asked 10 s into the first episode of each show.
+
+- **No prompt.** Cone never asks at the start of an episode. The setting "Play episodes in a row" (`qt-autoplay-next`) is **On / Off**, default On; "Ask for each show" and "Always" are gone.
+- **Strong names autoplay.** S01E02, 1x02, "Season 1 Episode 2" and the like (`rdepisode::Strength::Strong`):
+  - the next episode is queued as the autoplay item;
+  - the card shows when the credits start (section 5.4);
+  - the countdown runs in the last seconds and the queue moves on by itself.
+- **Weak names wait for a click.** Plain numbers (01 02 03), "Part 2", "Episode 2", "E02" (`Medium` / `Weak`):
+  - no autoplay item is queued;
+  - the card shows at the same point with **Next episode** and **Cancel** and "Plays when you choose", never with a countdown;
+  - nothing plays unless the user clicks; Next episode queues the episode and plays it.
+- **"Turn off autoplay".** A small link on the card (the full card; the compact pill leaves it out for room) turns "Play episodes in a row" off: the card goes, the autoplay item leaves the queue, and the setting shows Off. It is turned on again in Settings > Playback > Episodes.
+- **Existing users keep their choices.**
+  - The old integer setting becomes a bool:
+    - a saved Off (0) stays off;
+    - Ask (1) reads as On;
+    - Always (2), out of a bool's range, falls back to the default On.
+  - A folder answered **No** to the old prompt (or turned off in the sidebar) keeps its "no" in `rd-shows.json`, and autoplay stays off there.
+  - Old "yes" answers do nothing more than the default.
+- **Seasons share a show.** The show root is the parent of the season folders (3.5). So Season 2 uses the credits point learned in Season 1, and its answer.
+- **Seeking and pausing.**
+  - Seeking back out of the credits window (before the point) hides the card. It comes back when playback reaches the point again, unless Cancel was pressed for that episode.
+  - Pausing pauses the countdown: it follows the playback time.
 
 ### 2.4 "Are you still watching?" (setting on by default, after 3 episodes)
 
@@ -206,9 +217,9 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
   | Option | Values | Default |
   |---|---|---|
-  | `qt-autoplay-next` | 0 Off / 1 Ask / 2 Always | 1 in the Cone profile, 0 in the vlc profile (Q6) |
+  | `qt-autoplay-next` | bool "Play episodes in a row" (was 0 Off / 1 Ask / 2 Always, 2.3) | on in the Cone profile, off in the vlc profile (Q6) |
   | `qt-autoplay-countdown` | 5 / 10 / 15 | 10 |
-  | `qt-autoplay-card-point` | 0 end / 1 credits | 0 |
+  | `qt-autoplay-credits-lead` | 30 / 60 / 120 (seconds before the end, section 5.4) | 60 |
   | `qt-autoplay-still-watching` | bool | true |
 
   They take effect live, with no restart.
@@ -273,9 +284,9 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
 | Row | Control | Values | Notes |
 |---|---|---|---|
-| Autoplay next episode (i) | dropdown 320x36 | Off / Ask for each show / Always | description under the label: "Plays the next episode of a show folder when one ends. Single videos, clips and music are never treated as shows." |
+| Play episodes in a row (i) | toggle 68x32 | on / off (2.3) | description under the label: what plays by itself (S01E02, 1x02) and what waits for a click (plain numbers, Part 2) |
 | Countdown (i) | dropdown | 5 seconds / 10 seconds / 15 seconds | dimmed (0.3, `rd_disabledRowOpacity`) when Off |
-| Show Up Next (i) | dropdown | At the end of the episode / When the credits start | dimmed when Off |
+| Show Up Next (i) | dropdown | Last 30 s / Last 1 min / Last 2 min (default 1 min; the fallback when no chapter or learned point says where the credits start, section 5.4) | dimmed when Off |
 | Ask if I'm still watching after 3 episodes (i) | toggle 68x32 | on / off | dimmed when Off |
 | Remembered shows (i) | text + "Forget all" button | "N shows: X autoplay, Y never" | dimmed when Off |
 
@@ -288,7 +299,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 - **Label:** "Autoplay this show", Inter 14 FG/A3. Under it, the show name with the tv icon, Inter 12 FG/A4.
 - **Control:** the Figma toggle, 68x32 at x 312. Row height 62.
 - **Behaviour:**
-  - The toggle writes the remembered answer for that show ("yes"/"no"), the same as the prompt.
+  - The toggle writes the remembered answer for that show ("yes"/"no").
   - It is shown only while a detected show is playing and autoplay is not Off. Otherwise the row is not there, and nothing moves on the tab for non-shows.
   - When a guard from section 8 blocks autoplay (repeat one, shuffle, stop after each item, an A-B loop, a command-line option), the row stays, dimmed (`rd_disabledRowOpacity`), with the reason under the label instead of the show name ("Repeat one is on").
 - **Images:** `09-sidebar-playback-dark/light.png` (ON, OFF, no row).
@@ -296,16 +307,45 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
 ---
 
+### 5.4 When the credits start (decided 2026-11-01, StickyGonzales)
+
+Before this, the card showed in the last seconds only (or at a credits chapter, as a setting). A 56-minute episode with 2 minutes of credits never showed it while the credits rolled. Now the card shows when the credits start. Code: `player/rd_credits_point.*` (the decision, pure, unit tested in `tests/test_rd_credits_point.cpp`), `player/rd_credits_subtitles.*` (the subtitle scan) and `RdUpNext::updateCard()`.
+
+**Hard rule.** The card can only appear inside the **credits window**: the last 8 minutes of the episode, or its last 15 % when that is shorter (episodes under about 53 minutes). Any signal that points earlier is ignored, so the card never shows in the middle of an episode.
+
+**Inside the window, in this order:**
+1. **Chapters.** A chapter whose name contains "credits", "end credits", "outro" or "ending" (whole words, any case), or is "ED", only when it starts inside the window. Exact. "Pre-credits", "mid-credits" and "post-credits" scenes are not the credits.
+2. **Learned per show.** The user went on to the next episode of the show (Next, the card's button, a click on it in the queue) inside the credits window of an earlier episode, before the countdown. Cone remembers how long before the end that was and shows the card at the same point in the following episodes.
+   - One press is enough; a later press inside the window updates it.
+   - A press outside the window (skipping an episode mid-way) is never learned. Neither is a Play now during the countdown, the episode simply ending, Previous, or another episode picked in the library.
+   - Kept per show root folder in `rd-shows.json` (`"credits": {"<show folder>": {"leadMs": ..., "name": ...}}`). Forget all clears it too.
+   - A learned point that falls outside a shorter episode's window is ignored for that episode.
+3. **The setting** "Show Up Next" (Settings > Playback > Episodes): Last 30 s / 1 min / 2 min, default 1 min (`qt-autoplay-credits-lead`). It replaces "At the end of the episode / When the credits start": chapters are now always used. A shorter episode holds it inside its window.
+
+**Subtitles, a helper only.** If the episode has a text subtitle track, it can fine-tune the point from 2 or 3, never more than 2 minutes and never out of the window. It is never the only reason to show the card.
+- **Which subtitles:** an external SRT / ASS / SSA / WebVTT file (the ones VLC loaded, then the files next to the episode or in a Subs folder whose name starts with the episode's), else an embedded text track (SubRip, ASS, tx3g). The embedded track is read by opening the file a second time and demuxing only the window, on the Up Next worker thread, with a 20 s budget. It starts 2 minutes before the window, never at the start of the episode, and a file the demuxer cannot seek in is not read.
+- **Ignored:** picture subtitles (PGS, VobSub, DVB). Nothing reads text in the picture.
+- **The dialogue end:** the end of the first real dialogue line in the window that is followed by a gap of 60 s or more (to the next dialogue line or the end), or by music lines only.
+  - Music lines start with "#" or carry ♪ / ♫.
+  - Lines that credit the subtitles or advertise ("subtitles by", "synced by", "translated by", "downloaded from", web addresses) are skipped.
+  - Taking the first such gap keeps a post-credits scene with dialogue from pulling the point to the very end.
+
+**The card during the credits** shows "Up next", the episode, **Next episode** and **Cancel**. The countdown line stays empty and the line under the episode reads "Plays at the end of the episode".
+- The countdown only starts in the last `countdown` seconds, as before. So a post-credits scene is never skipped by itself.
+- **Cancel** hides the card for the rest of that episode (and takes the autoplay item out, as before).
+- "Still watching?" still comes at the countdown point.
+- Seeking back before the point hides the card; it comes back at the point.
+
 ## 6. Implementation outline (for step 2)
 
 ### 6.1 Files
 
 | New / changed | What |
 |---|---|
-| `player/rd_up_next.{hpp,cpp}` (new) | `RdUpNext` singleton: detection (worker thread), the show store (`rd-shows.json`), autoplay items, the countdown, the Up Next point, the still-watching count, guards (section 8). Properties: `active`, `isShow`, `showName`, `showFolder`, `choice`, `nextCode`, `nextTitle`, `nextMrl`, `nextThumbnail`, `cardVisible`, `cardMode` (next / season / still), `secondsLeft`, `countdownTotal`, `promptVisible`. Methods: `playNow()`, `cancel()`, `answer(bool)`, `setShowEnabled(bool)`, `forgetAll()`. |
+| `player/rd_up_next.{hpp,cpp}` (new) | `RdUpNext` singleton: detection (worker thread), the show store (`rd-shows.json`), autoplay items, the countdown, the Up Next point, the still-watching count, guards (section 8). Properties: `active`, `isShow`, `showName`, `showFolder`, `choice`, `nextCode`, `nextTitle`, `nextMrl`, `nextThumbnail`, `cardVisible`, `cardMode` (next / season / still), `secondsLeft`, `countdownTotal`, `counting`, `autoplays` (`promptVisible` until 2026-11-01). Methods: `playNow()`, `cancel()`, `turnOffAutoplay()`, `setShowEnabled(bool)`, `forgetAll()` (`answer(bool)` until 2026-11-01). |
 | `player/rd_episode_parser.{hpp,cpp}` (new, or extend `SubtitleMatcher`) | patterns, stems, exclusions, season folders; pure functions with unit tests (section 3.7) |
 | `player/qml/RdUpNextCard.qml` (new) | Variant A, with states next / season / still; compact layout below 900 px of video width |
-| `player/qml/RdShowPrompt.qml` (new) | the prompt |
+| `player/qml/RdShowPrompt.qml` | the prompt (removed 2026-11-01, 2.3) |
 | `player/qml/Player.qml` | places the card and the prompt (section 7.1), keyboard (Tab order), lock of the bars' auto-hide while the card shows (like the resume toast) |
 | `player/qml/RdMiniPlayer.qml` | compact Up Next strip on the picture's foot (`06-…`) |
 | `player/qml/PlaybackSettingsPage.qml` | "Autoplay this show" row |
@@ -337,7 +377,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
 ### 6.5 Both profiles
 
-The code is shared by the vlc and Cone profiles. Defaults (Q6, decided): the **vlc** profile defaults to **Off**, so it behaves like stock VLC; the **Cone** profile defaults to **Ask for each show**.
+The code is shared by the vlc and Cone profiles. Defaults (Q6, decided): the **vlc** profile defaults to **Off**, so it behaves like stock VLC; the **Cone** profile defaults to **On** (2.3; it was Ask for each show until 2026-11-01).
 
 ### 6.6 Core
 
@@ -514,12 +554,12 @@ Starting rules (from the request):
 | 76 | Stop button / press-and-hold Play | | no | stop as today; the card closes and the waiting autoplay item is removed (as Cancel) | Stop during the card. Expect: Home, no next episode, the queue holds only E01. |
 | 77 | A-B loop active at the end | the loop never reaches the end | yes | **R6**: no card while an A-B loop is active (the loop wins); the loop resets for the next file anyway | Set A-B around the last minute. Expect: it loops, no card. |
 | 78 | Bookmarks | per file (library) | no | **R6**: nothing carries; Ctrl+B in E02 makes E02's bookmark | Bookmark in E01, play E02. Expect: E02's tab is empty. |
-| 79 | Chapters | per file | no | the credits chapter can be the card point (5.1) | Show Up Next = credits, a file with a "Credits" chapter. Expect: the card at that chapter, Play now skips the rest and E01 counts as watched. |
+| 79 | Chapters | per file | no | a credits chapter inside the credits window is the card point (5.4); one before the window is ignored | A file with a "Credits" chapter in its last minutes. Expect: the card at that chapter with Next episode and Cancel, the countdown in the last seconds, Next episode skips the rest and E01 counts as watched. |
 | 80 | Speed (sidebar slider / Faster / Slower) | carries | no | as 6 | - |
 | 81 | Frame step / Trickplay reverse | | no | Reverse is postponed (Decision 29) | - |
 | 82 | Subtitle timeline (P3-16 / P4-35) | per file | no | rebuilt for E02 | Timeline on, E02 starts. Expect: E02's cues. |
 | 83 | On-screen messages | | no | 7.1: they keep their place; compact case: the pill moves up | Press N at the card. Expect: no overlap. |
-| 84 | The resume toast | could overlap the prompt | yes | the prompt waits for the toast to close; the next episode via autoplay never shows the toast (1) | Open E01 with a saved spot (Ask). Expect: toast first, prompt after. |
+| 84 | The resume toast | (the prompt is gone, 2.3) | no | the next episode via autoplay never shows the toast (1) | Open E01 with a saved spot (Ask). Expect: the toast, no other question. |
 | 85 | Mini player (library full view) | the player is small | - | compact strip on the picture (`06-…`): Play now, close, countdown line | Open the full library during the card. Expect: the strip in the mini player. |
 | 86 | Mini queue | | - | shows the autoplay item with the label | Open the mini queue. Expect: E02 "Autoplay". |
 | 87 | Fullscreen | | no | the card in fullscreen at the same rules (7.1); no exit to Home between episodes (it's a queue move, not a stop) | As 36. |
@@ -539,8 +579,8 @@ Starting rules (from the request):
 | 96 | Command line `--play-and-stop`, `--play-and-pause`, `--random`, `--loop`, `--repeat`, `--start-paused`, `--input-repeat`, `--start-time`, `--stop-time`, `--run-time`, `--no-playlist-autostart` | | yes | **R5**: any of these set (saved or command line) turns autoplay off for the session, except `--no-playlist-autostart` (row 5) and `--loop` (row 11) | Each option once with E01. Expect: no card (`--loop`: as row 11). |
 | 97 | Command line: several files | | no | **R1**: user-built | `cone E01.mkv E03.mkv`. Expect: E01, E03, no card. |
 | 98 | Command line / Explorer: one file | | - | eligible (the main case) | Double-click E01 in Explorer. Expect: E02 queued, card at the end. |
-| 99 | vlc profile (non-public build) | | - | same code; the vlc profile defaults to **Off** (behaves like stock VLC), the Cone profile to Ask for each show (Q6, decided) | Run the vlc build on a fresh profile. Expect: Settings > Playback > Autoplay next episode = Off, no prompt, no card. |
-| 100 | First run / onboarding (`--qt-privacy-ask`) | | no | the prompt waits until onboarding is closed | First run with E01 on the command line. Expect: onboarding first, prompt after. |
+| 99 | vlc profile (non-public build) | | - | same code; the vlc profile defaults to **Off** (behaves like stock VLC), the Cone profile to On (Q6, 2.3) | Run the vlc build on a fresh profile. Expect: Settings > Playback > Play episodes in a row = Off, no card. |
+| 100 | First run / onboarding (`--qt-privacy-ask`) | | no | nothing asks at the start (2.3) | First run with E01 on the command line. Expect: onboarding, then the episode, no question. |
 
 ### 8.6 Detection edge cases (each a test)
 
@@ -592,11 +632,11 @@ All questions are decided. Nothing of this feature is built or merged before 1.0
 | Q | Question | Decision |
 |---|---|---|
 | Q1 | Repeat All + autoplay, after the show's last episode | VLC wraps to the queue's first item (the episode first opened), VLC's meaning of Repeat All (rows 11, 96) |
-| Q2 | When the "Looks like a show" prompt appears | early in the first episode (10 s in, after the resume toast) (section 2.3) |
+| Q2 | When the "Looks like a show" prompt appears | ~~early in the first episode~~ superseded 2026-11-01: there is no prompt (section 2.3) |
 | Q3 | "When playback finishes = Pause on the last frame" (pauses after every item in VLC) | autoplay off while it is set (row 14) |
 | Q4 | Hide UI (Ctrl+\\) at the card point | the card shows even in Hide UI mode (row 88) |
 | Q5 | The four new options in profiles | saved in profiles, like other playback options; the per-show answers are not (rows 90, 6.1) |
-| Q6 | Default per profile | vlc profile: **Off** (behaves like stock VLC); Cone profile: **Ask for each show** (row 99, 6.5) |
+| Q6 | Default per profile | vlc profile: **Off** (behaves like stock VLC); Cone profile: **On** (row 99, 6.5; Ask for each show until 2026-11-01) |
 | Q7 | Casting (renderer) at the card point | the card shows locally; the next episode is cast as VLC does (row 50) |
 | Q8 | Card variant | **Variant A**, switching to Variant C's layout when the video area is narrow (7.1, 7.3) |
 | Q9 | "Still watching?" behaviour | the next episode is loaded paused at its start under the card, keeping the player view (2.4) |
@@ -637,7 +677,7 @@ Then the independent review, qmlcheck and buildlists, one Linux sandbox run (eve
 **Files:**
 - `player/rd_up_next.{hpp,cpp}`: the controller.
 - `player/rd_episode_parser.{hpp,cpp}` and `tests/test_rd_episode_parser.cpp`: the parser and its test (470 checks).
-- `player/qml/RdUpNextCard.qml` and `RdShowPrompt.qml`: the card and the prompt.
+- `player/qml/RdUpNextCard.qml` and `RdShowPrompt.qml`: the card and the prompt (the prompt removed 2026-11-01, 2.3).
 - `Player.qml`, `RdMiniPlayer.qml`, `QueueSidebar.qml`, `RdMiniQueue.qml`, `PlaybackSettingsPage.qml`, `RdLibraryRow.qml`, `RdLibraryPage.qml`, `SettingsPlaybackPage.qml`: the hookups.
 - `RdButton.qml`: a new `Toast` style, BG/A1 on a BG/A3 card, for Cancel and No.
 - `qt.cpp`, `rd_profile_settings.cpp`, `settings_catalog.cpp`, `mainui.cpp`: the options, profiles and registration.

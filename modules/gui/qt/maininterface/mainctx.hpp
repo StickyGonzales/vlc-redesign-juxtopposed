@@ -409,6 +409,11 @@ public:
 
     QWindow *intfMainWindow() const;
 
+    // redesign: the accent option as written ("default", "system" or "#rrggbb"), and putting a
+    // saved one back: the custom color editor's Escape (RdAccentEditor.qml)
+    Q_INVOKABLE QString accentOption() const { return QString::fromUtf8(m_accentOption); }
+    Q_INVOKABLE void restoreAccentOption(const QString& option);
+
     Q_INVOKABLE QVariant settingValue(const QString &key, const QVariant &defaultValue) const;
     Q_INVOKABLE void setSettingValue(const QString &key, const QVariant &value);
 
@@ -542,6 +547,8 @@ protected:
     int m_osVersion;
 
     bool m_bgCone = true;
+    // redesign: the files of a first start wait for the first-run dialog (holdFirstStartPlayback)
+    bool m_firstStartHold = false;
     bool m_windowSuportExtendedFrame = false;
     unsigned m_windowExtendedMargin = 0;
 
@@ -556,6 +563,9 @@ protected:
 #endif
 
     ThreadRunner* m_threadRunner = nullptr;
+
+private:
+    void holdFirstStartPlayback();
 
 public slots:
     void toggleToolbarMenu();
@@ -595,6 +605,10 @@ public slots:
     VLCVarChoiceModel* getExtraInterfaces();
 
     bool pasteFromClipboard();
+
+    // redesign: the first-run dialog (the onboarding or VLC's wizard) closed: the files given on
+    // the command line start now, from the beginning (holdFirstStartPlayback)
+    void releaseFirstStartPlayback();
 
 protected slots:
     void onInputChanged( bool );

@@ -23,6 +23,8 @@
 
 #include <QDate>
 #include <QDesktopServices>
+#include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
@@ -40,17 +42,33 @@ namespace {
 
 #ifdef VLC_BRAND_PUBLIC
 const QString settingsGroup = QStringLiteral("RdUpdateCheck/");
+#ifdef Q_OS_LINUX
+// Linux is released apart from Windows, as pre-releases tagged linux-vX.Y.Z[-label]
+// (release-linux.yml), which /releases/latest never answers: the list of releases, newest first,
+// of which the newest Linux one is offered (redesign/LINUX_UX_NOTES.md)
+const QUrl latestReleaseApi(QStringLiteral(
+    "https://api.github.com/repos/StickyGonzales/vlc-redesign-juxtopposed/releases?per_page=50"));
+const QString releaseTagPrefix = QStringLiteral("linux-");
+// the release page opened by "Download" must be on GitHub; this one lists every release, the
+// Linux ones included
+const QString releasesPage = QStringLiteral(
+    "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases");
+#else
 // the releases API answers with the newest release that is neither a draft nor a pre-release
 const QUrl latestReleaseApi(QStringLiteral(
     "https://api.github.com/repos/StickyGonzales/vlc-redesign-juxtopposed/releases/latest"));
 // the release page opened by "Download" must be on GitHub; this one lists every release
 const QString releasesPage = QStringLiteral(
     "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/latest");
+#endif
 const QString releasePagePrefix = QStringLiteral("https://github.com/");
 // after the start, so the request never competes with opening the first file
 constexpr int startupDelay = 4000;
 // the request gives up after this long (a stalled connection or DNS lookup)
 constexpr int requestTimeout = 15000;
+// tests only: a file whose content stands for GitHub's answer (HTTP 200), so the notice can be
+// tested on a real build without a server (redesign/UPDATE_SKIP_NOTES.md); unset in normal use
+const char testAnswerVariable[] = "CONE_UPDATE_CHECK_TEST_FILE";
 
 // "1.2.3" out of "1.2.3", "v1.2.3" or "v1.2.3-beta"; empty when there is none
 QString versionOf(const QString& text)
@@ -73,6 +91,36 @@ bool isNewer(const QString& version, const QString& current)
             return x > y;
     }
     return false;
+}
+
+// the release to offer out of GitHub's answer; empty when it holds none
+QJsonObject releaseOf(const QJsonDocument& answer)
+{
+#ifdef Q_OS_LINUX
+    // the highest version among the Linux releases, pre-releases included (drafts are never
+    // listed without a token); of equal versions the first, the newest
+    QJsonObject newest;
+    QString newestVersion;
+    const QJsonArray releases = answer.array();
+    for (const QJsonValue& value : releases)
+    {
+        const QJsonObject release = value.toObject();
+        const QString tag = release.value(QStringLiteral("tag_name")).toString();
+        if (release.value(QStringLiteral("draft")).toBool() || !tag.startsWith(releaseTagPrefix))
+            continue;
+        const QString version = versionOf(tag);
+        if (version.isEmpty())
+            continue;
+        if (newestVersion.isEmpty() || isNewer(version, newestVersion))
+        {
+            newest = release;
+            newestVersion = version;
+        }
+    }
+    return newest;
+#else
+    return answer.object();
+#endif
 }
 #endif
 
@@ -109,6 +157,7 @@ RdUpdateCheck::RdUpdateCheck(qt_intf_t* intf, QObject* parent)
         m_latestVersion = found;
         m_releasePage = settings->value(settingsGroup + QStringLiteral("ReleasePage")).toString();
     }
+    m_skippedVersion = settings->value(settingsGroup + QStringLiteral("SkippedVersion")).toString();
 
     QTimer::singleShot(startupDelay, this, &RdUpdateCheck::startupCheck);
 #else
@@ -149,7 +198,8 @@ void RdUpdateCheck::startupCheck()
     const QDate today = QDate::currentDate();
     const bool dismissedToday = settings->value(settingsGroup + QStringLiteral("DismissedOn")).toDate() == today;
 
-    if (!m_latestVersion.isEmpty() && !dismissedToday)
+    // a skipped version waits silently: only a newer one (or "Check now") shows the notice
+    if (!m_latestVersion.isEmpty() && !dismissedToday && m_latestVersion != m_skippedVersion)
     {
         setStatus(UpdateAvailable);
         setNoticeVisible(true);
@@ -182,6 +232,17 @@ void RdUpdateCheck::request(bool explicitCheck)
     // a request already on its way answers "Check now" too
     if (m_job)
         return;
+
+    const QString testFile = qEnvironmentVariable(testAnswerVariable);
+    if (!testFile.isEmpty())
+    {
+        QFile file(testFile);
+        const bool read = file.open(QIODevice::ReadOnly);
+        const QByteArray body = read ? file.readAll() : QByteArray();
+        msg_Dbg(m_intf, "update check: answer read from %s (test)", qtu(testFile));
+        QTimer::singleShot(0, this, [this, read, body]() { onReply(read ? 200 : 0, body); });
+        return;
+    }
 
     auto job = std::make_shared<Job>();
     if (!job->interrupt)
@@ -232,8 +293,12 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     const bool explicitCheck = m_explicitCheck;
     m_explicitCheck = false;
 
-    // 404: GitHub has no release that is not a pre-release yet, so nothing newer either
-    if (httpStatus == 404)
+    const QJsonDocument answer = QJsonDocument::fromJson(body);
+    const QJsonObject release = releaseOf(answer);
+
+    // 404: GitHub has no release that is not a pre-release yet; on Linux, a list without a
+    // Linux release: nothing newer either
+    if (httpStatus == 404 || (httpStatus == 200 && answer.isArray() && release.isEmpty()))
     {
         msg_Dbg(m_intf, "update check: no release yet");
         setNoticeVisible(false);
@@ -241,7 +306,6 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         return;
     }
 
-    const QJsonObject release = QJsonDocument::fromJson(body).object();
     const QString version = versionOf(release.value(QStringLiteral("tag_name")).toString());
     if (httpStatus != 200 || version.isEmpty())
     {
@@ -260,6 +324,8 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         settings->remove(settingsGroup + QStringLiteral("ReleasePage"));
         m_latestVersion.clear();
         m_releasePage.clear();
+        // up to date: a version skipped earlier is installed or older now
+        setSkippedVersion(QString());
         setNoticeVisible(false);
         setStatus(UpToDate);
         return;
@@ -276,10 +342,15 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         emit statusChanged();
     setStatus(UpdateAvailable);
 
-    // "Later" holds for the day, except against "Check now"
+    // a newer version than the skipped one ends the skip: only that exact version was skipped
+    if (!m_skippedVersion.isEmpty() && isNewer(version, m_skippedVersion))
+        setSkippedVersion(QString());
+
+    // "Later" holds for the day and "Skip this version" for that version, except against
+    // "Check now", which always shows the newest version
     const bool dismissedToday = settings->value(settingsGroup + QStringLiteral("DismissedOn")).toDate()
                                 == QDate::currentDate();
-    if (explicitCheck || !dismissedToday)
+    if (explicitCheck || (!dismissedToday && version != m_skippedVersion))
         setNoticeVisible(true);
 #else
     Q_UNUSED(httpStatus);
@@ -298,6 +369,41 @@ void RdUpdateCheck::download()
 void RdUpdateCheck::later()
 {
     dismissForToday();
+}
+
+void RdUpdateCheck::skipVersion()
+{
+#ifdef VLC_BRAND_PUBLIC
+    if (!m_latestVersion.isEmpty())
+        setSkippedVersion(m_latestVersion);
+#endif
+    setNoticeVisible(false);
+}
+
+void RdUpdateCheck::undoSkip()
+{
+#ifdef VLC_BRAND_PUBLIC
+    setSkippedVersion(QString());
+    // the version that was skipped is offered again at once
+    if (m_status == UpdateAvailable && !m_latestVersion.isEmpty())
+        setNoticeVisible(true);
+#endif
+}
+
+void RdUpdateCheck::setSkippedVersion(const QString& version)
+{
+#ifdef VLC_BRAND_PUBLIC
+    if (m_skippedVersion == version)
+        return;
+    m_skippedVersion = version;
+    if (version.isEmpty())
+        m_intf->mainSettings->remove(settingsGroup + QStringLiteral("SkippedVersion"));
+    else
+        m_intf->mainSettings->setValue(settingsGroup + QStringLiteral("SkippedVersion"), version);
+    emit skippedVersionChanged();
+#else
+    Q_UNUSED(version);
+#endif
 }
 
 void RdUpdateCheck::dismissForToday()

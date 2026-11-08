@@ -44,11 +44,12 @@
 
 /* redesign (brand layer, public profile): the name, application id and icon the sound mixer
  * (PulseAudio, PipeWire) and the start banner show for Cone, never VLC's; the id and icon are
- * the Linux package's desktop file and icon (cone.desktop, cone.png, redesign/LINUX_NOTES.md) */
+ * the Linux packages' desktop ID and icon (cone-player.desktop, cone-player.png,
+ * redesign/LINUX_UX_NOTES.md) */
 #ifdef VLC_BRAND_PUBLIC
-# define APP_ID "cone"
+# define APP_ID "cone-player"
 # define APP_VERSION BRAND_VERSION
-# define APP_ICON_NAME "cone"
+# define APP_ICON_NAME "cone-player"
 # define USER_AGENT_NAME "Cone"
 # define START_BANNER_FORMAT "Cone " BRAND_VERSION ", based on VLC %s (revision %s)\n"
 #else

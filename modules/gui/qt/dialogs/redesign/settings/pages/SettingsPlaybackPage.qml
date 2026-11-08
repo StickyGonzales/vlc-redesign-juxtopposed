@@ -48,7 +48,7 @@ SettingsPage {
     readonly property bool _repeat: _option("repeat") === true
     readonly property bool _exit: _option("play-and-exit") === true
     readonly property bool _pause: _option("play-and-pause") === true
-    readonly property bool _autoplayOn: Number(_option("qt-autoplay-next")) !== 0
+    readonly property bool _autoplayOn: _option("qt-autoplay-next") === true
 
     SettingsSection {
         title: qsTr("Startup")
@@ -183,8 +183,8 @@ SettingsPage {
 
         SettingsOption {
             option: "qt-autoplay-next"
-            text: qsTr("Autoplay next episode")
-            keywords: "autoplay next episode binge up next show series"
+            text: qsTr("Play episodes in a row")
+            keywords: "autoplay play episodes in a row next episode binge up next show series"
         }
 
         SettingsOption {
@@ -195,9 +195,9 @@ SettingsPage {
         }
 
         SettingsOption {
-            option: "qt-autoplay-card-point"
+            option: "qt-autoplay-credits-lead"
             text: qsTr("Show Up Next")
-            keywords: "autoplay up next credits chapter"
+            keywords: "autoplay up next credits chapter end"
             available: root._autoplayOn
         }
 
@@ -211,23 +211,31 @@ SettingsPage {
         // the answers given per show folder (rd-shows.json); they do not follow the profiles
         SettingsRow {
             text: qsTr("Remembered shows")
-            description: qsTr("The shows you answered the \"Looks like a show\" question for, or turned autoplay on or off for in the Playback tab. Forget all asks again for each show.")
-            keywords: "autoplay show remembered forget"
-            available: root._autoplayOn
+            description: qsTr("The shows you turned autoplay on or off for in the Playback tab (or answered the old \"Looks like a show\" question for), where their credits start, and the audio and subtitle language you picked for them. Forget all plays every show in a row again and forgets their credits and tracks.")
+            keywords: "autoplay show remembered forget audio subtitle track language"
+            // the tracks remembered per show work with autoplay off too (SHOW_TRACKS_NOTES.md)
+            available: root._autoplayOn || RdUpNext.rememberedTracks > 0
 
             Row {
                 spacing: VLCStyle.dp(16)
 
                 Text {
                     // the row dims its label only; this text is part of the control
-                    opacity: root._autoplayOn ? 1.0 : VLCStyle.rd_disabledRowOpacity
+                    opacity: root._autoplayOn || RdUpNext.rememberedTracks > 0 ? 1.0 : VLCStyle.rd_disabledRowOpacity
                     anchors.verticalCenter: parent.verticalCenter
                     readonly property int total: RdUpNext.rememberedYes + RdUpNext.rememberedNo
-                    text: total === 0 ? qsTr("No shows yet")
+                    readonly property string _answers: total === 0 ? qsTr("No shows yet")
                         : total === 1 ? qsTr("1 show: %1 autoplay, %2 never")
                                             .arg(RdUpNext.rememberedYes).arg(RdUpNext.rememberedNo)
                         : qsTr("%1 shows: %2 autoplay, %3 never")
                               .arg(total).arg(RdUpNext.rememberedYes).arg(RdUpNext.rememberedNo)
+                    // the audio and subtitle tracks remembered per show
+                    readonly property string _tracks: RdUpNext.rememberedTracks === 0 ? ""
+                        : RdUpNext.rememberedTracks === 1 ? qsTr("tracks for 1 show")
+                        : qsTr("tracks for %1 shows").arg(RdUpNext.rememberedTracks)
+                    text: _tracks === "" ? _answers
+                        : total === 0 ? _tracks.charAt(0).toUpperCase() + _tracks.slice(1)
+                        : qsTr("%1; %2").arg(_answers).arg(_tracks)
                     font.family: VLCStyle.rd_fontFamily
                     font.pixelSize: VLCStyle.rd_fontSize_label
                     color: VLCStyle.palette.rdFgA3
@@ -236,7 +244,8 @@ SettingsPage {
                 Widgets.RdButton {
                     style: Widgets.RdButton.Style.Plain
                     text: qsTr("Forget all")
-                    enabled: RdUpNext.rememberedYes + RdUpNext.rememberedNo > 0
+                    enabled: RdUpNext.rememberedYes + RdUpNext.rememberedNo + RdUpNext.rememberedCredits
+                             + RdUpNext.rememberedTracks > 0
                     onClicked: RdUpNext.forgetAll()
                 }
             }

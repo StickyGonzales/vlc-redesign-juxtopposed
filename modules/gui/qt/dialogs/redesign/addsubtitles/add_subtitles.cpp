@@ -315,6 +315,7 @@ AddSubtitles::AddSubtitles(qt_intf_t* intf, QObject* parent)
     m_account.apiKey = settings->value(settingsGroup + QStringLiteral("OpenSubtitlesApiKey")).toString();
     m_account.username = settings->value(settingsGroup + QStringLiteral("OpenSubtitlesUser")).toString();
     m_account.password = settings->value(settingsGroup + QStringLiteral("OpenSubtitlesPassword")).toString();
+    m_autoSyncDownloads = settings->value(settingsGroup + QStringLiteral("AutoSyncDownloads"), false).toBool();
 
     // the language the user prefers for subtitles (VLC's "sub-language": "eng,fre" or names)
     char* preferred = var_InheritString(m_intf, "sub-language");
@@ -1239,7 +1240,7 @@ void AddSubtitles::save()
             }
             for (auto it = added.cbegin(); it != added.cend(); ++it)
                 if (!playing.isEmpty() && SubtitleStore::mediaKey(it.key()) == playing)
-                    attach(it.key(), it.value(), true);
+                    attach(it.key(), it.value(), true, source == SourceOpenSubtitles);
 
             if (!error->isEmpty())
             {
@@ -1285,6 +1286,15 @@ void AddSubtitles::setPassword(const QString& password)
         return;
     m_account.password = password;
     saveAccount();
+}
+
+void AddSubtitles::setAutoSyncDownloads(bool on)
+{
+    if (on == m_autoSyncDownloads)
+        return;
+    m_autoSyncDownloads = on;
+    m_intf->mainSettings->setValue(settingsGroup + QStringLiteral("AutoSyncDownloads"), on);
+    emit autoSyncDownloadsChanged();
 }
 
 void AddSubtitles::saveAccount()
@@ -1381,7 +1391,7 @@ void AddSubtitles::applyTo(const QString& mrl)
             if (!data.isEmpty() && !folder.isEmpty() && writeFile(file, data))
                 result->append(file);
         },
-        [this, result, mrl, saved]() {
+        [this, result, mrl, saved, network]() {
             if (result->isEmpty())
                 return;
             // matched by the folder's rule: kept for this video, so the next time is direct
@@ -1390,11 +1400,11 @@ void AddSubtitles::applyTo(const QString& mrl)
                 m_store.setSubtitles(mrl, *result);
                 writeStore();
             }
-            attach(mrl, *result, true);
+            attach(mrl, *result, true, network);
         }, network ? 3 : 0, false);
 }
 
-void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool select)
+void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded)
 {
     vlc_player_t* player = m_intf->p_mainPlayerController->getPlayer();
     vlc_player_locker lock{ player };
@@ -1426,7 +1436,11 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
     // the forced flag alone does not take the selection from a track the user picked (P3-10):
     // the added file's track is selected once VLC lists it
     if (!selectUri.isEmpty())
+    {
         selectSubtitleWhenListed(this, player,
                                  QCryptographicHash::hash(selectUri.toUtf8(), QCryptographicHash::Md5).toHex(),
                                  kSelectLookups);
+        if (downloaded && m_autoSyncDownloads)
+            emit downloadAttached(selectUri.toUtf8());
+    }
 }

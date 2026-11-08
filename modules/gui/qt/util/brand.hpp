@@ -89,10 +89,12 @@
  * dialog of the preferences uses them */
 # define BRAND_PROGID           "Cone"
 # define BRAND_INSTALL_REGKEY   "Software\\Cone"
-/* Linux: the desktop file of the app (cone.desktop of the Linux package, LINUX_NOTES.md), which
- * Wayland and the desktops use to find the app's name and icon for its windows; the D-Bus MPRIS
- * interface names the same one (modules/control/dbus/dbus_root.c) */
-# define BRAND_DESKTOP_FILE     "cone"
+/* Linux: the desktop ID of the app (cone-player.desktop and the icon cone-player of the tarball,
+ * the AppImage and the .deb, .github/scripts/linux-package.sh), which Wayland (the window's app
+ * id) and X11 (WM_CLASS) use to find the app's name and icon for its windows; the D-Bus MPRIS
+ * interface (modules/control/dbus/dbus_root.c) and the sound mixer (bin/vlc.c) name the same one
+ * (redesign/LINUX_UX_NOTES.md) */
+# define BRAND_DESKTOP_FILE     "cone-player"
 
 #else
 

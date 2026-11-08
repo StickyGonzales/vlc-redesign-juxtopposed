@@ -62,6 +62,12 @@ jobs:
     permissions:
       contents: write  # the draft release
     steps:
+      # the release file name check (release-asset-names.sh)
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          path: src
+
       - uses: actions/download-artifact@v4
         with:
           name: cone-linux-appimage-x86_64
@@ -81,6 +87,9 @@ jobs:
         run: |
           cd out
           chmod +x ./*.AppImage
+          # names GitHub keeps as they are, so SHA256SUMS.txt and the notes name the stored files
+          # (linux-v1.1.2-beta2: the .deb's "~" was stored as ".")
+          ../src/.github/scripts/release-asset-names.sh check ./*.AppImage ./*.tar.xz ./*.deb
           sha256sum ./*.AppImage ./*.tar.xz ./*.deb | sed 's| \./| |' > SHA256SUMS.txt
           cat SHA256SUMS.txt
           VERSION=${GITHUB_REF_NAME#linux-v}
@@ -118,3 +127,7 @@ jobs:
             --draft --prerelease --verify-tag \
             --title "Cone ${GITHUB_REF_NAME#linux-v} for Linux" --notes-file out/notes.md
           echo "Draft: $(gh release view "$GITHUB_REF_NAME" --json url --jq .url)" | tee -a "$GITHUB_STEP_SUMMARY"
+          # what GitHub stored: every file under its own name, every SHA256SUMS.txt line one of
+          # them; a mismatch fails the run while the release is still a draft
+          src/.github/scripts/release-asset-names.sh verify "$GITHUB_REF_NAME" \
+            out/*.AppImage out/*.tar.xz out/*.deb out/SHA256SUMS.txt

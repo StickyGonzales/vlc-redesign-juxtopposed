@@ -47,7 +47,7 @@ ln -sfn "$APP/cone" "$BIN/$ID"
 
 mkdir -p "$DATA/applications"
 # the full path: a menu entry does not search ~/.local/bin, which is not always on the PATH
-sed -e "s|^Exec=.*|Exec=\"$APP/cone\" %U|" \
+sed -e "s|^Exec=.*|Exec=\"$APP/cone\" --started-from-file %U|" \
     "$APP/$ID.desktop" > "$DATA/applications/$ID.desktop"
 chmod 644 "$DATA/applications/$ID.desktop"
 
