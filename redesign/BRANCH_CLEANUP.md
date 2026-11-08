@@ -118,3 +118,13 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 |---|---|---|
 | `wip/up-next-credits-scan` | `8700961a25c9a5a292a76697660840f7e894161f` | PR #107 merged into wip/next-test |
 | `wip/stage-107` | `4521447d8737a9ac6d75de78ee144fb585bc79b5` | test build of #107 merged onto wip/next-test, merged into wip/next-test |
+
+## 2026-11-08, Cone Player 1.3.0 released (CLAUDE.md branch rule)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/autosync-undo-message` | `905e3441b4ded2ab5feb44e229a8d4f97cb43088` | PR #110 merged, released in 1.3.0 |
+| `wip/linux-live-usb-checklist` | `2d4519eda05d6027756ff03b0d91814684aec3e6` | PR #111 merged, released in 1.3.0 |
+| `wip/linux-glibc-235` | `e297350badaeece4944612d777e8639453b0c4bf` | PR #112 merged, released in 1.3.0 |
+| `wip/up-next-card-tune` | `d94ad689a7cba1c750055617946b4a82edbd3a64` | Up Next card tune merged, released in 1.3.0 |
+| `wip/round-1.3.0` | `16ea09558ff577963d7fcc7d7f6d5308d731b6b3` | the 1.3.0 test build, merged |
