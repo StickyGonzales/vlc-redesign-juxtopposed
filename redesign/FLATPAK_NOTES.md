@@ -31,7 +31,8 @@ Branch `wip/linux-flatpak`, made from `origin/wip/next-test`. Draft pull request
 ## 3. Runs
 | Run | Result |
 |---|---|
-| (filled in below the PR) | |
+| #1-#4 | failed, fixed one by one: CMake 4 refuses libebml's old minimum (policy 3.5), libdvbpsi's git tree needs a newer automake check (release tarball + VLC's contrib patches), VLC's configure needs `BUILDCC=gcc` (the SDK has no `c99`), the quoted `CONE_DESKTOP_ID` broke VLC's embedded configure line (now unquoted, made a string in the code) |
+| #5 (42485320021), f6cf333 | failed in `modules/gui/qt`: moc "Undefined interface" (`QQmlParserStatus`, navigationmodel.hpp). VLC's `static_dirs.py --moc_include_dirs` read a leftover variable instead of its match and printed a bare `-I`, so moc never got the compiler's default include dirs. In the KDE SDK Qt's headers sit in `/usr/include`, which qmake leaves out as a default dir, so moc could not find `<QtQml/...>` (Ubuntu's Qt is in its own folder, so the bug never showed there). Fixed in the script: locally it now prints `-I/usr/include/c++/13 ... -I/usr/include`, before only `-I` |
 
 ## 4. Flathub
 The submission steps, the open question about the app ID's GitHub repository, and how releases reach Flathub: redesign/SUBMIT_TO_FLATHUB.md.
