@@ -1861,6 +1861,15 @@ FocusScope {
         function onNotice(text) {
             UINotifier.notify(UINotifier.SubtitleSync, text)
         }
+
+        // the move shows as "Auto-sync  Moved -2.3 s" in place of the core's "Subtitle delay"
+        // message for it (redesign/FIX_AUTOSYNC_MESSAGE_NOTES.md)
+        function onSynced(label, value, delayMs, notice) {
+            if (RdOsd.active)
+                RdOsd.showSubtitleSync(label, value, delayMs)
+            else if (notice !== "")
+                UINotifier.notify(UINotifier.SubtitleSync, notice)
+        }
     }
 
     Widgets.FloatingNotification {

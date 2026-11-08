@@ -585,8 +585,8 @@ void RdSubSync::finish(int generation, std::shared_ptr<Outcome> outcome)
     const QString shortText = scaled ? qtr("Moved %1 s \u00b7 fps fixed").arg(signedSeconds(newDelay - oldDelay))
                                      : text;
     setResult(text, true, shortText);
-    if (outcome->automatic)
-        emit notice(qtr("Subtitles auto-synced: %1").arg(text));
+    emit synced(outcome->automatic ? qtr("Subtitles auto-synced") : qtr("Auto-sync"), shortText, newDelay,
+                outcome->automatic ? qtr("Subtitles auto-synced: %1").arg(text) : QString());
 }
 
 void RdSubSync::undo()

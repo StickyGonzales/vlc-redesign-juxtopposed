@@ -18,6 +18,7 @@
 #ifndef RD_OSD_HPP
 #define RD_OSD_HPP
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QString>
 
@@ -61,6 +62,9 @@ public:
 
     // a notification of the interface itself (UINotifier: "Scale: 125%", "Minimal View", ...)
     Q_INVOKABLE void showText(const QString& icon, const QString& text);
+    // Auto-sync moved the subtitles ("Auto-sync", "Moved -2.3 s"): shown instead of the core's
+    // "Subtitle delay: <delayMs> ms" for that change (redesign/FIX_AUTOSYNC_MESSAGE_NOTES.md)
+    Q_INVOKABLE void showSubtitleSync(const QString& label, const QString& value, int delayMs);
 
 signals:
     // a new message (also when it is the same text again, to restart its time)
@@ -77,6 +81,9 @@ private:
     rdosd::Message m_message;
     QString m_key;
     int m_duration = 2750;
+    // the core's message for the delay Auto-sync just set is dropped once, if it comes soon
+    QElapsedTimer m_syncDelaySet;
+    int m_syncDelayMs = 0;
 };
 
 #endif

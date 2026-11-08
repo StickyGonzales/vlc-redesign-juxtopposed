@@ -42,6 +42,9 @@ struct Message
     QString value;
     double level = -1;      // the volume, 1 = 100 %; -1 for every other message
     bool muted = false;
+    // a subtitle track's delay ("Subtitle delay: -2340 ms") and its value in ms
+    bool subtitleDelay = false;
+    int delayMs = 0;
 };
 
 class Parser
