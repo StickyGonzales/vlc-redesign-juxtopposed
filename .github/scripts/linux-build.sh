@@ -1,6 +1,8 @@
 #!/bin/bash
-# Runs inside VideoLAN's Debian build image (VLC_DEBIAN_IMAGE in extras/ci/gitlab-ci.yml, used by
-# .github/workflows/build-linux.yml), with the checkout mounted at /build.
+# Runs inside the Linux build image (.github/linux/jammy.Dockerfile: Ubuntu 22.04 with the
+# official Qt 6.8.3, so the packages run on glibc 2.35 and newer; built by
+# .github/workflows/build-linux.yml), with the checkout mounted at /build. Also runs in VideoLAN's
+# Debian image (VLC_DEBIAN_IMAGE in extras/ci/gitlab-ci.yml), which needs glibc 2.39.
 #   linux-build.sh build    the media library from VLC's contrib, then VLC with the image's system
 #                           libraries (autotools, like VideoLAN's own "debian" job) through ccache,
 #                           installed into stage/
@@ -73,6 +75,11 @@ build_medialibrary()
 # through contrib's make, which would also build all of FFmpeg's contrib dependencies
 build_postproc()
 {
+    # Ubuntu 22.04's FFmpeg 4.4 still has it
+    if pkg-config --exists libpostproc; then
+        echo "postproc: the system's $(pkg-config --modversion libpostproc)"
+        return
+    fi
     if [ -f "$POSTPROC_PREFIX/lib/pkgconfig/libpostproc.pc" ]; then
         echo "postproc: already built in $POSTPROC_PREFIX"
         return

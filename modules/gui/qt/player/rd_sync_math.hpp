@@ -24,6 +24,7 @@
 // the peak of their cross-correlation. The same approach as ffsubsync and alass, written for
 // Cone (no code of either is used).
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
