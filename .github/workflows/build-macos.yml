@@ -1,8 +1,9 @@
-# Experimental macOS build of Cone (redesign/MACOS_NOTES.md): "Cone Player.app" in a .dmg,
-# signed ad hoc (no Apple developer account), never released by this workflow. Apple Silicon on
-# every run; Intel only when asked (the "intel" input of a manual run).
-#   Actions > build-macos > Run workflow (once this file is on the default branch), or a push to
-#   wip/macos-build (commits with [skip ci] do not start it)
+# macOS build of Cone (redesign/MACOS_NOTES.md): "Cone Player.app" in a .dmg, signed ad hoc (no
+# Apple developer account), never released by this workflow itself. Apple Silicon (arm64) and
+# Intel (x86_64) on every run; a manual run can leave Intel out (the "intel" input).
+#   Actions > build-macos > Run workflow with "Use workflow from" set to a branch, a push to
+#   wip/macos-build (commits with [skip ci] do not start it), or release-macos.yml (every release
+#   tag: v*, linux-v*, macos-v*)
 # VLC's own macOS steps (extras/package/macosx/build.sh) with VideoLAN's prebuilt contribs, the
 # Qt interface (Cone's redesign) instead of VLC's native macOS one, and Qt from Qt's own macOS
 # binaries (VLC's contribs build no Qt for macOS): .github/scripts/macos-build.sh,
@@ -21,9 +22,18 @@ on:
       intel:
         description: 'Also build for Intel Macs (x86_64)'
         type: boolean
-        default: false
+        default: true
       package-suffix:
         description: 'Package name suffix (e.g. -beta)'
+        type: string
+        default: ''
+  # release-macos.yml: a macOS .dmg (both architectures) next to every Windows and Linux release
+  workflow_call:
+    inputs:
+      intel:
+        type: boolean
+        default: true
+      package-suffix:
         type: string
         default: ''
 
@@ -44,7 +54,8 @@ jobs:
     steps:
       - id: m
         env:
-          INTEL: ${{ inputs.intel }}
+          # a push has no inputs: both architectures
+          INTEL: ${{ github.event_name == 'push' || inputs.intel }}
         run: |
           ARM='{"arch":"arm64","host":"aarch64","runner":"macos-15","ci":"macos-arm64"}'
           INTEL_ROW='{"arch":"x86_64","host":"x86_64","runner":"macos-15-intel","ci":"macos-x86_64"}'
@@ -171,7 +182,13 @@ jobs:
           PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
         run: |
           V=""
-          case "$GITHUB_REF" in refs/tags/macos-v*) V="${GITHUB_REF_NAME#macos-v}" ;; refs/tags/v*) V="${GITHUB_REF_NAME#v}" ;; esac
+          case "$GITHUB_REF" in
+            refs/tags/macos-v*) V="${GITHUB_REF_NAME#macos-v}" ;;
+            refs/tags/linux-v*) V="${GITHUB_REF_NAME#linux-v}" ;;
+            refs/tags/v*) V="${GITHUB_REF_NAME#v}" ;;
+          esac
+          # a label after the version (1.3.0-beta) is not part of the app's version
+          V="${V%%-*}"
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || V=""
           S="$PACKAGE_SUFFIX_INPUT"
           echo "$S" | grep -Eq '^(-[A-Za-z0-9.]+)?$' || S=""
@@ -218,14 +235,16 @@ jobs:
       # test builds: the .dmg on the "test-builds" draft pre-release (redesign/TEST_BUILDS.md), never
       # published
       - name: Attach to the test-builds draft pre-release
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && !startsWith(github.ref, 'refs/tags/') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           .github/scripts/test-build-assets.sh \
             "macos-${{ matrix.arch }}.dmg=$(ls macos/*.dmg 2>/dev/null | head -n 1)"
 
-  # the smoke checks of the Apple Silicon .dmg on a second, clean runner (smoke-macos.yml)
+  # the smoke checks of each .dmg on a second, clean runner of its architecture (smoke-macos.yml)
   smoke:
     needs: macos
     uses: ./.github/workflows/smoke-macos.yml
+    with:
+      intel: ${{ github.event_name == 'push' || inputs.intel }}

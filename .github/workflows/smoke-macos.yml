@@ -1,11 +1,17 @@
-# Smoke checks of the experimental Cone macOS build (Apple Silicon .dmg) on a clean GitHub macOS
-# runner, after every macOS build (build-macos.yml calls it); redesign/MACOS_NOTES.md. The checks:
+# Smoke checks of the Cone macOS builds (the Apple Silicon .dmg on macos-15, the Intel .dmg on
+# macos-15-intel) on clean GitHub macOS runners, after every macOS build (build-macos.yml calls it);
+# redesign/MACOS_NOTES.md. The checks:
 # .github/scripts/macos-smoke.py. The runner has a real desktop session; sound goes to VLC's dummy
 # audio output: no picture quality or sound checks.
 name: smoke-macos
 
 on:
   workflow_call:
+    inputs:
+      intel:
+        description: 'The Intel .dmg was built too'
+        type: boolean
+        default: true
 
 jobs:
   # the same test media as the Windows and Linux checks (smoke-media.sh), from the same cache
@@ -38,10 +44,29 @@ jobs:
           path: smoke-media/
           retention-days: 1
 
+  arches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          INTEL: ${{ inputs.intel }}
+        run: |
+          ARM='{"arch":"arm64","runner":"macos-15"}'
+          INTEL_ROW='{"arch":"x86_64","runner":"macos-15-intel"}'
+          if [ "$INTEL" = true ]; then M="[$ARM,$INTEL_ROW]"; else M="[$ARM]"; fi
+          echo "matrix={\"include\":$M}" >> "$GITHUB_OUTPUT"
+
   smoke:
-    needs: smoke-media
-    runs-on: macos-15
-    timeout-minutes: 30
+    needs: [smoke-media, arches]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.arches.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    # a run that waits longer than this for a free macOS runner, or hangs, ends; the checks
+    # themselves take about 8 minutes
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,7 +74,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: cone-macos-arm64
+          name: cone-macos-${{ matrix.arch }}
           path: smoke-in/dmg
       - uses: actions/download-artifact@v4
         with:
@@ -76,6 +101,6 @@ jobs:
         if: ${{ !cancelled() }}
         continue-on-error: true
         with:
-          name: cone-macos-smoke-results
+          name: cone-macos-smoke-results-${{ matrix.arch }}
           path: smoke-out/
           retention-days: 1
