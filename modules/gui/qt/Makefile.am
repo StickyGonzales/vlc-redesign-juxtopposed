@@ -343,6 +343,12 @@ libqt_plugin_la_SOURCES = \
 	player/rd_subtitle_timeline.hpp \
 	player/rd_subtitle_timeline_item.cpp \
 	player/rd_subtitle_timeline_item.hpp \
+	player/rd_sub_sync.cpp \
+	player/rd_sub_sync.hpp \
+	player/rd_sync_math.cpp \
+	player/rd_sync_math.hpp \
+	player/rd_sync_scanner.cpp \
+	player/rd_sync_scanner.hpp \
 	player/rd_waveform_scanner.cpp \
 	player/rd_waveform_scanner.hpp \
 	player/rd_now_playing.cpp \
@@ -594,6 +600,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	player/rd_osd.moc.cpp \
 	player/rd_subtitle_timeline.moc.cpp \
 	player/rd_subtitle_timeline_item.moc.cpp \
+	player/rd_sub_sync.moc.cpp \
 	player/rd_now_playing.moc.cpp \
 	dialogs/toolbar/rd_profiles.moc.cpp \
 	player/rd_media_info.moc.cpp \
@@ -2352,6 +2359,19 @@ test_thread_runner_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_thread_runner_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_thread_runner
 TESTS += test_thread_runner
+
+# test_rd_sync_math (Cone build, Auto-sync): the standard library only
+
+test_rd_sync_math_SOURCES = \
+	tests/test_rd_sync_math.cpp \
+	player/rd_sync_math.cpp player/rd_sync_math.hpp
+
+test_rd_sync_math_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_sync_math_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_sync_math_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_sync_math_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_sync_math
+TESTS += test_rd_sync_math
 
 # test_rd_episode_parser (Cone extra, Up Next): QtCore only
 

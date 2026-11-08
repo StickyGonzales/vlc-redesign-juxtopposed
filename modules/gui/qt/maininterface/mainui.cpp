@@ -42,6 +42,7 @@
 #include "player/rd_subtitle_lift.hpp"
 #include "player/rd_osd.hpp"
 #include "player/rd_subtitle_timeline.hpp"
+#include "player/rd_sub_sync.hpp"
 #include "player/rd_subtitle_timeline_item.hpp"
 #include "player/rd_now_playing.hpp"
 #include "player/rd_up_next.hpp"
@@ -298,6 +299,9 @@ end:
 
 void MainUI::registerQMLTypes()
 {
+    // redesign: shared by the dialogs and the player blocks below (Auto-sync of a download)
+    AddSubtitles* addSubtitles = nullptr;
+
     assert(!g_qmlTypesAreRegistered);
 
     {
@@ -373,8 +377,8 @@ void MainUI::registerQMLTypes()
                                                        new SettingsCatalog( m_intf, this ) );
         // redesign (W6.5): the Add Subtitles dialog's logic; it also adds the saved subtitles
         // when a video starts, so it exists from startup
-        qmlRegisterSingletonInstance<AddSubtitles>( uri, versionMajor, versionMinor, "AddSubtitles",
-                                                    new AddSubtitles( m_intf, this ) );
+        addSubtitles = new AddSubtitles( m_intf, this );
+        qmlRegisterSingletonInstance<AddSubtitles>( uri, versionMajor, versionMinor, "AddSubtitles", addSubtitles );
         qmlRegisterUncreatableType<AddSubtitlesModel>( uri, versionMajor, versionMinor, "AddSubtitlesModel", "" );
 
         qmlRegisterModule(uri, versionMajor, versionMinor);
@@ -439,6 +443,14 @@ void MainUI::registerQMLTypes()
         qmlRegisterSingletonInstance<RdSubtitleTimeline>(uri, versionMajor, versionMinor, "RdSubtitleTimeline",
                                                          new RdSubtitleTimeline(m_intf, m_intf->p_mainPlayerController, this));
         qmlRegisterType<RdSubtitleTimelineItem>(uri, versionMajor, versionMinor, "RdSubtitleTimelineItem");
+        // redesign (Cone build): Auto-sync of the selected subtitle track (SUBTITLE_AUTO_SYNC_NOTES.md);
+        // a download from OpenSubtitles is synced when its setting is on. Queued: the dialog
+        // signals with the player locked
+        RdSubSync* subSync = new RdSubSync(m_intf, m_intf->p_mainPlayerController, this);
+        qmlRegisterSingletonInstance<RdSubSync>(uri, versionMajor, versionMinor, "RdSubSync", subSync);
+        if (addSubtitles)
+            connect(addSubtitles, &AddSubtitles::downloadAttached, subSync, &RdSubSync::syncDownloaded,
+                    Qt::QueuedConnection);
         // redesign (W8.1b / W8.2): what the Customize Player items show about the playing
         // media, and the profiles (top bar layout, settings)
         qmlRegisterSingletonInstance<RdNowPlaying>(uri, versionMajor, versionMinor, "RdNowPlaying",

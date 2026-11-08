@@ -144,6 +144,57 @@ RdSidePanelPage {
     Widgets.RdSettingsSection {
         title: qsTr("Synchronization")
 
+        // Cone build (redesign/SUBTITLE_AUTO_SYNC_NOTES.md): Auto-sync lines the selected track
+        // up with the speech in the audio, or with another subtitle track, and moves it with the
+        // delay below (and the speed, for a file timed for another frame rate)
+        Widgets.RdSettingRow {
+            text: qsTr("Sync to")
+            visible: Brand.isPublic && RdSubSync.references.length > 1
+
+            Widgets.RdDropdown {
+                implicitWidth: VLCStyle.dp(220)
+                model: RdSubSync.references
+                currentIndex: RdSubSync.reference
+                enabled: !RdSubSync.busy
+                Accessible.name: qsTr("Sync to")
+                onActivated: (index) => RdSubSync.reference = index
+            }
+        }
+
+        // one row: the label tells the state ("Analyzing 40 %", "No match found"),
+        // the button what can be done next (Auto-sync, Cancel, Undo). The full sentence is the
+        // button's description for screen readers
+        Widgets.RdSettingRow {
+            id: autoSyncRow
+
+            readonly property bool _undo: RdSubSync.canUndo && !RdSubSync.busy
+
+            // a move shows on the sliders below (StickyGonzales): the label only speaks when
+            // nothing moved ("No match found", a short reason)
+            text: RdSubSync.busy ? qsTr("Analyzing %1 %").arg(Math.round(RdSubSync.progress * 100))
+                                 : !RdSubSync.moved && RdSubSync.resultShort !== "" ? RdSubSync.resultShort
+                                                                                    : qsTr("Automatic Sync")
+            visible: Brand.isPublic
+
+            Widgets.RdButton {
+                style: Widgets.RdButton.Style.Plain
+                text: RdSubSync.busy ? qsTr("Cancel") : autoSyncRow._undo ? qsTr("Undo") : qsTr("Auto-sync")
+                enabled: RdSubSync.busy || autoSyncRow._undo || RdSubSync.available
+                Accessible.name: RdSubSync.busy ? qsTr("Cancel Auto-sync")
+                                                : autoSyncRow._undo ? qsTr("Undo Auto-sync") : qsTr("Auto-sync")
+                Accessible.description: !RdSubSync.available ? qsTr("Select a subtitle track to sync")
+                                                             : RdSubSync.resultText
+                onClicked: {
+                    if (RdSubSync.busy)
+                        RdSubSync.cancel()
+                    else if (autoSyncRow._undo)
+                        RdSubSync.undo()
+                    else
+                        RdSubSync.sync()
+                }
+            }
+        }
+
         Widgets.RdParamSlider {
             id: delaySlider
 

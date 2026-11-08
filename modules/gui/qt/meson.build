@@ -140,6 +140,7 @@ moc_headers = files(
     'player/rd_osd.hpp',
     'player/rd_subtitle_timeline.hpp',
     'player/rd_subtitle_timeline_item.hpp',
+    'player/rd_sub_sync.hpp',
     'player/rd_now_playing.hpp',
     'dialogs/toolbar/rd_profiles.hpp',
     'player/rd_media_info.hpp',
@@ -497,6 +498,12 @@ qt_plugin_sources = files(
     'player/rd_subtitle_timeline.hpp',
     'player/rd_subtitle_timeline_item.cpp',
     'player/rd_subtitle_timeline_item.hpp',
+    'player/rd_sub_sync.cpp',
+    'player/rd_sub_sync.hpp',
+    'player/rd_sync_math.cpp',
+    'player/rd_sync_math.hpp',
+    'player/rd_sync_scanner.cpp',
+    'player/rd_sync_scanner.hpp',
     'player/rd_waveform_scanner.cpp',
     'player/rd_waveform_scanner.hpp',
     'player/rd_now_playing.cpp',
@@ -1681,6 +1688,20 @@ if qt6_dep.found()
             'dependencies': [qt6_dep, qtest_qt6_dep]
         }
 
+
+        # Cone build (Auto-sync): the subtitle sync's arithmetic, the standard library only
+        vlc_tests += {
+            'name': 'test_qt_rd_sync_math',
+            'sources': files(
+                'tests/test_rd_sync_math.cpp',
+                'player/rd_sync_math.cpp',
+                'player/rd_sync_math.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
 
         # Cone extra (Up Next): the episode parser, QtCore only
         vlc_tests += {
