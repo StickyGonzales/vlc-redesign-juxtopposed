@@ -78,6 +78,11 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 2. **Next episode stopped the next episode at once and Cone went to the home page.** See `FIX_UP_NEXT_NEXT_STOP_NOTES.md`. There is a new smoke check on Windows and Linux.
 3. **The update notice could sit on the card's Next episode button.** While the card shows, the notice sits 12 px above the card's top (`RdPanels.upNextCardTop`, set by `Player.qml`), never over it.
 
+**Round 2 runs (commit c7e0ac88c2):**
+- build-windows #201: green, every smoke check passes. The new check reads "upnext: the card's Next episode keeps the next episode playing: episode 1 -> 2, still playing 5 s after the click (6 s, then 9 s)" and passed on its first attempt.
+- build-linux #97: green, every smoke check passes, the same check included.
+- Diagnostic run #198 (the check alone, no fix): also 1 -> 2, so the runners do not reproduce the PC's stop. The fix is a guard plus a safety net (FIX_UP_NEXT_NEXT_STOP_NOTES.md); the PC retest decides.
+
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/up-next-card-click-fill`), Cone (portable), the 11-min test episodes of the #87 retest (strong names).
 1. **Card place.** Play S01E01, seek to 1:30 before the end and keep the mouse still until the bars hide; the card shows. Move the mouse: the bars show and the card does not move (it already sits above the bar's place). Let the bars hide again: the card does not move.
