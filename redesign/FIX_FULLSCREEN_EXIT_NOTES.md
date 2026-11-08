@@ -41,12 +41,27 @@ Branch `wip/fix-fullscreen-exit`, made from `origin/wip/next-test`. Draft pull r
 | build-linux #83 (run 41551454130) | e71a22c05f | green |
 | build-windows #184 (run 41556891222) | 50d2e0376f | green, smoke included ("fullscreen is left whichever way it was entered" passes on H.264 and HEVC) |
 
+## Round 2: the first F did nothing (PC test, 2026-11-08)
+**Report.** After entering fullscreen with the top bar's button, the first F did nothing; only a second F left.
+
+**Cause.** VLC's "Toggle fullscreen" key (F) only toggles the video's fullscreen (`vlc_player_vout_ToggleFullscreen`: it reads the video's own fullscreen flag and sets the opposite). The window is fullscreen while the interface or the video holds it. When the window was fullscreen without the video's flag set (entered through the interface), the first F turned the video's flag on: nothing to see. Only the second F turned it off, and that release took both holds.
+
+**Fix (Cone build, `MainCtx::sendVLCHotkey`).**
+- While the window is fullscreen, the "Toggle fullscreen" key (the keys of `key-toggle-fullscreen`, F by default) leaves it through `toggleInterfaceFullScreen`, however it was entered. It is not handed to VLC.
+- Leaving now always clears the video's flag and releases the video's hold as well as the interface's, whatever the player believed about its video.
+- Out of fullscreen, F enters as before (the video's fullscreen), so F, F still goes in and out.
+
+**Smoke check.** `Check-FsExit` adds two cases:
+- the top bar's button, then one F: windowed;
+- then F, F: fullscreen and back.
+
 ## Windows retest (PC session)
 Build: the build-windows run of this branch, Cone (portable), an episode.
 1. **F, then the button.** Press F: fullscreen. Move to the top edge and click the top bar's fullscreen button: windowed.
 2. **Double click, then the button.** Double click the video: fullscreen. The top bar's button: windowed.
 3. **The button, then Escape.** The top bar's button: fullscreen. Escape: windowed.
-4. **The button, then F or a double click.** The button: fullscreen. F: windowed. The button, then a double click: windowed.
+4. **The button, then F or a double click.** The button: fullscreen. One F: windowed (the first press, not the second). The button, then a double click: windowed.
+4b. **F in and out.** F: fullscreen. F: windowed. Repeat a few times, then mix: the button in, F out; F in, the button out; F11 in, F out.
 5. **Control bar.** The control bar's fullscreen button enters and leaves fullscreen, mixed with F and Escape as above.
 6. **F11 and the menu.** F11 and "..." > Fullscreen enter and leave, mixed with Escape.
 7. **Library.** In the library, F11 makes the library fullscreen; F11 leaves it. Play a video from there and let it end: the library stays fullscreen.

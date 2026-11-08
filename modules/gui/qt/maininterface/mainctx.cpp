@@ -88,6 +88,7 @@
 #endif
 
 #include <vlc_interface.h>
+#include <vlc_actions.h>
 #include <vlc_preparser.h>
 
 #define VLC_REFERENCE_SCALE_FACTOR 96.
@@ -580,15 +581,42 @@ void MainCtx::onVOutChanged( bool video )
 #ifdef KeyPress
 #undef KeyPress
 #endif
+#ifdef VLC_BRAND_PUBLIC
+/* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the "Toggle fullscreen" key (F) of a
+ * fullscreen window leaves it, however it was entered. VLC's own handling toggles the video's
+ * fullscreen only: after the top bar's button had made the window fullscreen through the
+ * interface, the first F turned the video's fullscreen on (nothing to see) and only a second F
+ * left (PC test, 2026-11-08) */
+static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
+{
+    char* keys = var_InheritString(obj, "key-toggle-fullscreen");
+    if (!keys)
+        return false;
+    bool match = false;
+    char* save = nullptr;
+    for (char* key = strtok_r(keys, "\t", &save); key && !match; key = strtok_r(nullptr, "\t", &save))
+        match = vlc_str2keycode(key) == uint_fast32_t(vlckey);
+    free(keys);
+    return match;
+}
+#endif
+
 void MainCtx::sendHotkey(Qt::Key key , Qt::KeyboardModifiers modifiers)
 {
     QKeyEvent event(QEvent::KeyPress, key, modifiers );
     int vlckey = qtEventToVLCKey(&event);
-    var_SetInteger(vlc_object_instance(p_intf), "key-pressed", vlckey);
+    sendVLCHotkey(vlckey);
 }
 
 void MainCtx::sendVLCHotkey(int vlcHotkey)
 {
+#ifdef VLC_BRAND_PUBLIC
+    if (m_windowVisibility == QWindow::FullScreen && isToggleFullscreenKey(VLC_OBJECT(p_intf), vlcHotkey))
+    {
+        toggleInterfaceFullScreen();
+        return;
+    }
+#endif
     var_SetInteger(vlc_object_instance(p_intf), "key-pressed", vlcHotkey);
 }
 
@@ -1054,8 +1082,11 @@ void MainCtx::toggleInterfaceFullScreen()
     PlayerController* const player = p_intf->p_mainPlayerController;
     if (m_windowVisibility == QWindow::FullScreen)
     {
-        if (player && player->isFullscreen())
+        // both holds go, whatever the player believes about its video's fullscreen
+        if (player)
             player->setFullscreen(false);
+        if (QWindow* window = intfMainWindow())
+            WindowStateHolder::holdFullscreen(window, WindowStateHolder::VIDEO, false);
         emit setInterfaceFullScreen(false);
         return;
     }

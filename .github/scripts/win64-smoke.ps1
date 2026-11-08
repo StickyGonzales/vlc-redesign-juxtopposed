@@ -441,7 +441,22 @@ function Check-FsExit($s) {
             Keys @(0x1B)   # Escape
             Start-Sleep -Seconds 2
             if (Is-Fullscreen $s.hwnd) { throw 'entered with the top bar''s button, Escape did not leave fullscreen' }
-            'F then the button: windowed; the button then Escape: windowed'
+            # the button, then F once: the first F leaves (it took a second F on the PC, 1.2.0)
+            Click-TopBarFullscreen $s
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'the top bar''s Fullscreen button did not enter fullscreen (second time)' }
+            Focus-Window $s.hwnd
+            Keys @(0x46)   # F, once
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'entered with the top bar''s button, the first F did not leave fullscreen' }
+            # and F again enters, F leaves (the video's fullscreen still follows F)
+            Keys @(0x46)
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'after leaving with F, F did not enter fullscreen again' }
+            Keys @(0x46)
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'F did not leave fullscreen after F entered it' }
+            'F then the button: windowed; the button then Escape: windowed; the button then one F: windowed; F, F: in and out'
         } finally {
             if (Is-Fullscreen $s.hwnd) { Keys @(0x7A); Start-Sleep -Seconds 1 }   # F11 back to the window
             [RdSmoke]::SetCursorPos(500, 400) | Out-Null
