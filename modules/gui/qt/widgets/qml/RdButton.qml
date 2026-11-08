@@ -114,7 +114,11 @@ T.Button {
                       ? control.rdPalette.rdFg2 : control.rdPalette.rdAccentMain
     }
 
+    // the icon and the text together, so implicitContentWidth counts the icon too
     contentItem: Item {
+        implicitWidth: contentRow.implicitWidth
+        implicitHeight: contentRow.implicitHeight
+
         Row {
             id: contentRow
 

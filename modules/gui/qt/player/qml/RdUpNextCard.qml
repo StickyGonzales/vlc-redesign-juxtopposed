@@ -79,10 +79,14 @@ FocusScope {
     // shown during the credits, before the countdown
     readonly property bool _waiting: !_still && !shownState.counting
 
-    readonly property real _pad: VLCStyle.dp(12, VLCStyle.scale)
-    readonly property real _thumbWidth: VLCStyle.dp(160, VLCStyle.scale)
-    readonly property real _thumbHeight: VLCStyle.dp(90, VLCStyle.scale)
-    readonly property real _cardWidth: VLCStyle.dp(400, VLCStyle.scale)
+    // proportions approved by StickyGonzales (Q9b, redesign/UP_NEXT_CARD_TUNE_NOTES.md)
+    readonly property real _pad: VLCStyle.dp(16, VLCStyle.scale)
+    readonly property real _thumbWidth: VLCStyle.dp(168, VLCStyle.scale)
+    readonly property real _thumbHeight: VLCStyle.dp(95, VLCStyle.scale)
+    readonly property real _cardWidth: VLCStyle.dp(420, VLCStyle.scale)
+    readonly property real _textGap: VLCStyle.dp(16, VLCStyle.scale)       // picture to texts
+    readonly property real _buttonHeight: VLCStyle.dp(36, VLCStyle.scale)
+    readonly property real _buttonPad: VLCStyle.dp(16, VLCStyle.scale)
 
     readonly property string _heading: _still ? qsTr("Still watching?")
                                               : (_season ? qsTr("Up next · Season %1").arg(shownState.nextSeason)
@@ -240,12 +244,12 @@ FocusScope {
         visible: !root.compact
 
         readonly property real _textWidth: root._still ? root._cardWidth - 2 * root._pad
-                                                       : root._cardWidth - 2 * root._pad - root._thumbWidth - VLCStyle.dp(14, VLCStyle.scale)
+                                                       : root._cardWidth - 2 * root._pad - root._thumbWidth - root._textGap
         readonly property real _topHeight: root._still ? texts.implicitHeight
                                                        : Math.max(root._thumbHeight, texts.implicitHeight)
 
-        implicitHeight: root._pad + _topHeight + VLCStyle.dp(12, VLCStyle.scale) + fullButtons.height
-                        + VLCStyle.dp(12, VLCStyle.scale)
+        implicitHeight: root._pad + _topHeight + VLCStyle.dp(14, VLCStyle.scale) + fullButtons.height
+                        + root._pad
 
         Rectangle {
             id: thumb
@@ -294,29 +298,22 @@ FocusScope {
         Column {
             id: texts
 
-            x: root._still ? root._pad : thumb.x + thumb.width + VLCStyle.dp(14, VLCStyle.scale)
-            y: root._pad
+            x: root._still ? root._pad : thumb.x + thumb.width + root._textGap
+            // centred on the picture; from the top when the texts are taller than it
+            y: root._still ? root._pad : root._pad + Math.max(0, (root._thumbHeight - implicitHeight) / 2)
             width: full._textWidth
             spacing: VLCStyle.dp(4, VLCStyle.scale)
 
             T.Label {
                 width: parent.width
+                bottomPadding: VLCStyle.dp(2, VLCStyle.scale)
                 text: root._heading
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdAccentMain
                 font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_toggle
+                font.pixelSize: VLCStyle.dp(13, VLCStyle.scale)
                 font.weight: Font.DemiBold
                 font.letterSpacing: VLCStyle.dp(0.4, VLCStyle.scale)
-            }
-
-            T.Label {
-                width: parent.width
-                text: shownState.showName
-                elide: Text.ElideRight
-                color: VLCStyle.palette.rdFgA2
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_label
             }
 
             // two lines, then elided (matrix row 115)
@@ -326,16 +323,27 @@ FocusScope {
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
-                color: VLCStyle.palette.rdFg2
+                color: VLCStyle.palette.rdFg1
                 font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_header
-                font.weight: Font.Medium
+                font.pixelSize: VLCStyle.dp(22, VLCStyle.scale)
+                font.weight: Font.DemiBold
             }
 
             T.Label {
                 width: parent.width
+                text: shownState.showName
+                elide: Text.ElideRight
+                color: VLCStyle.palette.rdFgA1
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.dp(15, VLCStyle.scale)
+            }
+
+            // a space while there is nothing to say keeps the line's height: the texts never
+            // move when the countdown starts
+            T.Label {
+                width: parent.width
                 topPadding: VLCStyle.dp(2, VLCStyle.scale)
-                text: root._still ? qsTr("Paused after 3 episodes in a row.") : root._countdownText
+                text: root._still ? qsTr("Paused after 3 episodes in a row.") : (root._countdownText || " ")
                 wrapMode: Text.Wrap
                 color: VLCStyle.palette.rdFgA3
                 font.family: VLCStyle.rd_fontFamily
@@ -347,8 +355,9 @@ FocusScope {
             id: fullButtons
 
             x: root._pad
-            y: root._pad + full._topHeight + VLCStyle.dp(12, VLCStyle.scale)
-            spacing: VLCStyle.dp(10, VLCStyle.scale)
+            y: root._pad + full._topHeight + VLCStyle.dp(14, VLCStyle.scale)
+            // Cancel lines up with the texts; 10 px at least (Still watching, a long translation)
+            spacing: Math.max(VLCStyle.dp(10, VLCStyle.scale), texts.x - root._pad - playButton.width)
 
             Widgets.RdButton {
                 id: playButton
@@ -358,8 +367,12 @@ FocusScope {
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
                 text: root._playText
-                // 120 px wide at least (the design's Play now button)
-                implicitWidth: Math.max(VLCStyle.dp(120, VLCStyle.scale), implicitContentWidth + leftPadding + rightPadding)
+                // as wide as the picture, its icon and text centred; wider for a long translation
+                leftPadding: root._buttonPad
+                rightPadding: root._buttonPad
+                fontPixelSize: VLCStyle.dp(15, VLCStyle.scale)
+                implicitWidth: Math.max(root._thumbWidth, implicitContentWidth + leftPadding + rightPadding)
+                implicitHeight: root._buttonHeight
                 onClicked: root._primary()
 
                 Navigation.parentItem: root
@@ -379,6 +392,11 @@ FocusScope {
                 focusPolicy: Qt.TabFocus
                 style: Widgets.RdButton.Style.Toast
                 text: root._still ? qsTr("Stop") : qsTr("Cancel")
+                leftPadding: root._buttonPad
+                rightPadding: root._buttonPad
+                fontPixelSize: VLCStyle.dp(15, VLCStyle.scale)
+                implicitWidth: Math.max(VLCStyle.dp(84, VLCStyle.scale), implicitContentWidth + leftPadding + rightPadding)
+                implicitHeight: root._buttonHeight
                 onClicked: root._secondary()
 
                 Navigation.parentItem: root
