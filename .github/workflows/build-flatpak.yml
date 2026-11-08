@@ -70,7 +70,9 @@ jobs:
       - name: Run in the sandbox
         shell: bash
         run: |
-          dnf install -y -q xorg-x11-server-Xvfb ImageMagick >/dev/null
+          # Flathub's build image already has Xvfb (/app/bin); the screenshot tool is optional
+          command -v Xvfb >/dev/null || { echo "::error::no Xvfb in the build image"; exit 1; }
+          command -v import >/dev/null || echo "::warning::no ImageMagick import: no screenshot"
           flatpak install --user -y --noninteractive cone-player.flatpak
           flatpak info --user "$APP_ID" | sed -n '1,12p' | tee -a "$GITHUB_STEP_SUMMARY"
           mkdir -p out
