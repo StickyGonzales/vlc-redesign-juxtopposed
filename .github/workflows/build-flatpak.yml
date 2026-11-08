@@ -86,10 +86,12 @@ jobs:
             "$PWD/media/clip.mp4" > out/stdout.txt 2>&1 &
           PID=$!
           sleep 6
-          import -window root out/cone-flatpak.png || true
+          if command -v import >/dev/null; then import -window root out/cone-flatpak.png || true; fi
           CODE=0; wait "$PID" || CODE=$?
           SECS=$(( $(date +%s) - START ))
           echo "exit code $CODE after $SECS s" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "--- Cone's output"; tail -n 60 out/stdout.txt || true
+          touch out/cone.log
           ok=1
           [ "$CODE" = 0 ] || { echo "::error::Cone did not end cleanly (exit code $CODE)"; ok=0; }
           # the Qt interface gives the video its window; then a video output, the decoder, and the
