@@ -179,7 +179,7 @@ modules:
       - make install
       # the plugin cache, as VLC's packages ship it
       - "$(find /app -name vlc-cache-gen -type f | head -n 1) /app/lib/vlc/plugins"
-      - extras/package/flatpak/install-desktop.sh /app
+      - CONE_FLATPAK_DIR=cone-flatpak sh cone-flatpak/install-desktop.sh /app
     sources:
       - type: dir
         path: ../../..
@@ -193,3 +193,13 @@ modules:
           - contrib/linux-pp
           - .ccache
           - .flatpak-builder
+      # the copied tree leaves out this manifest's folder, so its files come in on their own
+      - type: file
+        path: install-desktop.sh
+        dest: cone-flatpak
+      - type: file
+        path: cone
+        dest: cone-flatpak
+      - type: file
+        path: io.github.StickyGonzales.ConePlayer.metainfo.xml
+        dest: cone-flatpak
