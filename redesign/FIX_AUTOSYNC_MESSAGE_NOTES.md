@@ -28,7 +28,13 @@ Reported by StickyGonzales at the Windows retest of PR #106 (STATUS.md, 2026-11-
 ## 4. Runs
 | Run | Result |
 |---|---|
-| (filled in below the PR) | |
+| build-linux #99 (42435721439), 87098e9 | green, every Linux smoke check passes |
+| build-windows #203 (42435723820), 87098e9 | green, every Windows smoke check passes |
+
+**Sandbox, build-linux #99's tarball** (Xvfb, 150 %; a generated 60 s test pattern MKV with an in-sync embedded English subtitle track, and the same lines in an external .srt 2.34 s late; picture `redesign/fix-shots/autosync_message.jpg`):
+- Sync to "Track 1 - [English]", Auto-sync: log "subtitle sync: match, delay -2320 ms"; the message reads **"Auto-sync  Moved -2.3 s"** with the subtitles icon; screenshots every 0.5 s show no "Subtitle delay" message after it; the delay box -2.320 s, the button Undo.
+- H right after: "Subtitle delay  -2270 ms  [H]", as before.
+- Undo: "Subtitle delay  0 ms", the delay back to 0.000 s.
 
 ## 5. Windows retest (PC session)
 Use this branch's build-windows zip (portable). The same media as PR #106's retest: a film with its .srt shifted 2.4 s late.
