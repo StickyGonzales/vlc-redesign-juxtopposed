@@ -1,0 +1,3 @@
+#!/bin/sh
+# Cone Player in its Flatpak (extras/package/flatpak): VLC's program with Cone's interface
+exec /app/bin/vlc "$@"

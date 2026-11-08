@@ -1,0 +1,50 @@
+# Cone Player as a Flatpak (first step toward Flathub)
+
+Branch `wip/linux-flatpak`, made from `origin/wip/next-test`. Draft pull request into `wip/next-test`. StickyGonzales, 2026-11-08: "Prepare a Flatpak build (a manifest that builds and runs in the sandbox) as a first step toward Flathub; submit nothing." **Nothing is submitted or published.**
+
+## 1. What is here
+| File | What |
+|---|---|
+| `extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml` | the manifest |
+| `extras/package/flatpak/install-desktop.sh` | menu entry (the same file types as the other Linux packages), icons, AppStream file, launcher |
+| `extras/package/flatpak/io.github.StickyGonzales.ConePlayer.metainfo.xml` | the AppStream file Flathub reads (name, summary, description, license, links) |
+| `extras/package/flatpak/cone` | the launcher (`/app/bin/cone`) |
+| `.github/workflows/build-flatpak.yml` | builds it in Flathub's KDE 6.10 build image, installs the bundle and starts Cone in the sandbox |
+
+**App ID:** `io.github.StickyGonzales.ConePlayer` (Flathub's form for a GitHub project; the app ID cannot change after a Flathub release).
+
+**Runtime:** `org.kde.Platform` 6.10 (Qt 6.10, the Qt the other Linux builds use from Debian; freedesktop 25.08 underneath). KDE 6.11 also exists; 6.10 was kept because Cone is tested with Qt 6.10.
+
+**Built in the manifest** (the runtime lacks them or has a reduced build): Lua 5.4.4 (VLC's scripts; the same version as VLC's contrib, checksum from contrib), FFmpeg 7.1.2 (the runtime's FFmpeg leaves out most video decoders), libebml / libmatroska (MKV, WebM), libdvbpsi (MPEG-TS), libass (styled subtitles), the media library 0.13.2 (VLC's contrib version and tarball), then Cone itself from the checkout (`type: dir`).
+
+**Sandbox permissions (finish-args):**
+- Wayland, X11 as a fallback, PulseAudio (PipeWire answers it), the GPU (`--device=dri`), network (streams, update check, OpenSubtitles).
+- Files: the Videos, Music and Downloads folders (Downloads read-only), removable drives read-only; every other file through the file chooser portal or "Open with".
+- D-Bus: owns `org.mpris.MediaPlayer2.cone` (media controls and the hand-off of a file to the running window), may inhibit the screen saver and sleep.
+
+**Desktop ID:** a Flatpak's windows, media controls and sound mixer entry must carry its app ID, not `cone-player`. A new build-time define, `CONE_DESKTOP_ID`, replaces it where Cone names it (`modules/gui/qt/util/brand.hpp`, `modules/control/dbus/dbus_root.c`, `bin/vlc.c`); the manifest sets it, every other build keeps `cone-player`. Two of the files are outside `modules/gui/qt`: a small core change (Decision 27), inert unless the define is set.
+
+## 2. What the workflow checks
+1. flatpak-builder builds every module and Cone in the sandboxed build environment.
+2. The bundle is installed with `flatpak install --user`, like a user would.
+3. Cone starts in its sandbox (`flatpak run`) on Xvfb with a generated 12 s H.264 clip and its .srt, plays it to the end (`--play-and-exit`) and must end with exit code 0. Its log must show the Qt interface's video window, a video output, the FFmpeg decoder and the subtitle decoder. A screenshot at 6 s and the log are kept as the `flatpak-run` artifact.
+
+## 3. Runs
+| Run | Result |
+|---|---|
+| (filled in below the PR) | |
+
+## 4. Before a Flathub submission (not done, StickyGonzales decides)
+- **Source:** a release tag (`type: git`, tag and commit) instead of `type: dir`, and the manifest in a new repository `flathub/io.github.StickyGonzales.ConePlayer` (Flathub's submission is a pull request to `flathub/flathub`).
+- **Screenshots and releases** in the AppStream file (Flathub requires at least one screenshot with a public URL, and a `<releases>` entry per version); `flatpak-builder-lint` must pass.
+- **Name and trademarks:** "based on VLC media player" and the credits are in the description; Flathub reviewers check that the app does not present itself as VLC.
+- **Permissions:** Flathub reviewers may ask for narrower file access; the media library needs the folders it scans.
+- **Codecs:** FFmpeg is built with H.264 / HEVC decoders, as VLC's own Flathub package does.
+
+## 5. Retest (Linux, PC session or a Linux user)
+1. Download the `cone-player` artifact of a green build-flatpak run (a zip with `cone-player.flatpak`).
+2. `flatpak install --user cone-player.flatpak` (Flathub must be set up as a remote for the KDE runtime: `flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo`).
+3. Start Cone Player from the menu: the window shows Cone's icon (not a generic one) in the dock, also on Wayland.
+4. Play a video from the Videos folder and one from a USB stick; open a file in another folder through Open File(s).
+5. Media keys and the desktop's media controls show "Cone Player"; a second file opened from the file manager plays in the same window.
+6. `flatpak uninstall --user io.github.StickyGonzales.ConePlayer` removes it.

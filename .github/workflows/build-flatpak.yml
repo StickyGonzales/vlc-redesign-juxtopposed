@@ -1,0 +1,108 @@
+# Cone Player as a Flatpak (redesign/FLATPAK_NOTES.md): builds
+# extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml with flatpak-builder in
+# Flathub's KDE 6.10 build image, then installs the bundle and starts Cone inside the Flatpak
+# sandbox under Xvfb with a generated clip. A first step toward Flathub: nothing is submitted or
+# published; the bundle is a one-day artifact. Runs on pushes to wip/linux-flatpak and by hand:
+#   Actions > build-flatpak > Run workflow (or: gh workflow run build-flatpak.yml --ref <branch>)
+# GitHub offers the manual run only once this file is on the default branch (redesign).
+name: build-flatpak
+
+on:
+  push:
+    branches: [wip/linux-flatpak]
+    paths-ignore:
+      - 'redesign/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  workflow_dispatch:
+
+concurrency:
+  group: build-flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ID: io.github.StickyGonzales.ConePlayer
+
+jobs:
+  # a short H.264 clip with an .srt, as the smoke checks' media (smoke-media.sh)
+  media:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test clip
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
+          mkdir -p media
+          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=854x480:rate=30 \
+            -f lavfi -i sine=frequency=440:sample_rate=48000 -t 12 \
+            -c:v libx264 -pix_fmt yuv420p -c:a aac media/clip.mp4
+          printf '1\n00:00:01,000 --> 00:00:10,000\nCone in its Flatpak\n' > media/clip.srt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-test-media
+          path: media/
+          retention-days: 1
+
+  flatpak:
+    needs: media
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml
+          bundle: cone-player.flatpak
+          cache-key: flatpak-builder-${{ hashFiles('extras/package/flatpak/*.yml') }}
+          upload-artifact: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: flatpak-test-media
+          path: media
+
+      # the bundle installed like a user would, then Cone started in its sandbox: the Qt
+      # interface on Xvfb, the clip played to its end (--play-and-exit), its log kept
+      - name: Run in the sandbox
+        shell: bash
+        run: |
+          dnf install -y -q xorg-x11-server-Xvfb ImageMagick >/dev/null
+          flatpak install --user -y --noninteractive cone-player.flatpak
+          flatpak info --user "$APP_ID" | sed -n '1,12p' | tee -a "$GITHUB_STEP_SUMMARY"
+          mkdir -p out
+          Xvfb :99 -screen 0 1280x800x24 -nolisten tcp &
+          sleep 2
+          export DISPLAY=:99
+          START=$(date +%s)
+          timeout 90 flatpak run --user --filesystem="$PWD/media:ro" --filesystem="$PWD/out" \
+            "$APP_ID" --no-qt-privacy-ask --no-qt-cone-update-check --aout=dummy --play-and-exit \
+            --file-logging --logfile="$PWD/out/cone.log" --log-verbose=2 \
+            "$PWD/media/clip.mp4" > out/stdout.txt 2>&1 &
+          PID=$!
+          sleep 6
+          import -window root out/cone-flatpak.png || true
+          CODE=0; wait "$PID" || CODE=$?
+          SECS=$(( $(date +%s) - START ))
+          echo "exit code $CODE after $SECS s" | tee -a "$GITHUB_STEP_SUMMARY"
+          ok=1
+          [ "$CODE" = 0 ] || { echo "::error::Cone did not end cleanly (exit code $CODE)"; ok=0; }
+          # the Qt interface gives the video its window; then a video output, the decoder, and the
+          # .srt next to the clip (found by VLC's subtitle autodetection)
+          for want in 'using vout window module "qt"' 'using vout display module' \
+                      'using video decoder module "avcodec"' 'using spu decoder module "subsdec"'; do
+            if grep -qF "$want" out/cone.log; then echo "found: $want" | tee -a "$GITHUB_STEP_SUMMARY"
+            else echo "::error::not in the log: $want"; ok=0; fi
+          done
+          grep -i "cannot load module\|qml.*error" out/cone.log | head -n 20 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          [ "$ok" = 1 ]
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: flatpak-run
+          path: out/
+          retention-days: 1
