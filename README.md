@@ -47,7 +47,7 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 
 ### Linux (beta)
 
-Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.2.0 beta 3](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.2.0-beta3). It needs 64-bit x86 and glibc 2.39 or newer: Ubuntu 24.04, Linux Mint 22, Debian 13, Fedora 40 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
+Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.2.0 beta 3](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.2.0-beta3). It needs 64-bit x86 and glibc 2.39 or newer: Ubuntu 24.04, Linux Mint 22, Debian 13, Fedora 40 or newer. From the next Linux release on, the packages are built on Ubuntu 22.04 and need only glibc 2.35: they also run on Ubuntu 22.04, Linux Mint 21, Debian 12 and Fedora 36 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
 
 | Download | How |
 |---|---|
