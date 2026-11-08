@@ -158,6 +158,8 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
         }
     }
 
+    holdFirstStartPlayback();
+
     /**
      *  Configuration and settings
      *  Pre-building of interface
@@ -318,6 +320,48 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
     m_initialEffectiveMainInterfaceMode = getEffectiveMainInterfaceMode();
 }
 
+/* redesign: on a first start (qt-privacy-ask: the onboarding, or VLC's first-run wizard) the
+ * files given on the command line wait until the dialog closes, instead of playing unseen behind
+ * it. The core starts them right after this interface is ready (libvlc_InternalPlay, which reads
+ * playlist-autostart on the libvlc object), so the option is turned off there for that one call
+ * and the queue is started by releaseFirstStartPlayback() once the dialog closes. */
+void MainCtx::holdFirstStartPlayback()
+{
+    if (!var_InheritBool(p_intf, "qt-privacy-ask") || !var_InheritBool(p_intf, "playlist-autostart"))
+        return;
+
+    libvlc_int_t* const libvlc = vlc_object_instance(p_intf);
+    // set on the libvlc object by someone else: not ours to change
+    if (var_Type(libvlc, "playlist-autostart") != 0)
+        return;
+
+    var_Create(libvlc, "playlist-autostart", VLC_VAR_BOOL);
+    var_SetBool(libvlc, "playlist-autostart", false);
+    m_firstStartHold = true;
+}
+
+void MainCtx::releaseFirstStartPlayback()
+{
+    if (!m_firstStartHold)
+        return;
+    m_firstStartHold = false;
+
+    // the user's own playlist-autostart again
+    var_Destroy(vlc_object_instance(p_intf), "playlist-autostart");
+
+    // what libvlc_InternalPlay would have done; nothing when something already plays (a file
+    // opened from a second start while the dialog was open)
+    vlc_playlist_t* const playlist = p_intf->p_playlist;
+    vlc_playlist_locker lock(playlist);
+    if (vlc_playlist_Count(playlist) == 0)
+        return;
+    if (vlc_player_IsStarted(vlc_playlist_GetPlayer(playlist)))
+        return;
+    if (vlc_playlist_GetCurrentIndex(playlist) < 0)
+        vlc_playlist_GoTo(playlist, 0);
+    vlc_playlist_Start(playlist);
+}
+
 MainCtx::~MainCtx()
 {
     /* Save states */
@@ -328,6 +372,8 @@ MainCtx::~MainCtx()
 
     /* Unregister callbacks */
     libvlc_int_t* libvlc = vlc_object_instance(p_intf);
+    if (m_firstStartHold)
+        var_Destroy(libvlc, "playlist-autostart");
     var_DelCallback( libvlc, "intf-boss", IntfBossCB, p_intf );
     var_DelCallback( libvlc, "intf-show", IntfRaiseMainCB, p_intf );
     var_DelCallback( libvlc, "intf-toggle-fscontrol", IntfShowCB, p_intf );
@@ -680,6 +726,21 @@ void MainCtx::setAccentColor(const QColor& color)
         return;
     m_accentColor = color;
     const QByteArray value = color.isValid() ? color.name(QColor::HexRgb).toUtf8() : QByteArray("default");
+    m_accentOption = value;
+    config_PutPsz("qt-accent-color", value.constData());
+    scheduleConfigSave();
+    emit accentColorChanged();
+}
+
+void MainCtx::restoreAccentOption(const QString& option)
+{
+    const QByteArray value = option.isEmpty() ? QByteArray("default") : option.toUtf8();
+    QColor color;
+    if (value != "default" && value != "system")
+        color = QColor(option);
+    if (color == m_accentColor && value == m_accentOption)
+        return;
+    m_accentColor = color;
     m_accentOption = value;
     config_PutPsz("qt-accent-color", value.constData());
     scheduleConfigSave();

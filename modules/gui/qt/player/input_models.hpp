@@ -53,7 +53,11 @@ public:
     // "externalUri": that file's URI (empty until the file is listed on the media)
     enum Roles {
         ExternalRole = Qt::UserRole + 1,
-        ExternalUriRole
+        ExternalUriRole,
+        // redesign (Cone extra, Up Next): the language tag the file gives the track, empty when none
+        LanguageRole,
+        // VLC's own name of the track (the display text of an external track is its file name)
+        TitleRole
     };
 
     TrackListModel(vlc_player_t* player, QObject* parent = nullptr);

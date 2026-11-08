@@ -137,8 +137,10 @@ moc_headers = files(
     'player/rd_waveform.hpp',
     'player/rd_waveform_item.hpp',
     'player/rd_subtitle_lift.hpp',
+    'player/rd_osd.hpp',
     'player/rd_subtitle_timeline.hpp',
     'player/rd_subtitle_timeline_item.hpp',
+    'player/rd_sub_sync.hpp',
     'player/rd_now_playing.hpp',
     'dialogs/toolbar/rd_profiles.hpp',
     'player/rd_media_info.hpp',
@@ -489,10 +491,20 @@ qt_plugin_sources = files(
     'player/rd_waveform_item.hpp',
     'player/rd_subtitle_lift.cpp',
     'player/rd_subtitle_lift.hpp',
+    'player/rd_osd.cpp',
+    'player/rd_osd.hpp',
+    'player/rd_osd_parse.cpp',
+    'player/rd_osd_parse.hpp',
     'player/rd_subtitle_timeline.cpp',
     'player/rd_subtitle_timeline.hpp',
     'player/rd_subtitle_timeline_item.cpp',
     'player/rd_subtitle_timeline_item.hpp',
+    'player/rd_sub_sync.cpp',
+    'player/rd_sub_sync.hpp',
+    'player/rd_sync_math.cpp',
+    'player/rd_sync_math.hpp',
+    'player/rd_sync_scanner.cpp',
+    'player/rd_sync_scanner.hpp',
     'player/rd_waveform_scanner.cpp',
     'player/rd_waveform_scanner.hpp',
     'player/rd_now_playing.cpp',
@@ -515,6 +527,8 @@ qt_plugin_sources = files(
     'player/rd_credits_scanner.hpp',
     'player/rd_credits_scans.cpp',
     'player/rd_credits_scans.hpp',
+    'player/rd_show_tracks.cpp',
+    'player/rd_show_tracks.hpp',
     'player/rd_credits_subtitles.cpp',
     'player/rd_credits_subtitles.hpp',
     'player/rd_up_next.cpp',
@@ -976,6 +990,7 @@ qml_modules += {
        'player/qml/RdMiniQueue.qml',
        'player/qml/RdMiniPlayer.qml',
        'player/qml/RdInfoPanel.qml',
+       'player/qml/RdOsdMessage.qml',
        'player/qml/RdUpNextCard.qml',
    ),
    'singletons' : files(
@@ -1207,6 +1222,7 @@ qml_modules += {
         'widgets/qml/RdEndlessSlider.qml',
         'widgets/qml/RdSliderWheel.qml',
         'widgets/qml/RdWheelSink.qml',
+        'widgets/qml/RdAccentEditor.qml',
         'widgets/qml/RdButton.qml',
         'widgets/qml/RdTextField.qml',
         'widgets/qml/RdOptionRow.qml',
@@ -1680,6 +1696,20 @@ if qt6_dep.found()
         }
 
 
+        # Cone build (Auto-sync): the subtitle sync's arithmetic, the standard library only
+        vlc_tests += {
+            'name': 'test_qt_rd_sync_math',
+            'sources': files(
+                'tests/test_rd_sync_math.cpp',
+                'player/rd_sync_math.cpp',
+                'player/rd_sync_math.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
         # Cone extra (Up Next): the episode parser, QtCore only
         vlc_tests += {
             'name': 'test_qt_rd_episode_parser',
@@ -1717,6 +1747,34 @@ if qt6_dep.found()
                 'tests/test_rd_credits_audio.cpp',
                 'player/rd_credits_audio.cpp',
                 'player/rd_credits_audio.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone extra (Up Next): a show's tracks by language, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_show_tracks',
+            'sources': files(
+                'tests/test_rd_show_tracks.cpp',
+                'player/rd_show_tracks.cpp',
+                'player/rd_show_tracks.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone's on-screen messages: the core's texts sorted, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_osd_parse',
+            'sources': files(
+                'tests/test_rd_osd_parse.cpp',
+                'player/rd_osd_parse.cpp',
+                'player/rd_osd_parse.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,
