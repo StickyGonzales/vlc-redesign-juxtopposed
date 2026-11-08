@@ -9,8 +9,8 @@ Once on Flathub, every Linux user with Flatpak (and the app stores built on it: 
 |---|---|
 | Builds in Flathub's build image (KDE 6.10 runtime) and runs in the sandbox | `build-flatpak.yml`: see the runs in redesign/FLATPAK_NOTES.md |
 | `flatpak-builder-lint manifest` | **1 error: `appid-url-not-reachable`** (section 2, needs StickyGonzales); 1 warning: KDE runtime 6.11 is available (section 6) |
-| `flatpak-builder-lint repo` (the built repository, screenshots mirrored as Flathub does) | in the build-flatpak runs |
-| `appstreamcli validate` on the metainfo | passes (one pedantic note: the ID has capital letters, which Flathub accepts) |
+| `flatpak-builder-lint repo` (the built repository, screenshots mirrored as Flathub does) | **only `appid-url-not-reachable`** (the same, section 2), no other error (build-flatpak #12) |
+| `appstreamcli validate` on the metainfo | passes in CI ("Validation was successful: pedantic: 1", build-flatpak #12; the note: the ID has capital letters, which Flathub accepts) |
 | Sandbox permissions | minimal, each one explained in the manifest (section 4) |
 | App ID, name, trademarks | section 3 |
 
