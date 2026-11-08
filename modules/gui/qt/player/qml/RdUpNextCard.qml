@@ -159,6 +159,27 @@ FocusScope {
                                        : qsTr("Up next: %1, %2. Playing in %3 seconds.")
                                              .arg(shownState.showName).arg(shownState.cardLine).arg(shownState.secondsLeft)
 
+    // a press anywhere on the card (its buttons, its text, its picture) and a moment after the
+    // release: the player's pointer tracking takes no mouse move from it, so no click on the card
+    // shows the control bar. Passive: the press still reaches the button under it
+    readonly property bool pointerBusy: cardPress.active || clickGuard.running
+
+    PointHandler {
+        id: cardPress
+
+        acceptedButtons: Qt.AllButtons
+        onActiveChanged: {
+            if (!active)
+                clickGuard.restart()
+        }
+    }
+
+    Timer {
+        id: clickGuard
+
+        interval: Qt.styleHints.mouseDoubleClickInterval
+    }
+
     function _primary() {
         if (root._still)
             RdUpNext.keepWatching()

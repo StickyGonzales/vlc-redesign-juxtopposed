@@ -73,6 +73,8 @@ constexpr double kThumbnailPosition = 0.15;
 constexpr int kThumbnailWidth = 320;
 // "Still watching?" after this many episodes in a row without the user
 constexpr int kStillWatchingAfter = 3;
+// after Next episode: how long the switch to the next episode is guarded
+constexpr qint64 kSwitchGuardMs = 3000;
 
 QString storePath()
 {
@@ -159,9 +161,27 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     connect(m_player, &PlayerController::playingStateChanged, this, [this]() {
         if (m_player->getPlayingState() == PlayerController::PLAYING_STATE_STOPPED)
         {
+            // the episode Next episode chose stopped right after the click: it plays again (a
+            // safety net for the switch above; logged so a PC log shows it)
+            if (m_playNowItem && m_playNowClock.isValid() && m_playNowClock.elapsed() < kSwitchGuardMs)
+            {
+                const PlaylistItem current = m_playlist->getCurrentItem();
+                if (current && current.inputItem() == m_playNowItem.get())
+                {
+                    msg_Warn(m_intf, "up next: the next episode stopped right after Next episode; starting it again");
+                    m_playNowItem = SharedInputItem();
+                    QTimer::singleShot(0, this, [this]() { m_playlist->play(); });
+                }
+            }
             setCard(false, CardNext);
-            // between two episodes the player stops for a moment too: only a stop that lasts counts
-            QTimer::singleShot(300, this, &RdUpNext::onStopped);
+            // between two episodes the player stops for a moment too: only a stop that lasts counts,
+            // and only while the same media is current (a stop of the episode left behind, once the
+            // next one is current, must not take the following autoplay item out)
+            const int serial = m_inputSerial;
+            QTimer::singleShot(300, this, [this, serial]() {
+                if (serial == m_inputSerial)
+                    onStopped();
+            });
         }
         // the episode loaded paused under "Still watching?" plays (Space, the play button); only
         // once it has been paused, as it may report STARTED and PLAYING before it pauses
@@ -366,6 +386,9 @@ int RdUpNext::rememberedNo() const
 
 void RdUpNext::onInputChanged(bool hasInput)
 {
+    ++m_inputSerial;
+    // the player switched: queue changes are safe again
+    m_switching = false;
     const PlaylistItem current = m_playlist->getCurrentItem();
     input_item_t* input = current ? current.inputItem() : nullptr;
 
@@ -878,6 +901,10 @@ void RdUpNext::playNow()
         return;
     // the rest of the episode is skipped: it counts as watched
     markWatched(m_url);
+    msg_Dbg(m_intf, "up next: Next episode, moving on to the autoplay item");
+    m_playNowItem = m_queued;
+    m_playNowClock.start();
+    m_switching = true;
     m_playlist->next();
 }
 
@@ -977,7 +1004,7 @@ QStringList RdUpNext::itemOptions(bool startPaused) const
 
 void RdUpNext::queueNext(bool startPaused)
 {
-    if (m_nextIndex < 0)
+    if (m_nextIndex < 0 || switchGuarded())
         return;
     const rdepisode::Episode& next = m_show.episodes.at(m_nextIndex);
     const QString mrl = episodeMrl(next.path);
@@ -1103,9 +1130,21 @@ bool RdUpNext::queuedPresent() const
     return false;
 }
 
+// a queue change while the player still has to switch to the episode Next episode chose makes
+// VLC's playlist hand the player another next media (vlc_playlist_UpdateNextMedia), which can
+// replace the chosen one: the player then stopped, and Cone went to the home page, whose start
+// stops playback (seen on Windows, where the episode left behind takes longer to stop)
+bool RdUpNext::switchGuarded() const
+{
+    if (!m_switching || !m_playNowClock.isValid() || m_playNowClock.elapsed() > kSwitchGuardMs)
+        return false;
+    msg_Dbg(m_intf, "up next: queue left as it is while the player switches to the next episode");
+    return true;
+}
+
 void RdUpNext::removeQueued()
 {
-    if (!m_queuedInput)
+    if (!m_queuedInput || switchGuarded())
         return;
     vlc_playlist_t* playlist = m_playlist->getPlaylist().m_playlist;
     QVector<PlaylistItem> items;

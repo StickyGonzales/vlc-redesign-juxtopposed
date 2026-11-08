@@ -71,6 +71,13 @@ Branch `wip/up-next-card-click-fill`, made from `origin/wip/next-test`. Draft pu
 
 - **Screenshots:** `redesign/fix-shots/up_next_fill.jpg` (the fill, build #79) and `redesign/fix-shots/up_next_low.jpg` (build #82: top, bars hidden; bottom, bars shown, the card at the same place) (generated test video).
 
+## Round 2 (PC test of #101, 2026-11-08)
+1. **A click on the card's text still showed the control bar** (the buttons no longer did).
+   - **Fix:** a passive press watcher over the whole card (`RdUpNextCard.pointerBusy`: pressed, and a double-click interval after the release). While it is busy, the player's pointer tracking takes no mouse move, and the video surface's press reports wake no bars (`Player.qml`).
+   - So no click anywhere on the card (text, picture, buttons, empty space) shows the bar. Moving the pointer still shows the bars in a window, as everywhere (Decision 30).
+2. **Next episode stopped the next episode at once and Cone went to the home page.** See `FIX_UP_NEXT_NEXT_STOP_NOTES.md`. There is a new smoke check on Windows and Linux.
+3. **The update notice could sit on the card's Next episode button.** While the card shows, the notice sits 12 px above the card's top (`RdPanels.upNextCardTop`, set by `Player.qml`), never over it.
+
 ## Windows retest (PC session)
 Build: the build-windows run of this branch (or `gh workflow run build-windows.yml --ref wip/up-next-card-click-fill`), Cone (portable), the 11-min test episodes of the #87 retest (strong names).
 1. **Card place.** Play S01E01, seek to 1:30 before the end and keep the mouse still until the bars hide; the card shows. Move the mouse: the bars show and the card does not move (it already sits above the bar's place). Let the bars hide again: the card does not move.
@@ -80,6 +87,8 @@ Build: the build-windows run of this branch (or `gh workflow run build-windows.y
 5. **Narrow window.** Make the window under 900 px wide: the pill's Next episode button fills the same way, the heading counts "Up next in N s".
 6. **Keyboard.** During the card, press Tab until Next episode has the focus ring: the control bar shows and stays while it has the focus; Enter plays the next episode. Escape on a focused card button cancels.
 7. **Subtitles and height.** With a subtitle track on (the dual-audio Punisher files), the card sits low in the bottom right, 24 px above the control bar's place, as without subtitles, and does not move when the bars show or hide.
-7b. **Click to the next episode, several times.** In the waiting phase, during the countdown and in the last second: the next episode plays every time, the player never goes to the home page.
+7b. **Click to the next episode, several times (high priority).** In the waiting phase, during the countdown and in the last second, with Next episode and with the thumbnail: the next episode starts and is **still playing 5 s later** every time; the player never goes to the home page. Do it with hardware decoding on (the default) and with the media library on.
+7c. **Text click.** With the bars hidden, click the card's heading, the show name, the episode line and the empty space beside the buttons: no control bar every time.
+7d. **Update notice.** With the update notice showing (an older build or the test switch), let the card show: the notice moves above the card and never covers Next episode; when the card goes, the notice goes back down.
 8. **Hide UI.** Ctrl+\: the card sits 24 px above the bottom edge and stays there.
 9. **Turn off autoplay.** Click it: autoplay turns off, no bar on the click.

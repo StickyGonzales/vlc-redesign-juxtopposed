@@ -253,7 +253,9 @@ FocusScope {
                 globalX = g.x
                 globalY = g.y
                 // (ends the keyboard "show both bars" mode and shows the auto-hidden cursor again)
-                if (moved && inside(p)) {
+                // a click on the Up Next card is no move: the pointer may twitch with it, and on
+                // Windows the click comes with a mouse move report (UP_NEXT_CARD_CLICK_FILL_NOTES.md)
+                if (moved && inside(p) && !upNextCard.pointerBusy) {
                     if (Player.isInteractive)
                         interactiveAutoHideTimer.restart()
                     else
@@ -293,6 +295,7 @@ FocusScope {
         MainCtx.preferHotkeys = false
         RdPanels.close()
         RdPanels.uiHidden = false
+        RdPanels.upNextCardTop = 0
     }
 
     Keys.priority: Keys.AfterItem
@@ -536,6 +539,9 @@ FocusScope {
                     cursorShape: playerSpecializationLoader.cursorShape
 
                     function onMouseEvent() {
+                        // a click on the Up Next card that also reaches the video shows no bar
+                        if (upNextCard.pointerBusy)
+                            return
                         //short interval for mouse events
                         if (Player.isInteractive)
                             interactiveAutoHideTimer.restart()
@@ -2364,6 +2370,12 @@ FocusScope {
 
         // the bars wait while a button of the card has the focus (like the resume toast)
         onActiveFocusChanged: rootPlayer.lockUnlockAutoHide(activeFocus)
+    }
+
+    Binding {
+        target: RdPanels
+        property: "upNextCardTop"
+        value: upNextCard.shown ? rootPlayer._upNextBottom + upNextCard.height : 0
     }
 
     // redesign: right-click menu and Hide UI (W4.10); the video's right click arrives through

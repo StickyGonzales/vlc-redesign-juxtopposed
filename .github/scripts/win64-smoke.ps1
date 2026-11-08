@@ -682,6 +682,8 @@ function Check-UpNextNext([string]$exe) {
             $before = Episode-Of (Rc 'status')
             if ($before -lt 1 -or $before -gt 2) { throw "an unexpected episode plays: $before" }
             # 6:10 of 7:00: the card shows (the last minute), the countdown has not started
+            # the window in front first: a click on a window in the back only brings it forward
+            Focus-Window $s.hwnd
             Rc 'seek 370' | Out-Null
             Start-Sleep -Seconds 2
             Show-Bars $s.hwnd
