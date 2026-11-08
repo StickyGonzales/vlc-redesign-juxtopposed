@@ -194,6 +194,59 @@ After Cancel the autoplay item leaves the queue, as before (#87). Next then has 
 
 ![Automatic](fix-shots/credits_row_auto.png) ![Fixed](fix-shots/credits_row_fixed.png)
 
+## 11. Existing features checked (nothing that passed before fails now)
+**Smoke runs.**
+- Linux smoke (build-linux #92 and #94): 39 of 39 pass, the same set as before. It covers:
+  - window and playback time;
+  - subtitle file loads;
+  - Settings opens;
+  - seek bar click;
+  - "..." menu in a window and in fullscreen;
+  - speed slider drag;
+  - pointer hiding (window, paused, fullscreen);
+  - VA-API driver path, window class and media controls name;
+  - single-instance handoff;
+  - quit time;
+  - every plug-in loads;
+  - tarball settings, install.sh / uninstall.sh;
+  - the .deb next to VLC, and its removal.
+- Windows smoke (build-windows #195): green on the same checks as before:
+  - H.264 and HEVC sessions, fullscreen top bar, menu clicks, speed drag, pointer;
+  - quit within 3 s without the watchdog;
+  - portable settings;
+  - installer install, reinstall shortcuts, uninstall.
+
+**Sandbox.** These still work as before:
+- Up Next card at the setting's point on unscanned shows (the 2-video show: 9:00 of 10:00);
+- a movie and audio files: no show, no card;
+- quit time unchanged (0.3 s with and without a scan);
+- the queue's autoplay item and the next episode playing on.
+
+**Not touched.**
+- Playback, the queue, resume positions, Continue Watching, track memory (#99), the card's own behaviour (#87, #95, #101), the media library, OpenSubtitles and hardware decoding.
+- The scans use their own decoder. They only read `rd-shows.json` and add its new `"creditsScan"` key.
+
+## Windows retest (PC session)
+**Build:** the build-windows run of this branch, Cone (portable), with Up Next on.
+
+**Media:** a real show folder with 3 or more episodes of the same series (mkv or mp4) and the same end credits music. A text subtitle file next to some episodes helps.
+
+1. **First two episodes.**
+   - Play E01. After a minute, Settings > General > "Save a log" shows "credits full scan" lines for E01 and E02, the second with "credits music matched with another episode".
+   - Sidebar > Playback, under "Autoplay this show": "Up Next for <show>", Automatic, "from audio match: m:ss before the end". Seek near the end: the card shows when the credits music starts.
+2. **Later episodes.** Play E03 and E04: their log lines say "quick check", found where the credits start. Playback never stutters while E04 is scanned in the background.
+3. **Drift fix.**
+   - In E03, press Next (key or control bar) inside the credits, before the card: the next card shows that much earlier.
+   - Click the card's Next episode several episodes in a row: the point stays the same.
+   - Cancel on the card, then open the next episode a bit later: the point moves later to that moment.
+4. **Fixed.** Pick Fixed and type 1:30: the card shows 1:30 before the end in every episode of the show, all seasons. Reset goes back to Automatic.
+5. **Seek bar.** While an episode is scanned (the first minute of a new show), hover and drag the seek bar: the seek previews stay fast.
+6. **Quit.** Quit during a scan (a new show, the first minute): Cone closes as fast as usual, no watchdog.
+7. **Rename.** During the first minute of a new show, rename the next episode in Explorer: the rename works.
+8. **Never scanned.** A movie alone, a folder with 2 videos, music: no "credits scan" line in the log.
+9. **Battery saver.** On a laptop with battery saver on, a new show logs "credits scans wait (battery saver)" and scans nothing.
+10. **Forget all.** Settings > Playback > Episodes > Forget all clears the Fixed point and the scan results.
+
 ## 10. Review
 
 An independent review found no crash bug. All its findings were fixed except one (commit `cb4b95b038`):
@@ -210,6 +263,8 @@ An independent review found no crash bug. All its findings were fixed except one
 **Accepted:** quit can wait for one read that cannot be interrupted (a seek near the end of a file without an index on a very slow drive). The waveform scanner has the same exposure. The quit watchdog still ends Cone.
 
 ## 12. Known limits
+
+- The scan reads the credits window, the last 8 minutes or the last 15 % of a shorter episode (the card's window limit, kept): in a 22-minute episode that is 3.3 minutes.
 
 - AV1 and other codecs outside avcodec decode every frame, on one thread. A very long scan stops at its 120 s budget, is not kept, and is tried again next session.
 - The learned "later" move after Cancel needs the next episode opened another way: Next has no item after Cancel, as before.
