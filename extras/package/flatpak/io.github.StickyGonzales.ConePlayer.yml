@@ -92,6 +92,8 @@ modules:
     config-opts:
       - -DBUILD_SHARED_LIBS=ON
       - -DCMAKE_BUILD_TYPE=Release
+      # its CMakeLists asks for CMake 3.1, which CMake 4 (the SDK's) refuses without this
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: git
         url: https://github.com/Matroska-Org/libebml.git
@@ -102,6 +104,8 @@ modules:
     config-opts:
       - -DBUILD_SHARED_LIBS=ON
       - -DCMAKE_BUILD_TYPE=Release
+      # its CMakeLists asks for CMake 3.1, which CMake 4 (the SDK's) refuses without this
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: git
         url: https://github.com/Matroska-Org/libmatroska.git

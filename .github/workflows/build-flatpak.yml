@@ -79,7 +79,7 @@ jobs:
           export DISPLAY=:99
           START=$(date +%s)
           timeout 90 flatpak run --user --filesystem="$PWD/media:ro" --filesystem="$PWD/out" \
-            "$APP_ID" --no-qt-privacy-ask --no-qt-cone-update-check --aout=dummy --play-and-exit \
+            "$APP_ID" --no-qt-privacy-ask --no-qt-cone-update-check --aout=adummy --play-and-exit \
             --file-logging --logfile="$PWD/out/cone.log" --log-verbose=2 \
             "$PWD/media/clip.mp4" > out/stdout.txt 2>&1 &
           PID=$!
