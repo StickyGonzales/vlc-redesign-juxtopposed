@@ -226,6 +226,33 @@ After Cancel the autoplay item leaves the queue, as before (#87). Next then has 
 - Playback, the queue, resume positions, Continue Watching, track memory (#99), the card's own behaviour (#87, #95, #101), the media library, OpenSubtitles and hardware decoding.
 - The scans use their own decoder. They only read `rd-shows.json` and add its new `"creditsScan"` key.
 
+## 13. Merged onto wip/next-test (2026-11-08)
+CC PC's Windows test passed (credits detection, Fixed, the sidebar row), but the branch conflicted with #99 (track memory) and #101 (card fixes).
+- **#101 was not on `wip/next-test` on GitHub yet** (none of its changes there; probably merged on the PC and not pushed). Its branch `wip/up-next-card-click-fill` is merged in here too, so this PR also carries #101's commits; once the PC pushes its #101 merge they are the same commits and nothing conflicts again.
+- **Merges, no rebase** (the commits CC PC tested stay as they were): `863fae43df` (wip/next-test), `3f4fa931f9` (#101's branch).
+
+| File | Conflict | Resolution |
+|---|---|---|
+| `rd_up_next.hpp` | the credits getters next to `rememberedTracks()` | both kept |
+| `rd_up_next.cpp`, show detected | credits scans requested vs saved tracks applied | both, in that order |
+| `rd_up_next.cpp`, Forget all | each side cleared its own data | one check and one clear for answers, learned points, track choices and credits scans; the credits card state resets |
+| `rd_up_next.cpp`, store load / save | `creditsScan` vs `tracks` in `rd-shows.json` | both read and written (checked: the file holds both after a session) |
+| `Makefile.am`, `meson.build` | new sources and tests from both sides | both kept (`buildlists.py`: 0 problems) |
+| `linux-smoke.py`, `win64-smoke.ps1` | next-test's first-start / open-in-running checks vs #101's Next-episode check | all run; `Session` takes `first_start`, `repeat` and `subs` |
+
+`rd_up_next.cpp` merged with #101 by itself. In `playNow` ("Next episode" on the card) the three meet and all stay: never learned from the card (#107), the rest of the episode counts as watched, and the switch guard (#101).
+
+**Windows smoke order** (`9a3ced4467`): build-windows #206 failed one check: #101's Next-episode check could not put Cone in front ("not the foreground window"). It now ran after next-test's open-in-running check (a Cone raised by a second start, then ended), after which the runner did not let the next Cone take the foreground. It runs before those two checks now, as on #101's branch where it passed.
+
+**Unit tests** (built against Qt 6 in the sandbox, every `test_rd_*` in `Makefile.am`): 6 of 6 suites, 0 failures. `test_rd_credits_point` 106, `test_rd_credits_audio` 17, `test_rd_show_tracks` 33, `test_rd_episode_parser` 470, `test_rd_sync_math` 31, `test_rd_osd_parse` 37.
+
+**Linux sandbox on build-linux #103** (`3f4fa931f9`):
+- **Credits detection** (`cs.py`, the cases of section 9): all pass. E01/E02 full scans and the audio match (3200.5 s, true 3200.3); E01's card point from the audio match; the show saved (credits 99.5 s from the end, music, lengths); the sidebar row and Fixed pre-filled with 1:40 and saved; learning (early Next 148 s, the card's Next not learned, Cancel then later Next 68 s); post-credits dialogue; Fixed 0:30 wins; E03 to E07 quick checks and full scans at the right points (3240, 3050, 3100, 3620, 2920 s); two-episode folder, movie and music never scanned; quit during a scan 0.3 s as without; rename during a scan. Reset in the Fixed row is on screen (screenshot) but the script did not find it by its accessible name; it was not in the earlier sandbox results either and is on the Windows retest list.
+- **Track memory** (`tr.py`, `tr_off.py`, the cases of SHOW_TRACKS_NOTES.md): 21 of 21, as before the merge.
+- **Sandbox scripts:** two first tries quit at their start (the `series` case): the scripts' `--rc-fake-tty` made VLC's cli read stdin and quit Cone when it ended (the same as the macOS smoke, MACOS_NOTES.md). The scripts now use the socket alone, stdin `/dev/null`. Not a Cone change.
+
+**Runs:** build-linux #103 green, smoke 47 checks (first start, Next episode keeps the next episode playing: 1 -> 2, still playing). build-windows #206 red (the smoke order above), #207 running on `9a3ced4467`.
+
 ## Windows retest (PC session)
 **Build:** the build-windows run of this branch, Cone (portable), with Up Next on.
 
