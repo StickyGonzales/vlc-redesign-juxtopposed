@@ -71,6 +71,7 @@ $k = "$env:USERPROFILE\.ssh\aur"; $env:GIT_SSH_COMMAND = "ssh -i `"$k`" -o Ident
 | Run | Result |
 |---|---|
 | aur-cone-player-bin #1 (42485208644), 4f6ea9a, dry run | **green**: found the newest Linux release (linux-v1.2.0-beta3) by itself, downloaded its tarball, set the PKGBUILD (`pkgver 1.2.0beta3`, sha256 `8462684e...`), `makepkg` built it, `namcap PKGBUILD` clean, `namcap` on the package: no error other than the `/opt` one, installed with its dependencies, `cone-player --version`: "Cone Player 1.2.0, based on VLC 4.0.0-dev", no stale plugin cache, removed without leftovers; "dry run: not pushed to the AUR" |
+| aur-cone-player-bin #2 (42485916151), a35e21f, dry run | **green**: the same checks with bash for every step; the commit after it (bfdfffa) changes only redesign/tools/privacycheck.py |
 
 ## 6. AUR rules checked
 - The name ends in `-bin` (a prebuilt package), and no package in Arch's own repositories provides Cone.
