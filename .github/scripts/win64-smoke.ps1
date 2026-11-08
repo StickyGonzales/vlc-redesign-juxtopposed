@@ -3,6 +3,7 @@
 #   powershell -File win64-smoke.ps1 -ZipDir <unpacked portable zip> -Installer <setup .exe> -Media <dir> -Out <dir>
 #
 # Checks, each with one retry when it fails (the summary lists every retry):
+#   portable zip, Up Next: a click on the card's "Next episode" leaves the next episode playing.
 #   portable zip, H.264 and HEVC: the main window appears, the playback time advances, the
 #   subtitle file loads, a click on the seek bar moves playback, Settings opens (Ctrl+P), quitting
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
@@ -771,6 +772,58 @@ function Check-PluginsLoad($s) {
     }
 }
 
+# Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode, and that
+# episode is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
+# redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md). The show's 7-minute episodes show the card in their last
+# minute; no --input-repeat, which keeps autoplay away
+function Episode-Of([string]$status) {
+    $m = [regex]::Match($status, 'S01E0(\d)')
+    if ($m.Success) { return [int]$m.Groups[1].Value }
+    return 0
+}
+function Check-UpNextNext([string]$exe) {
+    $ep1 = Join-Path $Media 'Smoke Show\Smoke Show S01E01.mp4'
+    $log = Join-Path $Out 'cone-upnext.log'
+    Remove-Item $log -ErrorAction SilentlyContinue
+    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
+           '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$ep1`"")
+    Log "start $exe $($a -join ' ')"
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+    $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = 'upnext' }
+    try {
+        if (-not (Check-Window $s)) { return }
+        Check "upnext: the card's Next episode keeps the next episode playing" {
+            Wait-Rc 20
+            Start-Sleep -Seconds 2
+            $before = Episode-Of (Rc 'status')
+            if ($before -lt 1 -or $before -gt 2) { throw "an unexpected episode plays: $before" }
+            # 6:10 of 7:00: the card shows (the last minute), the countdown has not started
+            # the window in front first: a click on a window in the back only brings it forward
+            Focus-Window $s.hwnd
+            Rc 'seek 370' | Out-Null
+            Start-Sleep -Seconds 2
+            Show-Bars $s.hwnd
+            $b = Uia-Find $s.hwnd 'Next episode' 6000
+            if (-not $b) { Shot 'upnext-nocard'; throw "no ""Next episode"" button on the card at 6:10 of episode $before" }
+            $r = $b.Current.BoundingRectangle
+            Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+            Start-Sleep -Seconds 5
+            Shot 'upnext-after'
+            $st = Rc 'status'
+            $after = Episode-Of $st
+            if ($after -ne $before + 1) { throw "5 s after the click episode $after is current (expected $($before + 1)): '$(($st -split "`n" | Where-Object { $_ -match 'input|state' }) -join ' / ')'" }
+            if ((Rc-Number 'is_playing') -ne 1) { throw "5 s after the click episode $after does not play" }
+            $t1 = Rc-Number 'get_time'; Start-Sleep -Seconds 2; $t2 = Rc-Number 'get_time'
+            if ($t2 -le $t1) { throw "episode $after stands still at $t1 s, then $t2 s" }
+            "episode $before -> $after, still playing 5 s after the click ($t1 s, then $t2 s)"
+        } | Out-Null
+    } catch {
+        Add-Result 'upnext' 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -953,6 +1006,7 @@ if (-not $zipExe) {
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
     Run-FirstStart $zipExe.FullName
     Run-OpenInRunning $zipExe.FullName
+    Check-UpNextNext $zipExe.FullName
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall

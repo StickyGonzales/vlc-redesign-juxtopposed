@@ -88,6 +88,10 @@ QtObject {
     // (RdProfileNotice) keep clear of it.
     property real controlBarHeight: 0
 
+    // Cone extra (Up Next): how far above the window's bottom the Up Next card's top is while it
+    // shows, 0 otherwise, set by Player.qml; the update notice keeps clear of it
+    property real upNextCardTop: 0
+
     // the sidebar toggle (reveal false) and the folder chip (reveal true) controls, in either bar
     // (W8.1b): Player.qml opens or closes the compact library (toggleLibrary)
     signal libraryRequested(bool reveal)

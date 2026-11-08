@@ -253,7 +253,9 @@ FocusScope {
                 globalX = g.x
                 globalY = g.y
                 // (ends the keyboard "show both bars" mode and shows the auto-hidden cursor again)
-                if (moved && inside(p)) {
+                // a click on the Up Next card is no move: the pointer may twitch with it, and on
+                // Windows the click comes with a mouse move report (UP_NEXT_CARD_CLICK_FILL_NOTES.md)
+                if (moved && inside(p) && !upNextCard.pointerBusy) {
                     if (Player.isInteractive)
                         interactiveAutoHideTimer.restart()
                     else
@@ -293,6 +295,7 @@ FocusScope {
         MainCtx.preferHotkeys = false
         RdPanels.close()
         RdPanels.uiHidden = false
+        RdPanels.upNextCardTop = 0
     }
 
     Keys.priority: Keys.AfterItem
@@ -536,6 +539,9 @@ FocusScope {
                     cursorShape: playerSpecializationLoader.cursorShape
 
                     function onMouseEvent() {
+                        // a click on the Up Next card that also reaches the video shows no bar
+                        if (upNextCard.pointerBusy)
+                            return
                         //short interval for mouse events
                         if (Player.isInteractive)
                             interactiveAutoHideTimer.restart()
@@ -2362,24 +2368,26 @@ FocusScope {
         onVisibleChanged: rootPlayer.lockUnlockAutoHide(visible)
     }
 
-    // Cone extra (Decision 71, UP_NEXT_PLAN.md 7.1): the Up Next card never covers the subtitles. With a subtitle track on they sit 16 px above the subtitle
-    // band (the lift over the control bar + sub-margin + two lines at the current size, whether a
-    // line shows or not, so they do not jump); without, 24 px above the control bar, or above
-    // the bottom edge while the bars are hidden. They show in Hide UI too (Q4).
-    readonly property real _upNextBottom: {
-        const dpr = MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0
-        const barRoom = Math.max(0, height - controlBar.y) * (controlBar.visible ? controlBar.opacity : 0)
-        const minimum = barRoom + VLCStyle.dp(24, VLCStyle.scale)
-        if (!RdUpNext.subtitlesOn)
-            return minimum
-        const margin = Number(RdEffects.values[RdEffects.videoKey("sub-margin")]) || 0
-        const scaleValue = Number(RdEffects.values.subtitleTextScale) || 100
-        // VLC's text size: 6.25 % of the video height at 100 % (STYLE_DEFAULT_REL_FONT_SIZE),
-        // a line about 1.25 of it
-        const line = playerSpecializationLoader.height * 0.0625 * (scaleValue / 100) * 1.25
-        const band = (RdSubtitleLift.lift + margin) / dpr + 2 * line
-        return Math.max(minimum, band + VLCStyle.dp(16, VLCStyle.scale))
+    // Cone extra (Decision 71, UP_NEXT_PLAN.md 7.1): the Up Next card sits low in the bottom right
+    // corner like Netflix's "Next Episode", 24 px above the control bar's place, also with the
+    // bars hidden and with subtitles on (StickyGonzales, 2026-11-03: it reserved two subtitle lines
+    // above the bar and sat a third of the screen up during the credits, which rarely have
+    // subtitles; the card is at the right edge, centered subtitles pass beside it). It shows in
+    // Hide UI too (Q4), then 24 px above the bottom edge. It never moves while it shows (a bar
+    // that shows or hides under it would make it jump, and a click on it miss its button): its
+    // place is held from the moment the card appears until it is gone.
+    readonly property real _upNextBottomNow: (RdPanels.uiHidden ? 0 : controlBar.height)
+                                             + VLCStyle.dp(24, VLCStyle.scale)
+    property real _upNextBottom: 0
+
+    Binding {
+        target: rootPlayer
+        property: "_upNextBottom"
+        value: rootPlayer._upNextBottomNow
+        when: !upNextCard.visible
+        restoreMode: Binding.RestoreNone
     }
+
     // the video area beside the compact library and an open panel
     readonly property real _upNextRoom: width - _videoInset - _toastRightInset - 2 * VLCStyle.dp(24, VLCStyle.scale)
 
@@ -2405,6 +2413,12 @@ FocusScope {
 
         // the bars wait while a button of the card has the focus (like the resume toast)
         onActiveFocusChanged: rootPlayer.lockUnlockAutoHide(activeFocus)
+    }
+
+    Binding {
+        target: RdPanels
+        property: "upNextCardTop"
+        value: upNextCard.shown ? rootPlayer._upNextBottom + upNextCard.height : 0
     }
 
     // redesign: right-click menu and Hide UI (W4.10); the video's right click arrives through

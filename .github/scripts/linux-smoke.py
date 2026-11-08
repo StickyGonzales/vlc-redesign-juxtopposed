@@ -13,6 +13,7 @@ import ctypes
 import ctypes.util
 import glob
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -165,16 +166,16 @@ def rc_number(cmd):
 
 
 class Session:
-    def __init__(self, exe, video, tag, env=None, first_start=False):
+    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
         # first_start: Cone's first start (the onboarding), as on a fresh install
         a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
-             '--aout=adummy', '--input-repeat=50', '--file-logging', f'--logfile={self.log}',
-             '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
-             f'--sub-file={os.path.join(MEDIA, "test.srt")}', video]
+             '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
+             f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
+             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), video]
         log('start ' + ' '.join(a))
         self.proc = subprocess.Popen(a, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
@@ -769,6 +770,56 @@ def first_start(exe, env):
         s.stop()
 
 
+def episode_of(status):
+    m = re.search(r'S01E0(\d)', status)
+    return int(m.group(1)) if m else 0
+
+
+def check_up_next(exe, env):
+    """Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode,
+    which is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
+    redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md); no --input-repeat, which keeps autoplay away"""
+    video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E01.mp4')
+    s = Session(exe, video, 'upnext', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            time.sleep(2)
+            before = episode_of(rc('status'))
+            if before not in (1, 2):
+                raise CheckFailed(f'an unexpected episode plays: {before}')
+            # 6:10 of 7:00: the card shows (the last minute), the countdown has not started
+            rc('seek 370')
+            time.sleep(2)
+            s.show_bars()
+            b = find('Next episode', 6, role='push button')
+            if not b:
+                shot('upnext-nocard')
+                raise CheckFailed(f'no "Next episode" button on the card at 6:10 of episode {before}')
+            xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
+            time.sleep(0.3)
+            xdo('click', 1)
+            time.sleep(5)
+            shot('upnext-after')
+            st = rc('status')
+            after = episode_of(st)
+            if after != before + 1:
+                raise CheckFailed(f'5 s after the click episode {after} is current (expected {before + 1})')
+            if rc_number('is_playing') != 1:
+                raise CheckFailed(f'5 s after the click episode {after} does not play')
+            t1 = rc_number('get_time')
+            time.sleep(2)
+            t2 = rc_number('get_time')
+            if t2 <= t1:
+                raise CheckFailed(f'episode {after} stands still at {t1} s, then {t2} s')
+            return f'episode {before} -> {after}, still playing 5 s after the click ({t1} s, then {t2} s)'
+        check("upnext: the card's Next episode keeps the next episode playing", body)
+    finally:
+        s.stop()
+
+
 # ------------------------------------------------------------------ runs
 
 def all_files(root):
@@ -792,6 +843,7 @@ env = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
 session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
+check_up_next(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():

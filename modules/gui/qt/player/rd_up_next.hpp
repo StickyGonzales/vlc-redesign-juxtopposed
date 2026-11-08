@@ -324,6 +324,15 @@ private:
     QStringList m_queuedOptions;
 
     bool m_subtitlesOn = false;
+    // counts the media changes (a stop is only acted on for the media it was reported for)
+    int m_inputSerial = 0;
+    // Next episode was clicked: the episode chosen, when, and whether the player still has to
+    // switch to it (FIX_UP_NEXT_NEXT_STOP_NOTES.md: no queue change until it has, and a stop of
+    // it right after the click starts it again)
+    SharedInputItem m_playNowItem;
+    QElapsedTimer m_playNowClock;
+    bool m_switching = false;
+    bool switchGuarded() const;
 
     QString m_blockedReason;
     bool m_cardVisible = false;

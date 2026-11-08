@@ -43,7 +43,11 @@ T.Popup {
                                        : (RdPanels.controlBarHeight > 0) ? RdPanels.controlBarHeight
                                                                          : VLCStyle.rd_controlBarHeight
 
-    y: (parent ? parent.height : 0) - height - _barHeight - VLCStyle.dp(18, VLCStyle.scale)
+    // never over the Up Next card (its Next episode button): above it while it shows
+    readonly property real _bottomClear: Math.max(_barHeight + VLCStyle.dp(18, VLCStyle.scale),
+                                                  RdPanels.upNextCardTop > 0 ? RdPanels.upNextCardTop + VLCStyle.dp(12, VLCStyle.scale) : 0)
+
+    y: (parent ? parent.height : 0) - height - _bottomClear
     width: Math.min(content.implicitWidth, (parent ? parent.width : 0) - 2 * VLCStyle.margin_large)
     height: VLCStyle.dp(52, VLCStyle.scale)
 
