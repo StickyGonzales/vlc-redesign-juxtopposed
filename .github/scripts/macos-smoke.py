@@ -186,6 +186,9 @@ def rc(cmd):
         s.connect(RC_SOCK)
         s.sendall((cmd + '\n').encode())
         time.sleep(0.4)
+        # the whole reply: the socket also gets VLC's status lines ("status change: ..."), which
+        # can come first; read until nothing more arrives for half a second
+        s.settimeout(0.5)
         data = b''
         try:
             while True:
@@ -193,8 +196,6 @@ def rc(cmd):
                 if not chunk:
                     break
                 data += chunk
-                if len(chunk) < 65536:
-                    break
         except socket.timeout:
             pass
     return data.decode(errors='replace')
@@ -224,15 +225,17 @@ class Session:
             os.remove(RC_SOCK)
         a = [exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
              '--aout=adummy', '--input-repeat=50', '--file-logging', f'--logfile={self.log}', '--log-verbose=2',
-             '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
+             '--extraintf=cli', f'--rc-unix={RC_SOCK}',
              f'--sub-file={os.path.join(MEDIA, "test.srt")}', *extra, video]
         log('start ' + ' '.join(a))
         self.err = open(os.path.join(OUT, f'cone-{tag}{suffix}-stderr.txt'), 'w')
         self.started = time.time()
-        # --rc-fake-tty also reads commands from stdin, and the cli quits VLC when stdin ends: the
-        # runner's stdin ends at once, so Cone was quit at its start whenever that quit came after
-        # the interface was up (run 11, HEVC on arm64). A pipe that stays open until stop()
-        self.proc = subprocess.Popen(a, stdin=subprocess.PIPE, stdout=self.err,
+        # the checks use the cli's socket only. With --rc-fake-tty (or a terminal on stdin) the cli
+        # also reads stdin: it quits VLC when stdin ends (run 11: the runner's stdin ended at once
+        # and Cone quit at its start), and a reader blocked on a stdin that stays open holds up
+        # the quit until the watchdog ends Cone (run 12). No fake tty and no terminal: no stdin
+        # reader at all
+        self.proc = subprocess.Popen(a, stdin=subprocess.DEVNULL, stdout=self.err,
                                      stderr=subprocess.STDOUT, start_new_session=True)
         self.win = None
 
@@ -260,7 +263,6 @@ class Session:
         if self.proc.poll() is None:
             os.killpg(self.proc.pid, 9)
             self.proc.wait(10)
-        self.proc.stdin.close()
         self.err.close()
 
 
