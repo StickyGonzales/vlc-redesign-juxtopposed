@@ -1,10 +1,13 @@
-# macOS experimental build (branch wip/macos-build)
+# Cone for macOS (branch wip/macos-build)
 
-Branch `wip/macos-build`, made from `origin/wip/next-test`. Draft pull request into `wip/next-test`. CI only: no change to Cone's code, nothing released. **Experimental:** the PC session or StickyGonzales decide if and when a macOS build is ever offered to anyone.
+Branch `wip/macos-build`, kept up to date with `origin/wip/next-test` (merged 2026-11-08, no conflicts). Draft pull request into `wip/next-test`. CI only: no change to Cone's code. Nothing is released by this branch. Every release tag prepares a macOS **draft** that StickyGonzales publishes by hand, or never.
 
 ## What it is
-- **Cone Player.app** (the public profile, Cone's redesign) in a `.dmg`, for **Apple Silicon** Macs (M1 and later), macOS 12 or later.
-- Built on GitHub's macOS runners by `build-macos.yml`; an **Intel** build is one checkbox away (Actions > build-macos > Run workflow > "Also build for Intel Macs", once the workflow is on the default branch). It is not built on every run, since it doubles the build time.
+- **Cone Player.app** (the public profile, Cone's redesign) in a `.dmg`, for **Apple Silicon** Macs (M1 and later) and **Intel** Macs, macOS 12 or later.
+- Two .dmg files, `Cone-<version>-macos-arm64.dmg` and `Cone-<version>-macos-x86_64.dmg`.
+  - Both are built on GitHub's macOS runners by `build-macos.yml` on every run: `macos-15` for Apple Silicon, `macos-15-intel` for Intel.
+  - A manual run can leave Intel out.
+  - Intel's first build had no compiler cache and took about 2 h 40 min; later builds reuse the cache.
 - **Signed ad hoc** (no Apple developer account): it runs, but macOS asks once before opening it (see "Opening an unsigned app").
 
 ## How it is built
@@ -37,8 +40,27 @@ Branch `wip/macos-build`, made from `origin/wip/next-test`. Draft pull request i
 
 **Where to download a test build:** the run's artifact `cone-macos-arm64` (one day), or the asset `wip-macos-build--macos-arm64.dmg` on the draft pre-release `test-builds` (redesign/TEST_BUILDS.md). Never a release.
 
+## Releases: a Mac .dmg with every release
+`release-macos.yml` runs on every release tag:
+- `vX.Y.Z` (the Windows release);
+- `linux-vX.Y.Z[-label]` (the Linux release);
+- `macos-vX.Y.Z[-label]` (macOS alone).
+
+What it does:
+- **Guard.** Only commits on `redesign` (verified code), as the Windows and Linux releases.
+- **Build.** It builds both .dmg files with `build-macos.yml`, smoke checks included. A release build never touches the test-builds draft.
+- **Draft.** It prepares a **draft pre-release** `macos-v<version>`, "Cone <version> for macOS (experimental preview)", with both .dmg files and `SHA256SUMS.txt`. The notes say which file is for which Mac and how to open an app without a Developer ID.
+- **Shared draft.** The Windows and the Linux tag of one version refresh the same draft. A published release is never changed.
+- **Never published.** Nothing is public until someone presses Publish on the Releases page. The draft's tag is created only then.
+
 ## Smoke checks (after every macOS build)
-On a second, clean `macos-15` runner (Apple Silicon), with the Windows and Linux checks' test media (`smoke-media.sh`: 30 s H.264 and HEVC MP4, an SRT file). Each failed check runs once more. Results artifact: `cone-macos-smoke-results` (summary, log, Cone's logs, screenshots).
+On a second, clean runner of each architecture (`macos-15`, `macos-15-intel`), with the Windows and Linux checks' test media (`smoke-media.sh`: 30 s H.264 and HEVC MP4, an SRT file). Each failed check runs once more. Results artifacts: `cone-macos-smoke-results-arm64` and `-x86_64` (summary, log, each Cone start's own log, screenshots, VLC's snapshots).
+
+What the runner cannot always confirm is a **warning**, not a failure, so the run stays green on runner quirks:
+- **"Settings opens" and "Escape closes Settings":** synthetic keys reach Qt's window unreliably there. Both are on the tester list.
+- **A slow HEVC quit on the Intel runner:** 3.2 to 3.5 s, while Cone still quits by itself (as the HEVC quit on Windows and Linux).
+
+A Cone that exits by itself is reported as such, with its own log. Its retry starts a fresh session.
 - **dmg:** it opens, holds the app and the Applications link; the app copies out (`ditto`, as a Finder drag).
 - **Signature:** `codesign --verify --deep --strict` passes; the name and the bundle identifier are Cone's.
 - **Gatekeeper** (information only): `spctl` rejects it, as every app without a Developer ID; the reason testers open it once with right-click > Open.
@@ -82,7 +104,32 @@ Smoke checks on GitHub's `macos-15` runner (Apple Silicon, macOS 15.8, a virtual
 2. **Escape in Settings** and keyboard shortcuts in general: the runner delivers synthetic keys unreliably to Qt's window (the first Cmd+P after the local network prompt was lost; Escape did not close Settings in one run).
 3. **The local network prompt:** macOS asks once whether Cone may find devices on the local network (VLC's UPnP / Bonjour discovery for the Network view); Info.plist now gives the reason. Declining it only empties the Network view.
 4. **The update notice:** Settings shows "Check for updates" On. Cone's checker looks at the Windows / Linux releases; there is no macOS release, so a Mac build should not point to one. Left as is in this experimental build (a code change, not CI); to be decided before any macOS release.
-5. **Not built:** Intel (x86_64) on every run (one checkbox on a manual run, untested), Sparkle (VLC's macOS updater), VLC's native macOS interface (Cone's design is the only interface), the fancy .dmg background (VLC's shows VLC's cone).
+5. **Not built:** Sparkle (VLC's macOS updater), VLC's native macOS interface (Cone's design is the only interface), the fancy .dmg background (VLC's shows VLC's cone). Intel is built on every run since 2026-11-08.
+
+## The black picture: the runner, not Cone (run 10, both architectures)
+On both runners the video area stays black while Cone's interface and the subtitles draw:
+
+![Cone on the runner, run 10](fix-shots/macos-runner-run10.png)
+
+Each of VLC's macOS video outputs was tried on the same H.264 file, with a screenshot of the window and VLC's own snapshot of the decoded picture. Colour is the mean spread between red, green and blue in the middle (the test pattern: far above 40; black: 0).
+
+| Setup | Video output | Screen | Decoded picture (VLC snapshot) |
+|---|---|---|---|
+| Default (hardware decoding) | `samplebufferdisplay` (AVSampleBufferDisplayLayer, Metal) | black (0) | **colourful** (238 Intel; arm64 not saved) |
+| Software decoding | `samplebufferdisplay` | black (0) | **colourful** (239 arm64, 237 Intel) |
+| `--vout=samplebufferdisplay --force-darwin-legacy-display` | none: "no vout display modules matched" | black | none |
+| `--vout=caopengllayer` | none: "Failure to create CGL context!" | black | none |
+| `--vout=macosx` | none: "Initialization of open gl view failed" | black | none |
+| `--vout=gl` | none: no OpenGL display module | black | none |
+| `-I dummy` (no Qt, VLC's own window) | none: macOS's video window needs an application object, which the dummy interface does not create (`wdummy`: nothing to see) | black | none |
+
+**What it shows.**
+- **Decoding is fine.** VLC's snapshots of the decoded frames are the full test pattern, with hardware and with software decoding.
+- **Only the display is black.** The one video output that opens on the runner is `samplebufferdisplay`, Apple's AVSampleBufferDisplayLayer on Metal.
+- **No OpenGL on the runner.** The runners are virtual machines with Apple's paravirtual GPU ("Metal device: Apple Paravirtual device"). They have no OpenGL at all: Qt's OpenGL context fails, and so do the three OpenGL outputs.
+- **A missing scaler.** Every start logs "IOServiceMatching failed for: AppleM2ScalerParavirtDriver". That is the hardware scaler service AVSampleBufferDisplayLayer uses to put video on screen, and it is missing in the virtual machine.
+- **Conclusion.** The same output and the same embedding (Qt's "platform" compositor, as upstream VLC uses on macOS) cannot draw video on this virtual GPU. This is the runner, most likely, not Cone. Only a real Mac can confirm it: the first step of the tester list.
+- **The one oddity.** "blending YUVA to CVPN failed" (the subtitles blended into the picture buffer) shows on the runner too. If a real Mac shows the picture but not the subtitles, that is where to look.
 
 ## Opening an unsigned app (for testers)
 Cone Player for macOS has no Apple Developer ID, so macOS says it "cannot be opened because Apple cannot check it for malicious software" the first time. Either way below works once; after that it opens normally.
@@ -98,19 +145,15 @@ Cone Player for macOS has no Apple Developer ID, so macOS says it "cannot be ope
 xattr -dr com.apple.quarantine "/Applications/Cone Player.app"
 ```
 
-## Test list for a volunteer tester
-Any Apple Silicon Mac with macOS 12 or later. Note the macOS version and the Mac model; for each step, "works" or what happened (a screenshot helps).
-1. **Install:** open the .dmg, drag Cone Player to Applications, open it (right-click > Open). Does it start, and does the window look like the screenshots in the README (dark theme, top bar, control bar)?
-2. **Play, the picture first:** open an MP4 (H.264) and an MKV (HEVC / H.265) by dragging each onto the window and with the "..." menu > Open File. **Do you see the picture** (the runner shows it black)? Sound OK? Pause, seek (click and drag the seek bar), volume, mute.
-3. **Subtitles:** a video with an .srt next to it (same name): do the subtitles show? Switch them with the subtitle button.
-4. **Fullscreen:** the fullscreen button and F, Escape back; do the bars show and hide on mouse moves?
-5. **Settings:** Cmd+P (and the gear > Settings): does the Settings dialog open, does **Escape** close it, can you change the theme and the accent color, and are they kept after quitting and opening again?
-6. **Queue and library:** add a folder of videos; the queue sidebar; Next / Previous.
-7. **Keyboard:** Space, arrows, M, F, Cmd+Q. (macOS uses Cmd where Windows uses Ctrl.)
-8. **Quit:** Cmd+Q quits within a few seconds; nothing left in the Dock.
-9. **Next to VLC:** if VLC is installed, does it still open with its own settings?
-10. **Retina and a second display:** is the text sharp; does moving the window to another display work?
-11. **Anything odd:** crashes (macOS shows a report: copy its first 40 lines), freezes, missing icons, text cut off.
+## Test list for a volunteer tester (about 15 minutes)
+Any Mac with macOS 12 or later: the `-macos-arm64.dmg` for Apple Silicon (M1 and later), the `-macos-x86_64.dmg` for Intel. Note the Mac model and the macOS version; for each step, "works" or what happened (a screenshot helps).
+1. **Install and open:** drag Cone Player to Applications, open it with right-click > Open (see above). The dark Cone window appears.
+2. **The picture (most important):** drag an MP4 and an MKV onto the window. Do you see the video, not a black area? Sound?
+3. **Controls:** pause, seek on the seek bar, volume, fullscreen (button and F, Escape back).
+4. **Subtitles:** a video with an .srt of the same name: they show and can be switched.
+5. **Settings:** Cmd+P opens Settings; Escape closes it; a changed theme is kept after quitting.
+6. **Quit:** Cmd+Q quits within a few seconds.
+7. **Anything odd:** a crash (copy the first 40 lines of macOS's report), a freeze, cut-off text, blurry text on a Retina display.
 
 ## Runs
 | Run | Head | What it showed / what changed |
@@ -123,9 +166,12 @@ Any Apple Silicon Mac with macOS 12 or later. Note the macOS version and the Mac
 | #6 | cd3ba554cb | cache made after signing; prompt dismissed; Settings opened (screenshot) but Qt's content is not in the runner's accessibility tree; cache still stale |
 | #7 | 544027e979 | `cp -R` into the .dmg did not keep the files' times (VLC checks them to the second) → `ditto`; cache current; Settings opened in the picture, Escape did not close it |
 | #8 | 22e9f4c8e4 | the 30 s test video had ended before the Settings check (Cone on its Home page) → the video repeats (`--input-repeat=50`, as on Linux) |
+| #10 | 1d030deb4b | merged `wip/next-test`; **both architectures built** (Apple Silicon 43 min; Intel 2 h 40 min, its first build, no compiler cache). Smoke: Apple Silicon passes everything except one HEVC session, which exited by itself (code 0) after its window appeared, its log overwritten by the retry; Intel passes everything except the HEVC quit (3.22 s, then 3.46 s, limit 3 s). The video output tries (section "The black picture"). Then: each start its own log, the time check's retry in a fresh session, the HEVC quit time a warning, VLC's snapshots kept |
 | #9 | a559a4a7ca | build, app, signature and .dmg **green** (the latest .dmg: artifact `cone-macos-arm64` of run 41346080677, and `wip-macos-build--macos-arm64.dmg` on the test-builds draft); the smoke job **never started**: it waited about 15 minutes for a free macOS runner and was cancelled without running a step |
 
-## Where it stopped (2026-11-01, stopped to save usage)
-- **State:** the build is green; the smoke checks pass everything except "Settings opens", which the runner cannot check reliably yet (runs 6 and 7: the dialog opened, see the screenshots; run 8: the test video had ended before the check; run 9: no runner).
-- **Next step:** re-run the smoke job of run 41346080677 (Actions > the run > Re-run failed jobs), which now plays the video in a loop during the Settings check. If "Settings opens" still fails there, make that one check informational on the runner (it does not see Qt's content in the accessibility tree, and synthetic keys reach Qt unreliably) and leave Settings and Escape to the tester list. Then open the draft PR into wip/next-test.
-- **Open questions for a real Mac (tester list):** the video picture (black on the runner), Escape in Settings, the local network prompt, the update notice.
+## State (2026-11-08)
+- **Mergeable:** `wip/next-test` merged in; the draft PR into `wip/next-test` is up.
+- **Built:** Apple Silicon and Intel on every run; a draft macOS release with every release tag (`release-macos.yml`).
+- **Smoke:** both architectures. What the runner cannot confirm is a warning.
+- **The black picture:** the runner's virtual GPU (section above), to be confirmed on a real Mac.
+- **Open for a real Mac (the tester list):** the picture, Escape in Settings, the local network prompt, the update notice (it looks at the Windows and Linux releases; to be decided before a macOS release is published).
