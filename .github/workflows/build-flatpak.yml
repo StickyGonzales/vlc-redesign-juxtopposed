@@ -93,36 +93,48 @@ jobs:
           grep -q "Validation was successful" out/appstreamcli.txt || { echo "::error::appstreamcli validate failed"; ok=0; }
           [ "$ok" = 1 ]
 
+      # the bundle for the sandbox run (the job below)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-player-bundle
+          path: cone-player.flatpak
+          retention-days: 1
+
+  # the bundle installed like a user would on an ordinary Ubuntu (as the runner's own user: VLC
+  # refuses to run as root, and Flathub's build image runs as root with no way to add a user),
+  # then Cone started in its sandbox: the Qt interface on Xvfb, the clip played to its end
+  # (--play-and-exit), its log kept
+  sandbox:
+    needs: flatpak
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-player-bundle
       - uses: actions/download-artifact@v4
         with:
           name: flatpak-test-media
           path: media
 
-      # the bundle installed like a user would, then Cone started in its sandbox: the Qt
-      # interface on Xvfb, the clip played to its end (--play-and-exit), its log kept
       - name: Run in the sandbox
         shell: bash
         run: |
-          # Flathub's build image already has Xvfb (/app/bin); the screenshot tool is optional
-          command -v Xvfb >/dev/null || { echo "::error::no Xvfb in the build image"; exit 1; }
-          command -v import >/dev/null || echo "::warning::no ImageMagick import: no screenshot"
-          # VLC refuses to run as root, and this container runs as root: install and run Cone as an
-          # ordinary user, like a person would (that user's installation gets the KDE runtime from
-          # Flathub)
-          id tester >/dev/null 2>&1 || useradd -m tester
-          mkdir -p out && chown tester out && chmod -R a+rX media && chmod a+r cone-player.flatpak
-          as_tester() { su tester -s /bin/bash -c "export XDG_RUNTIME_DIR=/tmp/xdg-tester DISPLAY=:99; mkdir -p -m 700 \$XDG_RUNTIME_DIR; $1"; }
-          as_tester "flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
-          as_tester "flatpak install --user -y --noninteractive '$PWD/cone-player.flatpak'" >/dev/null
-          as_tester "flatpak info --user $APP_ID" | sed -n '1,12p' | tee -a "$GITHUB_STEP_SUMMARY"
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends flatpak xvfb imagemagick >/dev/null
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # the KDE runtime comes from Flathub, as on a user's computer
+          flatpak install --user -y --noninteractive cone-player.flatpak >/dev/null
+          flatpak info --user "$APP_ID" | sed -n '1,12p' | tee -a "$GITHUB_STEP_SUMMARY"
+          mkdir -p out
           Xvfb :99 -screen 0 1280x800x24 -nolisten tcp &
           sleep 2
           export DISPLAY=:99
           START=$(date +%s)
-          as_tester "timeout 90 flatpak run --user --filesystem='$PWD/media:ro' --filesystem='$PWD/out' \
-            $APP_ID --no-qt-privacy-ask --no-qt-cone-update-check --aout=adummy --play-and-exit \
-            --file-logging --logfile='$PWD/out/cone.log' --log-verbose=2 \
-            '$PWD/media/clip.mp4'" > out/stdout.txt 2>&1 &
+          timeout 90 flatpak run --user --filesystem="$PWD/media:ro" --filesystem="$PWD/out" \
+            "$APP_ID" --no-qt-privacy-ask --no-qt-cone-update-check --aout=adummy --play-and-exit \
+            --file-logging --logfile="$PWD/out/cone.log" --log-verbose=2 \
+            "$PWD/media/clip.mp4" > out/stdout.txt 2>&1 &
           PID=$!
           sleep 6
           if command -v import >/dev/null; then import -window root out/cone-flatpak.png || true; fi

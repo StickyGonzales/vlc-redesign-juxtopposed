@@ -25,7 +25,7 @@ Branch `wip/linux-flatpak`, made from `origin/wip/next-test`. Draft pull request
 
 ## 2. What the workflow checks
 1. flatpak-builder builds every module and Cone in the sandboxed build environment.
-2. The bundle is installed with `flatpak install --user`, like a user would.
+2. In a second job on a plain Ubuntu runner (an ordinary user, as VLC refuses root), the bundle is installed with `flatpak install --user`, like a user would; the KDE runtime comes from Flathub.
 3. Cone starts in its sandbox (`flatpak run`) on Xvfb with a generated 12 s H.264 clip and its .srt, plays it to the end (`--play-and-exit`) and must end with exit code 0. Its log must show the Qt interface's video window, a video output, the FFmpeg decoder and the subtitle decoder. A screenshot at 6 s and the log are kept as the `flatpak-run` artifact.
 
 ## 3. Runs
@@ -36,6 +36,7 @@ Branch `wip/linux-flatpak`, made from `origin/wip/next-test`. Draft pull request
 | #8 (42488340355), 7ae2c4a | Cone compiled and installed (`make install`, plugin cache); the last step failed: `extras/package/flatpak/install-desktop.sh` was never committed (the root `.gitignore` pattern `install-*` caught it). Now added with `git add -f`; the manifest also brings the script, the launcher and the AppStream file in as `type: file` sources (`cone-flatpak/`), which the Flathub manifest can keep as they are (d4277b4; the commit message of ec12cb7 says it was reverted, it was not) |
 | #11 (42491774284), ec12cb7 | **build green** (every module and Cone, about 34 min); the sandbox step stopped at its first line: Flathub's build image has no `dnf` any more. It already has Xvfb (`/app/bin`), so the step now only checks for it, and takes the screenshot when ImageMagick is there |
 | #13 (42503775546), 73d3c1e | build green, the bundle installs; `flatpak run` ended at once with "VLC is not supposed to be run as root" (the CI container runs as root; no user ever does). The step now installs and runs Cone as an ordinary user, whose installation gets the KDE runtime from Flathub, and prints Cone's output when it fails |
+| #16 (42505457823), 6d4e477 | the build image has no `useradd` (nor `dnf`): the sandbox run moved to its own job, `sandbox`, on a plain Ubuntu runner, which runs as an ordinary user: apt installs flatpak and Xvfb, the bundle is installed with `--user` (the KDE runtime from Flathub), then Cone runs as before |
 | #8 (42488340355), 7ae2c4a | Cone compiled and installed (`make install`, plugin cache); the last step failed: flatpak-builder's copy of the tree leaves out the manifest's own folder, so `extras/package/flatpak/install-desktop.sh` was missing. The launcher, the script and the AppStream file now come in as `type: file` sources (`cone-flatpak/`) |
 
 ## 4. Flathub
