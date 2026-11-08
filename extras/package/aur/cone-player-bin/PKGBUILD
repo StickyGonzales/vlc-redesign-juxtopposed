@@ -1,0 +1,69 @@
+# Maintainer: StickyGonzales <103277167+StickyGonzales@users.noreply.github.com>
+#
+# Cone Player: Juxtopposed's "VLC Redesign" built for real on VLC media player's engine.
+# Repackages the official Linux release tarball (built and checked on GitHub). Installs into
+# /opt/cone-player with the command cone-player, next to VLC without replacing it: Cone has its
+# own name, menu entry and settings (~/.config/Cone). Kept up to date by
+# .github/workflows/aur-cone-player-bin.yml (redesign/SUBMIT_TO_AUR.md).
+
+pkgname=cone-player-bin
+_tag=linux-v1.2.0-beta3
+_filever=1.2.0-beta3
+pkgver=1.2.0beta3
+pkgrel=1
+pkgdesc='Media player with Juxtopposed'\''s VLC Redesign, based on VLC media player (experimental, VLC 4)'
+arch=('x86_64')
+url='https://github.com/StickyGonzales/vlc-redesign-juxtopposed'
+license=('GPL-2.0-or-later' 'LGPL-2.1-or-later')
+# the libraries the package takes from the system (the rest is bundled in /opt/cone-player):
+# the C and C++ runtime, OpenGL / EGL, X11, Wayland, ALSA, D-Bus, udev, fonts
+# (releases built on Ubuntu 22.04 and later take the C++ runtime and Wayland from the system too)
+depends=('glibc' 'gcc-libs' 'libglvnd' 'libx11' 'libxcb' 'wayland' 'libdrm' 'mesa' 'vulkan-icd-loader'
+         'expat' 'zlib' 'dbus' 'systemd-libs' 'alsa-lib' 'ncurses' 'fontconfig' 'hicolor-icon-theme')
+optdepends=('libpulse: sound through PulseAudio or PipeWire (pipewire-pulse)'
+            'pipewire: sound through PipeWire'
+            'jack: JACK sound output'
+            'libva-mesa-driver: hardware video decoding on AMD (VA-API)'
+            'intel-media-driver: hardware video decoding on Intel (VA-API)'
+            'libvdpau: hardware video decoding on NVIDIA (VDPAU)'
+            'smbclient: SMB network shares'
+            'libssh: SFTP'
+            'gtk3: desktop notifications'
+            'xdg-desktop-portal: native file dialogs')
+# Cone is not VLC: no provides or conflicts with the vlc package, they install side by side
+provides=('cone-player')
+conflicts=('cone-player')
+# prebuilt: its libraries carry their own RUNPATHs and are already stripped
+options=('!strip' '!debug')
+source=("https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/download/${_tag}/Cone-${_filever}-linux-${CARCH}.tar.xz")
+sha256sums=('8462684e5c981cb0a23e017ccd587934cce134d9ae64ce08299cca8809141109')
+
+package() {
+  local _dir="Cone-${_filever}-linux-${CARCH}"
+
+  install -d "${pkgdir}/opt/cone-player"
+  cp -a "${_dir}/cone" "${_dir}/usr" "${_dir}/README-LINUX.txt" "${pkgdir}/opt/cone-player/"
+  # the tarball's per-user installer and its menu files are not needed in the system package
+  rm -rf "${pkgdir}/opt/cone-player/usr/share/applications" \
+         "${pkgdir}/opt/cone-player/usr/share/kde4" \
+         "${pkgdir}/opt/cone-player/usr/share/metainfo"
+
+  # VLC's plugin cache keeps each plugin's time and size; makepkg sets every file's time to
+  # SOURCE_DATE_EPOCH, so the plugins get that time now and the cache is made again for it
+  # (a stale cache makes Cone load every plugin at each start)
+  find "${pkgdir}/opt/cone-player/usr/lib/vlc/plugins" -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
+  "${pkgdir}/opt/cone-player/usr/libexec/vlc/vlc-cache-gen" "${pkgdir}/opt/cone-player/usr/lib/vlc/plugins"
+
+  install -d "${pkgdir}/usr/bin"
+  ln -s /opt/cone-player/cone "${pkgdir}/usr/bin/cone-player"
+
+  # menu entry: the tarball's own, started through the command in PATH
+  install -Dm644 "${_dir}/cone-player.desktop" "${pkgdir}/usr/share/applications/cone-player.desktop"
+  sed -i 's|^Exec=cone |Exec=cone-player |' "${pkgdir}/usr/share/applications/cone-player.desktop"
+
+  local _size
+  for _size in 16 24 32 48 64 128 256; do
+    install -Dm644 "${_dir}/usr/share/icons/hicolor/${_size}x${_size}/apps/cone-player.png" \
+      "${pkgdir}/usr/share/icons/hicolor/${_size}x${_size}/apps/cone-player.png"
+  done
+}
