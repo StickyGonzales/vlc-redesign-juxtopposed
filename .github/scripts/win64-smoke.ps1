@@ -920,9 +920,12 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+    # before the first-start and open-in-running checks: after those (a Cone raised by a second
+    # start, then ended) the runner no longer lets the next Cone take the foreground for a click
+    # (build-windows #206)
+    Check-UpNextNext $zipExe.FullName
     Run-FirstStart $zipExe.FullName
     Run-OpenInRunning $zipExe.FullName
-    Check-UpNextNext $zipExe.FullName
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall
