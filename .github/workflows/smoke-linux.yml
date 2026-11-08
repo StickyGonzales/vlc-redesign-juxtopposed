@@ -169,7 +169,7 @@ jobs:
       - name: Start and play on Debian 12
         shell: bash
         run: |
-          ldd --version | head -n 1 | tee -a "$GITHUB_STEP_SUMMARY"
+          ldd --version | sed -n 1p | tee -a "$GITHUB_STEP_SUMMARY"
           mkdir -p out run && tar -xJf smoke-in/tarball/*.tar.xz -C run
           CONE=$(ls -d run/Cone-*/)cone
           cp smoke-in/media/test-h264.mp4 out/clip.mp4 && cp smoke-in/media/test.srt out/clip.srt
