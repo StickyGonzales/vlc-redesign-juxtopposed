@@ -76,3 +76,7 @@ static-lib/
 /redesign/reference/*.srt
 /redesign/reference/*.mp4
 /redesign/tools/privacy.local.txt
+
+# flatpak-builder state (extras/package/flatpak)
+/.flatpak-builder/
+/build-flatpak/
