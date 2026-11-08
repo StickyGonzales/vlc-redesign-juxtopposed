@@ -112,17 +112,25 @@ modules:
         tag: release-1.7.1
         commit: f5315fddda2d434e47035c038549a808d8b8eac7
 
-  # MPEG-TS (broadcast recordings, Blu-ray rips)
+  # MPEG-TS (broadcast recordings, Blu-ray rips): the release tarball (its git tree's bootstrap
+  # cannot read the SDK's automake version) with the fixes VLC's contrib applies (packet length
+  # checks; contrib/src/dvbpsi, the same tarball and checksum)
   - name: libdvbpsi
+    config-opts:
+      - --disable-static
     sources:
-      - type: git
-        url: https://code.videolan.org/videolan/libdvbpsi.git
-        tag: 1.3.3
-        commit: 26bdfd4c0dc58f0f4917461cdf31dae24f9e1463
-      - type: script
-        dest-filename: autogen.sh
-        commands:
-          - ./bootstrap
+      - type: archive
+        url: https://download.videolan.org/pub/libdvbpsi/1.3.3/libdvbpsi-1.3.3.tar.bz2
+        sha256: 02b5998bcf289cdfbd8757bedd5987e681309b0a25b3ffe6cebae599f7a00112
+      - type: patch
+        paths:
+          - ../../../contrib/src/dvbpsi/dvbpsi-noexamples.patch
+          - ../../../contrib/src/dvbpsi/0001-really-identify-duplicates.patch
+          - ../../../contrib/src/dvbpsi/0002-really-reset-packet-counter.patch
+          - ../../../contrib/src/dvbpsi/0001-dvbpsi_packet_push-compute-sizes-using-pointer-to-en.patch
+          - ../../../contrib/src/dvbpsi/0002-dvbpsi_packet_push-check-adaptation-field-length.patch
+          - ../../../contrib/src/dvbpsi/0003-dvbpsi_packet_push-check-section-pointers-field.patch
+          - ../../../contrib/src/dvbpsi/0004-dvbpsi_packet_push-check-section-length.patch
 
   # styled subtitles (ASS / SSA)
   - name: libass
