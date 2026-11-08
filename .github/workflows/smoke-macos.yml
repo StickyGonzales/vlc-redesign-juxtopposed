@@ -1,0 +1,106 @@
+# Smoke checks of the Cone macOS builds (the Apple Silicon .dmg on macos-15, the Intel .dmg on
+# macos-15-intel) on clean GitHub macOS runners, after every macOS build (build-macos.yml calls it);
+# redesign/MACOS_NOTES.md. The checks:
+# .github/scripts/macos-smoke.py. The runner has a real desktop session; sound goes to VLC's dummy
+# audio output: no picture quality or sound checks.
+name: smoke-macos
+
+on:
+  workflow_call:
+    inputs:
+      intel:
+        description: 'The Intel .dmg was built too'
+        type: boolean
+        default: true
+
+jobs:
+  # the same test media as the Windows and Linux checks (smoke-media.sh), from the same cache
+  smoke-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Cached test media
+        id: media-cache
+        uses: actions/cache@v4
+        with:
+          path: smoke-media
+          key: cone-smoke-media-${{ hashFiles('.github/scripts/smoke-media.sh') }}
+      - uses: actions/setup-python@v5
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        with:
+          python-version: '3.12'
+      - name: Generate the test media
+        if: steps.media-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --disable-pip-version-check -q imageio-ffmpeg==0.6.0
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" \
+            .github/scripts/smoke-media.sh smoke-media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-macos-smoke-media
+          path: smoke-media/
+          retention-days: 1
+
+  arches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          INTEL: ${{ inputs.intel }}
+        run: |
+          ARM='{"arch":"arm64","runner":"macos-15"}'
+          INTEL_ROW='{"arch":"x86_64","runner":"macos-15-intel"}'
+          if [ "$INTEL" = true ]; then M="[$ARM,$INTEL_ROW]"; else M="[$ARM]"; fi
+          echo "matrix={\"include\":$M}" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    needs: [smoke-media, arches]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.arches.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    # a run that waits longer than this for a free macOS runner, or hangs, ends; the checks
+    # themselves take about 8 minutes
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-macos-${{ matrix.arch }}
+          path: smoke-in/dmg
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-macos-smoke-media
+          path: smoke-in/media
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test tools
+        run: |
+          python -m pip install --disable-pip-version-check -q \
+            pyobjc-framework-Quartz==11.1 pyobjc-framework-Cocoa==11.1 \
+            pyobjc-framework-ApplicationServices==11.1 pillow==11.3.0
+          ls -la smoke-in/*
+
+      - name: Smoke checks
+        run: |
+          python -I .github/scripts/macos-smoke.py \
+            --dmg "$(ls smoke-in/dmg/*.dmg | head -n 1)" \
+            --media smoke-in/media --out smoke-out
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          name: cone-macos-smoke-results-${{ matrix.arch }}
+          path: smoke-out/
+          retention-days: 1

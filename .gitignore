@@ -76,3 +76,4 @@ static-lib/
 /redesign/reference/*.srt
 /redesign/reference/*.mp4
 /redesign/tools/privacy.local.txt
+__pycache__/
