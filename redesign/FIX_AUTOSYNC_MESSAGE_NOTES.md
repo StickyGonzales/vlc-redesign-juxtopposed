@@ -31,6 +31,8 @@ Reported by StickyGonzales at the Windows retest of PR #106 (STATUS.md, 2026-11-
 |---|---|
 | build-linux #99 (42435721439), 87098e9 | green, every Linux smoke check passes |
 | build-windows #203 (42435723820), 87098e9 | green, every Windows smoke check passes |
+| build-linux #100 (42477594969), f3a0f1a (Undo follow-up, PR #110) | green, every Linux smoke check passes |
+| build-windows #204 (42477597600), f3a0f1a (Undo follow-up, PR #110) | green, every Windows smoke check passes |
 
 **Sandbox, build-linux #99's tarball** (Xvfb, 150 %; a generated 60 s test pattern MKV with an in-sync embedded English subtitle track, and the same lines in an external .srt 2.34 s late; picture `redesign/fix-shots/autosync_message.jpg`):
 - Sync to "Track 1 - [English]", Auto-sync: log "subtitle sync: match, delay -2320 ms"; the message reads **"Auto-sync  Moved -2.3 s"** with the subtitles icon; screenshots every 0.5 s show no "Subtitle delay" message after it; the delay box -2.320 s, the button Undo.
