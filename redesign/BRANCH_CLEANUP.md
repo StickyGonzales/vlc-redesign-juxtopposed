@@ -111,3 +111,10 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/fix-autosync-message` | `dc3974528a235b856ec413d80bba857d2b23fe64` | PR #108 merged into wip/next-test |
 | `wip/macos-build` | `f144b3a889db0574351c31211e93bd5216a1e2b5` | PR #109 merged into wip/next-test |
 | `wip/round-2026-11-09` | `519d07e74cf65d0210ac986f2df0ce0004a50466` | combined test build of the round, merged into wip/next-test |
+
+## 2026-11-08, PR #107 merged (CLAUDE.md branch rule)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/up-next-credits-scan` | `8700961a25c9a5a292a76697660840f7e894161f` | PR #107 merged into wip/next-test |
+| `wip/stage-107` | `4521447d8737a9ac6d75de78ee144fb585bc79b5` | test build of #107 merged onto wip/next-test, merged into wip/next-test |
