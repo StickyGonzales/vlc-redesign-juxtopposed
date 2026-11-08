@@ -40,6 +40,9 @@ jobs:
     timeout-minutes: 30
     container:
       image: archlinux:base-devel
+    defaults:
+      run:
+        shell: bash
     env:
       # the AUR's SSH host key, as aur.archlinux.org lists it (ED25519)
       AUR_HOST_FINGERPRINT: 'SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4'
