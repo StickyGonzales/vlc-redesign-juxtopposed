@@ -43,7 +43,7 @@ Branch `wip/linux-glibc-235`, made from `origin/wip/next-test`. Draft pull reque
 ## 5. Runs
 | Run | Result |
 |---|---|
-| build-linux #101 (42480429567), be94795 | **green**: the image built (glibc 2.35, Qt 6.8.3), Cone built and packaged ("needs glibc 2.35 or newer"); every Linux smoke check passes on the **Ubuntu 24.04** and the **Ubuntu 22.04** runner (tarball, AppImage-free checks, the .deb next to Ubuntu's VLC); **Debian 12** (glibc 2.36): exit code 0, "using vout window module "qt"" (the video in Cone's window: the X11 compositor is back with `libxcb-damage0-dev`), a video output, avcodec, subsdec |
+| build-linux #101 (42480429567), be94795 | **green**: the image built (glibc 2.35, Qt 6.8.3), Cone built and packaged ("needs glibc 2.35 or newer"); every Linux smoke check passes on the **Ubuntu 24.04** and the **Ubuntu 22.04** runner (the tarball, and the .deb installed next to Ubuntu's VLC); **Debian 12** (glibc 2.36): exit code 0, "using vout window module "qt"" (the video in Cone's window: the X11 compositor is back with `libxcb-damage0-dev`), a video output, avcodec, subsdec |
 
 ## 6. Retest
 - **Windows:** nothing changes for Windows (one header include in shared code).
