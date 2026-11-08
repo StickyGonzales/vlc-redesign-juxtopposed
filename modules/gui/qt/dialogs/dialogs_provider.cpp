@@ -368,6 +368,10 @@ void DialogsProvider::firstRunDialog()
 void DialogsProvider::firstRunWizard()
 {
     ensureDialog(m_firstRunDialog);
+    // redesign: the files of a first start play once the wizard closes
+    if (MainCtx* const mainCtx = p_intf->p_mi)
+        connect(m_firstRunDialog.get(), &QDialog::finished, mainCtx,
+                &MainCtx::releaseFirstStartPlayback, Qt::UniqueConnection);
     QVLCDialog::setWindowTransientParent(m_firstRunDialog.get(), nullptr, p_intf);
     m_firstRunDialog->show();
 }

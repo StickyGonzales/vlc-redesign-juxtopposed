@@ -1289,7 +1289,10 @@ vlc_player_Start(vlc_player_t *player)
     if (ret == VLC_SUCCESS)
     {
         player->started = true;
+#ifndef VLC_BRAND_PUBLIC
+        /* redesign: Cone's top bar names the file; "Playing" is shown for a pause / resume */
         vlc_player_osd_Icon(player, OSD_PLAY_ICON);
+#endif
     }
     return ret;
 }

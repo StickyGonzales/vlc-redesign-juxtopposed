@@ -315,7 +315,7 @@ Before this, the card showed in the last seconds only (or at a credits chapter, 
 
 **Inside the window, in this order:**
 1. **Chapters.** A chapter whose name contains "credits", "end credits", "outro" or "ending" (whole words, any case), or is "ED", only when it starts inside the window. Exact. "Pre-credits", "mid-credits" and "post-credits" scenes are not the credits.
-2. **Learned per show.** The user went on to the next episode of the show (Next, the card's button, a click on it in the queue) inside the credits window of an earlier episode, before the countdown. Cone remembers how long before the end that was and shows the card at the same point in the following episodes.
+2. **Learned per show.** *(Replaced 2026-11-07 by section 5.5: the card's own button is no longer learned, and the order now starts with a per-show Fixed point and the background scans.)* The user went on to the next episode of the show (Next, the card's button, a click on it in the queue) inside the credits window of an earlier episode, before the countdown. Cone remembers how long before the end that was and shows the card at the same point in the following episodes.
    - One press is enough; a later press inside the window updates it.
    - A press outside the window (skipping an episode mid-way) is never learned. Neither is a Play now during the countdown, the episode simply ending, Previous, or another episode picked in the library.
    - Kept per show root folder in `rd-shows.json` (`"credits": {"<show folder>": {"leadMs": ..., "name": ...}}`). Forget all clears it too.
@@ -335,6 +335,21 @@ Before this, the card showed in the last seconds only (or at a credits chapter, 
 - **Cancel** hides the card for the rest of that episode (and takes the autoplay item out, as before).
 - "Still watching?" still comes at the countdown point.
 - Seeking back before the point hides the card; it comes back at the point.
+
+### 5.5 Credits scans, drift fix and per-show point (2026-11-07, StickyGonzales)
+
+Full design, tests and limits: `redesign/UP_NEXT_CREDITS_SCAN_NOTES.md`. In short:
+
+**Order** (`rdcredits::decide`), always inside the credits window:
+1. **Fixed for the show** (sidebar Playback tab, "Up Next for <show>": Automatic / Fixed). Wins for the show and all its seasons; Reset (or Automatic) drops it.
+2. **A credits chapter.**
+3. **Audio match**: the credits music found in the episode (full scan or quick check).
+4. **Subtitles, black frames and the learned point combined**: where two of them agree within 90 s (the most precise one is used: subtitles, then black frames, then the learned point); if they do not agree, the learned point; with only one, the subtitles alone (black frames are never used alone: a dark scene would fool them).
+5. **The setting** (last 30 s / 1 min / 2 min).
+
+**Learning (drift fix).** A click on the card's Next episode button is never learned (it can only happen once the card shows, so the point moved later every episode). A move to the next episode inside the window before the card shows moves the point earlier, only if earlier than the saved one. Cancel on the card, then a move to the next episode later in the same episode, moves the point later, to that move. The countdown and natural endings stay unlearned.
+
+**Scans.** Local video files (mkv, mp4, m4v, avi, mov, webm, ts and similar) of a show folder with 3 or more video files only. The first two episodes get a full scan of the window (audio fingerprint, key frames for black frames, text subtitles); two with the same music give the show its credits length, music and usual episode length (`rd-shows.json`, `"creditsScan"`). Later episodes within 5 minutes of the usual length get a 2-minute audio-only quick check around the expected point; a miss, or an episode further off, gets the full scan. One low-priority background thread, own demuxer and decoders, the next episode while the current one plays, each file once, paused while the seek bar is in use, none on Windows battery saver, stopped at once on quit.
 
 ## 6. Implementation outline (for step 2)
 

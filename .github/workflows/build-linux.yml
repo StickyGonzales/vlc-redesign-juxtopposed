@@ -2,10 +2,13 @@
 #   Actions > build-linux > Run workflow (or: gh workflow run build-linux.yml --ref <branch>)
 # GitHub offers the manual run only once this file is on the default branch (redesign); until
 # then pushes to the Linux branch start it (commits with [skip ci] do not).
-# Mirrors VideoLAN's own "debian" job (extras/ci/gitlab-ci.yml): same Docker image, VLC built
-# with autotools against the image's system libraries; the media library, which the image has no
-# package of, comes from VLC's contrib recipe. The result is a folder that runs from wherever it
-# is unpacked (.github/scripts/linux-package.sh), uploaded as a tarball.
+# Built in an Ubuntu 22.04 image with the official Qt 6.8.3 (.github/linux/jammy.Dockerfile, built
+# here), so the packages run on glibc 2.35 and newer: Ubuntu 22.04, Linux Mint 21, Debian 12 and
+# every newer system (redesign/LINUX_OLDER_DISTROS_NOTES.md). VLC is built with autotools against
+# the image's system libraries, like VideoLAN's own "debian" job (extras/ci/gitlab-ci.yml); the
+# media library, which the image has no package of, comes from VLC's contrib recipe. The result is
+# a folder that runs from wherever it is unpacked (.github/scripts/linux-package.sh), uploaded as
+# a tarball.
 name: build-linux
 
 on:
@@ -41,8 +44,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Keep in sync with VLC_DEBIAN_IMAGE in extras/ci/gitlab-ci.yml
-  VLC_IMAGE: registry.videolan.org/vlc-debian-unstable:20260611225331
+  # the build image, built from .github/linux/jammy.Dockerfile by the "Build image" step
+  VLC_IMAGE: cone-linux-build:jammy
   # Cone, the public profile (Decision 50); the vlc profile is not built for Linux
   VLC_BRAND: public
   # ccache used inside the image (it has none): pinned release and its SHA-256
@@ -51,12 +54,6 @@ env:
   # patchelf for the package's RUNPATHs (linux-package.sh): pinned release and its SHA-256
   PATCHELF_VERSION: 0.18.0
   PATCHELF_SHA256: ce84f2447fb7a8679e58bc54a20dc2b01b37b5802e12c57eece772a6f14bf3f0
-  # Qt's SVG image and icon plugins, which the image lacks (linux-package.sh): Debian's
-  # qt6-svg-plugins of the image's exact qt6-svg version, from snapshot.debian.org; change both
-  # with VLC_IMAGE (its qt6-svg-dev version: dpkg -l qt6-svg-dev in the image)
-  QT_SVG_PLUGINS_DEB: https://snapshot.debian.org/file/730481d39dc33b54bd8001af08ff9a36364370bf
-  QT_SVG_PLUGINS_VERSION: 6.10.2-8
-  QT_SVG_PLUGINS_SHA256: ae80a1d333bf1676d1b17fdcbf155a936e5b46994a1c3c5c8385ef54e5f0075c
   # AppImage runtime (linux-appimage.sh, Decision (Sticky) 2): AppImage's static type-2 runtime,
   # build 8f39b89 of github.com/AppImage/type2-runtime (published only as "continuous"), pinned by
   # its SHA-256; a newer runtime there fails this check until the hash is updated here
@@ -85,14 +82,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: contrib/linux-ml
-          key: contrib-linux-ml-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/medialibrary/*', 'contrib/src/sqlite/*', 'contrib/src/main.mak', 'contrib/bootstrap') }}
+          key: contrib-linux-ml-${{ hashFiles('.github/linux/jammy.Dockerfile') }}-${{ hashFiles('contrib/src/medialibrary/*', 'contrib/src/sqlite/*', 'contrib/src/main.mak', 'contrib/bootstrap') }}
 
       # libpostproc from contrib's recipe (linux-build.sh build_postproc), kept the same way
       - name: Cache libpostproc
         uses: actions/cache@v4
         with:
           path: contrib/linux-pp
-          key: contrib-linux-pp-${{ env.VLC_IMAGE }}-${{ hashFiles('contrib/src/postproc/*', '.github/scripts/linux-build.sh') }}
+          key: contrib-linux-pp-${{ hashFiles('.github/linux/jammy.Dockerfile') }}-${{ hashFiles('contrib/src/postproc/*', '.github/scripts/linux-build.sh') }}
 
       # Compiler cache, one per branch, as the Windows build's ("ccache-linux-public:<branch>:<commit>");
       # a branch without one starts from redesign's
@@ -134,15 +131,17 @@ jobs:
           tar -xzf /tmp/patchelf.tar.gz -C .patchelf-tool ./bin/patchelf
           .patchelf-tool/bin/patchelf --version
 
-      - name: Qt SVG plugins for the package
+      # Ubuntu 22.04, its libraries and the official Qt 6.8.3 (aqtinstall): about 5 minutes
+      - name: Build image
         run: |
-          curl -sSLf --retry 3 -o /tmp/qt6-svg-plugins.deb "$QT_SVG_PLUGINS_DEB"
-          echo "$QT_SVG_PLUGINS_SHA256  /tmp/qt6-svg-plugins.deb" | sha256sum -c -
-          dpkg-deb -x /tmp/qt6-svg-plugins.deb .qt-svg-plugins
-          find .qt-svg-plugins -name '*.so'
-
-      - name: Pull build image
-        run: docker pull "$VLC_IMAGE"
+          for i in 1 2 3; do
+            docker build -q -t "$VLC_IMAGE" -f .github/linux/jammy.Dockerfile .github/linux && break
+            echo "::warning::image build attempt $i failed"
+            [ "$i" = 3 ] && exit 1
+            sleep 20
+          done
+          docker run --rm "$VLC_IMAGE" sh -c 'ldd --version | head -n 1; qmake6 -query QT_VERSION' \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
       # Cone's version and the package name suffix: a linux-vX.Y.Z tag sets X.Y.Z (default 0.1.0);
       # linux-vX.Y.Z-<label> (linux-v0.1.0-beta) also puts "-<label>" into the package names, like
@@ -171,7 +170,7 @@ jobs:
           echo "package-suffix=$BRAND_PACKAGE_SUFFIX" >> "$GITHUB_OUTPUT"
           echo "Version: ${BRAND_VERSION:-0.1.0 (default)}, package suffix: '$BRAND_PACKAGE_SUFFIX'"
 
-      - name: Build in VideoLAN's image
+      - name: Build in the image
         run: |
           mkdir -p .ccache
           # run as the runner's user so the checkout, caches and build output have one owner

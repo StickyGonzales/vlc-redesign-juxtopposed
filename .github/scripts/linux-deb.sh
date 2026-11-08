@@ -6,7 +6,7 @@
 #   /usr/bin/cone-player                    the command
 #   /usr/share/applications/cone-player.desktop, /usr/share/icons/hicolor/*/apps/cone-player.png
 # Depends: the system libraries linux-package.sh leaves out that the player needs (the C library,
-# OpenGL and EGL, X11, ALSA, D-Bus, udev); Recommends: the sound servers (PipeWire, PulseAudio);
+# OpenGL and EGL, X11, Wayland, the C++ runtime, ALSA, D-Bus, udev); Recommends: the sound servers (PipeWire, PulseAudio);
 # Suggests: the libraries of the optional plug-ins (JACK, SFTP, SMB shares, the GTK theme), which
 # only those plug-ins need (checked in a clean Ubuntu 24.04: without libopengl0 the interface
 # itself did not load).
@@ -69,7 +69,7 @@ Version: $DEBVERSION
 Architecture: amd64
 Maintainer: StickyGonzales <103277167+StickyGonzales@users.noreply.github.com>
 Installed-Size: $SIZE
-Depends: libc6 (>= $GLIBC), libgl1, libopengl0, libegl1, libx11-6, libx11-xcb1, libxcb1, libdrm2, libgbm1, libexpat1, zlib1g, libdbus-1-3, libudev1, libasound2t64 | libasound2
+Depends: libc6 (>= $GLIBC), libstdc++6, libgcc-s1, libgl1, libopengl0, libegl1, libx11-6, libx11-xcb1, libxcb1, libwayland-client0, libwayland-cursor0, libwayland-egl1, libdrm2, libgbm1, libexpat1, zlib1g, libdbus-1-3, libudev1, libasound2t64 | libasound2
 Recommends: libpulse0 | pipewire-pulse, libpipewire-0.3-0t64 | libpipewire-0.3-0
 Suggests: libjack-jackd2-0 | libjack0, libssh-4, libsmbclient0 | libsmbclient, libgtk-3-0t64 | libgtk-3-0
 Section: video

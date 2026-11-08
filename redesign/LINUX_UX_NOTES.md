@@ -97,3 +97,37 @@ Use the next Linux build with these fixes (tarball with `./install.sh`, or the .
 6. **Scaling.** In the desktop's display settings set 125 %, then 150 %. Cone's bars, Settings and menus are sharp and nothing is cut off.
 7. **Tray.** On KDE (has a tray): Settings > Interface > "Show a system tray icon" on, restart Cone: the tray icon shows. On GNOME (no tray): Cone starts normally and the close button quits it.
 8. **Update notice.** Settings > General > Check now: it reports the newest Linux release (for example 1.1.2 beta 2), never a Windows-only version; Download opens the Linux release page.
+
+## 8. Test Cone on real Linux from a live USB (about 30 minutes)
+
+For StickyGonzales, on a real PC booted from a live USB: nothing is installed on the PC's disk, and everything is gone after a restart. Each step says what to look for; write down what you see (and any error) for the web session.
+
+### Before you start
+1. **Make the USB stick** (Windows): download the live image of **Ubuntu 24.04 Desktop** (ubuntu.com/download/desktop), and **Rufus** (rufus.ie). Rufus > Device: the USB stick > Boot selection: the .iso > Start (keep the defaults). Everything on the stick is erased.
+   - For a second round, Linux Mint 22 (Cinnamon, X11) or Fedora Workstation 41 (GNOME, Wayland) cover the other desktops.
+   - Ubuntu 22.04 / Linux Mint 21 / Debian 12 work only with a Cone built on the older base (Task owners row "Linux packages on older distros").
+2. **Boot it:** restart, open the boot menu (often F12, F11, Esc or F8 right after power on), pick the USB stick, then **Try Ubuntu**. Connect to Wi-Fi (top right corner).
+3. **Test media:** a USB stick (or download in the live session) with: a 1080p H.264 film with an .srt, an HEVC (x265) file, a 4K file if you have one, an MP3. Your own test files are fine: nothing leaves the PC.
+4. **Get Cone:** in Firefox, open the newest Linux release on GitHub and download the **tarball** (`Cone-...-linux-x86_64.tar.xz`). In Files > Downloads: right-click it > Extract. Then right-click inside the extracted folder > Open in Terminal, and run:
+   ```bash
+   ./install.sh
+   ```
+   (per-user install, no password: menu entry, icon and "Open with"). Start **Cone Player** from the app grid (the dots, bottom left).
+5. **Which display system:** in a terminal run `echo $XDG_SESSION_TYPE`. Ubuntu prints `wayland` (on most NVIDIA cards `x11`). Note it.
+
+### Checklist
+| # | Test | What to do | Expected | Note |
+|---|---|---|---|---|
+| 1 | **Sound** | Play the film and the MP3. Move the volume cone; press M twice. Click the audio button > Output Device: switch between the devices listed (speakers, HDMI, headphones if plugged in). | Sound from the speakers; the cone changes the level, M mutes and unmutes; switching the device moves the sound there. | the output device name, any crackle or delay |
+| 2 | **Smooth video** | Play the 1080p film for a minute, windowed then fullscreen (F); seek a few times. Sidebar (gear) > Playback > Show Statistics on. | No stutter or tearing; the picture stays in sync with the voices. In Statistics, Video "Lost" stays at or near 0. | "Lost" count after a minute, windowed and fullscreen |
+| 3 | **Hardware decoding** | Settings > Performance > Decoding > Hardware-accelerated decoding: Automatic. Play the HEVC file (and the 4K one). In a terminal: `top` (q quits) and look at the line of `vlc`. | CPU use of `vlc` stays low (under about 30 % for 1080p). If high: run `sudo apt install vainfo` then `vainfo` and note its first lines (on NVIDIA: `sudo apt install vdpauinfo`, `vdpauinfo`). | CPU % with Automatic, and with Disable; the GPU (Intel, AMD, NVIDIA) |
+| 4 | **Wayland or X11** | With the session from step 5: drag the top bar, double-click it, use maximize / fullscreen / minimize / close, resize from the corners. Then log out (top right > Power > Log Out), click the user, the gear at the bottom right, pick **Ubuntu on Xorg**, log in, and repeat. | Everything works the same in both. Fullscreen leaves with F or Escape. No black or see-through area under the bars. | which one, and what differs |
+| 5 | **Open from the file manager** | In Files, right-click the film > Open With Another Application > **Cone Player**. With Cone already playing, open a second file the same way. | The film plays in Cone. The second file plays in the same window (no second window), which comes to the front. | |
+| 6 | **Media keys** | While playing, press the keyboard's Play/Pause, Next and Previous keys (or Fn + the media keys). Click the clock at the top: the media controls there. | Play/Pause pauses and resumes, Next / Previous change the file (with two files in the queue). The top bar's media controls show "Cone Player", its icon and the title, and work. | which keys work |
+| 7 | **Subtitles** | Play the film with its .srt next to it (same name). Sidebar > Subtitles: Auto-sync. | The subtitles show; Auto-sync shows "Auto-sync  Moved ... s" or "Already in sync". | |
+| 8 | **Quit** | Close Cone with the X, then start it again. | It closes within a few seconds; it reopens with its settings. | |
+
+### When something fails
+- Settings > General > Diagnostics > **Save a log** on, reproduce the problem, then copy the log file (the path is shown there) to the USB stick.
+- In a terminal, `~/.local/bin/cone-player` (the command `install.sh` added) also prints Cone's messages while it runs; `./cone` in the extracted folder works too.
+- Note the distribution and version, the desktop (GNOME, Cinnamon, KDE), Wayland or X11, and the GPU.

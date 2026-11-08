@@ -21,9 +21,17 @@ set -e
 
 SRC=${1:?usage: $0 <installed prefix>}
 PATCHELF=${PATCHELF:-patchelf}
-QT_LIBDIR=/usr/lib/x86_64-linux-gnu
-QT_PLUGINS=$QT_LIBDIR/qt6/plugins
-QT_QML=$QT_LIBDIR/qt6/qml
+# Qt: the official Qt of the Ubuntu 22.04 build image (QT_DIR, .github/linux/jammy.Dockerfile),
+# or the system's Qt of a Debian image
+if [ -n "$QT_DIR" ]; then
+    QT_LIBDIR=$QT_DIR/lib
+    QT_PLUGINS=$QT_DIR/plugins
+    QT_QML=$QT_DIR/qml
+else
+    QT_LIBDIR=/usr/lib/x86_64-linux-gnu
+    QT_PLUGINS=$QT_LIBDIR/qt6/plugins
+    QT_QML=$QT_LIBDIR/qt6/qml
+fi
 
 if [ "$VLC_BRAND" = public ]; then
     NAME=cone
@@ -56,10 +64,11 @@ for d in platforms xcbglintegrations wayland-decoration-client wayland-graphics-
          wayland-shell-integration imageformats iconengines tls platforminputcontexts; do
     [ -d "$QT_PLUGINS/$d" ] && cp -a "$QT_PLUGINS/$d" "$U/lib/qt6/plugins/"
 done
-# Qt's SVG image and icon plugins: the interface draws every icon through them, and the image has
-# no package of them (Debian's qt6-svg-plugins, the image's exact qt6-svg version, unpacked by the
-# workflow into .qt-svg-plugins)
-QT_SVG_PLUGINS=/build/.qt-svg-plugins$QT_PLUGINS
+# Qt's SVG image and icon plugins: the interface draws every icon through them. The official Qt
+# has them; a Debian image has no package of them (Debian's qt6-svg-plugins, the image's exact
+# qt6-svg version, unpacked by the workflow into .qt-svg-plugins)
+QT_SVG_PLUGINS=$QT_PLUGINS
+[ -f "$QT_SVG_PLUGINS/imageformats/libqsvg.so" ] || QT_SVG_PLUGINS=/build/.qt-svg-plugins$QT_PLUGINS
 if [ ! -f "$QT_SVG_PLUGINS/imageformats/libqsvg.so" ]; then
     echo "::error::Qt's SVG plugins are missing ($QT_SVG_PLUGINS): the interface would have no icons"
     exit 1
@@ -93,8 +102,11 @@ QTCHECK=$(find "$U" -name vlc-qt-check -type f | head -n 1)
 # terminal, SSH, Samba and GTK libraries, which desktop systems have and which would raise the
 # oldest C library the package runs with (Debian's builds of them need glibc 2.42) or add a
 # hundred libraries (Samba, GTK); without them only the plugin using them (ncurses interface,
-# SFTP, SMB shares, notifications) does not load. Everything else is copied from the image
-EXCLUDE='^(ld-linux-x86-64|libc|libm|libdl|libpthread|librt|libresolv|libutil|libanl|libmvec|libnss_.*|libBrokenLocale|libGL|libGLX|libGLdispatch|libOpenGL|libEGL|libGLESv1_CM|libGLESv2|libgbm|libdrm|libvulkan|libX11|libX11-xcb|libxcb|libasound|libjack|libpipewire-0\.3|libexpat|libz|libdbus-1|libudev|libsystemd|libtinfo|libncursesw|libssh|libsmbclient|libgtk-3|libgdk-3)\.so'
+# SFTP, SMB shares, notifications) does not load. The C++ runtime (libstdc++, libgcc_s) and
+# Wayland's client libraries come from the system too: the system's graphics drivers load them
+# into the same process, and copies from the Ubuntu 22.04 build image would be older than what a
+# newer system's drivers need. Everything else is copied from the image
+EXCLUDE='^(ld-linux-x86-64|libc|libm|libdl|libpthread|librt|libresolv|libutil|libanl|libmvec|libnss_.*|libBrokenLocale|libGL|libGLX|libGLdispatch|libOpenGL|libEGL|libGLESv1_CM|libGLESv2|libgbm|libdrm|libvulkan|libX11|libX11-xcb|libxcb|libasound|libjack|libpipewire-0\.3|libexpat|libz|libdbus-1|libudev|libsystemd|libtinfo|libncursesw|libssh|libsmbclient|libgtk-3|libgdk-3|libstdc\+\+|libgcc_s|libwayland-client|libwayland-cursor|libwayland-egl|libwayland-server)\.so'
 
 mkdir -p "$U/lib/deps"
 elf_files() { find "$DIR" -type f \( -name '*.so*' -o -perm -u+x \) -exec file -N --mime-type {} + \
@@ -104,7 +116,7 @@ elf_files() { find "$DIR" -type f \( -name '*.so*' -o -perm -u+x \) -exec file -
 while read -r f; do strip --strip-unneeded "$f"; done < <(elf_files)
 
 # VLC's helper libraries (PulseAudio, PipeWire, XCB, VDPAU) sit in usr/lib/vlc
-SEARCH="$U/lib:$U/lib/vlc:$U/lib/deps"
+SEARCH="$U/lib:$U/lib/vlc:$U/lib/deps${QT_DIR:+:$QT_LIBDIR}"
 
 # copies the missing libraries until nothing new is needed: each file's own needed libraries
 # (its NEEDED entries, found where ldd finds them), so an excluded library's own dependencies are
@@ -153,6 +165,12 @@ CACHEGEN=$(find "$U" -name vlc-cache-gen -type f | head -n 1)
 GLIBC_MIN=$(while read -r f; do objdump -T "$f" 2>/dev/null | grep -o 'GLIBC_[0-9.]*'; done < <(elf_files) \
             | sed 's/GLIBC_//' | sort -uV | tail -n 1)
 echo "needs glibc $GLIBC_MIN or newer"
+# the systems that version means, for the readme (and release-linux.yml's notes, which read it)
+case "$GLIBC_MIN" in
+    2.2[0-9]|2.3[0-5]) SYSTEMS=" (Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 36 or newer)" ;;
+    2.3[6-9]) SYSTEMS=" (Ubuntu 24.04, Linux Mint 22, Debian 13, Fedora 40 or newer)" ;;
+    *) SYSTEMS="" ;;
+esac
 
 # --- launcher, desktop file, icon, readme ---------------------------------------------------------
 cat > "$DIR/$NAME" <<EOF
@@ -264,7 +282,7 @@ $TITLE $VERSION for Linux (x86_64), portable
 $( [ "$NAME" = cone ] && echo "Based on VLC media player. " )Built in VideoLAN's Debian build image.
 
 Start: ./$NAME  (or ./$NAME <file or URL>)
-Needs: a 64-bit Linux desktop (X11 or Wayland) with glibc $GLIBC_MIN or newer, OpenGL drivers,
+Needs: a 64-bit Linux desktop (X11 or Wayland) with glibc $GLIBC_MIN or newer$SYSTEMS, OpenGL drivers,
 X11 libraries (libX11, libxcb) and PulseAudio, PipeWire or ALSA.
 
 Settings: ~/.config/$( [ "$NAME" = cone ] && echo Cone || echo vlc ), media library and data: ~/.local/share/$( [ "$NAME" = cone ] && echo Cone || echo vlc ), caches: ~/.cache/$( [ "$NAME" = cone ] && echo Cone || echo vlc ).

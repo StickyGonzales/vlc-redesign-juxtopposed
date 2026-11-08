@@ -13,6 +13,7 @@ import ctypes
 import ctypes.util
 import glob
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -165,15 +166,16 @@ def rc_number(cmd):
 
 
 class Session:
-    def __init__(self, exe, video, tag, env=None):
+    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
-        a = [exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
-             '--aout=adummy', '--input-repeat=50', '--file-logging', f'--logfile={self.log}',
-             '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}', '--rc-fake-tty',
-             f'--sub-file={os.path.join(MEDIA, "test.srt")}', video]
+        # first_start: Cone's first start (the onboarding), as on a fresh install
+        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+             '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
+             f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
+             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), video]
         log('start ' + ' '.join(a))
         self.proc = subprocess.Popen(a, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
@@ -236,6 +238,47 @@ def check_time(s):
             raise CheckFailed(f'time {t1} s, then {t2} s three seconds later')
         return f'{t1} s, then {t2} s three seconds later'
     return check(f'{s.tag}: playback time advances', body)
+
+
+def osd_message():
+    """Cone's on-screen message (RdOsdMessage.qml): its description ("Volume 80%"), None while hidden"""
+    app = cone_app()
+    for acc in _walk(app):
+        try:
+            if acc.name != 'On-screen message':
+                continue
+            x, y, w, h = acc.queryComponent().getExtents(pyatspi.DESKTOP_COORDS)
+            if w > 0 and h > 0:
+                return acc.description or ''
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
+def check_osd(s):
+    """a key shows Cone's own message (not VLC's text in the video), and it goes away. The speed
+    key: the smoke run's audio output (adummy) has no volume, so a volume key shows nothing"""
+    def body():
+        s.focus()
+        xdo('key', 'bracketright')
+        end = time.time() + 3
+        text = None
+        while time.time() < end and text is None:
+            text = osd_message()
+            time.sleep(0.1)
+        if text is None:
+            raise CheckFailed('no on-screen message within 3 s after ] (faster)')
+        shot(f'{s.tag}-osd')
+        if 'Speed' not in text:
+            raise CheckFailed(f'the message says "{text}", expected the speed')
+        end = time.time() + 6
+        while time.time() < end and osd_message() is not None:
+            time.sleep(0.25)
+        if osd_message() is not None:
+            raise CheckFailed('the message is still shown 6 s later')
+        xdo('key', 'equal')   # back to the normal speed for the next checks
+        return f'"{text}", gone again'
+    return check(f'{s.tag}: a key shows Cone\'s on-screen message', body)
 
 
 def check_subtitle(s):
@@ -638,6 +681,7 @@ def session(exe, codec, tag, full, env=None):
         check_time(s)
         if full:
             check_subtitle(s)
+            check_osd(s)
             check_settings(s)
             check_seek(s)
             check_menu(s)
@@ -656,6 +700,122 @@ def session(exe, codec, tag, full, env=None):
             time.sleep(4)
         check(f'{tag}: quit', lambda: quit_cone(s, codec == 'hevc'), retry_quit)
         check_plugins(s)
+    finally:
+        s.stop()
+
+
+def episode_of(status):
+    m = re.search(r'S01E0(\d)', status)
+    return int(m.group(1)) if m else 0
+
+
+def check_up_next(exe, env):
+    """Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode,
+    which is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
+    redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md); no --input-repeat, which keeps autoplay away"""
+    video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E01.mp4')
+    s = Session(exe, video, 'upnext', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            time.sleep(2)
+            before = episode_of(rc('status'))
+            if before not in (1, 2):
+                raise CheckFailed(f'an unexpected episode plays: {before}')
+            # 6:10 of 7:00: the card shows (the last minute), the countdown has not started
+            rc('seek 370')
+            time.sleep(2)
+            s.show_bars()
+            b = find('Next episode', 6, role='push button')
+            if not b:
+                shot('upnext-nocard')
+                raise CheckFailed(f'no "Next episode" button on the card at 6:10 of episode {before}')
+            xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
+            time.sleep(0.3)
+            xdo('click', 1)
+            time.sleep(5)
+            shot('upnext-after')
+            st = rc('status')
+            after = episode_of(st)
+            if after != before + 1:
+                raise CheckFailed(f'5 s after the click episode {after} is current (expected {before + 1})')
+            if rc_number('is_playing') != 1:
+                raise CheckFailed(f'5 s after the click episode {after} does not play')
+            t1 = rc_number('get_time')
+            time.sleep(2)
+            t2 = rc_number('get_time')
+            if t2 <= t1:
+                raise CheckFailed(f'episode {after} stands still at {t1} s, then {t2} s')
+            return f'episode {before} -> {after}, still playing 5 s after the click ({t1} s, then {t2} s)'
+        check("upnext: the card's Next episode keeps the next episode playing", body)
+    finally:
+        s.stop()
+
+
+def rc_time():
+    """the playback time in seconds, None while nothing plays (the cli gives no number)"""
+    try:
+        return rc_number('get_time')
+    except CheckFailed:
+        return None
+
+
+def first_start(exe, env):
+    """a first start with a file (F1): the onboarding shows, the file waits at 0 while it is open,
+    and plays from the beginning once it is closed (here with Escape, on Windows with Finish)"""
+    tag = 'first-start'
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), tag, env, first_start=True)
+    try:
+        if not check_window(s):
+            return
+
+        def shown():
+            if not find('Next', 15, role='push button'):
+                raise CheckFailed('no onboarding (its "Next" button) within 15 s')
+            shot(f'{tag}-onboarding')
+            return 'the onboarding is shown'
+        if not check(f'{tag}: the onboarding shows', shown):
+            return
+
+        def waits():
+            end = time.time() + 15
+            while not os.path.exists(RC_SOCK) and time.time() < end:
+                time.sleep(0.3)
+            seen = []
+            for _ in range(8):
+                t = rc_time()
+                seen.append('-' if t is None else str(t))
+                if t:
+                    raise CheckFailed(f'the file plays behind the onboarding: time {", ".join(seen)} s')
+                time.sleep(1)
+            return f'time over 8 s: {" ".join(seen)} (- = not started)'
+        check(f'{tag}: the file waits at 0 while the onboarding is open', waits)
+
+        def plays_after():
+            s.focus()
+            xdo('key', 'Escape')
+            end = time.time() + 5
+            while find('Next', 0, role='push button'):
+                if time.time() > end:
+                    raise CheckFailed('Escape did not close the onboarding')
+                time.sleep(0.3)
+            end = time.time() + 15
+            t1 = rc_time()
+            while t1 is None and time.time() < end:
+                time.sleep(0.5)
+                t1 = rc_time()
+            if t1 is None:
+                raise CheckFailed('nothing plays within 15 s after the onboarding closed')
+            if t1 > 4:
+                raise CheckFailed(f'playback did not start from the beginning: {t1} s right after the close')
+            time.sleep(3)
+            t2 = rc_time()
+            if t2 is None or t2 <= t1:
+                raise CheckFailed(f'the time does not advance: {t1} s, then {t2} s')
+            return f'{t1} s right after the close, {t2} s three seconds later'
+        check(f'{tag}: playback starts from 0 when the onboarding closes', plays_after)
     finally:
         s.stop()
 
@@ -682,6 +842,8 @@ env = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
            XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
 session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
+first_start(os.path.join(folder, 'cone'), env)
+check_up_next(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():

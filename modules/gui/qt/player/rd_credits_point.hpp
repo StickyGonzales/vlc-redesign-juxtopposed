@@ -30,15 +30,9 @@
  * or its last 15 % when that is shorter (episodes under about 53 minutes). Anything pointing
  * earlier is ignored, so the card never shows in the middle of an episode.
  *
- * Inside the window, in this order:
- * 1. a chapter named like the credits ("credits", "end credits", "outro", "ending") that starts
- *    inside the window: exact;
- * 2. the point learned for the show (the user went on to the next episode inside the window of
- *    an earlier one), as a time before the end;
- * 3. the setting "Show Up Next" (the last 30 s, 1 min or 2 min).
- * A text subtitle track can only fine-tune 2 and 3: the end of the last real dialogue line
- * inside the window, before a gap of 60 s or more or before only music lines, moves the point
- * when it is within `kSubtitleTuneMs` of it. Subtitles are never the only reason.
+ * Inside the window, the order of decide() below (UP_NEXT_CREDITS_SCAN_NOTES.md): the show's
+ * Fixed point, a credits chapter, the credits music matched across episodes, then the end of the
+ * dialogue, black frames and the learned point together, then the setting "Show Up Next".
  *
  * QtCore only and pure (the scan of the subtitle lines is rd_credits_subtitles).
  */
@@ -49,8 +43,6 @@ constexpr qint64 kWindowMaxMs = 8 * 60 * 1000;
 constexpr int kWindowPercent = 15;
 // a gap in the dialogue this long ends it
 constexpr qint64 kDialogueGapMs = 60 * 1000;
-// the farthest the subtitles may move the learned or the set point
-constexpr qint64 kSubtitleTuneMs = 2 * 60 * 1000;
 // a move to the next episode closer to the end than this (past the countdown) is the episode
 // ending, not a choice
 constexpr qint64 kNaturalEndMs = 3 * 1000;
@@ -102,21 +94,107 @@ QVector<Line> parseSubtitleFile(const QString& text, const QString& extension);
 // MarginV,Effect,Text"): its text
 QString assPacketText(const QString& packet);
 
-enum class Source { None, Chapter, Learned, Setting };
+// redesign (Cone extra, UP_NEXT_CREDITS_SCAN_NOTES.md): where the credits start, from what is
+// known, in this order (the first that has a point inside the window wins):
+//   1. the show's Fixed point (Playback tab, "Up Next for <show>")
+//   2. a credits chapter
+//   3. the credits music matched across episodes (audio fingerprint, full scan or quick check)
+//   4. the end of the dialogue (subtitles), black frames and the learned point: where at least
+//      two of them agree within kAgreeMs (the most precise of them: subtitles, then black
+//      frames, then the learned point); else the learned point; black frames are never used
+//      alone (a dark scene would fool them)
+//   5. the global setting ("Show the card": the last 30 / 60 / 120 s), moved to the end of the
+//      dialogue when the subtitles alone put it within kSubtitleAloneMs of it
+enum class Source { None, Fixed, Chapter, Audio, Agreement, Learned, Subtitles, Setting };
 
 struct Point
 {
     // from the start of the episode, -1 when there is none
     qint64 timeMs = -1;
     Source source = Source::None;
-    // the subtitles moved it
-    bool tuned = false;
 };
 
-// `learnedLeadMs` and `settingLeadMs`: time before the end, -1 when none; `dialogueEndMs`: from
-// dialogueEnd(), -1 when none
-Point decide(qint64 lengthMs, const QVector<Chapter>& chapters, qint64 learnedLeadMs,
-             qint64 settingLeadMs, qint64 dialogueEndMs);
+// two points this close agree
+constexpr qint64 kAgreeMs = 90 * 1000;
+// the end of the dialogue alone (no learned point, no black frames agreeing) moves the setting's
+// point by this much at most: high confidence near the expected end only
+constexpr qint64 kSubtitleAloneMs = 2 * 60 * 1000;
+
+struct Inputs
+{
+    QVector<Chapter> chapters;
+    // times before the end, -1 when none
+    qint64 fixedLeadMs = -1;
+    qint64 learnedLeadMs = -1;
+    qint64 settingLeadMs = -1;
+    // times from the start of the episode, -1 when none
+    qint64 audioMs = -1;
+    qint64 dialogueEndMs = -1;
+    qint64 blackMs = -1;
+};
+
+Point decide(qint64 lengthMs, const Inputs& inputs);
+
+// --- learning from the user (the drift fix, UP_NEXT_CREDITS_SCAN_NOTES.md section 1) ---
+
+// the user (or the queue) moved on to the next episode of the show at `timeMs` of `lengthMs`
+struct Move
+{
+    qint64 timeMs = -1;
+    qint64 lengthMs = -1;
+    // the card's own "Next episode" button (or its picture) did it
+    bool fromCard = false;
+    // the card was showing in this episode before the move
+    bool cardShown = false;
+    // Cancel was pressed on the card in this episode
+    bool cancelled = false;
+    // the countdown's length (seconds): a move inside it is the episode ending, not a choice
+    int countdownSec = 0;
+    // the point saved for the show, as time before the end, -1 when none
+    qint64 savedLeadMs = -1;
+};
+
+// the new learned point (time before the end) for a move, -1 to keep the saved one:
+// - only inside the credits window and before the countdown (natural endings are never learned)
+// - a click on the card is never learned (it can only come once the card shows: learning it
+//   made the point drift later every episode)
+// - a move before the card showed moves the point earlier, never later
+// - Cancel on the card, then a move later in the episode, moves the point later, to that move
+qint64 learnedLead(const Move& move);
+
+// --- the scans (UP_NEXT_CREDITS_SCAN_NOTES.md sections 3 to 6) ---
+
+// a show folder needs this many video files to be scanned
+constexpr int kMinShowVideos = 3;
+// the full scan reads the end of the episode: the credits window (the last 8 minutes)
+// the quick check reads 1 minute either side of where the show's credits music is expected
+constexpr qint64 kQuickHalfMs = 60 * 1000;
+// an episode whose length is this far from the show's usual one is a finale or a special: the
+// quick check is skipped
+constexpr qint64 kUsualLengthSlackMs = 5 * 60 * 1000;
+
+// a local video file Cone scans: by its extension (never audio files, streams or images)
+bool isScannableVideo(const QString& fileName);
+
+enum class ScanKind { Quick, Full };
+// the scan an episode of `lengthMs` gets: the quick check when the show has its credits music
+// and the episode's length is within kUsualLengthSlackMs of the show's usual length
+ScanKind planScan(bool showHasMusic, qint64 usualLengthMs, qint64 lengthMs);
+
+// one sampled video frame: how much of it is dark (0 to 1)
+struct FrameSample
+{
+    qint64 timeMs = 0;
+    float darkShare = 0;
+};
+// a frame this dark is black (white credits text on black stays above it)
+constexpr float kBlackFrameShare = 0.85f;
+// black frames: the start of the first stretch of kBlackRunMs or more (or to the last sample,
+// at least kBlackMinMs) where kBlackRunShare of the samples are black; -1 when none
+constexpr qint64 kBlackRunMs = 30 * 1000;
+constexpr qint64 kBlackMinMs = 15 * 1000;
+constexpr double kBlackRunShare = 0.9;
+qint64 blackStart(const QVector<FrameSample>& samples);
 
 QString sourceName(Source source);
 

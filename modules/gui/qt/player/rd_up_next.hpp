@@ -30,6 +30,8 @@
 #include <memory>
 
 #include "qt.hpp"
+#include "player/rd_credits_point.hpp"
+#include "player/rd_credits_scans.hpp"
 #include "player/rd_episode_parser.hpp"
 #include "playlist/media.hpp"
 #include "util/shared_input_item.hpp"
@@ -62,9 +64,11 @@ struct vlc_preparser_req;
  * per show are kept per show root folder in rd-shows.json in VLC's user data folder, read and
  * written on a worker thread.
  *
- * The card shows when the credits start (rd_credits_point, UP_NEXT_PLAN.md 5.4): never before
- * the credits window, at a credits chapter, at the point learned for the show or at the set
- * point, fine-tuned by a text subtitle track. There it offers Next episode and Cancel; the
+ * The card shows when the credits start (rd_credits_point, UP_NEXT_PLAN.md 5.4 and
+ * UP_NEXT_CREDITS_SCAN_NOTES.md): never before the credits window, at the point fixed for the
+ * show, a credits chapter, the credits music matched across episodes (RdCreditsScans, local
+ * video files of a show folder of 3 or more only), where the subtitles, black frames and the
+ * learned point agree, or at the set point. There it offers Next episode and Cancel; the
  * countdown only runs in the last `countdown` seconds, as before.
  *
  * Nothing runs while the setting is Off: no scan, no card, no item.
@@ -117,8 +121,16 @@ class RdUpNext : public QObject
     // remembered answers (Settings > Playback > Episodes)
     Q_PROPERTY(int rememberedYes READ rememberedYes NOTIFY storeChanged FINAL)
     Q_PROPERTY(int rememberedNo READ rememberedNo NOTIFY storeChanged FINAL)
-    // shows with a learned credits point (Forget all clears them too)
+    // shows with a learned or fixed credits point (Forget all clears them too)
     Q_PROPERTY(int rememberedCredits READ rememberedCredits NOTIFY storeChanged FINAL)
+    // shows with a remembered audio or subtitle track (Forget all clears them too)
+    Q_PROPERTY(int rememberedTracks READ rememberedTracks NOTIFY storeChanged FINAL)
+
+    // the sidebar row "Up Next for <show>": Fixed (the user's time before the end) or Automatic,
+    // the point used now as seconds before the end (-1 none yet) and where it comes from
+    Q_PROPERTY(bool creditsFixed READ creditsFixed NOTIFY creditsChanged FINAL)
+    Q_PROPERTY(int creditsLeadSeconds READ creditsLeadSeconds NOTIFY creditsChanged FINAL)
+    Q_PROPERTY(QString creditsSource READ creditsSource NOTIFY creditsChanged FINAL)
 
 public:
     enum Mode { ModeOff = 0, ModeOn = 1 };
@@ -153,7 +165,11 @@ public:
     bool subtitlesOn() const { return m_subtitlesOn; }
     int rememberedYes() const;
     int rememberedNo() const;
-    int rememberedCredits() const { return int(m_learned.size()); }
+    int rememberedCredits() const;
+    int rememberedTracks() const { return int(m_trackChoices.size()); }
+    bool creditsFixed() const;
+    int creditsLeadSeconds() const;
+    QString creditsSource() const;
 
     // the card's buttons
     Q_INVOKABLE void playNow();
@@ -166,6 +182,13 @@ public:
     Q_INVOKABLE void setShowEnabled(bool enabled);
     // Settings > Playback > Episodes > Remembered shows
     Q_INVOKABLE void forgetAll();
+    // the sidebar row: a fixed time before the end for the show playing (all its seasons), and
+    // back to Automatic
+    Q_INVOKABLE void setCreditsFixed(int secondsBeforeEnd);
+    Q_INVOKABLE void resetCredits();
+    // a seek bar is hovered or dragged (true), or no longer (false): the background scans wait
+    // while any is (seek previews stay fast)
+    Q_INVOKABLE void setSeekBarBusy(bool busy);
 
 public slots:
     // the options were written (a settings row, a profile switch)
@@ -181,6 +204,7 @@ signals:
     void storeChanged();
     void subtitlesChanged();
     void queuedChanged();
+    void creditsChanged();
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -216,6 +240,17 @@ private:
     void updateCard();
     // the player's time belongs to the episode playing (not the previous one's last time)
     bool timeFresh();
+
+    // the audio and subtitle track a show is watched with (SHOW_TRACKS_NOTES.md): the episode
+    // playing is one of a detected show (a plain film never is)
+    bool isShowEpisode() const;
+    // the episode's tracks are listed (or the show is known): its saved tracks are applied once
+    // the list settles
+    void onTracksListed();
+    void applyTrackChoice();
+    // a track was picked (or the subtitles turned off) while the episode plays
+    void onTrackSelectionChanged(bool audio);
+    void recordTrackChoice();
     void setCard(bool visible, int mode);
     void setSecondsLeft(int seconds);
     void setCounting(bool counting);
@@ -223,6 +258,9 @@ private:
     qint64 creditsPoint(qint64 lengthMs);
     // the text subtitle lines of the credits window, read once per episode in the background
     void startSubtitleScan(qint64 lengthMs);
+    // the background credits scans of the episode playing and the next one (a local video file
+    // of a show folder with kMinShowVideos video files or more)
+    void requestCreditsScans();
     // the user went on to another episode of the show: inside the credits window, the point is
     // learned for the show
     void learnCreditsPoint(const QString& newPath);
@@ -310,6 +348,15 @@ private:
     QStringList m_queuedOptions;
 
     bool m_subtitlesOn = false;
+    // counts the media changes (a stop is only acted on for the media it was reported for)
+    int m_inputSerial = 0;
+    // Next episode was clicked: the episode chosen, when, and whether the player still has to
+    // switch to it (FIX_UP_NEXT_NEXT_STOP_NOTES.md: no queue change until it has, and a stop of
+    // it right after the click starts it again)
+    SharedInputItem m_playNowItem;
+    QElapsedTimer m_playNowClock;
+    bool m_switching = false;
+    bool switchGuarded() const;
 
     QString m_blockedReason;
     bool m_cardVisible = false;
@@ -319,6 +366,19 @@ private:
 
     // the credits point of the episode playing (logged when it changes)
     qint64 m_creditsPointMs = -1;
+    rdcredits::Source m_creditsSourceKind = rdcredits::Source::None;
+    qint64 m_creditsLengthMs = -1;
+    // the background scans (owned; shut down first when the interface goes)
+    RdCreditsScans* m_scans = nullptr;
+    // what the scans found in the episode playing (read again when a result comes)
+    RdCreditsScans::Found m_found;
+    // the seek bars hovered or dragged now (the scans wait while any is)
+    int m_seekBarsBusy = 0;
+    // learning (UP_NEXT_CREDITS_SCAN_NOTES.md section 1), per episode: the credits card showed,
+    // Cancel was pressed on it, its Next episode button moved on
+    bool m_cardShownEpisode = false;
+    bool m_cardCancelled = false;
+    bool m_nextFromCard = false;
     // the end of the dialogue the subtitle scan found in the window, -1 none
     qint64 m_dialogueEndMs = -1;
     bool m_subtitleScanStarted = false;
@@ -343,6 +403,31 @@ private:
         QString name;
     };
     QHash<QString, Learned> m_learned;
+
+    // the tracks picked per show, by language (rd_show_tracks), keyed like the answers
+    struct TrackChoice
+    {
+        // a language key, or empty for no saved choice
+        QString audio;
+        QString subtitles;
+        // the subtitles were turned off
+        bool subtitlesOff = false;
+        QString name;
+    };
+    QHash<QString, TrackChoice> m_trackChoices;
+    // after an input change: the saved tracks are applied once the track lists settle, then the
+    // selection settles before a change counts as the user's
+    QTimer* m_trackApplyTimer = nullptr;
+    QTimer* m_trackSettleTimer = nullptr;
+    QTimer* m_trackRecordTimer = nullptr;
+    bool m_tracksSettled = false;
+    bool m_applyingTracks = false;
+    bool m_recordAudio = false;
+    bool m_recordSubtitles = false;
+    // the selected tracks once settled (and after each saved change): a list update that changes
+    // no selection is not a pick
+    QString m_audioSelection;
+    QString m_subtitleSelection;
 
 
     // remembered answers, keyed by the show root folder

@@ -91,4 +91,20 @@ SettingsSection {
             onEditingFinished: AddSubtitles.password = text
         }
     }
+
+    // Cone build (redesign/SUBTITLE_AUTO_SYNC_NOTES.md): a downloaded file is lined up with the
+    // speech of the video it was downloaded for, as the player's Auto-sync does (off by default)
+    SettingsRow {
+        text: qsTr("Auto-sync downloaded subtitles")
+        description: qsTr("After a subtitle file is downloaded from OpenSubtitles for the video playing, Cone listens to the video's speech and moves the subtitles to match. The result shows on screen; Undo is in the player's Subtitles settings.")
+        keywords: "opensubtitles auto sync synchronize timing offset delay speech"
+        shown: Brand.isPublic
+        available: AddSubtitles.openSubtitlesEnabled
+
+        Widgets.RdToggle {
+            checked: AddSubtitles.autoSyncDownloads
+            Accessible.name: qsTr("Auto-sync downloaded subtitles")
+            onToggled: AddSubtitles.autoSyncDownloads = checked
+        }
+    }
 }

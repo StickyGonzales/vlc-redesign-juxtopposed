@@ -3,6 +3,7 @@
 #   powershell -File win64-smoke.ps1 -ZipDir <unpacked portable zip> -Installer <setup .exe> -Media <dir> -Out <dir>
 #
 # Checks, each with one retry when it fails (the summary lists every retry):
+#   portable zip, Up Next: a click on the card's "Next episode" leaves the next episode playing.
 #   portable zip, H.264 and HEVC: the main window appears, the playback time advances, the
 #   subtitle file loads, a click on the seek bar moves playback, Settings opens (Ctrl+P), quitting
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
@@ -330,10 +331,12 @@ function Check-Pointer($s) {
 # ---------------------------------------------------------------- one Cone session
 
 # starts Cone with a video and its subtitles; returns the process, its window and its log file
-function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag) {
+# $firstStart: Cone's first start (the onboarding), as on a fresh install
+function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [bool]$firstStart = $false) {
     $log = Join-Path $Out "cone-$tag.log"
     Remove-Item $log -ErrorAction SilentlyContinue
-    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--input-repeat=50',
+    $privacy = if ($firstStart) { '--qt-privacy-ask' } else { '--no-qt-privacy-ask' }
+    $a = @($privacy, '--no-qt-video-autoresize', '--input-repeat=50',
            '--file-logging', "--logfile=`"$log`"", '--log-verbose=2',
            '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet',
            "--sub-file=`"$subs`"", "`"$video`"")
@@ -379,6 +382,120 @@ function Check-Subtitle($s) {
         $sel = ($t -split "`n") | Where-Object { $_ -match '\|\s*\d+ - .+ \*\s*$' }
         if (-not $sel) { throw "no subtitle track selected: '$(($t -split "`n" | Where-Object { $_ -match '\|' }) -join ' / ')'" }
         "selected: $(($sel | Select-Object -First 1).Trim())"
+    }
+}
+# Cone's on-screen message (RdOsdMessage.qml): a volume key shows it with "Volume ...", and it goes away
+function Check-Osd($s) {
+    # the speed key: the runner has no audio device, so a volume key shows nothing
+    Check "$($s.tag): a key shows Cone's on-screen message" {
+        Focus-Window $s.hwnd
+        Keys @(0xDD)   # ]: faster
+        $e = Uia-Find $s.hwnd 'On-screen message' 3000
+        if (-not $e) { throw 'no on-screen message within 3 s after ] (faster)' }
+        Shot "$($s.tag)-osd"
+        # Qt reports Accessible.description as UIA's FullDescription (30159), not HelpText
+        $text = ''
+        try { $text = [string]$e.GetCurrentPropertyValue([System.Windows.Automation.AutomationProperty]::LookupById(30159)) } catch {}
+        if (-not $text) { $text = $e.Current.HelpText }
+        if (-not $text) {
+            $text = (@($e.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) |
+                     ForEach-Object { $_.Current.Name } | Where-Object { $_ }) -join ' '
+        }
+        # Qt's UI Automation bridge does not always expose the message's description (the text is
+        # checked on Linux through AT-SPI); here the message must show and go, and any text it
+        # does expose must be the speed
+        $note = ''
+        if (-not $text) {
+            $note = " (text not exposed to UI Automation: HelpText, FullDescription and the inner names are empty; ItemStatus '$($e.Current.ItemStatus)')"
+        } elseif ($text -notmatch 'Speed') { throw "the message says '$text', expected the speed" }
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while ((Uia-Find $s.hwnd 'On-screen message' 0) -and $sw.Elapsed.TotalSeconds -lt 6) { Start-Sleep -Milliseconds 250 }
+        if (Uia-Find $s.hwnd 'On-screen message' 0) { throw 'the message is still shown 6 s later' }
+        Keys @(0xBB)   # =: back to the normal speed for the next checks
+        """$text"" shown, gone again$note"
+    }
+}
+
+# fullscreen is left whichever way it was entered (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): F then
+# the top bar's button, and the top bar's button then Escape
+function Click-Element($e) {
+    $r = $e.Current.BoundingRectangle
+    Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+}
+function Is-Fullscreen($h) {
+    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($h, [ref]$w) | Out-Null
+    return ($w.Left -le $b.Left -and $w.Top -le $b.Top -and $w.Right -ge $b.Right -and $w.Bottom -ge $b.Bottom)
+}
+# the top bar's "Fullscreen" button (the control bar's button has the same name: take the one at
+# the window's top). The pointer goes up to the top edge as a hand does, from the middle of the
+# window, and rests there: in fullscreen only the top edge shows the top bar, in a window any move
+function Find-TopBarFullscreen($s, [int]$timeoutMs) {
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($s.hwnd)
+    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'Fullscreen')
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+        foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+            try {
+                $r = $e.Current.BoundingRectangle
+                if (-not $e.Current.IsOffscreen -and $r.Width -gt 0 -and $r.Top -lt $w.Top + 80) { return $e }
+            } catch {}
+        }
+        Start-Sleep -Milliseconds 250
+    } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
+    return $null
+}
+function Click-TopBarFullscreen($s) {
+    $w = New-Object RdSmoke+RECT; [RdSmoke]::GetWindowRect($s.hwnd, [ref]$w) | Out-Null
+    $cx = [int](($w.Left + $w.Right) / 2); $cy = [int](($w.Top + $w.Bottom) / 2)
+    $btn = $null
+    foreach ($try in 1, 2) {
+        for ($y = $cy; $y -ge $w.Top; $y -= 8) { [RdSmoke]::SetCursorPos($cx, $y) | Out-Null; Start-Sleep -Milliseconds 15 }
+        [RdSmoke]::SetCursorPos($cx, [Math]::Max($w.Top, 0)) | Out-Null
+        $btn = Find-TopBarFullscreen $s 3000
+        if ($btn) { break }
+    }
+    if (-not $btn) { throw 'no "Fullscreen" button in the top bar (pointer at the top edge)' }
+    Click-Element $btn
+}
+function Check-FsExit($s) {
+    Check "$($s.tag): fullscreen is left whichever way it was entered" {
+        Focus-Window $s.hwnd
+        try {
+            Keys @(0x46)   # F: the video's fullscreen
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'F did not enter fullscreen' }
+            Click-TopBarFullscreen $s
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'entered with F, the top bar''s Fullscreen button did not leave fullscreen' }
+            Click-TopBarFullscreen $s
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'the top bar''s Fullscreen button did not enter fullscreen' }
+            Focus-Window $s.hwnd
+            Keys @(0x1B)   # Escape
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'entered with the top bar''s button, Escape did not leave fullscreen' }
+            # the button, then F once: the first F leaves (it took a second F on the PC, 1.2.0)
+            Click-TopBarFullscreen $s
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'the top bar''s Fullscreen button did not enter fullscreen (second time)' }
+            Focus-Window $s.hwnd
+            Keys @(0x46)   # F, once
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'entered with the top bar''s button, the first F did not leave fullscreen' }
+            # and F again enters, F leaves (the video's fullscreen still follows F)
+            Keys @(0x46)
+            Start-Sleep -Seconds 2
+            if (-not (Is-Fullscreen $s.hwnd)) { throw 'after leaving with F, F did not enter fullscreen again' }
+            Keys @(0x46)
+            Start-Sleep -Seconds 2
+            if (Is-Fullscreen $s.hwnd) { throw 'F did not leave fullscreen after F entered it' }
+            'F then the button: windowed; the button then Escape: windowed; the button then one F: windowed; F, F: in and out'
+        } finally {
+            if (Is-Fullscreen $s.hwnd) { Keys @(0x7A); Start-Sleep -Seconds 1 }   # F11 back to the window
+            [RdSmoke]::SetCursorPos(500, 400) | Out-Null
+        }
     }
 }
 # fullscreen: a bar shown by its edge zone stays while the pointer rests on its buttons (the top
@@ -655,6 +772,58 @@ function Check-PluginsLoad($s) {
     }
 }
 
+# Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode, and that
+# episode is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
+# redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md). The show's 7-minute episodes show the card in their last
+# minute; no --input-repeat, which keeps autoplay away
+function Episode-Of([string]$status) {
+    $m = [regex]::Match($status, 'S01E0(\d)')
+    if ($m.Success) { return [int]$m.Groups[1].Value }
+    return 0
+}
+function Check-UpNextNext([string]$exe) {
+    $ep1 = Join-Path $Media 'Smoke Show\Smoke Show S01E01.mp4'
+    $log = Join-Path $Out 'cone-upnext.log'
+    Remove-Item $log -ErrorAction SilentlyContinue
+    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
+           '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$ep1`"")
+    Log "start $exe $($a -join ' ')"
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+    $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = 'upnext' }
+    try {
+        if (-not (Check-Window $s)) { return }
+        Check "upnext: the card's Next episode keeps the next episode playing" {
+            Wait-Rc 20
+            Start-Sleep -Seconds 2
+            $before = Episode-Of (Rc 'status')
+            if ($before -lt 1 -or $before -gt 2) { throw "an unexpected episode plays: $before" }
+            # 6:10 of 7:00: the card shows (the last minute), the countdown has not started
+            # the window in front first: a click on a window in the back only brings it forward
+            Focus-Window $s.hwnd
+            Rc 'seek 370' | Out-Null
+            Start-Sleep -Seconds 2
+            Show-Bars $s.hwnd
+            $b = Uia-Find $s.hwnd 'Next episode' 6000
+            if (-not $b) { Shot 'upnext-nocard'; throw "no ""Next episode"" button on the card at 6:10 of episode $before" }
+            $r = $b.Current.BoundingRectangle
+            Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+            Start-Sleep -Seconds 5
+            Shot 'upnext-after'
+            $st = Rc 'status'
+            $after = Episode-Of $st
+            if ($after -ne $before + 1) { throw "5 s after the click episode $after is current (expected $($before + 1)): '$(($st -split "`n" | Where-Object { $_ -match 'input|state' }) -join ' / ')'" }
+            if ((Rc-Number 'is_playing') -ne 1) { throw "5 s after the click episode $after does not play" }
+            $t1 = Rc-Number 'get_time'; Start-Sleep -Seconds 2; $t2 = Rc-Number 'get_time'
+            if ($t2 -le $t1) { throw "episode $after stands still at $t1 s, then $t2 s" }
+            "episode $before -> $after, still playing 5 s after the click ($t1 s, then $t2 s)"
+        } | Out-Null
+    } catch {
+        Add-Result 'upnext' 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -667,9 +836,11 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         Check-Time $s | Out-Null
         if ($full) {
             Check-Subtitle $s | Out-Null
+            Check-Osd $s | Out-Null
             Check-Settings $s | Out-Null
             Check-Seek $s | Out-Null
             Check-FsTopBar $s | Out-Null
+            Check-FsExit $s | Out-Null
             Check-MenuClick $s | Out-Null
             Check-FsMenuClick $s | Out-Null
             # the shortcut again, once the seek bar has had a click (it holds the keyboard focus)
@@ -679,6 +850,130 @@ function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
         }
         Check-Quit $s ($codec -eq 'hevc') $exe $video $subs | Out-Null
         Check-PluginsLoad $s | Out-Null
+    } catch {
+        Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
+# the playback time in seconds, $null while nothing plays (the cli gives no number)
+function Rc-Time {
+    try { return Rc-Number 'get_time' } catch { return $null }
+}
+# an element named $name inside $parent (the onboarding's own buttons, not the control bar's
+# "Next" under it, which UI Automation also reports as on screen)
+function Uia-FindIn($parent, [string]$name) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $name)
+    foreach ($e in $parent.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
+        try { if (-not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { return $e } } catch {}
+    }
+    return $null
+}
+function Click-Element($e) {
+    $r = $e.Current.BoundingRectangle
+    Click ([int]($r.Left + $r.Width / 2)) ([int]($r.Top + $r.Height / 2))
+}
+# a first start with a file (F1): the onboarding shows, the file waits at 0 while it is open, and
+# plays from the beginning after Finish (on Linux the onboarding is closed with Escape)
+function Run-FirstStart([string]$exe) {
+    $tag = 'first-start'
+    $s = Start-Cone $exe (Join-Path $Media 'test-h264.mp4') (Join-Path $Media 'test.srt') $tag $true
+    try {
+        if (-not (Check-Window $s)) { return }
+        $shown = Check "$tag`: the onboarding shows" {
+            # the onboarding's screen (Onboarding.qml: Accessible.Dialog "Welcome")
+            if (-not (Uia-Find $s.hwnd 'Welcome' 15000)) { throw 'no onboarding (its "Welcome" dialog) within 15 s' }
+            Shot "$tag-onboarding"
+            'the onboarding is shown'
+        }
+        if (-not $shown) { return }
+        Check "$tag`: the file waits at 0 while the onboarding is open" {
+            Wait-Rc 20
+            $seen = @()
+            for ($i = 0; $i -lt 8; $i++) {
+                $t = Rc-Time
+                $seen += $(if ($null -eq $t) { '-' } else { "$t" })
+                if ($t) { throw "the file plays behind the onboarding: time $($seen -join ', ') s" }
+                Start-Sleep -Seconds 1
+            }
+            "time over 8 s: $($seen -join ' ') (- = not started)"
+        } | Out-Null
+        Check "$tag`: playback starts from 0 after Finish" {
+            Focus-Window $s.hwnd
+            # Next, Next, Finish (the media folder page only shows with the media library)
+            for ($i = 0; $i -lt 3; $i++) {
+                $dialog = Uia-Find $s.hwnd 'Welcome' 3000
+                if (-not $dialog) { throw "the onboarding is gone before screen $($i + 1)" }
+                $finish = Uia-FindIn $dialog 'Finish'
+                if ($finish) { Click-Element $finish; break }
+                $next = Uia-FindIn $dialog 'Next'
+                if (-not $next) { throw "no Next or Finish button on screen $($i + 1)" }
+                Click-Element $next
+                Start-Sleep -Milliseconds 700
+            }
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while (Uia-Find $s.hwnd 'Welcome' 0) {
+                if ($sw.Elapsed.TotalSeconds -gt 5) { throw 'the onboarding did not close after Finish' }
+                Start-Sleep -Milliseconds 300
+            }
+            $sw.Restart()
+            $t1 = Rc-Time
+            while ($null -eq $t1 -and $sw.Elapsed.TotalSeconds -lt 15) { Start-Sleep -Milliseconds 500; $t1 = Rc-Time }
+            if ($null -eq $t1) { throw 'nothing plays within 15 s after Finish' }
+            if ($t1 -gt 4) { throw "playback did not start from the beginning: $t1 s right after Finish" }
+            Start-Sleep -Seconds 3
+            $t2 = Rc-Time
+            if ($null -eq $t2 -or $t2 -le $t1) { throw "the time does not advance: $t1 s, then $t2 s" }
+            "$t1 s right after Finish, $t2 s three seconds later"
+        } | Out-Null
+    } catch {
+        Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
+# Explorer's Open with / a double-click while Cone plays (redesign/FIX_OPEN_IN_RUNNING_WINDOW_NOTES.md):
+# a second start with --started-from-file hands its file to the running window and exits; the
+# running window must play it at once (it was only added to the end of the queue). The first Cone
+# here is started without --started-from-file, like one opened from the Start menu
+function Run-OpenInRunning([string]$exe) {
+    $tag = 'open-in-running'
+    $first = Join-Path $Media 'test-h264.mp4'
+    $second = Join-Path $Media 'test-hevc.mp4'
+    $s = Start-Cone $exe $first (Join-Path $Media 'test.srt') $tag
+    try {
+        if (-not (Check-Window $s)) { return }
+        Check "$tag`: a second start with a file plays it in the running window" {
+            Wait-Rc 20
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ((Rc 'status') -notmatch 'test-h264') {
+                if ($sw.Elapsed.TotalSeconds -gt 15) { throw "the first file does not play: '$((Rc 'status').Trim())'" }
+                Start-Sleep -Milliseconds 500
+            }
+            Log "start (second) $exe --started-from-file $second"
+            $p2 = Start-Process -FilePath $exe -ArgumentList @('--started-from-file', "`"$second`"") -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+            if (-not $p2.WaitForExit(15000)) {
+                try { $p2.Kill() } catch {}
+                throw 'the second start did not exit within 15 s (no hand-over to the running window)'
+            }
+            $sw.Restart()
+            $status = ''
+            while ($sw.Elapsed.TotalSeconds -lt 8) {
+                $status = Rc 'status'
+                if ($status -match 'test-hevc' -and $status -match 'play state: 3') { break }
+                Start-Sleep -Milliseconds 500
+            }
+            if ($s.proc.HasExited) { throw 'the running Cone exited' }
+            if ($status -notmatch 'test-hevc') {
+                $queue = (Rc 'playlist') -split "`n" | Where-Object { $_ -match 'test-' } | ForEach-Object { $_.Trim() }
+                throw "the running window still plays the first file after 8 s (queue: $($queue -join ' / '))"
+            }
+            if ($status -notmatch 'play state: 3') { throw "the second file is current but not playing: '$($status.Trim())'" }
+            Shot "$tag-second"
+            "the second start exited, the running window plays test-hevc.mp4 after $([math]::Round($sw.Elapsed.TotalSeconds, 1)) s"
+        } | Out-Null
     } catch {
         Add-Result "$tag" 'fail' "unexpected error: $($_.Exception.Message)"
     } finally {
@@ -709,6 +1004,12 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+    # before the first-start and open-in-running checks: after those (a Cone raised by a second
+    # start, then ended) the runner no longer lets the next Cone take the foreground for a click
+    # (build-windows #206)
+    Check-UpNextNext $zipExe.FullName
+    Run-FirstStart $zipExe.FullName
+    Run-OpenInRunning $zipExe.FullName
 }
 
 # 2. installer: silent install, the installed Cone plays, silent uninstall

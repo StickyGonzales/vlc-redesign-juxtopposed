@@ -79,7 +79,7 @@ Row {
                 anchors.centerIn: parent
                 name: button.iconName
                 size: VLCStyle.dp(16, VLCStyle.scale)
-                color: VLCStyle.palette.rdFgB1
+                color: VLCStyle.palette.rdFgOnAccent
                 opacity: button.enabled ? 1 : 0.6
             }
         }

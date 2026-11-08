@@ -249,12 +249,28 @@ Item {
             source: "qrc:///qt/qml/VLC/Playlist/PlaylistDetachedWindow.qml"
         }
 
+        // redesign: the player view is left only when playback stays stopped. Moving on in the
+        // queue while a file plays (Next, the Up Next card's Next episode) may report STOPPED for
+        // a moment between the two files (seen on Windows); leaving the player then loaded the
+        // home page, whose start stops playback without a picture-in-picture video
+        // (MainDisplay.qml), so the next episode stopped at once (redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md)
         Connections {
             target: Player
             function onPlayingStateChanged() {
-                if (Player.playingState === Player.PLAYING_STATE_STOPPED) {
+                if (Player.playingState === Player.PLAYING_STATE_STOPPED)
+                    stoppedTimer.restart()
+                else
+                    stoppedTimer.stop()
+            }
+        }
+
+        Timer {
+            id: stoppedTimer
+
+            interval: 500
+            onTriggered: {
+                if (Player.playingState === Player.PLAYING_STATE_STOPPED)
                     MainCtx.playerView = false
-                }
             }
         }
 
@@ -445,7 +461,11 @@ Item {
                     Onboarding {
                         id: onboarding
 
-                        onDone: Qt.callLater(() => { onboardingLoader.active = false })
+                        onDone: {
+                            // the files of a first start waited for it: they play now
+                            MainCtx.releaseFirstStartPlayback()
+                            Qt.callLater(() => { onboardingLoader.active = false })
+                        }
                     }
                 }
             }

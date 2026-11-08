@@ -17,15 +17,18 @@
  *****************************************************************************/
 // Cone extra (Decision 71, redesign/UP_NEXT_PLAN.md 7): the Up Next card near the end of an
 // episode. Variant A (Q8): 400 wide (the side panel width), radius 14, opaque BG/A3, 12 px
-// padding, the 160x90 thumbnail left, the text right, Play now + Cancel under them and the 3 px
-// countdown line along the foot. In a narrow video area (`compact`) it takes Variant C's layout:
-// the resume toast's 60 px pill with a 64x36 thumbnail, one line of text, Play now and the dark
+// padding, the 160x90 thumbnail left, the text right, Next episode + Cancel under them (the
+// countdown fills the Next episode button). In a narrow video area (`compact`) it takes Variant C's
+// layout: the resume toast's 60 px pill with a 64x36 thumbnail, one line of text, Next episode and the dark
 // close button. "Still watching?" (after 3 episodes in a row) drops the picture and the line and
 // asks Keep watching / Stop.
 // During the credits (UP_NEXT_PLAN.md 5.4) it waits without a countdown: Next episode and Cancel;
 // the countdown only runs in the last seconds, so a post-credits scene is never cut by itself.
-// It never takes the focus by itself (Space still pauses); Tab reaches its buttons, Escape cancels
-// while it has the focus.
+// It never takes the focus by itself (Space still pauses), and a click does not give it either: a
+// focused card holds the control bar up (Player.qml), and a click on the card must not show the
+// bar. Tab reaches its buttons, Escape cancels while it has the focus.
+// The countdown is Netflix-style: in the last seconds the Next episode button fills from left to
+// right as "Playing in N s" counts down, and the next episode starts as it is full.
 import QtQuick
 import QtQuick.Templates as T
 
@@ -76,22 +79,66 @@ FocusScope {
     // shown during the credits, before the countdown
     readonly property bool _waiting: !_still && !shownState.counting
 
-    readonly property real _pad: VLCStyle.dp(12, VLCStyle.scale)
-    readonly property real _thumbWidth: VLCStyle.dp(160, VLCStyle.scale)
-    readonly property real _thumbHeight: VLCStyle.dp(90, VLCStyle.scale)
-    readonly property real _cardWidth: VLCStyle.dp(400, VLCStyle.scale)
-    readonly property real _lineHeight: VLCStyle.dp(3, VLCStyle.scale)
+    // proportions approved by StickyGonzales (Q9b, redesign/UP_NEXT_CARD_TUNE_NOTES.md)
+    readonly property real _pad: VLCStyle.dp(16, VLCStyle.scale)
+    readonly property real _thumbWidth: VLCStyle.dp(168, VLCStyle.scale)
+    readonly property real _thumbHeight: VLCStyle.dp(95, VLCStyle.scale)
+    readonly property real _cardWidth: VLCStyle.dp(420, VLCStyle.scale)
+    readonly property real _textGap: VLCStyle.dp(16, VLCStyle.scale)       // picture to texts
+    readonly property real _buttonHeight: VLCStyle.dp(36, VLCStyle.scale)
+    readonly property real _buttonPad: VLCStyle.dp(16, VLCStyle.scale)
 
     readonly property string _heading: _still ? qsTr("Still watching?")
                                               : (_season ? qsTr("Up next · Season %1").arg(shownState.nextSeason)
                                                          : qsTr("Up next"))
-    // a weak name pattern (01 02, "Part 2") never plays by itself: the card waits for a click
-    readonly property string _waitingText: shownState.autoplays ? qsTr("Plays at the end of the episode")
-                                                              : qsTr("Plays when you choose")
+    // a weak name pattern (01 02, "Part 2") never plays by itself: the card waits for a click; an episode
+    // that plays by itself needs no line while it waits (StickyGonzales, 2026-11-08)
+    readonly property string _waitingText: shownState.autoplays ? "" : qsTr("Plays when you choose")
     readonly property string _countdownText: _waiting ? _waitingText
                                                       : qsTr("Playing in %1 s").arg(shownState.secondsLeft)
-    readonly property string _playText: _still ? qsTr("Keep watching")
-                                               : (_waiting ? qsTr("Next episode") : qsTr("Play now"))
+    readonly property string _playText: _still ? qsTr("Keep watching") : qsTr("Next episode")
+
+    // the Next episode button's fill during the countdown, 0 to 1: one step ahead of the seconds
+    // left, so the 1 s animation of each step reaches full as the next episode starts
+    readonly property real _fill: {
+        if (_still || _waiting)
+            return 0
+        const progress = shownState.countdownProgress
+        if (progress <= 0)
+            return 1
+        const total = Math.max(1, Math.round(shownState.secondsLeft / progress))
+        return Math.min(1, Math.max(0, 1 - (shownState.secondsLeft - 1) / total))
+    }
+    readonly property bool _filling: !_still && !_waiting
+
+    // drawn in the button's background, under its icon and text: Accent/Dim, the accent part
+    // grows from the left (Accent/Bright under the pointer, like the button). An inline
+    // component does not see this file's ids: the card's state comes in as properties
+    component CountdownFill: Rectangle {
+        id: fillTrack
+
+        required property T.Button button
+        property real fill: 0
+        property bool animated: false
+
+        parent: button.background
+        anchors.fill: parent
+        radius: parent ? parent.radius : 0
+        color: VLCStyle.palette.rdAccentDim
+
+        Rectangle {
+            width: fillTrack.width * fillTrack.fill
+            height: fillTrack.height
+            radius: fillTrack.radius
+            color: fillTrack.button.hovered ? VLCStyle.palette.rdAccentBright : VLCStyle.palette.rdAccentMain
+
+            // one second per step while the card shows; a new countdown starts empty at once
+            Behavior on width {
+                enabled: fillTrack.animated && fillTrack.fill > 0
+                NumberAnimation { duration: 1000; easing.type: Easing.Linear }
+            }
+        }
+    }
 
     implicitWidth: compact ? pill.implicitWidth : _cardWidth
     implicitHeight: compact ? pill.implicitHeight : full.implicitHeight
@@ -111,10 +158,33 @@ FocusScope {
 
     Accessible.role: Accessible.Dialog
     Accessible.name: _still ? qsTr("Still watching? %1 is paused after 3 episodes in a row.").arg(shownState.cardLine)
-                            : _waiting ? qsTr("Up next: %1, %2. %3.")
-                                             .arg(shownState.showName).arg(shownState.cardLine).arg(_waitingText)
+                            : _waiting ? (_waitingText ? qsTr("Up next: %1, %2. %3.")
+                                                             .arg(shownState.showName).arg(shownState.cardLine).arg(_waitingText)
+                                                       : qsTr("Up next: %1, %2.")
+                                                             .arg(shownState.showName).arg(shownState.cardLine))
                                        : qsTr("Up next: %1, %2. Playing in %3 seconds.")
                                              .arg(shownState.showName).arg(shownState.cardLine).arg(shownState.secondsLeft)
+
+    // a press anywhere on the card (its buttons, its text, its picture) and a moment after the
+    // release: the player's pointer tracking takes no mouse move from it, so no click on the card
+    // shows the control bar. Passive: the press still reaches the button under it
+    readonly property bool pointerBusy: cardPress.active || clickGuard.running
+
+    PointHandler {
+        id: cardPress
+
+        acceptedButtons: Qt.AllButtons
+        onActiveChanged: {
+            if (!active)
+                clickGuard.restart()
+        }
+    }
+
+    Timer {
+        id: clickGuard
+
+        interval: Qt.styleHints.mouseDoubleClickInterval
+    }
 
     function _primary() {
         if (root._still)
@@ -174,12 +244,12 @@ FocusScope {
         visible: !root.compact
 
         readonly property real _textWidth: root._still ? root._cardWidth - 2 * root._pad
-                                                       : root._cardWidth - 2 * root._pad - root._thumbWidth - VLCStyle.dp(14, VLCStyle.scale)
+                                                       : root._cardWidth - 2 * root._pad - root._thumbWidth - root._textGap
         readonly property real _topHeight: root._still ? texts.implicitHeight
                                                        : Math.max(root._thumbHeight, texts.implicitHeight)
 
-        implicitHeight: root._pad + _topHeight + VLCStyle.dp(12, VLCStyle.scale) + fullButtons.height
-                        + VLCStyle.dp(12, VLCStyle.scale) + (root._still ? 0 : root._lineHeight + VLCStyle.dp(6, VLCStyle.scale))
+        implicitHeight: root._pad + _topHeight + VLCStyle.dp(14, VLCStyle.scale) + fullButtons.height
+                        + root._pad
 
         Rectangle {
             id: thumb
@@ -228,29 +298,22 @@ FocusScope {
         Column {
             id: texts
 
-            x: root._still ? root._pad : thumb.x + thumb.width + VLCStyle.dp(14, VLCStyle.scale)
-            y: root._pad
+            x: root._still ? root._pad : thumb.x + thumb.width + root._textGap
+            // centred on the picture; from the top when the texts are taller than it
+            y: root._still ? root._pad : root._pad + Math.max(0, (root._thumbHeight - implicitHeight) / 2)
             width: full._textWidth
             spacing: VLCStyle.dp(4, VLCStyle.scale)
 
             T.Label {
                 width: parent.width
+                bottomPadding: VLCStyle.dp(2, VLCStyle.scale)
                 text: root._heading
                 elide: Text.ElideRight
                 color: VLCStyle.palette.rdAccentMain
                 font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_toggle
+                font.pixelSize: VLCStyle.dp(13, VLCStyle.scale)
                 font.weight: Font.DemiBold
                 font.letterSpacing: VLCStyle.dp(0.4, VLCStyle.scale)
-            }
-
-            T.Label {
-                width: parent.width
-                text: shownState.showName
-                elide: Text.ElideRight
-                color: VLCStyle.palette.rdFgA2
-                font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_label
             }
 
             // two lines, then elided (matrix row 115)
@@ -260,16 +323,27 @@ FocusScope {
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
-                color: VLCStyle.palette.rdFg2
+                color: VLCStyle.palette.rdFg1
                 font.family: VLCStyle.rd_fontFamily
-                font.pixelSize: VLCStyle.rd_fontSize_header
-                font.weight: Font.Medium
+                font.pixelSize: VLCStyle.dp(22, VLCStyle.scale)
+                font.weight: Font.DemiBold
             }
 
             T.Label {
                 width: parent.width
+                text: shownState.showName
+                elide: Text.ElideRight
+                color: VLCStyle.palette.rdFgA1
+                font.family: VLCStyle.rd_fontFamily
+                font.pixelSize: VLCStyle.dp(15, VLCStyle.scale)
+            }
+
+            // a space while there is nothing to say keeps the line's height: the texts never
+            // move when the countdown starts
+            T.Label {
+                width: parent.width
                 topPadding: VLCStyle.dp(2, VLCStyle.scale)
-                text: root._still ? qsTr("Paused after 3 episodes in a row.") : root._countdownText
+                text: root._still ? qsTr("Paused after 3 episodes in a row.") : (root._countdownText || " ")
                 wrapMode: Text.Wrap
                 color: VLCStyle.palette.rdFgA3
                 font.family: VLCStyle.rd_fontFamily
@@ -281,28 +355,48 @@ FocusScope {
             id: fullButtons
 
             x: root._pad
-            y: root._pad + full._topHeight + VLCStyle.dp(12, VLCStyle.scale)
-            spacing: VLCStyle.dp(10, VLCStyle.scale)
+            y: root._pad + full._topHeight + VLCStyle.dp(14, VLCStyle.scale)
+            // Cancel lines up with the texts; 10 px at least (Still watching, a long translation)
+            spacing: Math.max(VLCStyle.dp(10, VLCStyle.scale), texts.x - root._pad - playButton.width)
 
             Widgets.RdButton {
                 id: playButton
 
+                // a click does not take the focus (Tab still does): no control bar on a click
+                focusPolicy: Qt.TabFocus
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
                 text: root._playText
-                // 120 px wide at least (the design's Play now)
-                implicitWidth: Math.max(VLCStyle.dp(120, VLCStyle.scale), implicitContentWidth + leftPadding + rightPadding)
+                // as wide as the picture, its icon and text centred; wider for a long translation
+                leftPadding: root._buttonPad
+                rightPadding: root._buttonPad
+                fontPixelSize: VLCStyle.dp(15, VLCStyle.scale)
+                implicitWidth: Math.max(root._thumbWidth, implicitContentWidth + leftPadding + rightPadding)
+                implicitHeight: root._buttonHeight
                 onClicked: root._primary()
 
                 Navigation.parentItem: root
                 Navigation.rightItem: cancelButton
+
+                CountdownFill {
+                    button: playButton
+                    visible: root._filling
+                    fill: root._fill
+                    animated: root.opacity >= 1
+                }
             }
 
             Widgets.RdButton {
                 id: cancelButton
 
+                focusPolicy: Qt.TabFocus
                 style: Widgets.RdButton.Style.Toast
                 text: root._still ? qsTr("Stop") : qsTr("Cancel")
+                leftPadding: root._buttonPad
+                rightPadding: root._buttonPad
+                fontPixelSize: VLCStyle.dp(15, VLCStyle.scale)
+                implicitWidth: Math.max(VLCStyle.dp(84, VLCStyle.scale), implicitContentWidth + leftPadding + rightPadding)
+                implicitHeight: root._buttonHeight
                 onClicked: root._secondary()
 
                 Navigation.parentItem: root
@@ -319,7 +413,7 @@ FocusScope {
             anchors.rightMargin: root._pad
             anchors.verticalCenter: fullButtons.verticalCenter
             visible: !root._still
-            focusPolicy: Qt.StrongFocus
+            focusPolicy: Qt.TabFocus
             text: qsTr("Turn off autoplay")
             implicitWidth: linkLabel.implicitWidth
             implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
@@ -360,32 +454,6 @@ FocusScope {
                 font.family: VLCStyle.rd_fontFamily
                 font.pixelSize: VLCStyle.dp(12, VLCStyle.scale)
                 font.underline: true
-            }
-        }
-
-        // the countdown line: BG/B2 track, the accent part is the time left
-        Rectangle {
-            x: root._pad
-            width: root._cardWidth - 2 * root._pad
-            y: full.height - root._pad + VLCStyle.dp(3, VLCStyle.scale) - height
-            height: root._lineHeight
-            radius: height / 2
-            visible: !root._still
-            // during the credits there is no countdown yet (the card keeps its height)
-            opacity: root._waiting ? 0 : 1
-            color: VLCStyle.palette.rdBgB2
-
-            Rectangle {
-                width: parent.width * shownState.countdownProgress
-                height: parent.height
-                radius: height / 2
-                color: VLCStyle.palette.rdAccentMain
-
-                // one second per step while the card shows; a new countdown starts full at once
-                Behavior on width {
-                    enabled: root.opacity >= 1
-                    NumberAnimation { duration: 1000; easing.type: Easing.Linear }
-                }
             }
         }
     }
@@ -476,6 +544,7 @@ FocusScope {
                 id: pillPlay
 
                 anchors.verticalCenter: parent.verticalCenter
+                focusPolicy: Qt.TabFocus
                 style: Widgets.RdButton.Style.Primary
                 rdIcon: root._still ? "" : "play"
                 text: root._playText
@@ -483,6 +552,13 @@ FocusScope {
 
                 Navigation.parentItem: root
                 Navigation.rightItem: pillClose
+
+                CountdownFill {
+                    button: pillPlay
+                    visible: root._filling
+                    fill: root._fill
+                    animated: root.opacity >= 1
+                }
             }
 
             // the resume toast's dark 44x32 close button
@@ -496,7 +572,7 @@ FocusScope {
                 anchors.verticalCenter: parent.verticalCenter
                 implicitWidth: VLCStyle.dp(44, VLCStyle.scale)
                 implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
-                focusPolicy: Qt.StrongFocus
+                focusPolicy: Qt.TabFocus
 
                 Accessible.name: root._still ? qsTr("Stop") : qsTr("Cancel")
 
@@ -520,30 +596,6 @@ FocusScope {
                         name: "close"
                         color: VLCStyle.palette.rdFgA2
                     }
-                }
-            }
-        }
-
-        // the 2 px countdown line inside the pill's foot
-        Rectangle {
-            x: VLCStyle.dp(16, VLCStyle.scale)
-            width: pill.width - 2 * x
-            y: pill.height - VLCStyle.dp(6, VLCStyle.scale)
-            height: VLCStyle.dp(2, VLCStyle.scale)
-            radius: height / 2
-            visible: !root._still && !root._waiting
-            color: VLCStyle.palette.rdBgB2
-
-            Rectangle {
-                width: parent.width * shownState.countdownProgress
-                height: parent.height
-                radius: height / 2
-                color: VLCStyle.palette.rdAccentMain
-
-                // one second per step while the card shows; a new countdown starts full at once
-                Behavior on width {
-                    enabled: root.opacity >= 1
-                    NumberAnimation { duration: 1000; easing.type: Easing.Linear }
                 }
             }
         }

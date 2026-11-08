@@ -18,6 +18,7 @@
 import QtQuick
 
 
+import VLC.MainInterface
 import VLC.Widgets as Widgets
 import VLC.Style
 import VLC.Player
@@ -29,7 +30,14 @@ Widgets.IconToolButton {
     enabled: Player.hasVideoOutput
     text: Player.fullscreen ? VLCIcons.defullscreen :VLCIcons.fullscreen
     rdIcon: Player.fullscreen ? "fullscreen_state-active" : "fullscreen"
-    onClicked: Player.fullscreen = !Player.fullscreen
+    // Cone build: the same fullscreen as the top bar's button, left whichever way it was entered
+    // (MainCtx::toggleInterfaceFullScreen, redesign/FIX_FULLSCREEN_EXIT_NOTES.md)
+    onClicked: {
+        if (Brand.isPublic)
+            MainCtx.toggleInterfaceFullScreen()
+        else
+            Player.fullscreen = !Player.fullscreen
+    }
     description: qsTr("Fullscreen")
 
     AccessibleCompat.id: "fullscreenButton"

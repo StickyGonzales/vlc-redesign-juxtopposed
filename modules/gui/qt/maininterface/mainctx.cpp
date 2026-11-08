@@ -88,6 +88,7 @@
 #endif
 
 #include <vlc_interface.h>
+#include <vlc_actions.h>
 #include <vlc_preparser.h>
 
 #define VLC_REFERENCE_SCALE_FACTOR 96.
@@ -157,6 +158,8 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
             m_mainInterfaceModes |= MAININTERFACE_MODE_PLAYER;
         }
     }
+
+    holdFirstStartPlayback();
 
     /**
      *  Configuration and settings
@@ -318,6 +321,48 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
     m_initialEffectiveMainInterfaceMode = getEffectiveMainInterfaceMode();
 }
 
+/* redesign: on a first start (qt-privacy-ask: the onboarding, or VLC's first-run wizard) the
+ * files given on the command line wait until the dialog closes, instead of playing unseen behind
+ * it. The core starts them right after this interface is ready (libvlc_InternalPlay, which reads
+ * playlist-autostart on the libvlc object), so the option is turned off there for that one call
+ * and the queue is started by releaseFirstStartPlayback() once the dialog closes. */
+void MainCtx::holdFirstStartPlayback()
+{
+    if (!var_InheritBool(p_intf, "qt-privacy-ask") || !var_InheritBool(p_intf, "playlist-autostart"))
+        return;
+
+    libvlc_int_t* const libvlc = vlc_object_instance(p_intf);
+    // set on the libvlc object by someone else: not ours to change
+    if (var_Type(libvlc, "playlist-autostart") != 0)
+        return;
+
+    var_Create(libvlc, "playlist-autostart", VLC_VAR_BOOL);
+    var_SetBool(libvlc, "playlist-autostart", false);
+    m_firstStartHold = true;
+}
+
+void MainCtx::releaseFirstStartPlayback()
+{
+    if (!m_firstStartHold)
+        return;
+    m_firstStartHold = false;
+
+    // the user's own playlist-autostart again
+    var_Destroy(vlc_object_instance(p_intf), "playlist-autostart");
+
+    // what libvlc_InternalPlay would have done; nothing when something already plays (a file
+    // opened from a second start while the dialog was open)
+    vlc_playlist_t* const playlist = p_intf->p_playlist;
+    vlc_playlist_locker lock(playlist);
+    if (vlc_playlist_Count(playlist) == 0)
+        return;
+    if (vlc_player_IsStarted(vlc_playlist_GetPlayer(playlist)))
+        return;
+    if (vlc_playlist_GetCurrentIndex(playlist) < 0)
+        vlc_playlist_GoTo(playlist, 0);
+    vlc_playlist_Start(playlist);
+}
+
 MainCtx::~MainCtx()
 {
     /* Save states */
@@ -328,6 +373,8 @@ MainCtx::~MainCtx()
 
     /* Unregister callbacks */
     libvlc_int_t* libvlc = vlc_object_instance(p_intf);
+    if (m_firstStartHold)
+        var_Destroy(libvlc, "playlist-autostart");
     var_DelCallback( libvlc, "intf-boss", IntfBossCB, p_intf );
     var_DelCallback( libvlc, "intf-show", IntfRaiseMainCB, p_intf );
     var_DelCallback( libvlc, "intf-toggle-fscontrol", IntfShowCB, p_intf );
@@ -580,15 +627,42 @@ void MainCtx::onVOutChanged( bool video )
 #ifdef KeyPress
 #undef KeyPress
 #endif
+#ifdef VLC_BRAND_PUBLIC
+/* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the "Toggle fullscreen" key (F) of a
+ * fullscreen window leaves it, however it was entered. VLC's own handling toggles the video's
+ * fullscreen only: after the top bar's button had made the window fullscreen through the
+ * interface, the first F turned the video's fullscreen on (nothing to see) and only a second F
+ * left (PC test, 2026-11-08) */
+static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
+{
+    char* keys = var_InheritString(obj, "key-toggle-fullscreen");
+    if (!keys)
+        return false;
+    bool match = false;
+    char* save = nullptr;
+    for (char* key = strtok_r(keys, "\t", &save); key && !match; key = strtok_r(nullptr, "\t", &save))
+        match = vlc_str2keycode(key) == uint_fast32_t(vlckey);
+    free(keys);
+    return match;
+}
+#endif
+
 void MainCtx::sendHotkey(Qt::Key key , Qt::KeyboardModifiers modifiers)
 {
     QKeyEvent event(QEvent::KeyPress, key, modifiers );
     int vlckey = qtEventToVLCKey(&event);
-    var_SetInteger(vlc_object_instance(p_intf), "key-pressed", vlckey);
+    sendVLCHotkey(vlckey);
 }
 
 void MainCtx::sendVLCHotkey(int vlcHotkey)
 {
+#ifdef VLC_BRAND_PUBLIC
+    if (m_windowVisibility == QWindow::FullScreen && isToggleFullscreenKey(VLC_OBJECT(p_intf), vlcHotkey))
+    {
+        toggleInterfaceFullScreen();
+        return;
+    }
+#endif
     var_SetInteger(vlc_object_instance(p_intf), "key-pressed", vlcHotkey);
 }
 
@@ -680,6 +754,21 @@ void MainCtx::setAccentColor(const QColor& color)
         return;
     m_accentColor = color;
     const QByteArray value = color.isValid() ? color.name(QColor::HexRgb).toUtf8() : QByteArray("default");
+    m_accentOption = value;
+    config_PutPsz("qt-accent-color", value.constData());
+    scheduleConfigSave();
+    emit accentColorChanged();
+}
+
+void MainCtx::restoreAccentOption(const QString& option)
+{
+    const QByteArray value = option.isEmpty() ? QByteArray("default") : option.toUtf8();
+    QColor color;
+    if (value != "default" && value != "system")
+        color = QColor(option);
+    if (color == m_accentColor && value == m_accentOption)
+        return;
+    m_accentColor = color;
     m_accentOption = value;
     config_PutPsz("qt-accent-color", value.constData());
     scheduleConfigSave();
@@ -1044,6 +1133,30 @@ void MainCtx::toggleToolbarMenu()
 
 void MainCtx::toggleInterfaceFullScreen()
 {
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the window is fullscreen while the
+     * interface or the video holds it (WindowStateHolder). The video's hold comes from F, a
+     * double click or the control bar's button, the interface's from the top bar's and the window
+     * frame's button, F11 and the menu; leaving one way kept the other's hold, so fullscreen
+     * sometimes could not be left. Cone's buttons leave both, and enter through the video's
+     * fullscreen while a video plays, so F, Escape and a double click leave it again */
+    PlayerController* const player = p_intf->p_mainPlayerController;
+    if (m_windowVisibility == QWindow::FullScreen)
+    {
+        // both holds go, whatever the player believes about its video's fullscreen
+        if (player)
+            player->setFullscreen(false);
+        if (QWindow* window = intfMainWindow())
+            WindowStateHolder::holdFullscreen(window, WindowStateHolder::VIDEO, false);
+        emit setInterfaceFullScreen(false);
+        return;
+    }
+    if (player && m_hasEmbededVideo)
+    {
+        player->setFullscreen(true);
+        return;
+    }
+#endif
     emit setInterfaceFullScreen( m_windowVisibility != QWindow::FullScreen );
 }
 

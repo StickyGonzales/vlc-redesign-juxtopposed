@@ -1,4 +1,5 @@
-# Smoke checks of a Cone (public) Linux build on a GitHub Ubuntu 24.04 runner, after every Linux
+# Smoke checks of a Cone (public) Linux build on GitHub's Ubuntu 24.04 and Ubuntu 22.04 runners
+# (22.04: glibc 2.35, the oldest system the packages are built for), after every Linux
 # build (build-linux.yml calls it) or by hand on an earlier build run's artifacts
 # (smoke-linux-manual.yml); redesign/LINUX_SMOKE_NOTES.md. The checks: .github/scripts/linux-smoke.py.
 # Xvfb, openbox and a D-Bus session with the accessibility bus; VLC's dummy audio output; Qt
@@ -47,7 +48,16 @@ jobs:
 
   smoke:
     needs: smoke-media
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            libs: libpipewire-0.3-0t64 libsmbclient0 libgtk-3-0t64
+          # glibc 2.35 (redesign/LINUX_OLDER_DISTROS_NOTES.md); no 64-bit time suffixes yet
+          - os: ubuntu-22.04
+            libs: libpipewire-0.3-0 libsmbclient libgtk-3-0
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     env:
       BUILD_RUN_ID: ${{ inputs.build-run-id }}
@@ -99,7 +109,7 @@ jobs:
             sudo timeout 240 apt-get install -y -q --no-install-recommends \
               xvfb openbox xdotool imagemagick x11-utils libxfixes3 dbus dbus-x11 at-spi2-core python3-pyatspi \
               desktop-file-utils libxcb-cursor0 vlc-bin vlc-plugin-base \
-              libegl1 libegl-mesa0 libopengl0 libpipewire-0.3-0t64 libjack-jackd2-0 libssh-4 libsmbclient0 libgtk-3-0t64 && break
+              libegl1 libegl-mesa0 libopengl0 libjack-jackd2-0 libssh-4 ${{ matrix.libs }} && break
             echo "::warning::apt attempt $i failed or stalled"
             [ "$i" = 3 ] && exit 1
           done
@@ -123,6 +133,64 @@ jobs:
         if: ${{ !cancelled() }}
         continue-on-error: true
         with:
-          name: cone-linux-smoke-results
+          name: cone-linux-smoke-results-${{ matrix.os }}
           path: smoke-out/
+          retention-days: 1
+
+  # Debian 12 (glibc 2.36): the tarball starts there and plays a clip with its subtitles in the Qt
+  # interface (Xvfb, Mesa's software OpenGL, dummy audio). Ubuntu 22.04 (and Linux Mint 21, built
+  # on it) is the 22.04 runner above (redesign/LINUX_OLDER_DISTROS_NOTES.md)
+  debian12:
+    needs: smoke-media
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: debian:12
+    steps:
+      - name: Download the portable tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-x86_64
+          path: smoke-in/tarball
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-smoke-media
+          path: smoke-in/media
+      # the system libraries the package takes from a desktop system (linux-package.sh)
+      - name: Debian 12 desktop libraries
+        run: |
+          apt-get update -q
+          apt-get install -y -q --no-install-recommends xvfb xauth xz-utils ca-certificates \
+            libgl1 libegl1 libopengl0 libgl1-mesa-dri libx11-6 libx11-xcb1 libxcb1 libwayland-client0 \
+            libwayland-cursor0 libwayland-egl1 libdrm2 libgbm1 libexpat1 zlib1g libdbus-1-3 libudev1 \
+            libasound2 libstdc++6 fontconfig fonts-dejavu-core
+      - name: Start and play on Debian 12
+        shell: bash
+        run: |
+          ldd --version | head -n 1 | tee -a "$GITHUB_STEP_SUMMARY"
+          mkdir -p out run && tar -xJf smoke-in/tarball/*.tar.xz -C run
+          CONE=$(ls -d run/Cone-*/)cone
+          cp smoke-in/media/test-h264.mp4 out/clip.mp4 && cp smoke-in/media/test.srt out/clip.srt
+          useradd -m tester && chown -R tester out run
+          su tester -c "HOME=/home/tester timeout 120 xvfb-run -a -s '-screen 0 1280x800x24' \
+            $CONE --no-qt-privacy-ask --no-qt-cone-update-check --aout=adummy --play-and-exit \
+            --run-time=8 --file-logging --logfile=$PWD/out/cone.log --log-verbose=2 $PWD/out/clip.mp4" \
+            > out/stdout.txt 2>&1 && CODE=0 || CODE=$?
+          echo "Debian 12: exit code $CODE" | tee -a "$GITHUB_STEP_SUMMARY"
+          ok=1
+          [ "$CODE" = 0 ] || { echo "::error::Cone did not end cleanly on Debian 12 (exit code $CODE)"; tail -n 30 out/stdout.txt; ok=0; }
+          for want in 'using vout window module "qt"' 'using vout display module' \
+                      'using video decoder module "avcodec"' 'using spu decoder module "subsdec"'; do
+            if grep -qF "$want" out/cone.log 2>/dev/null; then echo "found: $want" | tee -a "$GITHUB_STEP_SUMMARY"
+            else echo "::error::not in the log on Debian 12: $want"; ok=0; fi
+          done
+          [ "$ok" = 1 ]
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          name: cone-linux-smoke-results-debian12
+          path: out/
           retention-days: 1

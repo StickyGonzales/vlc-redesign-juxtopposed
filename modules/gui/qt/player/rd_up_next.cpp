@@ -57,7 +57,9 @@
 #include "player/input_models.hpp"
 #include "player/player_controller.hpp"
 #include "player/rd_credits_point.hpp"
+#include "player/rd_credits_scans.hpp"
 #include "player/rd_credits_subtitles.hpp"
+#include "player/rd_show_tracks.hpp"
 #include "player/rd_effects.hpp"
 #include "playlist/playlist_controller.hpp"
 #include "playlist/playlist_item.hpp"
@@ -73,6 +75,8 @@ constexpr double kThumbnailPosition = 0.15;
 constexpr int kThumbnailWidth = 320;
 // "Still watching?" after this many episodes in a row without the user
 constexpr int kStillWatchingAfter = 3;
+// after Next episode: how long the switch to the next episode is guarded
+constexpr qint64 kSwitchGuardMs = 3000;
 
 QString storePath()
 {
@@ -117,6 +121,62 @@ QString episodeMrl(const QString& path)
     return mrl;
 }
 
+// the audio and subtitle track per show (SHOW_TRACKS_NOTES.md): Cone only
+#ifdef VLC_BRAND_PUBLIC
+constexpr bool kTrackMemory = true;
+#else
+constexpr bool kTrackMemory = false;
+#endif
+// the track lists of a starting file are complete this long after their last change
+constexpr int kTrackApplyDelayMs = 400;
+// the selection settles this long after the saved tracks are applied; changes after it are the
+// user's (the tracks popup, the hotkeys)
+constexpr int kTrackSettleMs = 1500;
+// an exclusive switch is an unselect and a select: they are read together
+constexpr int kTrackRecordDelayMs = 300;
+
+// a track list's rows: language tag, VLC's name and whether it is selected
+struct TrackRow
+{
+    rdtracks::Track track;
+    bool selected = false;
+};
+
+QVector<TrackRow> trackRows(const TrackListModel* model)
+{
+    QVector<TrackRow> rows;
+    for (int i = 0; i < model->rowCount(); ++i)
+    {
+        const QModelIndex index = model->index(i);
+        TrackRow row;
+        row.track.tag = model->data(index, TrackListModel::LanguageRole).toString();
+        row.track.title = model->data(index, TrackListModel::TitleRole).toString();
+        row.selected = model->data(index, Qt::CheckStateRole).toBool();
+        rows.append(row);
+    }
+    return rows;
+}
+
+// the selected tracks of a list, as a text to compare: their languages and names
+QString selectionOf(const QVector<TrackRow>& rows)
+{
+    QStringList selected;
+    for (const TrackRow& row : rows)
+    {
+        if (row.selected)
+            selected.append(row.track.tag + QLatin1Char('|') + row.track.title);
+    }
+    return selected.join(QLatin1Char('\n'));
+}
+
+QVector<rdtracks::Track> tracksOf(const QVector<TrackRow>& rows)
+{
+    QVector<rdtracks::Track> tracks;
+    for (const TrackRow& row : rows)
+        tracks.append(row.track);
+    return tracks;
+}
+
 QString localPath(const QUrl& url)
 {
     if (!url.isLocalFile())
@@ -149,6 +209,15 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     m_scanPool.setMaxThreadCount(1);
     m_storePool.setMaxThreadCount(1);
 
+    m_scans = new RdCreditsScans(VLC_OBJECT(intf), this);
+    connect(m_scans, &RdCreditsScans::resultReady, this, [this](const QString& path) {
+        if (m_path.isEmpty() || normalizedPath(path) != normalizedPath(m_path))
+            return;
+        m_found = m_scans->found(m_path);
+        updateCard();
+    });
+    connect(m_scans, &RdCreditsScans::changed, this, &RdUpNext::saveStore);
+
     readSettings();
     connect(effects, &RdEffects::changed, this, &RdUpNext::reloadSettings);
 
@@ -159,9 +228,27 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     connect(m_player, &PlayerController::playingStateChanged, this, [this]() {
         if (m_player->getPlayingState() == PlayerController::PLAYING_STATE_STOPPED)
         {
+            // the episode Next episode chose stopped right after the click: it plays again (a
+            // safety net for the switch above; logged so a PC log shows it)
+            if (m_playNowItem && m_playNowClock.isValid() && m_playNowClock.elapsed() < kSwitchGuardMs)
+            {
+                const PlaylistItem current = m_playlist->getCurrentItem();
+                if (current && current.inputItem() == m_playNowItem.get())
+                {
+                    msg_Warn(m_intf, "up next: the next episode stopped right after Next episode; starting it again");
+                    m_playNowItem = SharedInputItem();
+                    QTimer::singleShot(0, this, [this]() { m_playlist->play(); });
+                }
+            }
             setCard(false, CardNext);
-            // between two episodes the player stops for a moment too: only a stop that lasts counts
-            QTimer::singleShot(300, this, &RdUpNext::onStopped);
+            // between two episodes the player stops for a moment too: only a stop that lasts counts,
+            // and only while the same media is current (a stop of the episode left behind, once the
+            // next one is current, must not take the following autoplay item out)
+            const int serial = m_inputSerial;
+            QTimer::singleShot(300, this, [this, serial]() {
+                if (serial == m_inputSerial)
+                    onStopped();
+            });
         }
         // the episode loaded paused under "Still watching?" plays (Space, the play button); only
         // once it has been paused, as it may report STARTED and PLAYING before it pauses
@@ -191,6 +278,39 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     connect(subtitles, &QAbstractItemModel::rowsInserted, this, updateSubtitles);
     connect(subtitles, &QAbstractItemModel::rowsRemoved, this, updateSubtitles);
     connect(m_player, &PlayerController::playbackRestoreQueried, this, &RdUpNext::updateCard);
+
+    // the audio and subtitle track per show
+    m_trackApplyTimer = new QTimer(this);
+    m_trackApplyTimer->setSingleShot(true);
+    m_trackApplyTimer->setInterval(kTrackApplyDelayMs);
+    connect(m_trackApplyTimer, &QTimer::timeout, this, &RdUpNext::applyTrackChoice);
+    m_trackSettleTimer = new QTimer(this);
+    m_trackSettleTimer->setSingleShot(true);
+    m_trackSettleTimer->setInterval(kTrackSettleMs);
+    connect(m_trackSettleTimer, &QTimer::timeout, this, [this]() {
+        m_tracksSettled = true;
+        m_audioSelection = selectionOf(trackRows(m_player->getAudioTracks()));
+        m_subtitleSelection = selectionOf(trackRows(m_player->getSubtitleTracks()));
+    });
+    m_trackRecordTimer = new QTimer(this);
+    m_trackRecordTimer->setSingleShot(true);
+    m_trackRecordTimer->setInterval(kTrackRecordDelayMs);
+    connect(m_trackRecordTimer, &QTimer::timeout, this, &RdUpNext::recordTrackChoice);
+    if (kTrackMemory)
+    {
+        for (TrackListModel* model : { m_player->getAudioTracks(), subtitles })
+        {
+            const bool audio = model == m_player->getAudioTracks();
+            connect(model, &QAbstractItemModel::rowsInserted, this, &RdUpNext::onTracksListed);
+            connect(model, &QAbstractItemModel::rowsRemoved, this, &RdUpNext::onTracksListed);
+            connect(model, &QAbstractItemModel::modelReset, this, &RdUpNext::onTracksListed);
+            connect(model, &QAbstractItemModel::dataChanged, this,
+                    [this, audio](const QModelIndex&, const QModelIndex&, const QList<int>& roles) {
+                if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
+                    onTrackSelectionChanged(audio);
+            });
+        }
+    }
 
     connect(m_playlist, &PlaylistController::randomChanged, this, &RdUpNext::evaluate);
     connect(m_playlist, &PlaylistController::repeatModeChanged, this, &RdUpNext::evaluate);
@@ -224,6 +344,8 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
 RdUpNext::~RdUpNext()
 {
     qApp->removeEventFilter(this);
+    // a credits scan in progress stops at once: the quit never waits for it
+    m_scans->shutdown();
     if (m_subtitleScan)
         m_subtitleScan->cancel();
     m_scanPool.waitForDone();
@@ -366,6 +488,9 @@ int RdUpNext::rememberedNo() const
 
 void RdUpNext::onInputChanged(bool hasInput)
 {
+    ++m_inputSerial;
+    // the player switched: queue changes are safe again
+    m_switching = false;
     const PlaylistItem current = m_playlist->getCurrentItem();
     input_item_t* input = current ? current.inputItem() : nullptr;
 
@@ -398,7 +523,14 @@ void RdUpNext::onInputChanged(bool hasInput)
     }
     m_lastSingleAdd = SharedInputItem();
     m_cancelled = false;
+    m_cardShownEpisode = false;
+    m_cardCancelled = false;
+    m_nextFromCard = false;
     m_creditsPointMs = -1;
+    m_creditsSourceKind = rdcredits::Source::None;
+    m_creditsLengthMs = -1;
+    m_found = RdCreditsScans::Found();
+    emit creditsChanged();
     m_dialogueEndMs = -1;
     m_subtitleScanStarted = false;
     if (m_subtitleScan)
@@ -415,6 +547,15 @@ void RdUpNext::onInputChanged(bool hasInput)
     m_stillPending = false;
     // after the card is hidden: the card keeps "Playing in" while it fades out
     setCounting(false);
+
+    // the new file's tracks: the saved ones are applied once its lists settle, and only later
+    // changes are the user's
+    m_tracksSettled = false;
+    m_recordAudio = false;
+    m_recordSubtitles = false;
+    m_trackSettleTimer->stop();
+    m_trackRecordTimer->stop();
+    m_trackApplyTimer->start();
 
     m_url = hasInput ? m_player->getUrl() : QUrl();
     m_path = localPath(m_url);
@@ -438,8 +579,12 @@ void RdUpNext::startDetection()
     emit stateChanged();
     emit nextChanged();
 
-    if (m_mode == ModeOff || m_path.isEmpty())
+    // autoplay off: the show is still detected for its tracks (Cone only)
+    if ((m_mode == ModeOff && !kTrackMemory) || m_path.isEmpty())
     {
+        // nothing runs while Up Next is off: a scan in progress stops, the queue goes
+        if (m_mode == ModeOff)
+            m_scans->stop();
         evaluate();
         return;
     }
@@ -475,7 +620,190 @@ void RdUpNext::onDetected(int generation, const rdepisode::Show& show)
     m_showKnown = true;
     if (!m_show.isShow)
         msg_Dbg(m_intf, "up next: not a show (%s)", qtu(m_show.reason));
+    requestCreditsScans();
+    m_found = m_path.isEmpty() ? RdCreditsScans::Found() : m_scans->found(m_path);
+    // the saved tracks wait for the show
+    if (!m_tracksSettled)
+        m_trackApplyTimer->start();
     evaluate();
+    emit creditsChanged();
+}
+
+void RdUpNext::requestCreditsScans()
+{
+    // local video files of a show folder with enough videos only: never a movie, a small folder,
+    // an audio file or a stream (m_path is empty for anything but a local file)
+    if (!m_show.isShow || m_path.isEmpty() || !rdcredits::isScannableVideo(m_path))
+        return;
+    // a show the user said No to gets no card, so nothing is read for it
+    if (!showEnabled())
+        return;
+    int videos = 0;
+    for (const rdepisode::Episode& episode : m_show.episodes)
+        videos += rdcredits::isScannableVideo(episode.fileName) ? 1 : 0;
+    if (videos < rdcredits::kMinShowVideos)
+    {
+        msg_Dbg(m_intf, "up next: no credits scans (%d video files in the show)", videos);
+        return;
+    }
+
+    // the episode playing (with the subtitle files VLC loaded for it), then the next one
+    QStringList slaves;
+    {
+        vlc_player_t* player = m_player->getPlayer();
+        vlc_player_locker lock{ player };
+        input_item_t* item = vlc_player_GetCurrentMedia(player);
+        if (item)
+        {
+            vlc_mutex_locker itemLock{ &item->lock };
+            for (int i = 0; i < item->i_slaves; ++i)
+            {
+                if (item->pp_slaves[i]->i_type != SLAVE_TYPE_SPU)
+                    continue;
+                const QString path = localPath(QUrl::fromEncoded(QByteArray(item->pp_slaves[i]->psz_uri)));
+                if (!path.isEmpty())
+                    slaves.append(path);
+            }
+        }
+    }
+    const QString key = showKey();
+    m_scans->request(key, m_show.name, m_path, slaves, true);
+    const int next = m_show.next();
+    if (next >= 0 && rdcredits::isScannableVideo(m_show.episodes.at(next).fileName))
+        m_scans->request(key, m_show.name, m_show.episodes.at(next).path, {}, false);
+}
+
+// ---------------------------------------------------------------------------- show tracks
+
+bool RdUpNext::isShowEpisode() const
+{
+    return kTrackMemory && m_showKnown && m_show.isShow && !showKey().isEmpty();
+}
+
+void RdUpNext::onTracksListed()
+{
+    // tracks that come and go while the file starts; once settled, a list change (an external
+    // subtitle added by hand) is not a reason to apply again
+    if (!m_tracksSettled)
+        m_trackApplyTimer->start();
+}
+
+void RdUpNext::applyTrackChoice()
+{
+    // the show is not known yet: onDetected() starts the timer again
+    if (!m_showKnown && !m_path.isEmpty())
+        return;
+    // again for tracks that arrive while the file starts (an external subtitle file a moment
+    // after the embedded tracks, which VLC selects by itself): only what differs is changed
+    const auto it = isShowEpisode() ? m_trackChoices.constFind(showKey()) : m_trackChoices.cend();
+    if (it != m_trackChoices.cend())
+    {
+        m_applyingTracks = true;
+        QStringList done;
+        TrackListModel* audio = m_player->getAudioTracks();
+        if (!it->audio.isEmpty())
+        {
+            const QVector<TrackRow> rows = trackRows(audio);
+            const int row = rdtracks::matchTrack(tracksOf(rows), it->audio);
+            if (row >= 0 && !rows.at(row).selected)
+                audio->setData(audio->index(row), true, Qt::CheckStateRole);
+            done.append(row >= 0 ? QStringLiteral("audio %1 (track %2)").arg(it->audio).arg(row + 1)
+                                 : QStringLiteral("audio %1 not in this episode").arg(it->audio));
+        }
+        TrackListModel* subtitles = m_player->getSubtitleTracks();
+        const QVector<TrackRow> rows = trackRows(subtitles);
+        if (it->subtitlesOff)
+        {
+            for (int i = 0; i < rows.size(); ++i)
+            {
+                if (rows.at(i).selected)
+                    subtitles->setData(subtitles->index(i), false, Qt::CheckStateRole);
+            }
+            done.append(QStringLiteral("subtitles off"));
+        }
+        else if (!it->subtitles.isEmpty())
+        {
+            const int row = rdtracks::matchTrack(tracksOf(rows), it->subtitles);
+            if (row >= 0 && !rows.at(row).selected)
+                subtitles->setData(subtitles->index(row), true, Qt::CheckStateRole);
+            done.append(row >= 0 ? QStringLiteral("subtitles %1 (track %2)").arg(it->subtitles).arg(row + 1)
+                                 : QStringLiteral("subtitles %1 not in this episode").arg(it->subtitles));
+        }
+        m_applyingTracks = false;
+        msg_Dbg(m_intf, "up next: tracks for the show applied: %s", qtu(done.join(QStringLiteral(", "))));
+    }
+    // the selection the apply caused (and VLC's own) settles before changes count
+    m_trackSettleTimer->start();
+}
+
+void RdUpNext::onTrackSelectionChanged(bool audio)
+{
+    if (!m_tracksSettled || m_applyingTracks || !isShowEpisode())
+        return;
+    if (audio)
+        m_recordAudio = true;
+    else
+        m_recordSubtitles = true;
+    m_trackRecordTimer->start();
+}
+
+void RdUpNext::recordTrackChoice()
+{
+    if (!isShowEpisode())
+        return;
+    const QString key = showKey();
+    TrackChoice choice = m_trackChoices.value(key);
+    QStringList saved;
+    const QVector<TrackRow> audioRows = trackRows(m_player->getAudioTracks());
+    const QVector<TrackRow> subtitleRows = trackRows(m_player->getSubtitleTracks());
+    // only a selection that changed is a pick
+    if (m_recordAudio && selectionOf(audioRows) == m_audioSelection)
+        m_recordAudio = false;
+    if (m_recordSubtitles && selectionOf(subtitleRows) == m_subtitleSelection)
+        m_recordSubtitles = false;
+    m_audioSelection = selectionOf(audioRows);
+    m_subtitleSelection = selectionOf(subtitleRows);
+    if (m_recordAudio)
+    {
+        const QVector<TrackRow>& rows = audioRows;
+        for (const TrackRow& row : rows)
+        {
+            if (!row.selected)
+                continue;
+            // a track without a language can not be found again: the old choice goes
+            choice.audio = rdtracks::trackLanguage(row.track.tag, row.track.title);
+            saved.append(QStringLiteral("audio %1").arg(choice.audio.isEmpty() ? QStringLiteral("(no language)") : choice.audio));
+            break;
+        }
+    }
+    if (m_recordSubtitles)
+    {
+        const QVector<TrackRow>& rows = subtitleRows;
+        choice.subtitlesOff = true;
+        choice.subtitles.clear();
+        for (const TrackRow& row : rows)
+        {
+            if (!row.selected)
+                continue;
+            choice.subtitlesOff = false;
+            choice.subtitles = rdtracks::trackLanguage(row.track.tag, row.track.title);
+            break;
+        }
+        saved.append(choice.subtitlesOff ? QStringLiteral("subtitles off")
+                     : QStringLiteral("subtitles %1").arg(choice.subtitles.isEmpty() ? QStringLiteral("(no language)") : choice.subtitles));
+    }
+    m_recordAudio = false;
+    m_recordSubtitles = false;
+    if (saved.isEmpty())
+        return;
+    choice.name = m_show.name;
+    if (choice.audio.isEmpty() && choice.subtitles.isEmpty() && !choice.subtitlesOff)
+        m_trackChoices.remove(key);
+    else
+        m_trackChoices.insert(key, choice);
+    msg_Dbg(m_intf, "up next: tracks for the show saved: %s", qtu(saved.join(QStringLiteral(", "))));
+    saveStore();
+    emit storeChanged();
 }
 
 // --------------------------------------------------------------------------------- guards
@@ -610,6 +938,9 @@ void RdUpNext::updateCard()
             m_lastShowRoot = m_show.root;
             m_lastShowName = m_show.name;
             m_lastNextPath = localPath(nextUrl());
+            // the sidebar row shows the point in use, also while the card is not armed
+            if (showActive())
+                creditsPoint(length.toMilliseconds());
         }
     }
 
@@ -687,26 +1018,38 @@ void RdUpNext::updateCard()
 
 qint64 RdUpNext::creditsPoint(qint64 lengthMs)
 {
-    QVector<rdcredits::Chapter> chapters;
+    rdcredits::Inputs inputs;
     ChapterListModel* model = m_player->getChapters();
     for (int i = 0; model && i < model->rowCount(); ++i)
     {
         const QModelIndex index = model->index(i);
         const VLCTime start = model->data(index, ChapterListModel::TimeRole).value<VLCTime>();
         if (start.valid())
-            chapters.append({ model->data(index, Qt::DisplayRole).toString(), start.toMilliseconds() });
+            inputs.chapters.append({ model->data(index, Qt::DisplayRole).toString(), start.toMilliseconds() });
     }
-    const auto learned = m_learned.constFind(showKey());
-    const qint64 learnedLead = learned != m_learned.constEnd() ? learned->leadMs : -1;
-    const rdcredits::Point point = rdcredits::decide(lengthMs, chapters, learnedLead, m_creditsLeadMs,
-                                                     m_dialogueEndMs);
-    if (point.timeMs != m_creditsPointMs)
+    const QString key = showKey();
+    const auto learned = m_learned.constFind(key);
+    inputs.learnedLeadMs = learned != m_learned.constEnd() ? learned->leadMs : -1;
+    inputs.fixedLeadMs = m_scans->fixedLead(key);
+    inputs.settingLeadMs = m_creditsLeadMs;
+    // the background scans of this file, else the subtitle lines read for the card
+    inputs.audioMs = m_found.audioMs;
+    inputs.blackMs = m_found.blackMs;
+    inputs.dialogueEndMs = m_found.scanned && m_found.dialogueEndMs >= 0 ? m_found.dialogueEndMs : m_dialogueEndMs;
+
+    const rdcredits::Point point = rdcredits::decide(lengthMs, inputs);
+    if (point.timeMs != m_creditsPointMs || point.source != m_creditsSourceKind || lengthMs != m_creditsLengthMs)
     {
+        const bool logged = point.timeMs != m_creditsPointMs || point.source != m_creditsSourceKind;
         m_creditsPointMs = point.timeMs;
-        msg_Dbg(m_intf, "up next: credits point %lld ms of %lld (%s%s), window from %lld ms",
-                static_cast<long long>(point.timeMs), static_cast<long long>(lengthMs),
-                qtu(rdcredits::sourceName(point.source)), point.tuned ? ", tuned by the subtitles" : "",
-                static_cast<long long>(rdcredits::windowStart(lengthMs)));
+        m_creditsSourceKind = point.source;
+        m_creditsLengthMs = lengthMs;
+        if (logged)
+            msg_Dbg(m_intf, "up next: credits point %lld ms of %lld (%s), window from %lld ms",
+                    static_cast<long long>(point.timeMs), static_cast<long long>(lengthMs),
+                    qtu(rdcredits::sourceName(point.source)),
+                    static_cast<long long>(rdcredits::windowStart(lengthMs)));
+        emit creditsChanged();
     }
     return point.timeMs;
 }
@@ -714,6 +1057,9 @@ qint64 RdUpNext::creditsPoint(qint64 lengthMs)
 void RdUpNext::startSubtitleScan(qint64 lengthMs)
 {
     if (m_subtitleScanStarted || m_path.isEmpty() || lengthMs <= 0)
+        return;
+    // the full credits scan read the subtitles already
+    if (m_found.scanned && m_found.dialogueEndMs >= 0)
         return;
     m_subtitleScanStarted = true;
 
@@ -764,8 +1110,13 @@ void RdUpNext::learnCreditsPoint(const QString& newPath)
     const QString key = m_lastShowKey;
     const QString root = m_lastShowRoot;
     const QString nextPath = m_lastNextPath;
-    const qint64 timeMs = m_lastTimeMs;
-    const qint64 lengthMs = m_lastLengthMs;
+    rdcredits::Move move;
+    move.timeMs = m_lastTimeMs;
+    move.lengthMs = m_lastLengthMs;
+    move.fromCard = m_nextFromCard;
+    move.cardShown = m_cardShownEpisode;
+    move.cancelled = m_cardCancelled;
+    move.countdownSec = m_countdown;
     m_lastShowKey.clear();
     m_lastShowRoot.clear();
     m_lastNextPath.clear();
@@ -778,15 +1129,17 @@ void RdUpNext::learnCreditsPoint(const QString& newPath)
     if (nextPath.isEmpty() || normalizedPath(newPath) != normalizedPath(nextPath)
             || !normalizedPath(newPath).startsWith(normalizedPath(QDir::cleanPath(root) + QLatin1Char('/'))))
         return;
-    // only inside the credits window, and never in the countdown: a Play now there, or the episode
-    // simply ending (a container a few seconds longer than its picture), says nothing about the
-    // credits
-    const qint64 leadMs = lengthMs - timeMs;
-    const qint64 countdownMs = qint64(m_countdown) * 1000 + rdcredits::kNaturalEndMs;
-    if (!rdcredits::inWindow(timeMs, lengthMs) || leadMs <= countdownMs)
+    // the drift fix (UP_NEXT_CREDITS_SCAN_NOTES.md section 1): a click on the card is never
+    // learned, a move before the card showed only moves the point earlier, Cancel then a later
+    // move moves it later; the countdown and the episode simply ending are never learned
+    const auto saved = m_learned.constFind(key);
+    move.savedLeadMs = saved != m_learned.constEnd() ? saved->leadMs : -1;
+    const qint64 leadMs = rdcredits::learnedLead(move);
+    if (leadMs < 0)
         return;
-    msg_Dbg(m_intf, "up next: credits point learned for the show: %lld ms before the end",
-            static_cast<long long>(leadMs));
+    msg_Dbg(m_intf, "up next: credits point learned for the show: %lld ms before the end (%s)",
+            static_cast<long long>(leadMs),
+            move.cancelled ? "after Cancel" : "before the card showed");
     setLearnedLead(key, leadMs);
 }
 
@@ -827,6 +1180,8 @@ void RdUpNext::setCard(bool visible, int mode)
     }
     m_cardVisible = visible;
     m_cardMode = mode;
+    if (visible && mode == CardNext)
+        m_cardShownEpisode = true;
     emit cardChanged();
     emit nextChanged();
 }
@@ -872,18 +1227,27 @@ void RdUpNext::playNow()
         return;
     // the card hides before the queue changes, so it never shows a changed episode while it fades
     setCard(false, CardNext);
+    // a move from the card is never learned (UP_NEXT_CREDITS_SCAN_NOTES.md section 1)
+    m_nextFromCard = true;
     if (queueWeak)
         queueNext(false);
     if (!queuedPresent())
         return;
     // the rest of the episode is skipped: it counts as watched
     markWatched(m_url);
+    msg_Dbg(m_intf, "up next: Next episode, moving on to the autoplay item");
+    m_playNowItem = m_queued;
+    m_playNowClock.start();
+    m_switching = true;
     m_playlist->next();
 }
 
 void RdUpNext::cancel()
 {
     m_cancelled = true;
+    // only when the card showed: a later move to the next episode then moves the point later
+    if (m_cardVisible && m_cardMode == CardNext)
+        m_cardCancelled = true;
     m_stillPending = false;
     setCard(false, CardNext);
     removeQueued();
@@ -933,6 +1297,8 @@ void RdUpNext::setShowEnabled(bool enabled)
     if (enabled)
         m_cancelled = false;
     setAnswer(enabled);
+    if (enabled)
+        requestCreditsScans();
     evaluate();
 }
 
@@ -941,13 +1307,103 @@ void RdUpNext::forgetAll()
     // before the file is read: its answers are dropped when they arrive
     if (!m_storeLoaded)
         m_forgotten = true;
-    if (m_answers.isEmpty() && m_learned.isEmpty() && m_storeLoaded)
+    if (m_answers.isEmpty() && m_learned.isEmpty() && m_trackChoices.isEmpty() && !m_scans->hasData()
+        && m_storeLoaded)
         return;
     m_answers.clear();
     m_learned.clear();
+    m_trackChoices.clear();
+    // the credits scans' results and the fixed points go too (saveStore() follows)
+    {
+        const QSignalBlocker blocker(m_scans);
+        m_scans->clear();
+    }
+    m_found = RdCreditsScans::Found();
+    m_creditsPointMs = -1;
+    m_creditsSourceKind = rdcredits::Source::None;
+    emit creditsChanged();
     saveStore();
     emit storeChanged();
     evaluate();
+}
+
+int RdUpNext::rememberedCredits() const
+{
+    QStringList shows = m_learned.keys();
+    for (const QString& key : m_scans->fixedShows())
+    {
+        if (!shows.contains(key))
+            shows.append(key);
+    }
+    return int(shows.size());
+}
+
+bool RdUpNext::creditsFixed() const
+{
+    return showActive() && m_scans->fixedLead(showKey()) > 0;
+}
+
+int RdUpNext::creditsLeadSeconds() const
+{
+    if (m_creditsPointMs < 0 || m_creditsLengthMs <= 0)
+        return -1;
+    return int((m_creditsLengthMs - m_creditsPointMs + 500) / 1000);
+}
+
+QString RdUpNext::creditsSource() const
+{
+    const int lead = creditsLeadSeconds();
+    if (lead < 0)
+        return {};
+    const QString time = QStringLiteral("%1:%2").arg(lead / 60).arg(lead % 60, 2, 10, QLatin1Char('0'));
+    switch (m_creditsSourceKind)
+    {
+    case rdcredits::Source::Fixed:
+        return qtr("Fixed: %1 before the end").arg(time);
+    case rdcredits::Source::Chapter:
+        return qtr("from the credits chapter: %1 before the end").arg(time);
+    case rdcredits::Source::Audio:
+        return qtr("from audio match: %1 before the end").arg(time);
+    case rdcredits::Source::Agreement:
+        return qtr("from subtitles, black frames and your past choices: %1 before the end").arg(time);
+    case rdcredits::Source::Learned:
+        return qtr("from your past choices: %1 before the end").arg(time);
+    case rdcredits::Source::Subtitles:
+        return qtr("from the end of the dialogue: %1 before the end").arg(time);
+    case rdcredits::Source::Setting:
+        return qtr("from the setting: %1 before the end").arg(time);
+    case rdcredits::Source::None:
+        break;
+    }
+    return {};
+}
+
+void RdUpNext::setCreditsFixed(int secondsBeforeEnd)
+{
+    if (!showActive() || secondsBeforeEnd <= 0)
+        return;
+    msg_Dbg(m_intf, "up next: credits point fixed for the show: %d s before the end", secondsBeforeEnd);
+    m_scans->setFixedLead(showKey(), m_show.name, qint64(secondsBeforeEnd) * 1000);
+    emit storeChanged();
+    emit creditsChanged();
+    updateCard();
+}
+
+void RdUpNext::resetCredits()
+{
+    if (!showActive())
+        return;
+    m_scans->setFixedLead(showKey(), m_show.name, -1);
+    emit storeChanged();
+    emit creditsChanged();
+    updateCard();
+}
+
+void RdUpNext::setSeekBarBusy(bool busy)
+{
+    // each seek bar (the player's, the mini player's) says when it starts and stops
+    m_seekBarsBusy = std::max(0, m_seekBarsBusy + (busy ? 1 : -1));
+    m_scans->setPaused(m_seekBarsBusy > 0);
 }
 
 // ------------------------------------------------------------------------- autoplay item
@@ -977,7 +1433,7 @@ QStringList RdUpNext::itemOptions(bool startPaused) const
 
 void RdUpNext::queueNext(bool startPaused)
 {
-    if (m_nextIndex < 0)
+    if (m_nextIndex < 0 || switchGuarded())
         return;
     const rdepisode::Episode& next = m_show.episodes.at(m_nextIndex);
     const QString mrl = episodeMrl(next.path);
@@ -1103,9 +1559,21 @@ bool RdUpNext::queuedPresent() const
     return false;
 }
 
+// a queue change while the player still has to switch to the episode Next episode chose makes
+// VLC's playlist hand the player another next media (vlc_playlist_UpdateNextMedia), which can
+// replace the chosen one: the player then stopped, and Cone went to the home page, whose start
+// stops playback (seen on Windows, where the episode left behind takes longer to stop)
+bool RdUpNext::switchGuarded() const
+{
+    if (!m_switching || !m_playNowClock.isValid() || m_playNowClock.elapsed() > kSwitchGuardMs)
+        return false;
+    msg_Dbg(m_intf, "up next: queue left as it is while the player switches to the next episode");
+    return true;
+}
+
 void RdUpNext::removeQueued()
 {
-    if (!m_queuedInput)
+    if (!m_queuedInput || switchGuarded())
         return;
     vlc_playlist_t* playlist = m_playlist->getPlaylist().m_playlist;
     QVector<PlaylistItem> items;
@@ -1406,7 +1874,30 @@ void RdUpNext::loadStore(const QJsonObject& data)
             continue;
         m_learned.insert(it.key(), { lead, entry.value(QStringLiteral("name")).toString() });
     }
+    m_scans->load(m_forgotten ? QJsonObject() : data.value(QStringLiteral("creditsScan")).toObject());
+    if (!m_path.isEmpty())
+        m_found = m_scans->found(m_path);
+    const QJsonObject tracks = m_forgotten ? QJsonObject() : data.value(QStringLiteral("tracks")).toObject();
+    for (auto it = tracks.begin(); it != tracks.end(); ++it)
+    {
+        // a choice made while the file was read wins
+        if (m_trackChoices.contains(it.key()))
+            continue;
+        const QJsonObject entry = it.value().toObject();
+        TrackChoice choice;
+        choice.audio = entry.value(QStringLiteral("audio")).toString();
+        const QString subtitles = entry.value(QStringLiteral("subtitles")).toString();
+        choice.subtitlesOff = subtitles == QLatin1String("off");
+        if (!choice.subtitlesOff)
+            choice.subtitles = subtitles;
+        choice.name = entry.value(QStringLiteral("name")).toString();
+        if (!choice.audio.isEmpty() || !choice.subtitles.isEmpty() || choice.subtitlesOff)
+            m_trackChoices.insert(it.key(), choice);
+    }
     m_storeLoaded = true;
+    // a show detected before the answers were known is scanned now (if it is on)
+    if (m_showKnown)
+        requestCreditsScans();
     // answers given before the file was read are written now, with the stored ones
     if (m_storeDirty)
         saveStore();
@@ -1440,10 +1931,25 @@ void RdUpNext::saveStore()
         entry.insert(QStringLiteral("name"), it->name);
         credits.insert(it.key(), entry);
     }
+    QJsonObject tracks;
+    for (auto it = m_trackChoices.cbegin(); it != m_trackChoices.cend(); ++it)
+    {
+        QJsonObject entry;
+        if (!it->audio.isEmpty())
+            entry.insert(QStringLiteral("audio"), it->audio);
+        if (it->subtitlesOff)
+            entry.insert(QStringLiteral("subtitles"), QStringLiteral("off"));
+        else if (!it->subtitles.isEmpty())
+            entry.insert(QStringLiteral("subtitles"), it->subtitles);
+        entry.insert(QStringLiteral("name"), it->name);
+        tracks.insert(it.key(), entry);
+    }
     QJsonObject root;
     root.insert(QStringLiteral("version"), 1);
     root.insert(QStringLiteral("shows"), shows);
     root.insert(QStringLiteral("credits"), credits);
+    root.insert(QStringLiteral("creditsScan"), m_scans->toJson());
+    root.insert(QStringLiteral("tracks"), tracks);
     const QByteArray json = QJsonDocument(root).toJson(QJsonDocument::Indented);
     m_storePool.start([json]() {
         const QString path = storePath();
