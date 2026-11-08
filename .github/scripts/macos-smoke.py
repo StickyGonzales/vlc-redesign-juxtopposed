@@ -229,8 +229,11 @@ class Session:
         log('start ' + ' '.join(a))
         self.err = open(os.path.join(OUT, f'cone-{tag}{suffix}-stderr.txt'), 'w')
         self.started = time.time()
-        self.proc = subprocess.Popen(a, stdout=self.err, stderr=subprocess.STDOUT,
-                                     start_new_session=True)
+        # --rc-fake-tty also reads commands from stdin, and the cli quits VLC when stdin ends: the
+        # runner's stdin ends at once, so Cone was quit at its start whenever that quit came after
+        # the interface was up (run 11, HEVC on arm64). A pipe that stays open until stop()
+        self.proc = subprocess.Popen(a, stdin=subprocess.PIPE, stdout=self.err,
+                                     stderr=subprocess.STDOUT, start_new_session=True)
         self.win = None
 
     def window(self):
@@ -257,6 +260,7 @@ class Session:
         if self.proc.poll() is None:
             os.killpg(self.proc.pid, 9)
             self.proc.wait(10)
+        self.proc.stdin.close()
         self.err.close()
 
 
