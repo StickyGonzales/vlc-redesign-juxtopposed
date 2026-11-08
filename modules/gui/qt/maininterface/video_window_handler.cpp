@@ -71,6 +71,16 @@ void VideoWindowHandler::requestResizeVideo( unsigned i_width, unsigned i_height
 void VideoWindowHandler::requestVideoWindowed( )
 {
    emit askVideoSetFullScreen( false );
+#ifdef VLC_BRAND_PUBLIC
+   /* redesign: the video leaves fullscreen at the user's request (F, Escape, a double click):
+    * the interface's hold goes too (MainCtx::toggleInterfaceFullScreen), so the window is not
+    * left fullscreen by the other source. Not on disable(): a video that ends keeps a fullscreen
+    * library fullscreen */
+   QMetaObject::invokeMethod(this, [this]() {
+       if (m_window)
+           WindowStateHolder::holdFullscreen(m_window, WindowStateHolder::INTERFACE, false);
+   }, Qt::QueuedConnection);
+#endif
 }
 
 void VideoWindowHandler::requestVideoFullScreen(const char * )
