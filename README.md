@@ -32,7 +32,7 @@
 
 ## Themes and accent colors
 
-Dark and light themes and nine accent colors: the default orange and eight more. Pick them in the first start or in Settings > General; the whole player changes at once.
+Dark and light themes and nine accent colors: the default orange and eight more, or **Custom** for any color by its hex code. Pick them in the first start or in Settings > General; the whole player changes at once.
 
 <p align="center"><img src="docs/images/cone-accents.png" alt="Cone Player in its nine accent colors"></p>
 
@@ -42,18 +42,18 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 
 | Download | File | How |
 |---|---|---|
-| **Installer** (recommended) | `coneplayer-1.2.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
-| **Portable zip** | `ConePlayer-1.2.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
+| **Installer** (recommended) | `coneplayer-1.3.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
+| **Portable zip** | `ConePlayer-1.3.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
 ### Linux (beta)
 
-Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.2.0 beta 3](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.2.0-beta3). It needs 64-bit x86 and glibc 2.39 or newer: Ubuntu 24.04, Linux Mint 22, Debian 13, Fedora 40 or newer. From the next Linux release on, the packages are built on Ubuntu 22.04 and need only glibc 2.35: they also run on Ubuntu 22.04, Linux Mint 21, Debian 12 and Fedora 36 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
+Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.3.0 beta 4](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.3.0-beta4). It needs 64-bit x86 and glibc 2.35 or newer: Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 36 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
 
 | Download | How |
 |---|---|
-| **Debian / Ubuntu package** `cone-player_1.2.0-beta3_amd64.deb` | `sudo apt install ./cone-player_1.2.0-beta3_amd64.deb`. Installs into `/opt/cone-player` with the command `cone-player`, a menu entry and "Open with" for videos, music and subtitles. Remove it with `sudo apt remove cone-player`. |
-| **AppImage** `Cone-1.2.0-beta3-x86_64.AppImage` | `chmod +x` it and start it. AppImageLauncher or Gear Lever can add it to the menu with its icon. |
-| **Tarball** `Cone-1.2.0-beta3-linux-x86_64.tar.xz` | Unpack it and start `./cone`, or run `./install.sh` to install it for your user without sudo (`~/.local`, menu entry, icons, "Open with"). Remove it with `~/.local/share/cone-player/uninstall.sh`. |
+| **Debian / Ubuntu package** `cone-player_1.3.0-beta4_amd64.deb` | `sudo apt install ./cone-player_1.3.0-beta4_amd64.deb`. Installs into `/opt/cone-player` with the command `cone-player`, a menu entry and "Open with" for videos, music and subtitles. Remove it with `sudo apt remove cone-player`. |
+| **AppImage** `Cone-1.3.0-beta4-x86_64.AppImage` | `chmod +x` it and start it. AppImageLauncher or Gear Lever can add it to the menu with its icon. |
+| **Tarball** `Cone-1.3.0-beta4-linux-x86_64.tar.xz` | Unpack it and start `./cone`, or run `./install.sh` to install it for your user without sudo (`~/.local`, menu entry, icons, "Open with"). Remove it with `~/.local/share/cone-player/uninstall.sh`. |
 
 None of them makes Cone your default player: pick it in "Open with", or set it as the default in your desktop's settings. A file you open while Cone Player runs plays in its window. A folder named `portable` next to the AppImage or `./cone` keeps settings and the library there.
 
@@ -61,7 +61,7 @@ Each Linux build is checked on GitHub: it plays H.264 and HEVC with subtitles, s
 
 ### macOS (experimental preview)
 
-For testers: an [experimental preview](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/macos-v1.2.0-preview) for Apple Silicon Macs (M1 and later, macOS 12 or later), `ConePlayer-1.2.0-preview-macos-arm64.dmg`. It hasn't been tried on a real Mac yet, so please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
+For testers: a [preview of 1.3.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/macos-v1.3.0) for Apple Silicon (`Cone-1.3.0-macos-arm64.dmg`) and Intel Macs (`Cone-1.3.0-macos-x86_64.dmg`), macOS 12 or later. It isn't signed by Apple, so the first start needs right-click > **Open**. It hasn't been tried on a real Mac yet, so please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
@@ -72,13 +72,18 @@ The files are not code-signed yet, so Windows SmartScreen may warn the first tim
 
 ## Features
 
+**New in Cone** (Cone Player's own extras, not part of Juxtopposed's design)
+- **Netflix-style next episode.** When the credits start, an Up Next card offers the next episode. Cone finds the credits by matching the credits music across the episodes of a show, and you can set a Fixed time per show in the sidebar instead. Episodes named like S01E02 play in a row; files that are only numbered wait for you.
+- **Subtitle auto-sync.** One button lines the subtitles up with the speech, with Undo.
+- **Track memory.** Pick your audio and subtitle language once, and the rest of the show follows.
+- **Custom accent color.** Any color by its hex code, with a live preview on the whole player.
+
 **Player**
 - **Floating bars.** The top bar and the control bar float over the video and hide when the mouse rests, and so does the pointer while the video plays. Ctrl+\ hides them on demand.
 - **Seek bar.** Thumbnails while you hover, an optional audio waveform, and the subtitle timeline for timing subtitles by eye.
 - **Cone volume.** A volume slider shaped like the cone, up to 200 %.
 - **Queue, bookmarks and chapters** in one sidebar. Ctrl+B adds a bookmark at once.
-- **On-screen messages** name the key you pressed, so a stray key is easy to spot.
-- **Up Next for shows** (a Cone extra, not part of Juxtopposed's design). In a show folder, an Up Next card shows when the credits start, with Next episode and Cancel, and counts down only in the last seconds. It finds the credits from the chapters, learns from you (press Next during the credits once and the show remembers it), or uses Settings > Playback > Episodes > Show Up Next. Episodes named like S01E02 play in a row; files that are only numbered get a Next episode button and wait for you. No question to answer first, and "Turn off autoplay" is on the card.
+- **On-screen messages** in a Cone-style box that names the key you pressed, so a stray key is easy to spot.
 
 **Subtitles**
 - **Tracks popup** for audio and subtitle tracks, embedded and external.
@@ -95,7 +100,7 @@ The files are not code-signed yet, so Windows SmartScreen may warn the first tim
 - **Settings sidebar** with Playback, Video, Audio and Subtitles tabs, including speed, sleep timer, equalizer and audio visualizers.
 - **Per-show presets.** One preset per show keeps its subtitle, audio, video and playback settings.
 - **A new Settings window** with plain categories, search and short explanations behind the info icons.
-- **Dark and light themes** and 9 accent colors, picked during the first start and changed live.
+- **Dark and light themes** and 9 accent colors plus a custom one, picked during the first start and changed live.
 - **Update notice** (a Cone extra). A small notice when a newer Cone Player is out, with Download, Later and **Skip this version**; Settings > General can undo a skip.
 
 **Customize**
@@ -147,14 +152,16 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 </details>
 
 <details>
-<summary>Known issues (1.2.0)</summary>
+<summary>Known issues (1.3.0)</summary>
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
 - Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself. Settings and the resume position are kept.
+- Auto-sync moves the whole subtitle track by one amount, so it can't fix subtitles that drift apart after an ad break or a cut scene, and it works with text subtitles only.
+- Finding the credits needs a folder of 3 or more episodes on your computer.
 - The Subtitle Duration Factor slider is still hidden: in this VLC 4 engine it made ASS / SSA subtitles disappear.
 - New Cone Player texts are in English in every language for now.
 - The portable zip doesn't show up in Windows' "Open with" menu. Use the installer for that, or drag files onto Cone Player.
-- The Linux version is a beta and the macOS version an experimental preview, each with its own release.
+- The Linux version is a beta and the macOS version a preview, each with its own release.
 
 </details>
 
@@ -171,7 +178,6 @@ Cone Player is built from Juxtopposed's [VLC Redesign Figma file](https://www.fi
 
 ## Coming next
 
-- **Custom accent color**, a Cone extra: pick any color by its hex code, next to the nine presets.
 - **macOS**: the experimental preview needs testers on real Macs before it becomes a beta.
 - **Linux**: tests on real hardware (sound, GPU video) before the beta label goes.
 
