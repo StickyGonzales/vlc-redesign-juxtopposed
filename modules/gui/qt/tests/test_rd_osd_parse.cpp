@@ -74,6 +74,9 @@ int main()
     check(p.message(s("Speed: 2.00x")), "speed", "Speed", "2×", "speed 2");
     check(p.message(s("Audio delay: 50 ms")), "audio", "Audio delay", "+50 ms", "audio delay");
     check(p.message(s("Subtitle delay: -250 ms")), "subtitles", "Subtitle delay", "-250 ms", "subtitle delay");
+    const Message subDelay = p.message(s("Subtitle delay: -2340 ms"));
+    checkTrue(subDelay.subtitleDelay && subDelay.delayMs == -2340, "subtitle delay flagged with its value");
+    checkTrue(!p.message(s("Audio delay: 50 ms")).subtitleDelay, "audio delay not flagged");
     check(p.message(s("Audio track: English")), "audio", "Audio", "English", "audio track");
     check(p.message(s("Subtitle track: English")), "subtitles", "Subtitles", "English", "subtitle track");
     check(p.message(s("Subtitle track: N/A")), "subtitles", "Subtitles", "Off", "subtitles off");

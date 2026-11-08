@@ -188,6 +188,8 @@ Message Parser::message(const QString& text) const
             if (delay)
             {
                 const int ms = m.captured(2).toInt();
+                msg.subtitleDelay = msg.icon == QLatin1String("subtitles");
+                msg.delayMs = ms;
                 msg.value = QStringLiteral("%1%2 ms").arg(ms > 0 ? QStringLiteral("+") : QString())
                                                       .arg(ms);
             }

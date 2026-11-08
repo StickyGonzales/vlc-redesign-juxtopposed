@@ -47,6 +47,12 @@ RdOsd::~RdOsd()
     var_Destroy(libvlc, "cone-osd");
 }
 
+namespace {
+// how long after Auto-sync set a delay the core's message for it is expected (it is queued from
+// the core's thread right away)
+constexpr qint64 kSyncMessageWindowMs = 1500;
+}
+
 // any thread of the core: the message goes to the interface's thread
 int RdOsd::onMessage(vlc_object_t*, const char*, vlc_value_t, vlc_value_t value, void* data)
 {
@@ -63,9 +69,33 @@ void RdOsd::receive(const QString& payload)
     const QStringList parts = payload.split(QChar(0x1f));
     if (parts.size() < 2)
         return;
-    m_message = parts.at(0) == QLatin1String("icon") ? m_parser.icon(parts.at(1))
-                                                     : m_parser.message(parts.at(1));
+    const rdosd::Message message = parts.at(0) == QLatin1String("icon") ? m_parser.icon(parts.at(1))
+                                                                        : m_parser.message(parts.at(1));
+    // the delay Auto-sync set: its own message ("Moved -2.3 s") is already showing
+    if (message.subtitleDelay && m_syncDelaySet.isValid())
+    {
+        const bool expected = message.delayMs == m_syncDelayMs
+                              && !m_syncDelaySet.hasExpired(kSyncMessageWindowMs);
+        m_syncDelaySet.invalidate();
+        if (expected)
+            return;
+    }
+    m_message = message;
     m_key = parts.size() > 2 ? rdosd::Parser::keyText(parts.at(2)) : QString();
+    m_duration = static_cast<int>(var_InheritInteger(m_intf, "osd-duration"));
+    emit messageChanged();
+}
+
+void RdOsd::showSubtitleSync(const QString& label, const QString& value, int delayMs)
+{
+    m_syncDelayMs = delayMs;
+    m_syncDelaySet.start();
+    rdosd::Message msg;
+    msg.icon = QStringLiteral("subtitles");
+    msg.label = label;
+    msg.value = value;
+    m_message = msg;
+    m_key.clear();
     m_duration = static_cast<int>(var_InheritInteger(m_intf, "osd-duration"));
     emit messageChanged();
 }
