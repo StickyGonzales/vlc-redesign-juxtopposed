@@ -1,3 +1,5 @@
 #!/bin/sh
-# Cone Player in its Flatpak (extras/package/flatpak): VLC's program with Cone's interface
-exec /app/bin/vlc "$@"
+# Cone Player in its Flatpak (extras/package/flatpak): VLC's program with Cone's interface.
+# Flathub updates the app, so Cone's own update check is off here (Settings > General keeps the
+# switch, which the Flatpak ignores)
+exec /app/bin/vlc --no-qt-cone-update-check "$@"

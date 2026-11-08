@@ -1,34 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Cone Player's AppStream file for its Flatpak (extras/package/flatpak) -->
+<!-- Cone Player's AppStream file for its Flatpak (extras/package/flatpak, redesign/SUBMIT_TO_FLATHUB.md) -->
 <component type="desktop-application">
   <id>io.github.StickyGonzales.ConePlayer</id>
   <name>Cone Player</name>
-  <summary>Media player with Juxtopposed's VLC Redesign, based on VLC media player</summary>
+  <summary>Play videos and music with a modern interface</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-2.0-or-later</project_license>
-  <developer id="io.github.StickyGonzales">
+  <project_license>GPL-2.0-or-later AND LGPL-2.1-or-later</project_license>
+  <developer id="io.github.stickygonzales">
     <name>StickyGonzales</name>
   </developer>
+
   <description>
     <p>
-      Cone Player plays your videos and music with the interface of Juxtopposed's
-      "VLC Redesign" (CC BY 4.0), built on the engine of VLC media player. It plays almost any
-      file, with subtitles, chapters, bookmarks, a media library and per-show presets.
+      Cone Player is a media player for your videos and music. It plays almost any file and
+      stream with the engine of VLC media player, and wraps it in a calm, modern interface: the
+      "VLC Redesign" by the designer Juxtopposed, built for real.
+    </p>
+    <ul>
+      <li>A thin control bar and a top bar that float over the video and get out of the way</li>
+      <li>One sidebar for subtitles, audio, video and playback settings, with presets per show</li>
+      <li>Subtitles from files or OpenSubtitles, with a timeline and automatic sync</li>
+      <li>Bookmarks, chapters and a queue in one place</li>
+      <li>A media library with Continue Watching, music, playlists and network streams</li>
+      <li>Dark and light themes with an accent color of your choice</li>
+    </ul>
+    <p>
+      Interface design: "VLC Redesign" by Juxtopposed, under the Creative Commons Attribution 4.0
+      license. Engine: VLC media player by VideoLAN and its contributors.
     </p>
     <p>
-      Experimental: based on the development version of VLC media player (VLC 4). Cone Player is
-      not affiliated with or endorsed by VideoLAN or Juxtopposed.
+      Experimental: Cone Player follows the development version of VLC media player (VLC 4). It is
+      not affiliated with or endorsed by VideoLAN or Juxtopposed; VLC is a trademark of the
+      VideoLAN non-profit organization.
     </p>
   </description>
+
   <launchable type="desktop-id">io.github.StickyGonzales.ConePlayer.desktop</launchable>
-  <url type="homepage">https://github.com/StickyGonzales/vlc-redesign-juxtopposed</url>
-  <url type="bugtracker">https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues</url>
-  <categories>
-    <category>AudioVideo</category>
-    <category>Player</category>
-  </categories>
-  <content_rating type="oars-1.1"/>
   <provides>
     <binary>cone</binary>
   </provides>
+
+  <url type="homepage">https://github.com/StickyGonzales/vlc-redesign-juxtopposed</url>
+  <url type="bugtracker">https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues</url>
+  <url type="vcs-browser">https://github.com/StickyGonzales/vlc-redesign-juxtopposed</url>
+  <url type="help">https://github.com/StickyGonzales/vlc-redesign-juxtopposed#readme</url>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Video</category>
+    <category>Audio</category>
+    <category>Player</category>
+  </categories>
+  <keywords>
+    <keyword>video</keyword>
+    <keyword>music</keyword>
+    <keyword>movie</keyword>
+    <keyword>subtitles</keyword>
+    <keyword>player</keyword>
+  </keywords>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Your video, with the controls floating over it</caption>
+      <image>https://raw.githubusercontent.com/StickyGonzales/vlc-redesign-juxtopposed/451ff5448696ac970744c65c319869170c0d1e71/extras/package/flatpak/screenshots/1-player.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Playback, video, audio and subtitle settings in one sidebar</caption>
+      <image>https://raw.githubusercontent.com/StickyGonzales/vlc-redesign-juxtopposed/451ff5448696ac970744c65c319869170c0d1e71/extras/package/flatpak/screenshots/2-playback-sidebar.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Subtitle tracks from the file or from your computer</caption>
+      <image>https://raw.githubusercontent.com/StickyGonzales/vlc-redesign-juxtopposed/451ff5448696ac970744c65c319869170c0d1e71/extras/package/flatpak/screenshots/3-subtitle-tracks.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Open files, folders, discs and network streams</caption>
+      <image>https://raw.githubusercontent.com/StickyGonzales/vlc-redesign-juxtopposed/451ff5448696ac970744c65c319869170c0d1e71/extras/package/flatpak/screenshots/4-main-menu.png</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#f3c99b</color>
+    <color type="primary" scheme_preference="dark">#6e3d0c</color>
+  </branding>
+
+  <content_rating type="oars-1.1"/>
+
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <releases>
+    <release version="1.2.0~beta3" date="2026-11-02" type="development">
+      <url type="details">https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.2.0-beta3</url>
+      <description>
+        <p>Fixed:</p>
+        <ul>
+          <li>No more freeze when you drag the playback speed slider</li>
+          <li>The mouse pointer hides again over a playing video, in a window and in fullscreen, and stays visible while paused</li>
+        </ul>
+        <p>New:</p>
+        <ul>
+          <li>Up Next for shows: the next episode card comes when the credits start</li>
+          <li>Files opened from the file manager play in the window that is already open</li>
+          <li>Cone Player shows with its own name and icon in the dock, the media controls and the sound mixer</li>
+          <li>Hardware video decoding finds the drivers on more distributions</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
 </component>
