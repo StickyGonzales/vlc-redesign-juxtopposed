@@ -52,6 +52,8 @@ constexpr int kMaxPrintsPerShow = 3;
 // how long a read may take
 constexpr int kFullBudgetSeconds = 120;
 constexpr int kQuickBudgetSeconds = 30;
+// the quick check reads this much more at each end of its 2-minute window
+constexpr qint64 kQuickEdgeMs = 2000;
 
 bool batterySaver()
 {
@@ -363,9 +365,11 @@ RdCreditsScans::Outcome RdCreditsScans::scan(RdCreditsScanner& scanner, const Re
             return plan;
         const qint64 expectedMs = lengthMs - show.creditsLeadMs;
         plan.read = true;
-        plan.fromMs = std::max<qint64>(0, expectedMs - rdcredits::kQuickHalfMs);
-        // the needle is the music's first seconds: they must fit after the latest start
-        plan.toMs = expectedMs + rdcredits::kQuickHalfMs + rdcredits::kQuickMatchSeconds * 1000;
+        // a little more than 1 minute either side: music starting right at an edge is still whole
+        // in the read (its first seconds are what is looked for), and they must fit after the
+        // latest start
+        plan.fromMs = std::max<qint64>(0, expectedMs - rdcredits::kQuickHalfMs - kQuickEdgeMs);
+        plan.toMs = expectedMs + rdcredits::kQuickHalfMs + rdcredits::kQuickMatchSeconds * 1000 + kQuickEdgeMs;
         plan.budgetSeconds = kQuickBudgetSeconds;
         return plan;
     });

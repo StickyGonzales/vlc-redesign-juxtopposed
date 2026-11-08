@@ -145,7 +145,54 @@ After Cancel the autoplay item leaves the queue, as before (#87). Next then has 
 
 ## 9. Tests
 
-See section 11 (results) below.
+### Unit tests
+- **`test_rd_credits_point` (106 checks, all pass):**
+  - the decision order;
+  - learning: five card clicks keep the point; an early Next moves it earlier; Cancel then a later Next moves it later;
+  - Fixed ignores everything else;
+  - a dark scene alone or a post-credits scene alone fools nothing;
+  - the end of the dialogue alone moves the setting's point by at most 2 minutes;
+  - scan planning: quick within 5 minutes of the usual length, full beyond;
+  - scannable extensions;
+  - black frames.
+- **`test_rd_credits_audio` (17 checks, all pass):**
+  - two episodes with the same credits music give its start (±0.5 s);
+  - the quick check finds the music 25 s after the expected point, also in a lossy copy;
+  - another show's music, silence and a window without the music are never found;
+  - credits of 6:30 are matched;
+  - a post-credits scene ends the match.
+
+### Linux sandbox (build-linux #94, `cs.py`)
+**Media:** generated 55-minute episodes (`make_eps.py`, 160x90, AAC 48 kb/s).
+- Each episode has its own sound up to the credits.
+- The show's credits melody is the same in every episode; the credits are white text on black.
+- Each episode has an SRT with dialogue up to the credits.
+
+| Case | Result |
+|---|---|
+| E01 and E02: full scans; E02's credits music matched with E01's | pass: E02 3200.5 s (true 3200.3), E01's card point 3200.2 s from the audio match |
+| The show saved: credits 99.5 s from the end, 60 s of music, the lengths | pass |
+| The sidebar row; Fixed pre-filled with the current point (1:40) | pass (screenshots below) |
+| E03, 40 s longer, dialogue after the credits: quick check only | pass: 3240.2 s (true 3240) |
+| E04, 2:30 shorter: quick check only | pass: 3050.2 s (true 3050) |
+| E05, normal length, credits 100 s longer: the quick check misses, the full scan finds them | pass: 3100.3 s |
+| E06, 7 minutes longer (finale): no quick check, a full scan at once | pass: 3620.3 s |
+| E07, credits of 6:20: found in the 8-minute scan | pass: 2920.2 s |
+| A dark scene (45 s) before E02's credits | black frames point there (2950 s); the audio match wins, the card is at 3200.5 s |
+| E03's post-credits dialogue | the end of the dialogue is 3232 s (the last line before the credits), not the post-credits line at 3313 s |
+| Next at 3150 s, before the card | learned 148 s before the end (earlier) |
+| The card's Next episode button | not learned (unchanged) |
+| Cancel on the card, then the next episode at 3270 s | learned 68 s before the end (later) |
+| Fixed 0:30 in the store | wins over the audio match (3270 s) |
+| A 2-video show folder, a movie alone, mp3 files | never scanned |
+| Quit during a scan (paused on the seek bar) | 0.3 s, as without a scan; the log says "cancelled" |
+| Rename the episode being scanned | the rename works, the scan finishes |
+
+**Bugs found by the sandbox and fixed:**
+- **The quick check never found re-encoded music.** At the true place 40 % of the values match, and the check wanted 50 %. It now wants 25 %; other audio matches 0 %.
+- **No margin at the window's edges.** The quick window reads 2 s more at each end, so music starting right at an edge is whole.
+
+![Automatic](fix-shots/credits_row_auto.png) ![Fixed](fix-shots/credits_row_fixed.png)
 
 ## 10. Review
 
