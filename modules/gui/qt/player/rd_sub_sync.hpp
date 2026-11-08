@@ -90,8 +90,8 @@ signals:
     // closed)
     void notice(const QString& text);
     // the subtitles were moved (the delay is now delayMs): the player's message shows label and
-    // value ("Auto-sync", "Moved -2.3 s"); notice is the line for the player's notification
-    // where Cone's message is not used (an automatic sync), empty otherwise
+    // value ("Auto-sync", "Moved -2.3 s"; "Undone" after Undo); notice is the line for the
+    // player's notification where Cone's message is not used (an automatic sync), empty otherwise
     void synced(const QString& label, const QString& value, int delayMs, const QString& notice);
 
 private:

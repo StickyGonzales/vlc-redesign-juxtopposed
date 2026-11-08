@@ -598,6 +598,8 @@ void RdSubSync::undo()
         if (m_undo.fpsChanged)
             m_player->setSubtitleFPS(m_undo.fps);
         m_player->setSubtitleDelayMS(m_undo.delayMs);
+        // the message reads "Auto-sync  Undone" instead of the core's "Subtitle delay 0 ms"
+        emit synced(qtr("Auto-sync"), qtr("Undone"), m_undo.delayMs, QString());
     }
     m_undo = Undo();
     setResult(QString(), false);
