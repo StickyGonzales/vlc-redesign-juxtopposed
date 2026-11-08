@@ -48,9 +48,11 @@
  * redesign/LINUX_UX_NOTES.md) */
 #ifdef VLC_BRAND_PUBLIC
 # ifdef CONE_DESKTOP_ID
-/* a package with its own app ID: the Flatpak (extras/package/flatpak) */
-#  define APP_ID CONE_DESKTOP_ID
-#  define APP_ICON_NAME CONE_DESKTOP_ID
+/* a package with its own app ID: the Flatpak (extras/package/flatpak), given without quotes */
+#  define APP_STRINGIFY_(x) #x
+#  define APP_STRINGIFY(x) APP_STRINGIFY_(x)
+#  define APP_ID APP_STRINGIFY(CONE_DESKTOP_ID)
+#  define APP_ICON_NAME APP_STRINGIFY(CONE_DESKTOP_ID)
 # else
 #  define APP_ID "cone-player"
 #  define APP_ICON_NAME "cone-player"

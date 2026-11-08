@@ -160,7 +160,7 @@ modules:
     build-options:
       # the Flatpak's own desktop ID for the window (Wayland app id, X11 class), the media
       # controls and the sound mixer (modules/gui/qt/util/brand.hpp)
-      cppflags: -DCONE_DESKTOP_ID=\"io.github.StickyGonzales.ConePlayer\"
+      cppflags: -DCONE_DESKTOP_ID=io.github.StickyGonzales.ConePlayer
     build-commands:
       # BUILDCC: the compiler for VLC's build-time helpers (the SDK has no c99 wrapper)
       - ./bootstrap
