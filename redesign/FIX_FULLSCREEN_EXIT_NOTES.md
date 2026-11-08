@@ -55,6 +55,10 @@ Branch `wip/fix-fullscreen-exit`, made from `origin/wip/next-test`. Draft pull r
 - the top bar's button, then one F: windowed;
 - then F, F: fullscreen and back.
 
+**Round 2 runs (commit 1d820def24).**
+- build-windows #199: green. The smoke check "fullscreen is left whichever way it was entered" passes on H.264 and HEVC: "F then the button: windowed; the button then Escape: windowed; the button then one F: windowed; F, F: in and out".
+- build-linux #95: green (Linux smoke, every check passes).
+
 ## Windows retest (PC session)
 Build: the build-windows run of this branch, Cone (portable), an episode.
 1. **F, then the button.** Press F: fullscreen. Move to the top edge and click the top bar's fullscreen button: windowed.
