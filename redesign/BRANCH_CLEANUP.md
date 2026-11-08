@@ -1,148 +1,103 @@
-# Branch cleanup (2026-10-20)
+# Branch cleanup
 
-Branches that can be deleted from GitHub. Nothing here holds work that exists nowhere else.
+Every branch deleted from GitHub, with its last commit, so it can be restored:
 
-The web session cannot delete branches: GitHub refuses with HTTP 403. Delete them from the PC session (`git push origin --delete <branch>`), or on GitHub: **Branches**, **All**, search the name, then click the trash icon.
+```
+git push origin <sha>:refs/heads/<branch>
+```
 
-State checked at 17:23 UTC. "Merged" means the branch tip is an ancestor of `redesign` or `wip/next-test`. Before each delete, check it again: `git fetch origin; git merge-base --is-ancestor origin/<branch> origin/wip/next-test` must exit 0, and the branch must have no new commits.
+## 2026-11-09 (StickyGonzales: fully merged branches, and test-only branches older than 3 days)
 
-## 1. Merged, no open PR: can go now
+Kept: redesign, wip/next-test, wip/linux-build, master, every branch with an open PR, the Task owners rows still in progress, and the round's own staging branch.
 
-| Branch | Merged into | Its PR | Last commit |
+| Branch | Last commit | Date | Why | Last commit message |
+|---|---|---|---|---|
+| `wip/ci-release` | `d8fa02d1d0b9f2a17201e2d9fa6314f98d4e27ab` | 2026-10-25 | fully merged into wip/next-test or redesign | CI release: 1.0 file names and the "Cone Player <version>" title |
+| `wip/ci-smoke` | `71ac4602ba8556c816c6f80cfa953d8fc99a02a2` | 2026-10-27 | fully merged into wip/next-test or redesign | redesign: CI smoke notes: end-to-end run, iterations, side finding [skip ci] |
+| `wip/cone-player` | `4ebdbc92599569ec31c58fae8692f2474b68dbd9` | 2026-10-25 | fully merged into wip/next-test or redesign | redesign: RENAME_CONE_PLAYER: no beta-to-1.0 tests in the Windows steps [skip ci] |
+| `wip/custom-accent` | `6a5f7c97ab5dbd4bd875f7288c38f52e11e268cf` | 2026-11-01 | fully merged into wip/next-test or redesign | Custom accent notes: build-windows #170 green [skip ci] |
+| `wip/fix-apikey-sidebar` | `404b844fa54c22cfb45630daf3aa10262ed4d6c3` | 2026-10-26 | fully merged into wip/next-test or redesign | qt: an open panel keeps both bars in fullscreen; key fields get an eye button and a Saved note |
+| `wip/fix-ass-styling` | `94fd946a44fca68ce235629df9e6cb9303dabf70` | 2026-10-25 | fully merged into wip/next-test or redesign | redesign: VIDEO_INDEX: S2-11 core change built (run 40210779130) [skip ci] |
+| `wip/fix-cursor-hide` | `d457f37a32c4f9901c24e1a31451fb33fdde164a` | 2026-11-02 | fully merged into wip/next-test or redesign | notes: cursor fix runs [skip ci] |
+| `wip/fix-customize-outlines` | `2c5d6b2cb0e0bde582cf4ac026256bcbbbd162ce` | 2026-10-31 | fully merged into wip/next-test or redesign | FIX_CUSTOMIZE_OUTLINES_NOTES: Decision 74, real drags against Figma, runs [skip ci] |
+| `wip/fix-first-start-wait` | `ebabca4ece11093e7580b94c06f96c6185b1baa9` | 2026-11-03 | fully merged into wip/next-test or redesign | notes: F1 build-windows #180 green [skip ci] |
+| `wip/fix-fs-menu` | `9c4297863eb584f0715fbea493e575ee64957f29` | 2026-11-01 | fully merged into wip/next-test or redesign | Notes: fullscreen "..." menu, runs [skip ci] |
+| `wip/fix-fs-topbar-hover` | `db4e4cbcecb5a5e676e13471fadc1e96716f56ba` | 2026-10-27 | fully merged into wip/next-test or redesign | redesign: fullscreen top bar fix notes: the fixed build passes [skip ci] |
+| `wip/fix-linux-audio-device` | `c6894958a42910e20534dc51fd401adf51f94c79` | 2026-10-25 | fully merged into wip/next-test or redesign | qt: Settings > Audio > Output device on Linux (P8-11) |
+| `wip/fix-linux-language` | `e66cbf4b9b5c70b022e2feb2a7b788194112b775` | 2026-10-25 | fully merged into wip/next-test or redesign | qt: interface language on Linux (P8-03) |
+| `wip/fix-linux-postproc` | `f2d3bfbb3294363bc64f33e937905110d0deb1be` | 2026-11-01 | fully merged into wip/next-test or redesign | Merge remote-tracking branch 'origin/wip/linux-build' into wip/fix-linux-postproc |
+| `wip/fix-linux-release-build` | `b9ab185cb6d6b7251eb4ba74413f0c6f0eb2ce81` | 2026-11-01 | fully merged into wip/next-test or redesign | Merge remote-tracking branch 'origin/wip/linux-build' into wip/fix-linux-release-build |
+| `wip/fix-missing-plugin-dlls` | `f162f359297931f049f110a75d6500c42759ec7b` | 2026-10-31 | fully merged into wip/next-test or redesign | FIX_PLUGIN_DLLS_NOTES: the runs [skip ci] |
+| `wip/fix-mute-key-hint` | `6a021acca0063aecb3e15242f532b75b84587926` | 2026-11-01 | fully merged into wip/next-test or redesign | FIX_AUDIO_ICON_NOTES: cause, fix, runs and Windows retest steps [skip ci] |
+| `wip/fix-open-in-running-window` | `f9616da6fe5a9ae7117be439002c00fcf35be21b` | 2026-11-03 | fully merged into wip/next-test or redesign | notes: CI green [skip ci] |
+| `wip/fix-pause-rate` | `3a799246a877a60258d6a470779be03947a909f1` | 2026-10-25 | fully merged into wip/next-test or redesign | redesign: issue #52 notes: cause, sandbox results, Windows retest, draft reply [skip ci] |
+| `wip/fix-quit-handoff` | `2b31474731a4b2c2b29f835b91deed1897c75547` | 2026-10-26 | fully merged into wip/next-test or redesign | core: a second running instance can create its pipes (Windows) |
+| `wip/fix-restore-prompt-after-watchdog` | `042a7d88bf4f25f58d2ded75464143e3a6d32263` | 2026-10-31 | fully merged into wip/next-test or redesign | FIX_RESTORE_PROMPT_NOTES: cause, fix, sandbox test and runs [skip ci] |
+| `wip/fix-seek-drag-flicker` | `88dc2623585341350084c48f26da62898e5dc7cc` | 2026-10-26 | fully merged into wip/next-test or redesign | redesign: seek drag flicker notes: count every frame [skip ci] |
+| `wip/fix-seek-thumbnails` | `c38ddfa3d33e6ef3f1483835bd9d4974523dfb96` | 2026-10-26 | fully merged into wip/next-test or redesign | qt: seek preview: rename the local variable far (a macro on Windows) |
+| `wip/fix-settings-a11y-save` | `35753ef94a1c87baf2f7978209735ccadcbc9008` | 2026-10-25 | fully merged into wip/next-test or redesign | redesign: Settings saves changes made with accessibility tools |
+| `wip/fix-settings-advanced-bar` | `91a3c833705a97f46e5b011e46bb789fc38ca3f5` | 2026-10-25 | fully merged into wip/next-test or redesign | qt: Settings pages end 40 under their last element, as in Figma |
+| `wip/fix-short-episode-prompt` | `0b10fd56cf00d61d686ab94b2504a8f9fff393cb` | 2026-11-01 | fully merged into wip/next-test or redesign | FIX_AUDIO_ICON_NOTES: cause, fix, runs and Windows retest steps [skip ci] |
+| `wip/fix-slider-a11y-value` | `435b0c793b928e5c603230b83a0ce8e584c41a56` | 2026-11-01 | fully merged into wip/next-test or redesign | FIX_AUDIO_ICON_NOTES: cause, fix, runs and Windows retest steps [skip ci] |
+| `wip/fix-smoke-media` | `2413a33010ceb4f31c14ae067d0b7daf9f5157c0` | 2026-10-27 | fully merged into wip/next-test or redesign | ci smoke: test media from a cached run, ffmpeg from PyPI instead of apt |
+| `wip/fix-speed-freeze` | `5670c06c844d59b0fe63fda9a3bd41d0b2a08a50` | 2026-11-01 | fully merged into wip/next-test or redesign | Notes: speed slider freeze, runs [skip ci] |
+| `wip/fix-startup-deadlock` | `d6e93e839365c48aa477cebd2eafb1e7d8063a75` | 2026-10-25 | fully merged into wip/next-test or redesign | input: send the attachments event outside the item lock |
+| `wip/fix-subtitle-defaults` | `41522cbe7dbf01a287d5e0b48138cb0ace23530f` | 2026-10-25 | fully merged into wip/next-test or redesign | Cone: keep VLC's Normal subtitle outline (Q8) |
+| `wip/fix-sub-ui-margin-dummy` | `a6c43c4c7a61ed44b5f158921bf733aa798f5d8a` | 2026-10-25 | fully merged into wip/next-test or redesign | vout: add the sub-ui-margin callback in vout_IntfInit, not on the dummy output |
+| `wip/fix-uninstall-own-keys` | `94c8a75b56196b1fe1911e49e49048cb6f8eee8b` | 2026-10-25 | fully merged into wip/next-test or redesign | redesign: INSTALLER_NOTES: upgrades from installs without a record [skip ci] |
+| `wip/fix-upgrade-shortcut` | `428c508ee34363ad9e30f3c0c2d79fb2466d6ad6` | 2026-11-01 | fully merged into wip/next-test or redesign | Installer shortcut notes: CI runs [skip ci] |
+| `wip/fix-up-next-card` | `3db09c1f681cd3777c9bc1c47984afcafe5b58fd` | 2026-11-01 | fully merged into wip/next-test or redesign | Up Next card notes: runs, sandbox results, the fade frames of build-linux #70 [skip ci] |
+| `wip/fix-version-console` | `b5f7bfbab6ba92573808dfd023244b16720022ec` | 2026-11-01 | fully merged into wip/next-test or redesign | FIX_AUDIO_ICON_NOTES: cause, fix, runs and Windows retest steps [skip ci] |
+| `wip/hide-osd-seek-slider` | `9ac1aac155cc6fa34a0036f202e4e6e1d46b9862` | 2026-11-03 | fully merged into wip/next-test or redesign | notes: CI green [skip ci] |
+| `wip/hide-subsdelay-factor` | `8c3d3d17c9cfb0992ac17741859bfbb7ece5d2c2` | 2026-10-26 | fully merged into wip/next-test or redesign | redesign: Subtitle Duration Factor notes: the first start after upgrading, fixed [skip ci] |
+| `wip/installer` | `09465947145414f48f6d6cc57e87ba5c70296e68` | 2026-10-25 | fully merged into wip/next-test or redesign | redesign: INSTALLER_NOTES: known limits accepted for 1.0, Windows test result [skip ci] |
+| `wip/installer-polish` | `e44f448e248bdd0c57f3c80bd9552ce17e58f8a9` | 2026-10-31 | fully merged into wip/next-test or redesign | INSTALLER_POLISH_NOTES: runs [skip ci] |
+| `wip/linux-deb` | `548b019f208f2fdee1b9853bcb7c6f13e7feaa09` | 2026-11-01 | fully merged into wip/next-test or redesign | Notes: Linux .deb package (cone-player, /opt/cone-player) [skip ci] |
+| `wip/linux-docs` | `edf061b71357e4f6bc4de66b2f17a2138563a238` | 2026-11-01 | fully merged into wip/next-test or redesign | Merge branch 'wip/linux-smoke' into wip/linux-docs |
+| `wip/linux-install` | `c6cbd8773695968d6fdc32fba713679f0c376355` | 2026-11-01 | fully merged into wip/next-test or redesign | Notes: Linux per-user install (install.sh, uninstall.sh, AppImage entry) [skip ci] |
+| `wip/linux-smoke` | `8f903353852158aee8e751cbc9b472a5384d8397` | 2026-11-01 | fully merged into wip/next-test or redesign | Notes: Linux smoke checks, the speed slider check [skip ci] |
+| `wip/linux-update-notice` | `d9e45f93b9d0a49f64dd212126f3883ed91c5948` | 2026-11-01 | fully merged into wip/next-test or redesign | qt: update notice on Linux: the newest Linux release, not the Windows one |
+| `wip/linux-ux-desktop-id` | `8e855f43e1887c95bff704c4b76c5f2cd5a2eeaa` | 2026-11-01 | fully merged into wip/next-test or redesign | Linux: windows, media controls and sound mixer name cone-player.desktop |
+| `wip/linux-ux-notes` | `144c63ec1ed737d7e6548532e64433b2e1f51668` | 2026-11-01 | fully merged into wip/next-test or redesign | Linux UX notes: #93 run green [skip ci] |
+| `wip/linux-ux-open-in-window` | `f0a301d2298467267f98b87779a404e32fbb59b2` | 2026-11-01 | fully merged into wip/next-test or redesign | Linux: files opened from the desktop go to the running Cone window |
+| `wip/linux-ux-vaapi-paths` | `e74d9c3cd933cec7260035a013b31f7c65e4f264` | 2026-11-01 | fully merged into wip/next-test or redesign | Linux: hardware decoding finds the system's drivers outside Debian/Ubuntu |
+| `wip/osd-cone-style` | `074204f122a5b602eb21788e39271ce85cd03542` | 2026-11-03 | fully merged into wip/next-test or redesign | notes: OSD build-windows #186 green [skip ci] |
+| `wip/readme-1.0` | `be46b2898c0f89f2abf7ee194c3cc512245e5566` | 2026-10-26 | fully merged into wip/next-test or redesign | README: homepage shots with the Blender open movies, accent colors section, film credits [skip ci] |
+| `wip/release-portable` | `c79ae6bafa452d2f3e909dca6b2bc74b70d39433` | 2026-10-26 | fully merged into wip/next-test or redesign | CI release: the zip ships an empty portable folder again [skip ci] |
+| `wip/show-tracks` | `3517edf5885d57e27811b176fcedab7fa5a66a72` | 2026-11-02 | fully merged into wip/next-test or redesign | Show tracks notes: build-windows #174 green [skip ci] |
+| `wip/subtitle-auto-sync` | `c6ce321421e930aaa793f42600eb10f8e41b005d` | 2026-11-03 | fully merged into wip/next-test or redesign | notes: Auto-sync builds #90 and #192 green, slider-only shots [skip ci] |
+| `wip/update-notice` | `6a2ffee74a08b07aa273962d5c36a51436fbf86b` | 2026-10-26 | fully merged into wip/next-test or redesign | redesign: update notice: rebuild checked in the sandbox, picture [skip ci] |
+| `wip/update-skip-version` | `70d3081106a8de67463d24d3f9d07c8249777507` | 2026-11-01 | fully merged into wip/next-test or redesign | UPDATE_SKIP_NOTES: step 6 was not rerun [skip ci] |
+| `wip/up-next` | `9e36dc7e64a72bf9dd0fb1d9d5ebc095dfeabac0` | 2026-10-25 | fully merged into wip/next-test or redesign | Cone extra (Up Next): build 32 retest results [skip ci] |
+| `wip/up-next-credits` | `fb8697f442301fc4b28977161b68581ca024c91e` | 2026-11-01 | fully merged into wip/next-test or redesign | Up Next credits notes: runs, sandbox results and the card picture [skip ci] |
+| `wip/up-next-no-end-text` | `a5869ceb5179bebbf9fae1ca9991b32e56a261e6` | 2026-11-08 | fully merged into wip/next-test or redesign | Up Next card: no "Plays at the end of the episode" line while an autoplaying episode waits |
+| `wip/diag-fs-menu` | `530ff35e5d9fc454f6e58c9339fd2a162ac119d6` | 2026-11-01 | test-only, older than 3 days, not merged | diagnostic only: the fullscreen "..." click with each compositor forced |
+| `wip/diag-hevc-stall` | `fb060dd6c23f32beba8c6388cfa37dd8bac6894d` | 2026-10-25 | test-only, older than 3 days, not merged | DIAG (test-only, never merge): count D3D11VA surfaces in use, log codec flushes |
+| `wip/fs-topbar-probe` | `130630c5210bf40b3a52b949da72881827746b14` | 2026-10-27 | test-only, older than 3 days, not merged | Merge branch 'wip/fix-smoke-media' into wip/fs-topbar-probe |
+| `wip/linux-fixes-linux` | `e319e04663d293e43a50cebbbfeb2d24c8e88c1d` | 2026-10-25 | test-only, older than 3 days, not merged | Merge remote-tracking branch 'origin/wip/fix-linux-release-build' into wip/linux-fixes-linux |
+| `wip/pr74-cursor-hide` | `687f9353559a66f81dbf0b9b3c99bcd4b9242484` | 2026-11-01 | test-only, older than 3 days, not merged | Merge PR #74 (krishvaghasiya705): hide the cursor only during playback, for the Windows build |
+| `wip/quit-hang-cause` | `1d8f2ed8485e79ac3b676bc6efc79d19d1dfaea7` | 2026-10-20 | test-only, older than 3 days, not merged | redesign: quit hang cause: the HEVC frame-threaded decoder never returns during the stop [skip ci] |
+| `wip/seekfix-linux` | `dccf53044520109dc546f29bc161229528177f75` | 2026-10-26 | test-only, older than 3 days, not merged | Merge branch 'wip/fix-seek-thumbnails' into wip/seekfix-linux |
+| `wip/test-fs-topbar` | `0e8266b9cacaf8c19b4c0784a5bc80c5f3063844` | 2026-10-27 | test-only, older than 3 days, not merged | Merge remote-tracking branch 'origin/wip/fix-smoke-media' into wip/test-fs-topbar |
+| `wip/test-installer-1.0-ownkeys` | `703178022fb4ce0d6f82e9ef46e069474554ce17` | 2026-10-25 | test-only, older than 3 days, not merged | Merge the uninstaller review fixes (wip/fix-uninstall-own-keys) into the installer test branch (test only, never merge) |
+| `wip/test-linux-restore-customize` | `639984a0a03dd66ba5e97a773e4d3b881a0298c2` | 2026-10-31 | test-only, older than 3 days, not merged | Merge branch 'wip/fix-customize-outlines' into wip/test-linux-restore-customize |
+| `wip/test-linux-small-fixes` | `0e149ae6db423bcf04dfae33d523fe14d0beb552` | 2026-11-01 | test-only, older than 3 days, not merged | Merge remote-tracking branch 'origin/wip/fix-version-console' into wip/test-linux-small-fixes |
+| `wip/test-plugin-dlls` | `526d68755b8234a4ce958bdcf151eb0da70d11ba` | 2026-10-31 | test-only, older than 3 days, not merged | Merge remote-tracking branch 'origin/wip/fix-smoke-media' into wip/test-plugin-dlls |
+| `wip/test-pr48-49` | `f2bf43fd7b58493d26a91b257ebf3761c33015e7` | 2026-10-25 | test-only, older than 3 days, not merged | Test branch: wip/next-test + PR #48 + PR #49 (test only, never merge) |
+| `wip/test-speed-check-only` | `6142db7a4e13b964eff62381975e87f7159ec7d8` | 2026-11-01 | test-only, older than 3 days, not merged | test only: the speed slider smoke check without the fix (never merge) |
+| `wip/update-notice-linux` | `6df717740983abc31859316627161eca214268af` | 2026-10-26 | test-only, older than 3 days, not merged | Merge branch 'wip/update-notice' into wip/update-notice-linux |
+| `wip/up-next-linux` | `d400dc01c124d10d3bd14cd9b927f47019847230` | 2026-10-25 | test-only, older than 3 days, not merged | Merge branch 'wip/up-next' into wip/up-next-linux |
+
+Not deleted, unmerged and not in the Task owners table (for StickyGonzales to decide):
+
+| Branch | Last commit | Date | Last commit message |
 |---|---|---|---|
-| wip/web-fixes-1 | wip/next-test | #17 closed | 2026-10-18 |
-| wip/sidebar-musthaves | wip/next-test | #10 closed | 2026-10-16 |
-| wip/readme-cone | redesign | #11 merged | 2026-10-19 |
-| wip/fix-subtitle-lift | wip/next-test | #31 merged | 2026-10-19 |
-| wip/fix-subsdelay | wip/next-test | #30 merged | 2026-10-19 |
-| wip/fix-library-escape | wip/next-test | #35 merged | 2026-10-20 |
-| wip/quit-watchdog | wip/next-test | #34 merged | 2026-10-20 |
-| wip/fix-audio-icon | wip/next-test | #42 merged | 2026-10-20 |
-| wip/fix-chapter-title | wip/next-test | #39 merged | 2026-10-20 |
-| wip/fix-playlist-favorite | wip/next-test | #41 merged | 2026-10-20 |
-| wip/fix-window-class | wip/next-test | #40 merged | 2026-10-20 |
-| wip/cone-window-title | wip/next-test | none (title part of #36) | 2026-10-20 |
-
-## 2. Merged, PR still open: only after its PR closes
-
-These PRs point at `redesign`. GitHub marks them merged when `wip/next-test` goes into `redesign`; then the branch can go.
-
-| Branch | Merged into | Its PR |
-|---|---|---|
-| wip/decision-67 | wip/next-test | #28 open |
-| wip/eq-curves | wip/next-test | #25 open |
-| wip/web-fixes-3 | wip/next-test | #20 open |
-| wip/web-fixes-4 | wip/next-test | #23 open |
-| wip/musthaves-2 | wip/next-test | #22 open |
-| claude/zen-mendel-p1anpd | wip/next-test | #26 merged; this file's PR (into wip/next-test) is open, so the branch goes after that one is merged |
-
-## 3. "-linux" test branches (Linux CI builds of a PR, never merged)
-
-| Branch | Built for | When |
-|---|---|---|
-| wip/fix-subs-linux | #30 (merged) | now |
-| wip/fix-library-escape-linux | #35 (merged) | now |
-| wip/fix-quit-linux | #32 (closed) | now |
-| wip/fix-audio-icon-linux | #42 (merged) | now |
-| wip/fix-chapter-title-linux | #39 (merged) | now |
-| wip/fix-playlist-favorite-linux | #41 (merged) | now |
-| wip/fix-window-class-linux | #40 (merged) | now |
-| wip/fix-visualizer-linux | #36 (open) | after #36 closes |
-| wip/motion-polish-linux | #37 (open) | after #37 closes |
-| wip/eq-icons-linux | #25 (open) | after #25 closes |
-| wip/web-fixes-3-linux | #20 (open) | after #20 closes |
-| wip/web-fixes-4-linux | #23 (open) | after #23 closes |
-
-## 4. Not merged, not needed: can go now
-
-| Branch | Why it is not needed |
-|---|---|
-| wip/fix-library | One "WIP: partial fixes" commit from an agent cut off by the session limit; never reviewed or built |
-| wip/fix-panels | The same, for the Settings audio page and panels |
-| wip/linux-recheck | Linux re-check build of earlier PRs (test only, no PR) |
-
-## Not on this list
-
-- **Protected, kept:** `redesign`, `wip/next-test`, `wip/linux-build`, `wip/ci-release`, `wip/windows-checklist`, `master`, every `wip/test-*` branch (the PC session's test branches; some are merged too), and every branch with an open PR not named above.
-- **Work that exists nowhere else, kept:** `wip/verify-linux`, `wip/verify-sheets`, `wip/code-audit`, `wip/verify-harness`, `wip/beta-gate`, `wip/a839e9d9ddb97595a`.
-- **Closed PRs that are not merged by ancestry, kept until StickyGonzales decides:**
-  - `wip/web-fixes-2` (#19): its code is in `wip/next-test` as equivalent commits.
-  - `wip/next-batch` (old base of #10): its 2 commits are in `wip/next-test` as equivalent commits.
-  - `wip/fix-quit-deadlock` (#32): failed fix, see #38.
-
-## Done (PC session, 2026-10-25)
-
-Deleted from GitHub after a recheck (merged ones still ancestors of `wip/next-test`, none with commits after 2026-10-20, none the head of an open PR): sections 1, 2 (their PRs #20 #22 #23 #25 #28 #26 / #43 are merged), 3 (all but the two below) and 4, plus `wip/web-fixes-2`, `wip/next-batch` and `wip/fix-quit-deadlock` (StickyGonzales, 2026-10-25). Kept: `wip/fix-visualizer-linux` (#36 open) and `wip/motion-polish-linux` (#37 open). To restore one: `git push origin <sha>:refs/heads/<branch>`.
-
-| Branch | Tip |
-|---|---|
-| wip/web-fixes-1 | 2576443dd7d2a5983c3d23d439a7b3117358a0a4 |
-| wip/sidebar-musthaves | 9aa8eb6db1f7d8f696a98b4f42cbffeb5a788692 |
-| wip/readme-cone | 1cba15855043698239ce3b67b9c8dec4382a9899 |
-| wip/fix-subtitle-lift | 86ed06221297cbeba326569bb211cf5cb3a5d08b |
-| wip/fix-subsdelay | 868f0069f174ef4ec9d6df48736651a38546e82b |
-| wip/fix-library-escape | b5db1d244e3e882056f0587d93f4bcd370902c64 |
-| wip/quit-watchdog | 6ed2a9050fd92469010c6d8f44450d2ee670b99e |
-| wip/fix-audio-icon | d5dfd20726ed8fb8cb5fef0ea5c852385c5c365f |
-| wip/fix-chapter-title | f8b86c661a920ca2365680a84007c8b7aa9ebe60 |
-| wip/fix-playlist-favorite | b56d1e0ba720842fc830e4b90d082e6209522136 |
-| wip/fix-window-class | f4ff2b2a385f47f3d3490234fcae37895ab40bef |
-| wip/cone-window-title | 863a7b2ce9a3e9c6d9caf591bfc1b1fd72c35873 |
-| wip/decision-67 | 91560f33858af4c6807f544fc1bcb6871055d522 |
-| wip/eq-curves | 5cdfdf3e86e7990af7f95c79e89c9477f60a1a45 |
-| wip/web-fixes-3 | b1e5a5a3d9a179311773e64d5b5da1883ffabc08 |
-| wip/web-fixes-4 | 640cba52c04c2b0ab09d214e8b4ba17daa04be28 |
-| wip/musthaves-2 | c968f2332428c753a213dd28e7c0b1dbf4e2d4e7 |
-| claude/zen-mendel-p1anpd | e1032d5ff1e9539a7565f9f75e3181b2388e9bae |
-| wip/fix-subs-linux | e42622a1ea2b6fb93fda1866466e550cb183d42f |
-| wip/fix-library-escape-linux | 4e9d55abfdd19186a9e2014ef0dacdb785e4d63a |
-| wip/fix-quit-linux | bd4f6c7e0b4dd450ed93a961f428f78fd6e7115b |
-| wip/fix-audio-icon-linux | eb28e5afce6e6b647a026a31b455f06de7276129 |
-| wip/fix-chapter-title-linux | 8a520e7ea897883214f2083649feeca0db1a05c8 |
-| wip/fix-playlist-favorite-linux | f26e913739e314c0e379483f0e3ef13d7494d720 |
-| wip/fix-window-class-linux | c3c7077b76ff9085702f5cbcae50e87c5486e67b |
-| wip/eq-icons-linux | 880a813597d799aed5f5ede99a55fc3570af63c5 |
-| wip/web-fixes-3-linux | dce52191a5e83332c0ba648d5dd50f773779ff03 |
-| wip/web-fixes-4-linux | de7f0b4193baffef360b06f5fa694850c0220418 |
-| wip/fix-library | 424609380b3f5640137a43c4a774b61710747014 |
-| wip/fix-panels | 6a9eba7fbc16662f3b6381361267dc369d556957 |
-| wip/linux-recheck | a356b7aa93296eb6a357eb7c85a19c83e6c0e58a |
-| wip/web-fixes-2 | bedec2f0d61fdeab276c29ad394183178014a7b1 |
-| wip/next-batch | 332c42836e0d911786153c3d66b86646eff35fcb |
-| wip/fix-quit-deadlock | 76f8ab7b1752179ee535f419c23f8674280c41f0 |
-
-## Done (PC session, 2026-10-26, after the 1.0.0 release)
-
-StickyGonzales's post-release cleanup: deleted every branch fully merged into `redesign` (tip an ancestor of `origin/redesign`) with no open PR, the test-only branches (`wip/test-*`, `*-linux`) whose PR is merged or closed, and the leftover `wip/test-installer-1.0`. Kept: `redesign`, `wip/next-test`, `master`, `wip/linux-build`, `wip/ci-release`, every head of an open PR (#29, #44, #47, #50, #53, #57), every branch pushed in the 24 hours before (GitHub activity: e.g. `wip/test-installer-1.0-ownkeys`, `wip/test-pr48-49`, the merged fix branches of 2026-10-25, the 1.0.1 seek fix branches), and unmerged branches that are not test branches (`wip/beta-gate`, `wip/verify-*`, `wip/code-audit`, `wip/diag-hevc-stall`, `wip/fix-pause-rate-clock`, `wip/fix-visualizer`, `wip/quit-hang-cause`, `wip/a839e9d9ddb97595a`). Each delete used a lease on the tip below, so a branch with newer commits would not have been deleted. To restore one: `git push origin <sha>:refs/heads/<branch>`.
-
-PRs closed: #36 (title part merged as `wip/cone-window-title`; the visualizer crash fixed by the mmdevice change on `wip/fix-visualizer-pc`; its ICC timer part did not fix the white window), #38 (analysis notes only; the fix they led to, `wip/fix-hevc-surfaces-2n`, is merged; the remaining quit stall is a known issue in STATUS). Kept open: #29 (WINDOWS_CHECKLIST.md is not in `redesign` or `wip/next-test` and CLAUDE.md still points to it), #44 (the plan of #47).
-
-| Branch | Why | Tip |
-|---|---|---|
-| claude/zen-mendel-p1anpd | merged into redesign | c3604b875554a38df37f8c4f50a0fe7412941769 |
-| wip/fix-hevc-surfaces | merged into redesign | 9323061a32806f05ae4d626a9765e87c9241657a |
-| wip/fix-hevc-surfaces-2n | merged into redesign | 883156a0ad5960cfb3ea3d21719dea0d431a7615 |
-| wip/fix-network-playlist-name | merged into redesign | 1eadd46c99efd04f4cd4ac8c4eb6b57691d14826 |
-| wip/fix-new-playlist-names | merged into redesign | f4c52f154b61b518e6a26bf79f9d13de5a786e7f |
-| wip/fix-visualizer-pc | merged into redesign | f5a1fc15cc6db09b9c10714024d96d2bc5e2ffe7 |
-| wip/motion-polish | merged into redesign | 91e51c3f0906d4e2f023f2b3f3e2ac4673f17353 |
-| wip/subsdelay-bitmap | merged into redesign | 7c1a1ea7b2734a354c92a139d78a4067a8daf2f4 |
-| wip/test-pr10 | merged into redesign | b04efc4af965d15e95eca86154ae7bb1bc64ee01 |
-| wip/test-pr20 | merged into redesign | 554ac7e1c65812013188a73e89a7cdad78c45314 |
-| wip/test-pr22 | merged into redesign | bd5d66d9d335abcf12b037939f95cddb4052cfd5 |
-| wip/test-pr22b | merged into redesign | 6cf348ab0c8efda0b56c1ec5ab2992d42326d764 |
-| wip/test-pr37 | merged into redesign | dcf4606b8284177fee42f57479a38dd89d1b54ed |
-| wip/test-pr23-26 | test only, #23, #26 merged | eef6c172eccf1ba810c9ee680ddaec306249c2a6 |
-| wip/test-pr2326b | test only, #23, #26 merged | 2e5872c468e8461bfa995d036b4f11e1e1ccc73e |
-| wip/test-pr25 | test only, #25 merged | 742392bdcb4fd28a963a5234641495c4e1fa2bd6 |
-| wip/test-pr25b | test only, #25 merged | 0b7b636637abfbe356be07e30e4cef5460524ab3 |
-| wip/test-pr25c | test only, #25 merged | 54972104702aec643118cb26cb06d199e1e28f83 |
-| wip/test-pr32 | test only, #32 closed | cbaf986c46c70a4843ca87a92b6da4fc59f02a4b |
-| wip/test-pr32-dbg | test only, #32 closed | 1c94fd80cc68a32f755f1b28051370c1e61e1dab |
-| wip/test-pr35 | test only, #35 merged | 92d5d4dd6e6688615da450564ba9e8d3730987b3 |
-| wip/test-pr39-41-42 | test only, #39, #41, #42 merged | 63d6e1d0c5a9b84e39738189a3f9fa70e9f0ea25 |
-| wip/test-pr40 | test only, #40 merged | ed65a4fe0491ffbad04a254f786e5f699a9136de |
-| wip/motion-polish-linux | test only, #37 merged | cfff8e0e1bce215485dbeb2deebbb2b5fd10bb6c |
-| wip/test-installer-1.0 | test only, #33 merged (leftover installer test) | 07fba89b8d89bd59c3390b7a466e17a3abc9a557 |
-| wip/test-pr36 | test only, #36 closed (replaced) | 59f0e12427c64938cacfc23de809ceafd7f1dd15 |
-| wip/fix-visualizer-linux | test only, #36 closed (replaced) | e77572d44ad09f30cb85af65544e683da59a4afe |
+| `wip/a839e9d9ddb97595a` | `0623e3febd6d594815f436a4b098edd0bbf534d8` | 2026-10-15 | redesign: log the subtitle speed stall and the sidebar slider audit |
+| `wip/beta-gate` | `277560ec9f77869f7a2bc15672df7ba0fef9bd80` | 2026-10-18 | redesign: beta gate: process samples are objects (perf / soak summaries failed), soak saves its samples as it goes [skip ci] |
+| `wip/code-audit` | `1c8fe5a62714dccd0e827edae8d3bfab56a13769` | 2026-10-16 | redesign: CODE_AUDIT: code vs Figma for every coded, unverified row |
+| `wip/fix-deb-asset-name` | `e8d509b9a2a755ab79a3e4cd258ffe6f8b420593` | 2026-11-01 | Deb asset name notes: CI run [skip ci] |
+| `wip/fix-pause-rate-clock` | `f29fc12a3d522d19cba72dbece78778e94cd3e17` | 2026-10-25 | redesign: notes for the pause at speed != 1x time jump fix (#52) [skip ci] |
+| `wip/fix-visualizer` | `5ef8dcec493b39508b18bf937b0123ad53c13e6e` | 2026-10-20 | win32 vout: Cone's own video windows read just "Cone" |
+| `wip/verify-harness` | `43961c6b60b73cc4e0c1e34917d1d25966f828fc` | 2026-10-18 | GitHub handle renamed: links and credits point to StickyGonzales [skip ci] |
+| `wip/verify-linux` | `771aae56f7db41cc822eb56d0a85877b1888610d` | 2026-10-18 | redesign: LINUX_VERIFY summary per screen [skip ci] |
+| `wip/verify-sheets` | `b07ef7ea3be16e89a912171f30a4382fb523fe68` | 2026-10-18 | redesign: SHEET_CONFIRMATIONS for the 45 verify sheets [skip ci] |
