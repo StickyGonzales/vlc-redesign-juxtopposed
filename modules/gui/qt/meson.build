@@ -146,6 +146,7 @@ moc_headers = files(
     'player/rd_media_info.hpp',
     'player/rd_presets.hpp',
     'player/rd_up_next.hpp',
+    'player/rd_credits_scans.hpp',
     'player/player_controller.hpp',
     'player/player_controlbar_model.hpp',
     'player/control_list_model.hpp',
@@ -518,8 +519,14 @@ qt_plugin_sources = files(
     'player/rd_presets.hpp',
     'player/rd_episode_parser.cpp',
     'player/rd_episode_parser.hpp',
+    'player/rd_credits_audio.cpp',
+    'player/rd_credits_audio.hpp',
     'player/rd_credits_point.cpp',
     'player/rd_credits_point.hpp',
+    'player/rd_credits_scanner.cpp',
+    'player/rd_credits_scanner.hpp',
+    'player/rd_credits_scans.cpp',
+    'player/rd_credits_scans.hpp',
     'player/rd_show_tracks.cpp',
     'player/rd_show_tracks.hpp',
     'player/rd_credits_subtitles.cpp',
@@ -1726,6 +1733,20 @@ if qt6_dep.found()
                 'tests/test_rd_credits_point.cpp',
                 'player/rd_credits_point.cpp',
                 'player/rd_credits_point.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone extra (Up Next): the credits music fingerprint, the standard library only
+        vlc_tests += {
+            'name': 'test_qt_rd_credits_audio',
+            'sources': files(
+                'tests/test_rd_credits_audio.cpp',
+                'player/rd_credits_audio.cpp',
+                'player/rd_credits_audio.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,

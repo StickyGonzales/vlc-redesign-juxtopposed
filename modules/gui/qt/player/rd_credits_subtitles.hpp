@@ -67,9 +67,11 @@ public:
 
     // the external subtitle files of `path`: `slaves` first, then the files next to it
     static QStringList externalFiles(const QString& path, const QStringList& slaves);
+    // the lines of the first external file with any (the credits scans read an embedded track
+    // in their own pass)
+    QVector<rdcredits::Line> fromFiles();
 
 private:
-    QVector<rdcredits::Line> fromFiles();
     QVector<rdcredits::Line> fromEmbedded();
 
     vlc_object_t* m_parent;
