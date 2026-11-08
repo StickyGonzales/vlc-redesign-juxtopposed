@@ -13,7 +13,12 @@ A click on the card's **Next episode** (or its thumbnail) started the next episo
 | Click-path code | `RdUpNext::playNow()`: the card hides, the episode is marked watched, `PlaylistController::next()`. No stop and no player-view change in it. |
 | Everything that can send Cone to the home page | `MainInterface.qml` leaves the player when the player reports STOPPED; the home page (`MainDisplay.qml`) then stops playback, because a video cannot play on without picture-in-picture. Others (Back, the library toggle without a media library, the 2-finger swipe) need input the click does not give. |
 
-## The likely cause
+## What the PC log showed (STATUS.md, 2026-11-08)
+The next episode's input failed a seek at once: `mkv: unable to read KaxCluster during seek`.
+
+In Cone, nothing seeks a file as it opens. The only automatic seek at the start is VLC's own resume position (`:restore-playback-pos=2` on the autoplay item). The countdown path sets the same option on the same item, so that option alone does not explain why only the click fails. A seek failing on the new file fits it being opened in an unexpected state (see below). It could also be a separate decode or thumbnail request logged at the same time (the next episode's thumbnail is read by VLC's preparser, apart from the player). Which of the two it was is not proven yet.
+
+## The likely cause (not reproduced on CI)
 When **Next** is pressed during playback, VLC's playlist gives the player the next file as its *next media*. The current file stops first (`vlc_player_SetCurrentMedia`). Once it has stopped, the player opens that next media.
 
 **Any queue change in between** (an add, a remove, a move) makes the playlist hand the player a new next media (`vlc_playlist_UpdateNextMedia`). That is the file *after* the current index, or nothing at the end of the queue. It replaces the chosen episode. The player then has nothing to open and stops (STOPPED), so Cone goes to the home page, and the home page's start stops playback.
