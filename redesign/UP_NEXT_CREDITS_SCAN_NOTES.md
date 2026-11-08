@@ -251,7 +251,7 @@ CC PC's Windows test passed (credits detection, Fixed, the sidebar row), but the
 - **Track memory** (`tr.py`, `tr_off.py`, the cases of SHOW_TRACKS_NOTES.md): 21 of 21, as before the merge.
 - **Sandbox scripts:** two first tries quit at their start (the `series` case): the scripts' `--rc-fake-tty` made VLC's cli read stdin and quit Cone when it ended (the same as the macOS smoke, MACOS_NOTES.md). The scripts now use the socket alone, stdin `/dev/null`. Not a Cone change.
 
-**Runs:** build-linux #103 green, smoke 47 checks (first start, Next episode keeps the next episode playing: 1 -> 2, still playing). build-windows #206 red (the smoke order above), #207 running on `9a3ced4467`.
+**Runs:** build-linux #103 green, smoke 47 checks (first start, Next episode keeps the next episode playing: 1 -> 2, still playing). build-windows #206 red (the smoke order above), **#207 green** on `9a3ced4467` (smoke included, the Next-episode check passes).
 
 ## Windows retest (PC session)
 **Build:** the build-windows run of this branch, Cone (portable), with Up Next on.
