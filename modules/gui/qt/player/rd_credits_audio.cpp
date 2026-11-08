@@ -251,8 +251,9 @@ int findMusic(const std::vector<uint32_t>& haystack, const std::vector<uint32_t>
             bestStart = p;
         }
     }
-    // half of the music's first seconds the same: random audio gets well under 1 %
-    return bestHits * 2 >= needle ? bestStart : -1;
+    // a quarter of the music's first seconds the same: re-encoded credits music matches about
+    // 40 % of its values at the right place (measured on AAC at 48 kb/s), other audio under 1 %
+    return bestHits * 100 >= needle * kQuickHitPercent ? bestStart : -1;
 }
 
 } // namespace rdcredits

@@ -312,6 +312,7 @@ RdSidePanelPage {
                         anchors.verticalCenter: parent.verticalCenter
                         style: Widgets.RdButton.Style.Plain
                         text: qsTr("Reset")
+                        Accessible.name: qsTr("Reset")
                         Accessible.description: qsTr("Back to Automatic")
                         onClicked: RdUpNext.resetCredits()
                     }

@@ -546,9 +546,9 @@ void RdCreditsScans::merge(const Request& request, const QString& key, const Out
         }
     }
 
-    msg_Dbg(m_parent, "up next: credits %s of an episode of %lld ms: audio %lld, black %lld, dialogue end %lld ms%s",
+    msg_Dbg(m_parent, "up next: credits %s of \"%s\", %lld ms: audio %lld, black %lld, dialogue end %lld ms%s",
             outcome.full ? (outcome.quickMissed ? "quick check missed, full scan" : "full scan") : "quick check",
-            static_cast<long long>(outcome.lengthMs), static_cast<long long>(outcome.audioMs),
+            qtu(QFileInfo(request.path).fileName()), static_cast<long long>(outcome.lengthMs), static_cast<long long>(outcome.audioMs),
             static_cast<long long>(outcome.blackMs), static_cast<long long>(outcome.dialogueEndMs),
             outcome.pairedKey.isEmpty() ? "" : " (credits music matched with another episode)");
     prune();

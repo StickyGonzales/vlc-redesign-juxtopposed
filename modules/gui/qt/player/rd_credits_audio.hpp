@@ -47,6 +47,8 @@ constexpr double kMaxGapSeconds = 3.5;
 constexpr int kKeptMusicSeconds = 60;
 // the quick check looks for the start of the kept music: this much of it must match
 constexpr int kQuickMatchSeconds = 10;
+// and this share of its values must match where it starts
+constexpr int kQuickHitPercent = 25;
 
 // mono samples at any rate in, fingerprint values out
 class AudioPrinter
@@ -94,8 +96,8 @@ struct Match
 // shift; found when it lasts kMinMatchSeconds or more
 Match longestMatch(const std::vector<uint32_t>& a, const std::vector<uint32_t>& b);
 
-// where `music` (a show's kept credits music) starts in `haystack`: the first kQuickMatchSeconds
-// of it must match; -1 when it does not
+// where `music` (a show's kept credits music) starts in `haystack`: kQuickHitPercent of the
+// values of its first kQuickMatchSeconds must match; -1 when they do not
 int findMusic(const std::vector<uint32_t>& haystack, const std::vector<uint32_t>& music);
 
 } // namespace rdcredits

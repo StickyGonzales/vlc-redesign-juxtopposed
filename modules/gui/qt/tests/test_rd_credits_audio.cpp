@@ -159,7 +159,16 @@ int main()
     std::vector<uint32_t> music(a.begin() + match.aStart, a.begin() + std::min<long>(long(a.size()), match.aStart + index(kKeptMusicSeconds)));
     const std::vector<uint32_t> quick = printsOf(ending(rate, 120 + 15, 60 + 25.04, 90, 33), rate);
     checkNear(findMusic(quick, music), index(85), 4, "quick check finds the music 25 s after the expected point");
-    // another show's music: not found
+    // a lossy copy: half of the values changed (re-encoded music matches about 40 % of its values)
+    {
+        std::vector<uint32_t> lossy = quick;
+        Random random(5);
+        for (uint32_t& v : lossy)
+            if (random.unit() < 0.5)
+                v = random.next();
+        checkNear(findMusic(lossy, music), index(85), 4, "quick check finds the music in a lossy copy");
+    }
+        // another show's music: not found
     const std::vector<uint32_t> other = printsOf(ending(rate, 120 + 15, 60, 90, 44, 9876), rate);
     check(findMusic(other, music) < 0, "another show's music is not found by the quick check");
     // the episode's own sound only (no credits music in the window: longer credits): not found
