@@ -162,9 +162,10 @@ modules:
       # controls and the sound mixer (modules/gui/qt/util/brand.hpp)
       cppflags: -DCONE_DESKTOP_ID=\"io.github.StickyGonzales.ConePlayer\"
     build-commands:
+      # BUILDCC: the compiler for VLC's build-time helpers (the SDK has no c99 wrapper)
       - ./bootstrap
       - >-
-        QMAKE6="$(command -v qmake6 || command -v qmake)" ./configure --prefix=/app
+        BUILDCC=gcc QMAKE6="$(command -v qmake6 || command -v qmake)" ./configure --prefix=/app
         --with-brand=public --disable-debug --disable-skins2
       - make -j"$FLATPAK_BUILDER_N_JOBS"
       - make install
