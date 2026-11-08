@@ -6,6 +6,8 @@ Hard rule (CLAUDE.md, 2026-11-01): before starting a task, read this table, the 
 
 | Task | Owner session | Branch | State |
 |---|---|---|---|
+| Flathub submission prep (on top of the Flatpak build): minimal, justified finish-args; complete AppStream metainfo (screenshots from generated media in the repo, release notes, content rating, license, links, Juxtopposed credit); flatpak-builder-lint (manifest and repo) and appstreamcli clean; app ID and naming check; redesign/SUBMIT_TO_FLATHUB.md. Nothing submitted (StickyGonzales 2026-11-08) | web 2 | wip/flathub-prep (from wip/linux-flatpak) | in progress |
+| AUR package cone-player-bin: PKGBUILD for the latest Linux release tarball (deps, desktop entry, icons, MIME types, license, kept apart from vlc), makepkg + namcap in an Arch container, a workflow that updates pkgver/checksums on every Linux release and pushes to the AUR with an SSH key secret, redesign/SUBMIT_TO_AUR.md. Nothing pushed to the AUR (StickyGonzales 2026-11-08) | web 2 | wip/aur-cone-player-bin | in progress |
 | Auto-sync Undo message: Undo after an Auto-sync shows "Auto-sync  Undone" instead of "Subtitle delay 0 ms" (on top of #108) (StickyGonzales 2026-11-08) | web 2 | wip/autosync-undo-message (from wip/fix-autosync-message) | in progress |
 | Linux packages on older distros: build on an Ubuntu 22.04 base (glibc 2.35) so they run on Ubuntu 22.04, Mint 21, Debian 12 and newer; README and release notes requirements (StickyGonzales 2026-11-08) | web 2 | wip/linux-glibc-235 | in progress |
 | Flatpak build: a manifest that builds and runs in the sandbox, first step toward Flathub; nothing submitted (StickyGonzales 2026-11-08) | web 2 | wip/linux-flatpak | in progress |
