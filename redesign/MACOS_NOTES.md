@@ -171,11 +171,12 @@ Any Mac with macOS 12 or later: the `-macos-arm64.dmg` for Apple Silicon (M1 and
 | #10 | 1d030deb4b | merged `wip/next-test`; **both architectures built** (Apple Silicon 43 min; Intel 2 h 40 min, its first build, no compiler cache). Smoke: Apple Silicon passes everything except one HEVC session, which exited by itself (code 0) after its window appeared, its log overwritten by the retry; Intel passes everything except the HEVC quit (3.22 s, then 3.46 s, limit 3 s). The video output tries (section "The black picture"). Then: each start its own log, the time check's retry in a fresh session, the HEVC quit time a warning, VLC's snapshots kept |
 | #11 | 519b7260ff | both architectures **built** (Apple Silicon 12 min, Intel 34 min with the compiler cache). Smoke: **Intel green** (warnings: Settings/Escape); Apple Silicon passes everything except the HEVC playback check: Cone quit twice 3 to 4 s after its start, caused by the smoke script's stdin (section "Smoke checks"). Then: Cone gets an open stdin |
 | #12 | cbb1bf04e3 | both built. Smoke: playback passes on both (no more quit at the start); Cmd+Q now ended by the quit watchdog on both (5 to 8 s): the open stdin held the cli's reader (section "Smoke checks"). Then: no `--rc-fake-tty`, stdin `/dev/null`, whole replies read |
+| #13 | 489d93c479 | **all green**: both architectures built (Apple Silicon 15 min, Intel 24 min with the compiler cache) and both smoke jobs pass (.dmg, signature, window, H.264 and HEVC playback, subtitles, Settings, Cmd+Q, every plug-in, own folders); one warning left, Escape in Settings (on the tester list). The video output tries as before: decoded frames full colour, screen black |
 | #9 | a559a4a7ca | build, app, signature and .dmg **green** (the latest .dmg: artifact `cone-macos-arm64` of run 41346080677, and `wip-macos-build--macos-arm64.dmg` on the test-builds draft); the smoke job **never started**: it waited about 15 minutes for a free macOS runner and was cancelled without running a step |
 
 ## State (2026-11-08)
 - **Mergeable:** `wip/next-test` merged in; the draft PR into `wip/next-test` is up.
-- **Built:** Apple Silicon and Intel on every run; a draft macOS release with every release tag (`release-macos.yml`).
-- **Smoke:** both architectures. What the runner cannot confirm is a warning.
+- **Built and checked:** run #13 green: Apple Silicon and Intel .dmg on every run, smoke on both runners; a draft macOS release with every release tag (`release-macos.yml`, nothing published by it).
+- **Smoke:** both architectures; what the runner cannot confirm is a warning (Escape in Settings).
 - **The black picture:** the runner's virtual GPU (section above), to be confirmed on a real Mac.
 - **Open for a real Mac (the tester list):** the picture, Escape in Settings, the local network prompt, the update notice (it looks at the Windows and Linux releases; to be decided before a macOS release is published).
