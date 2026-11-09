@@ -1,0 +1,156 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;font-family:Inter,sans-serif}
+#win{position:relative;width:1920px;height:1080px;overflow:hidden;background:#000}
+#win img.frame{position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover;object-position:62% 50%}
+.top{position:absolute;left:0;top:0;width:1920px;height:40px}
+.top img{width:1920px;height:40px;display:block}
+.top .logo{position:absolute;left:8px;top:4px;width:36px;height:32px}
+.top .logo i{position:absolute;left:6px;top:3px;width:26px;height:26px}
+.top .title{position:absolute;left:760px;top:0;width:400px;height:40px;line-height:40px;text-align:center;font-size:14px}
+.bar{position:absolute;left:0;bottom:0;width:1920px;height:55px}
+.bar img{width:1920px;height:55px;display:block}
+/* themes: Figma styles.txt; Light FG/1, FG/2 from Decision 33 */
+.dark{--bga3:#1B1B1B;--bga1:#222222;--bgb2:#090909;--fg1:#EAEAEA;--fg2:#C6C6C6;--fga2:#8F8F8F;--fga3:#6B6B6B;--acc:#D37918;--topbg:#1B1B1B;--div:#373737}
+.light{--bga3:#D5D5D5;--bga1:#EDEDED;--bgb2:#B3B3B3;--fg1:#111111;--fg2:#222222;--fga2:#2E2E2E;--fga3:#6B6B6B;--acc:#E8851A;--topbg:#ACACAB;--div:#9B9B9B}
+.top .logo{background:var(--topbg)} .top .logo i{color:var(--acc)}
+.top .title{background:var(--topbg);color:var(--fga2)}
+.dark .top .title{color:#8F8F8F} .light .top .title{color:#2E2E2E}
+.osd{position:absolute;z-index:5;white-space:nowrap}
+.ic{display:inline-block;flex:none}
+.key{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:4px;font-size:12px;font-weight:500;
+     background:var(--bga1);color:var(--fga2);border:1px solid var(--div)}
+/* the shadow of Figma's "bg blur + shadow", without the blur (opaque, Decision: opaque popups) */
+.shadow{box-shadow:0 8px 15px rgba(0,0,0,.46)}
+.light .shadow{box-shadow:0 8px 15px rgba(0,0,0,.28)}
+
+/* A: pill, top center */
+.A{left:50%;transform:translateX(-50%);height:44px;border-radius:22px;background:var(--bga3);display:flex;align-items:center;
+   gap:10px;padding:0 16px 0 14px;font-size:16px;font-weight:500;color:var(--fg2)}
+.A .ic{width:22px;height:22px;color:var(--acc)} .A b{font-weight:600;color:var(--fg1)}
+.A .key{margin-left:4px}
+
+/* B: card, top right, with a level line */
+.B{right:24px;border-radius:14px;background:var(--bga3);display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;min-width:220px}
+.B .tile{width:40px;height:40px;border-radius:10px;background:var(--bga1);display:flex;align-items:center;justify-content:center}
+.B .ic{width:24px;height:24px;color:var(--acc)}
+.B .t{display:flex;flex-direction:column;gap:2px;flex:1}
+.B .l{font-size:12px;font-weight:600;letter-spacing:.4px;color:var(--fga2)} .B .l span{font-weight:400;letter-spacing:0;color:var(--fga3)}
+.B .v{font-size:18px;font-weight:600;color:var(--fg1)}
+.B .lvl{position:relative;height:3px;border-radius:2px;background:var(--bgb2);margin-top:6px}
+.B .lvl i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--acc)}
+.B .lvl s{position:absolute;left:50%;top:-2px;width:1px;height:7px;background:var(--fga3)}
+
+/* C: the update notice's pill, bottom center above the bar */
+.C{left:50%;transform:translateX(-50%);height:52px;border-radius:16px;background:var(--bga3);display:flex;align-items:center;
+   gap:12px;padding:0 14px 0 18px;font-size:16px;color:var(--fg2)}
+.C .ic{width:24px;height:24px;color:var(--fg2)} .C b{font-weight:600;color:var(--acc)}
+.C .meter{width:72px;height:12px;position:relative;background:var(--bgb2);clip-path:polygon(0 42%,100% 0,100% 100%,0 58%)}
+.C .meter i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+.C .sep{width:1px;height:22px;background:var(--div);margin:0 2px}
+
+/* Figma's transparent styles: Dark/BG/B2 Transparent #000 80 %, BG/A3 Transparent #191919 95 %; Light/BG/B1 Transparent #E7E7E7 80 %, BG/A3 Transparent #D5D5D5 75 % */
+.dark{--tb2:rgba(0,0,0,.80);--ta3:rgba(25,25,25,.95);--track:rgba(255,255,255,.16)}
+.light{--tb2:rgba(231,231,231,.80);--ta3:rgba(213,213,213,.75);--track:rgba(0,0,0,.14)}
+.hint{font-size:12px;color:var(--fga2);font-weight:500}
+/* D: YouTube-style value box, top center */
+.D{left:50%;transform:translateX(-50%);border-radius:12px;background:var(--tb2);display:flex;align-items:center;gap:12px;padding:10px 20px 10px 16px}
+.D .ic{width:26px;height:26px;color:var(--fg1)} .D .val{font-size:24px;font-weight:600;color:var(--fg1)}
+.D .hint{margin-left:6px}
+/* E: OS-style HUD pill (macOS / Windows 11), top center */
+.E{left:50%;transform:translateX(-50%);height:48px;border-radius:24px;background:var(--ta3);display:flex;align-items:center;gap:12px;padding:0 20px 0 16px;color:var(--fg2);font-size:15px;font-weight:500}
+.E .ic{width:24px;height:24px;color:var(--fg1)} .E .lv{width:150px;height:6px;border-radius:3px;background:var(--track);position:relative;overflow:hidden}
+.E .lv i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:3px} .E .lv s{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--bga3)}
+.E b{font-weight:600;color:var(--fg1);min-width:38px;text-align:right} .E .hint{margin-left:2px}
+/* F: center HUD (phone players), middle of the picture */
+.F{left:50%;top:50%;transform:translate(-50%,-50%);width:168px;height:168px;border-radius:28px;background:var(--tb2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.F .ic{width:56px;height:56px;color:var(--fg1)} .F .val{font-size:20px;font-weight:600;color:var(--fg1)}
+.F .lv{width:112px;height:5px;border-radius:3px;background:var(--track);position:relative;overflow:hidden}
+.F .lv i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+
+/* E1 / E2: the level pill in the control bar's own pieces (Figma "Controls": 28 px rows, track radius 6,
+   played fill BG/Accent Bright radius 4, playhead 8x24 Accent/Main radius 4, the volume cone, time text 400 15 FG/A2) */
+.dark{--accbg:#371F06;--divdim:#222222;--fgb1:#161616;--ta3e:rgba(25,25,25,.95);--trk:#090909}
+.light{--accbg:#D8BA9A;--divdim:#ACACAC;--fgb1:#161616;--ta3e:rgba(213,213,213,.92);--trk:#888888}
+.E1,.E2,.H{left:50%;transform:translateX(-50%);height:44px;border-radius:10px;background:var(--ta3e);border:1px solid var(--divdim);
+  display:flex;align-items:center;gap:10px;padding:0 10px 0 8px;font-size:15px;color:var(--fga2)}
+.E1 .ic,.H .ic{width:24px;height:24px;color:var(--fga2);margin-left:2px}
+.E2 .tile{width:54px;height:28px;border-radius:6px;background:var(--acc);display:flex;align-items:center;justify-content:center}
+.E2 .tile .ic{width:20px;height:20px;color:var(--fgb1)}
+.E2 .tile.off{background:var(--fga3)}
+.trk{position:relative;width:150px;height:28px;border-radius:6px;background:var(--trk)}
+.trk i{position:absolute;left:2px;top:2px;bottom:2px;border-radius:4px;background:var(--accbg)}
+.trk s{position:absolute;top:2px;width:8px;height:24px;border-radius:4px;background:var(--acc)}
+.wedge{width:94px;height:30px;display:block}
+.tv{font-variant-numeric:tabular-nums;color:var(--fga2);min-width:44px}
+.tx{color:var(--fg2);font-weight:500}
+.E1 .key,.E2 .key,.H .key{height:22px}
+
+/* G1 / G2: read-only status, no control-like parts: no buttons, no draggable tracks, no key caps */
+.G1,.G2{left:50%;transform:translateX(-50%);border-radius:10px;background:var(--ta3e);color:var(--fga2);font-size:15px}
+.G1{width:300px;padding:12px 16px 14px}
+.G1 .r,.G2 .r{display:flex;align-items:center;gap:10px}
+.G1 .ic,.G2 .ic{width:20px;height:20px;color:var(--fg2)}
+.G1 .nm,.G2 .nm{color:var(--fga2)} .G1 .vl,.G2 .vl{margin-left:auto;color:var(--fg1);font-weight:600;font-variant-numeric:tabular-nums}
+.G1 .k,.G2 .k{font-size:12px;color:var(--fga3);margin-left:10px}
+.G1 .ln{height:3px;border-radius:2px;background:var(--bgb2);margin-top:11px;position:relative;overflow:hidden}
+.G1 .ln i,.G2 .ln i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:2px}
+.G2{height:44px;padding:0 16px;display:flex;align-items:center;min-width:260px;position:absolute;overflow:hidden}
+.G2 .r{width:100%}
+.G2 .ln{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--bgb2)}
+.G2 .ln i{border-radius:0}
+</style></head><body><div id="win"></div>
+<script>
+const FRAME='data:image/png;base64,%%FRAME%%';
+const TOP={dark:'data:image/png;base64,%%TOP_DARK%%',light:'data:image/png;base64,%%TOP_LIGHT%%'};
+const BAR={dark:'data:image/png;base64,%%BAR_DARK%%',light:'data:image/png;base64,%%BAR_LIGHT%%'};
+const ICONS=%%ICONS%%; const WEDGE=%%WEDGE%%; const CONE=%%CONE%%;
+const MSG={
+ mute:{icon:'mute',label:'Muted',key:'M'},
+ vol:{icon:'vol',label:'Volume',value:'80%',level:0.40,key:'Ctrl + ↑'},
+ speed:{icon:'speed',label:'Speed',value:'1.5×',level:null,key:']'},
+ subs:{icon:'subs',label:'Subtitles',value:'English',key:'V'}};
+const TOPH=40, BARH=55;
+function ic(n){return '<span class="ic">'+ICONS[n]+'</span>'}
+function osd(v,m,bar){
+ const g=MSG[m];
+
+
+
+ if(v==='G1'||v==='G2'){
+   const lv=m==='vol'?0.40:m==='mute'?0:null;
+   const nm=m==='mute'?'Volume':g.label, vl=m==='mute'?'Muted':g.value;
+   const row=`<div class="r">${ic(g.icon)}<span class="nm">${nm}</span><span class="vl">${vl}</span><span class="k">${g.key}</span></div>`;
+   const ln=lv!=null?`<div class="ln"><i style="width:${lv*100}%"></i></div>`:'';
+   return `<div class="osd ${v} shadow" style="top:${TOPH+16}px">${row}${ln}</div>`;}
+ if(v==='E1'||v==='E2'||v==='H'){
+   const th=document.getElementById('win').className;
+   const lead=v!=='E2'?ic(g.icon):`<span class="tile${m==='mute'?' off':''}">${ic(g.icon)}</span>`;
+   let mid;
+   if(m==='vol') mid=`<img class="wedge" src="${WEDGE['80_'+th]}"><span class="tv">80%</span>`;
+   else if(m==='mute') mid=`<img class="wedge" src="${WEDGE['0_'+th]}"><span class="tx">Muted</span>`;
+   else if(m==='speed'){const f=(1.5-0.25)/(4-0.25); mid=v==='H'?`<span class="tx">Speed</span><span class="tv" style="color:var(--fg1);font-weight:500">1.5×</span>`:`<span class="trk"><i style="width:${f*146}px"></i><s style="left:${2+f*138}px"></s></span><span class="tv">1.5×</span>`;}
+   else mid=`<span class="tx">${g.label}</span><span class="tv" style="color:var(--fg1);font-weight:500">English</span>`;
+   return `<div class="osd ${v} shadow" style="top:${TOPH+16}px">${lead}${mid}<span class="key">${g.key}</span></div>`;}
+ if(v==='D'){const val=g.value||g.label; return `<div class="osd D" style="top:${TOPH+24}px">${ic(g.icon)}<span class="val">${val}</span><span class="hint">${g.key}</span></div>`;}
+ if(v==='E'){const lvl=g.level!=null?`<span class="lv"><i style="width:${g.level*100}%"></i><s></s></span><b>${g.value}</b>`
+     :m==='speed'?`<span class="lv"><i style="width:${(1.5-0.25)/(4-0.25)*100}%"></i></span><b>${g.value}</b>`
+     :`<span>${g.value?g.label+' ':''}</span><b style="min-width:0">${g.value||g.label}</b>`;
+   return `<div class="osd E shadow" style="top:${TOPH+16}px">${ic(g.icon)}${lvl}<span class="hint">${g.key}</span></div>`;}
+ if(v==='F'){const val=g.value||g.label; const lvl=g.level!=null?`<span class="lv"><i style="width:${g.level*100}%"></i></span>`:''; return `<div class="osd F">${ic(g.icon)}<span class="val">${val}</span>${lvl}<span class="hint">${g.key}</span></div>`;}
+ if(v==='A'){ // top center, 16 px under the top bar's place (it never moves)
+  const y=TOPH+16;
+  return `<div class="osd A shadow" style="top:${y}px">${ic(g.icon)}<span>${g.value?g.label+' <b>'+g.value+'</b>':'<b>'+g.label+'</b>'}</span><span class="key">${g.key}</span></div>`;}
+ if(v==='B'){ // top right, 16 px under the top bar's place (it never moves)
+  const lvl=g.level!=null?`<div class="lvl"><i style="width:${g.level*100}%"></i><s></s></div>`:'';
+  const label=m==='mute'?'SOUND':g.label.toUpperCase(), value=m==='mute'?'Muted':g.value;
+  return `<div class="osd B shadow" style="top:${TOPH+16}px"><div class="tile">${ic(g.icon)}</div><div class="t"><div class="l">${label} <span>· ${g.key}</span></div><div class="v">${value}</div>${lvl}</div></div>`;}
+ // C: bottom center, 18 px above the control bar's place (it never moves)
+ const val=m==='vol'?`<span>Volume</span><span class="meter"><i style="width:40%"></i></span><b>80%</b>`
+         :g.value?`<span>${g.label}</span><b>${g.value}</b>`:`<span>${g.label}</span>`;
+ return `<div class="osd C shadow" style="bottom:${BARH+18}px">${ic(g.icon)}${val}<span class="sep"></span><span class="key">${g.key}</span></div>`;}
+function render(v,theme,bar,m){
+ const w=document.getElementById('win'); w.className=theme;
+ w.innerHTML=`<img class="frame" src="${FRAME}">`+(bar?`<div class="top"><img src="${TOP[theme]}"><div class="logo"><i>${CONE}</i></div><div class="title">Sintel</div></div><div class="bar"><img src="${BAR[theme]}"></div>`:'')+osd(v,m,bar);
+ const r=w.querySelector('.osd').getBoundingClientRect(); return [r.left,r.top,r.width,r.height];}
+</script></body></html>
