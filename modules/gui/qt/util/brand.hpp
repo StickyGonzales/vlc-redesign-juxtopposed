@@ -94,7 +94,15 @@
  * id) and X11 (WM_CLASS) use to find the app's name and icon for its windows; the D-Bus MPRIS
  * interface (modules/control/dbus/dbus_root.c) and the sound mixer (bin/vlc.c) name the same one
  * (redesign/LINUX_UX_NOTES.md) */
-# define BRAND_DESKTOP_FILE     "cone-player"
+# ifdef CONE_DESKTOP_ID
+/* a package with its own app ID: the Flatpak (extras/package/flatpak), given without quotes
+ * (-DCONE_DESKTOP_ID=io.github...: VLC copies its configure line into a C string) */
+#  define BRAND_STRINGIFY_(x)   #x
+#  define BRAND_STRINGIFY(x)    BRAND_STRINGIFY_(x)
+#  define BRAND_DESKTOP_FILE    BRAND_STRINGIFY(CONE_DESKTOP_ID)
+# else
+#  define BRAND_DESKTOP_FILE    "cone-player"
+# endif
 
 #else
 

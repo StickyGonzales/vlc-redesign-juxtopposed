@@ -45,7 +45,14 @@
  * controls show for Cone, with its icon */
 #ifdef VLC_BRAND_PUBLIC
 # define BRAND_MPRIS_IDENTITY "Cone Player"
-# define BRAND_DESKTOP_ENTRY "cone-player"
+# ifdef CONE_DESKTOP_ID
+/* a package with its own app ID: the Flatpak (extras/package/flatpak), given without quotes */
+#  define BRAND_STRINGIFY_(x) #x
+#  define BRAND_STRINGIFY(x) BRAND_STRINGIFY_(x)
+#  define BRAND_DESKTOP_ENTRY BRAND_STRINGIFY(CONE_DESKTOP_ID)
+# else
+#  define BRAND_DESKTOP_ENTRY "cone-player"
+# endif
 #else
 # define BRAND_MPRIS_IDENTITY _("VLC media player")
 # define BRAND_DESKTOP_ENTRY PACKAGE

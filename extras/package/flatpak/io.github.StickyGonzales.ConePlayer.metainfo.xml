@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cone Player's AppStream file for its Flatpak (extras/package/flatpak) -->
+<component type="desktop-application">
+  <id>io.github.StickyGonzales.ConePlayer</id>
+  <name>Cone Player</name>
+  <summary>Media player with Juxtopposed's VLC Redesign, based on VLC media player</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <developer id="io.github.StickyGonzales">
+    <name>StickyGonzales</name>
+  </developer>
+  <description>
+    <p>
+      Cone Player plays your videos and music with the interface of Juxtopposed's
+      "VLC Redesign" (CC BY 4.0), built on the engine of VLC media player. It plays almost any
+      file, with subtitles, chapters, bookmarks, a media library and per-show presets.
+    </p>
+    <p>
+      Experimental: based on the development version of VLC media player (VLC 4). Cone Player is
+      not affiliated with or endorsed by VideoLAN or Juxtopposed.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.StickyGonzales.ConePlayer.desktop</launchable>
+  <url type="homepage">https://github.com/StickyGonzales/vlc-redesign-juxtopposed</url>
+  <url type="bugtracker">https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues</url>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Player</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <provides>
+    <binary>cone</binary>
+  </provides>
+</component>
