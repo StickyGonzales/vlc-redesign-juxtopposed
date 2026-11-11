@@ -135,8 +135,10 @@ jobs:
       - name: Build image
         run: |
           for i in 1 2 3; do
-            docker build -q -t "$VLC_IMAGE" -f .github/linux/jammy.Dockerfile .github/linux && break
-            echo "::warning::image build attempt $i failed"
+            docker build --progress=plain -t "$VLC_IMAGE" -f .github/linux/jammy.Dockerfile .github/linux \
+              > image-build.log 2>&1 && break
+            echo "::warning::image build attempt $i failed; the end of its log:"
+            tail -n 60 image-build.log
             [ "$i" = 3 ] && exit 1
             sleep 20
           done
