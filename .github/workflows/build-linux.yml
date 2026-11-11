@@ -134,12 +134,21 @@ jobs:
       # Ubuntu 22.04, its libraries and the official Qt 6.8.3 (aqtinstall): about 5 minutes
       - name: Build image
         run: |
-          # --network host: the build's apt and downloads use the runner's own network and DNS.
-          # BuildKit's separate build network could not resolve archive.ubuntu.com on the runner
-          # image of 2026-11-01 (build-linux #106-#111: "Could not resolve", then every package
-          # "Unable to locate"). The log of a failed attempt shows apt's own errors
+          # From the runners archive.ubuntu.com and security.ubuntu.com stopped resolving
+          # (build-linux #106-#112: "Could not resolve", then every package "Unable to locate").
+          # The image's apt uses the runner's own Ubuntu mirror instead (Azure's copy of the archive,
+          # listed in the runner's ubuntu.sources or sources.list; jammy.Dockerfile, UBUNTU_MIRROR),
+          # the build runs on the runner's network (--network host), and a failed attempt shows
+          # apt's own errors
+          MIRROR=$(grep -hoE 'https?://[^ ]*azure\.archive\.ubuntu\.com/ubuntu/?' \
+                     /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null | head -n 1)
+          [ -n "$MIRROR" ] && MIRROR="${MIRROR%/}/"
+          echo "Ubuntu archive for the image: ${MIRROR:-archive.ubuntu.com (no runner mirror found)}"
+          for h in archive.ubuntu.com security.ubuntu.com ${MIRROR:+$(echo "$MIRROR" | cut -d/ -f3)}; do
+            getent hosts "$h" > /dev/null && echo "resolves: $h" || echo "does not resolve: $h"
+          done
           for i in 1 2 3; do
-            docker build --network host --progress=plain -t "$VLC_IMAGE" \
+            docker build --network host --progress=plain --build-arg UBUNTU_MIRROR="$MIRROR" -t "$VLC_IMAGE" \
               -f .github/linux/jammy.Dockerfile .github/linux > image-build.log 2>&1 && break
             echo "::warning::image build attempt $i failed; the end of its log:"
             grep -E ' (Err:|W:|E:|Ign:|Hit:|Get:[0-9]+ http[^ ]* [a-z-]+ (InRelease|Release))' image-build.log | head -n 60

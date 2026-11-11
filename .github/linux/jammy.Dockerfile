@@ -12,6 +12,17 @@ ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8
 # could not fetch (with the reason) instead of going on to "Unable to locate package"
 RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
 
+# The Ubuntu archive to install from. build-linux.yml passes the runner's own mirror (Azure's copy
+# of the archive): from GitHub's runners archive.ubuntu.com and security.ubuntu.com stopped
+# resolving (build-linux #106-#112, "Temporary failure resolving"), while the runner's mirror
+# works. Without the argument (a local build) Ubuntu's own archive is used.
+ARG UBUNTU_MIRROR=
+RUN if [ -n "$UBUNTU_MIRROR" ]; then \
+      sed -i -e "s|http://archive.ubuntu.com/ubuntu/\?|$UBUNTU_MIRROR|" \
+             -e "s|http://security.ubuntu.com/ubuntu/\?|$UBUNTU_MIRROR|" /etc/apt/sources.list; \
+    fi \
+ && grep -v '^#' /etc/apt/sources.list | grep .
+
 RUN apt-get update --error-on=any && apt-get install -y --no-install-recommends \
     ca-certificates curl git file patch xz-utils bzip2 unzip python3 python3-pip \
     gcc g++ make autoconf automake libtool gettext autopoint pkg-config cmake meson ninja-build \
