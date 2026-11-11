@@ -142,3 +142,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/fix-deb-asset-name` | `e8d509b9a2a755ab79a3e4cd258ffe6f8b420593` | PR #89 merged; leftover notes commit, StickyGonzales chose delete |
 | `wip/fix-pause-rate-clock` | `f29fc12a3d522d19cba72dbece78778e94cd3e17` | the #52 fix and FIX_PAUSE_RATE_NOTES.md (with the draft reply) are in wip/next-test through PR #55; StickyGonzales chose delete |
 | `wip/fix-visualizer` | `5ef8dcec493b39508b18bf937b0123ad53c13e6e` | window title already in wip/next-test ("Cone Player"); the ICC-profile hang theory was never confirmed and the white visualizer / slow quit were fixed by the HEVC surface and Spectrometer fixes (2026-10-25); StickyGonzales chose delete, no retest |
+
+## 2026-11-11, PC fixes merged
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/pc-fixes-1.3.1` | `bf9e459369c3fdb210674c75a16ab3fee04ce2dd` | merged into wip/next-test (settings on update, account saved as typed, volume in movie mode) |
