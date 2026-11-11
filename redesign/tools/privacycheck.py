@@ -19,7 +19,8 @@ GENERIC = [
     r"[A-Za-z]:\\Users\\",                  # Windows user folders
     r"[A-Za-z]:/Users/",
     r"/c/Users/",
-    r"\b[A-Za-z0-9._%+-]+@(?!users\.noreply\.github\.com|anthropic\.com|videolan\.org)[A-Za-z0-9.-]+\.[a-z]{2,}\b",
+    # aur@aur.archlinux.org: the AUR's public SSH login (redesign/SUBMIT_TO_AUR.md), not an address
+    r"\b[A-Za-z0-9._%+-]+@(?!users\.noreply\.github\.com|anthropic\.com|videolan\.org|aur\.archlinux\.org)[A-Za-z0-9.-]+\.[a-z]{2,}\b",
 ]
 FORBIDDEN_PATHS = [
     r"^redesign/reference/frames",           # designer's video frames
