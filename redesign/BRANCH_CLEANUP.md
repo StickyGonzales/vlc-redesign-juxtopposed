@@ -150,3 +150,14 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/pc-fixes-1.3.1` | `bf9e459369c3fdb210674c75a16ab3fee04ce2dd` | merged into wip/next-test (settings on update, account saved as typed, volume in movie mode) |
 | `wip/up-next-plan` | `b8309be9992b5d379233b37a1ff12938a8d5b06d` | PR #44 closed (everything in it shipped in 1.1.0 to 1.3.0); StickyGonzales chose delete |
 | `wip/seekbar-wheel` | `fb097056997b6c2bf76cdefa71bc6b35d35775a1` | merged into wip/next-test (wheel seeking on the timeline) |
+
+## 2026-11-11, Linux fixes, Flatpak, Flathub prep and AUR merged
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-linux-jammy-image` | `29e7f9de3ce6de7eccf87159514b6995ca127792` | PR #119 merged (Linux build image) |
+| `wip/fix-linux-wayland-embed` | `5cf3e27ed88a285a8c1e6a3a79b11f6d34e735c9` | PR #120 merged (Wayland embed, #116) |
+| `wip/linux-flatpak` | `9a212bdb2f4175bb5439cc7b9f73d11c2c63e679` | PR #114 merged (Flatpak) |
+| `wip/flathub-prep` | `e289f8e85c6cac41573253f3d9dccf242eb01062` | PR #115 merged (Flathub prep) |
+| `wip/aur-cone-player-bin` | `ed5664bf02537cf11564c5394036e3a64596e8da` | PR #113 merged (AUR package) |
+| `wip/round-linux-1.4.0` | `3cfbf2f0c2b804bc95058a1780b533cb4b65a541` | the combined test build of the five, merged into wip/next-test |

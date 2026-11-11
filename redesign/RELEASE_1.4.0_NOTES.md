@@ -29,4 +29,9 @@ preview (pre-release). The fixes list leads with the settings fix (StickyGonzale
   forward when you scroll up, back when you scroll down. Elsewhere on the control bar the wheel still does
   nothing, and over the video it still changes the volume.
 
+## Linux (beta)
+
+- **On Wayland the video plays inside Cone Player's window again, and fullscreen has its bars (issue #116).**
+  In 1.3.0 beta 4 on Wayland desktops it opened in a separate window with no controls; X11 was not affected.
+
 (The rest of 1.4.0 is added as it is merged.)
