@@ -19,6 +19,7 @@ Branch `wip/fix-pointer-hide-resume`. Draft pull request into `wip/next-test`. S
   - A hovered bar, an open menu, panel or dialog, and the Up Next card still keep the pointer (locked bars, and the existing conditions).
   - Paused: the pointer stays.
   - The fullscreen edge zones keep it too.
+  - With "pin video controls" on (the bars never hide in a window), the pointer never hides either, after keys too (found by the independent review: the first version hid it 3 s after a key under pinned bars).
 - **qmlcheck:** errors 1 (the known HighResolutionTimeWidget stub), crashed 0. **buildlists:** 0 problems.
 
 ## 3. Windows retest (PC)
@@ -35,4 +36,5 @@ Use a video longer than a minute, in a window. Rest the pointer over the middle 
 5. **Fullscreen.**
    - F, Space to pause, wait, Space to resume: the pointer hides after the fullscreen delay (VLC's "Hide cursor and fullscreen controller" setting, 1 s by default), not after the keyboard's double time.
    - Moving the pointer to the bottom edge shows the bar and keeps the pointer.
+7. **Pinned bars.** Settings > Interface: pin the video controls. Play in a window, press Space twice: the bars stay and the pointer stays too. Unpin afterwards.
 6. **Up Next card and menus.** With the "..." menu or a sidebar panel open, or the Up Next card showing, the pointer never hides (unchanged).

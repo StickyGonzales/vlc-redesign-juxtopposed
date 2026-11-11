@@ -614,6 +614,7 @@ FocusScope {
                             && (!playerToolbarVisibilityFSM.isVisible
                                 || (playerToolbarVisibilityFSM.keyboardShown
                                     && !playerToolbarVisibilityFSM.isLocked
+                                    && !playerToolbarVisibilityFSM.pinned
                                     && !pointerIdleTimer.running))
                             && !interactiveAutoHideTimer.running
                             && !rootPlayer._mouseNearTop && !rootPlayer._mouseNearBottom
