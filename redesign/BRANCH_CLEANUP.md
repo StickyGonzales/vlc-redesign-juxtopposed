@@ -148,3 +148,4 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/pc-fixes-1.3.1` | `bf9e459369c3fdb210674c75a16ab3fee04ce2dd` | merged into wip/next-test (settings on update, account saved as typed, volume in movie mode) |
+| `wip/up-next-plan` | `b8309be9992b5d379233b37a1ff12938a8d5b06d` | PR #44 closed (everything in it shipped in 1.1.0 to 1.3.0); StickyGonzales chose delete |
