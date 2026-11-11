@@ -37,7 +37,9 @@ The tarball, the AppImage and the .deb are made from the same build, so they all
 ## 4. Runs
 | Run | Result |
 |---|---|
-| (filled in below the PR) | |
+| build-linux #117 (43063926222), 21153af | **green**. Configure finds the scanner and builds the compositor. The package step's check passes. The new `embed` job passes all six cases. **Wayland** (headless Weston): tarball, AppImage and .deb each use `qtwayland module "qt_wayland_plugin_la_qt_wayland"`, `vout window module "qt"` and `vout display module "wl_shm"`. **X11** (Xvfb): `"qt"` and `xcb_render`. The other smoke checks are green too (Ubuntu 24.04 and 22.04 runners, Debian 12). |
+| build-linux #116 (43063041270), the image fix alone | for comparison: `checking for wayland-scanner >= 1.23... no`, so without this fix the packages still lack Wayland |
+| build-flatpak #20 (43057704114), `wip/linux-flatpak` (PR #114) | **green**, the same check on the installed Flatpak. Wayland: the compositor, `qt` and `wl_shm`. X11: `qt` and `gl`. |
 
 ## 5. Retest on a real Linux desktop (StickyGonzales or a tester, after the build is green)
 1. A Wayland session (KDE Plasma 6 or GNOME, the default login). In a terminal, `echo $XDG_SESSION_TYPE` prints `wayland`.
