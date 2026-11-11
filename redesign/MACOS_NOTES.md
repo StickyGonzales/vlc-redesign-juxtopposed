@@ -108,7 +108,22 @@ Smoke checks on GitHub's `macos-15` runner (Apple Silicon, macOS 15.8, a virtual
 4. **The update notice:** Settings shows "Check for updates" On. Cone's checker looks at the Windows / Linux releases; there is no macOS release, so a Mac build should not point to one. Left as is in this experimental build (a code change, not CI); to be decided before any macOS release.
 5. **Not built:** Sparkle (VLC's macOS updater), VLC's native macOS interface (Cone's design is the only interface), the fancy .dmg background (VLC's shows VLC's cone). Intel is built on every run since 2026-11-08.
 
-## The black picture: the runner, not Cone (run 10, both architectures)
+## The see-through or half-drawn picture: Cone, also on a real Mac (issue #69)
+The tester's Mac (issue #69, macOS on Apple Silicon) showed the **video area see-through** (the text editor behind the window showed in Cone's video area) with **the picture only partly drawn** (a band at the top, the picture pushed down), and after the first file often **no picture at all**; sound and subtitles worked. So the section below, "the runner, not Cone", was wrong: it is in Cone's macOS video path, and the runner's black picture is most likely the same fault on a dark desktop.
+
+**Why.**
+- **How the video is embedded:** Cone uses VLC's "platform" compositor on macOS (`maininterface/compositor_platform.cpp`). It is a top-level window with a video window inside it and Cone's interface (a transparent Qt Quick window) above both. VLC's macOS video output (`samplebufferdisplay`, AVSampleBufferDisplayLayer) got Qt's own view of the video window (`QNSView`).
+- **Partly drawn:** the output places its picture for an ordinary, unflipped macOS view: `y = height - y - h` (`VLCSampleBufferDisplay.m`, `frameForPlace`). Qt's view is flipped (origin at the top), so the picture could land at the wrong height.
+- **See-through:** the output paints nothing outside the picture, and Qt's view has no background. In the letterbox bands, and before the first frame, only the transparent interface window lay above, so the desktop behind Cone showed through.
+
+**The fix** (`compositor_platform.cpp`, macOS only).
+- The output now gets a plain NSView of Cone's own inside the video window: unflipped, opaque black (like VLC.app's video area), and always the video window's size.
+- The bands are black and the picture sits where VLC places it.
+- It is made through the Objective-C runtime (the file is C++), with no message that returns a struct, so Intel and Apple Silicon behave the same.
+
+**On the runner** the smoke's "picture (information)" lines show whether the video area now draws (screen colour above 0); a real Mac decides (tester list, step 1).
+
+## The black picture on the runner (run 10, both architectures; see the section above)
 On both runners the video area stays black while Cone's interface and the subtitles draw:
 
 ![Cone on the runner, run 10](fix-shots/macos-runner-run10.png)
@@ -130,8 +145,27 @@ Each of VLC's macOS video outputs was tried on the same H.264 file, with a scree
 - **Only the display is black.** The one video output that opens on the runner is `samplebufferdisplay`, Apple's AVSampleBufferDisplayLayer on Metal.
 - **No OpenGL on the runner.** The runners are virtual machines with Apple's paravirtual GPU ("Metal device: Apple Paravirtual device"). They have no OpenGL at all: Qt's OpenGL context fails, and so do the three OpenGL outputs.
 - **A missing scaler.** Every start logs "IOServiceMatching failed for: AppleM2ScalerParavirtDriver". That is the hardware scaler service AVSampleBufferDisplayLayer uses to put video on screen, and it is missing in the virtual machine.
-- **Conclusion.** The same output and the same embedding (Qt's "platform" compositor, as upstream VLC uses on macOS) cannot draw video on this virtual GPU. This is the runner, most likely, not Cone. Only a real Mac can confirm it: the first step of the tester list.
+- **Conclusion at the time (corrected above).** It was put down to the runner's virtual GPU. Issue #69 showed the same family of fault on a real Mac, so it was Cone's video embedding.
 - **The one oddity.** "blending YUVA to CVPN failed" (the subtitles blended into the picture buffer) shows on the runner too. If a real Mac shows the picture but not the subtitles, that is where to look.
+
+## Opening files from Finder, and folders macOS protects (issue #69)
+- **Finder did nothing.** Finder opens files with an "open documents" Apple event, not on the command line. Qt delivers it as `QEvent::FileOpen` to the application. VLC's own macOS interface handles it; Cone's Qt interface did not.
+  - **Fix:** `qt.cpp` handles it (macOS only): the files go to the play queue and the first plays. This covers a double-click, Open With, a drop on the Dock icon, a start from Finder, and a Cone that already runs.
+  - **Several files at once:** the files of one Finder action arrive one by one and are added together.
+- **Open With did not list Cone.** The bundle declared no document types.
+  - **Fix:** `Info.plist` now lists video, audio and playlist types (`CFBundleDocumentTypes`, rank Alternate). Cone shows under Open With without taking over the files.
+- **Playlists with songs on the Desktop.** The tester's `.m3u` listed `.mp3` files under `~/Desktop`, and each failed with "Your media can't be opened".
+  - **Cause:** macOS protects the Desktop, Documents and Downloads folders. An app needs the user's permission to read files there that the user did not open directly, and the songs in a playlist are such files.
+  - **Fix:** `Info.plist` now has the purpose strings (`NSDesktopFolderUsageDescription`, Documents, Downloads, removable and network drives), so macOS asks with a reason.
+  - **If access was refused once:** System Settings > Privacy & Security > Files and Folders > Cone Player: turn Desktop Folder on.
+  - **Each new build asks again:** macOS remembers the permission per signature, and Cone's ad-hoc signature changes with every build.
+- **Smoke:** two checks open a file through LaunchServices (`open -a`, as Finder does): one while Cone runs, one starting Cone with the file. They are warnings until the runner shows they work there.
+
+## The shortcuts page of the first start (issue #69)
+- **What the tester saw:** "COMMAND" and "CTRL" written out made the key caps of "Learn the basic keyboard shortcuts" run past the right edge, and a "/" sat on a label.
+- **Mac key symbols** (`onboarding_helper.cpp`, macOS only): the modifiers are shown as the Mac's own symbols, ⌃ ⌥ ⇧ ⌘, in Apple's order.
+- **The queue shortcut:** "Show / Hide Queue" is ⌘L on a Mac. It is a Qt shortcut, and Qt's Ctrl is the Command key there; the page had shown "CTRL L".
+- **Fitting the window** (`Onboarding.qml`): the key and label columns take the width of their widest row, and if both blocks are still wider than the page, they shrink to fit. This holds on any system, with any keys and any language.
 
 ## Opening an unsigned app (for testers)
 Cone Player for macOS has no Apple Developer ID, so macOS says it "cannot be opened because Apple cannot check it for malicious software" the first time. Either way below works once; after that it opens normally.
@@ -156,6 +190,26 @@ Any Mac with macOS 12 or later: the `-macos-arm64.dmg` for Apple Silicon (M1 and
 5. **Settings:** Cmd+P opens Settings; Escape closes it; a changed theme is kept after quitting.
 6. **Quit:** Cmd+Q quits within a few seconds.
 7. **Anything odd:** a crash (copy the first 40 lines of macOS's report), a freeze, cut-off text, blurry text on a Retina display.
+
+## Tester list for the issue #69 fixes (about 10 minutes)
+A build from the PR of `wip/macos-fixes` (Actions > build-macos > the run > Artifacts: `cone-macos-arm64`). Each step: what to do, and what you should see.
+1. **The picture.**
+   - **Do:** play a 16:9 video in a window that is taller than the video, then a second video right after.
+   - **See:** the whole picture, with black bands above and below; nothing of the desktop or another window shows through, and the second video shows too.
+   - **Then:** resize the window and go fullscreen and back; the picture follows.
+2. **Finder, Cone closed.**
+   - **Do:** quit Cone, then double-click a video in Finder, or right-click > Open With > Cone Player.
+   - **See:** Cone starts and plays it. Cone may not be the default player, but it is listed under Open With.
+3. **Finder, Cone open.**
+   - **Do:** with a video playing, open another one from Finder (Open With > Cone Player, or drop it on Cone's Dock icon).
+   - **See:** the new file plays in the same window. Select three files and Open With Cone: all three are in the queue and the first plays.
+4. **The first-start shortcuts page.**
+   - **Do:** start Cone once with `open -a "Cone Player" --args --qt-privacy-ask` and go to "Learn the basic keyboard shortcuts".
+   - **See:** every key cap is inside the page, the modifiers show as ⌃ ⌥ ⇧ ⌘, and Show / Hide Queue reads ⌘ L.
+5. **A playlist with songs on the Desktop.**
+   - **Do:** open your `.m3u` again.
+   - **See:** macOS asks whether Cone Player may access the Desktop folder; after Allow, the songs play.
+   - **If it does not ask:** System Settings > Privacy & Security > Files and Folders > Cone Player > Desktop Folder on, then open it again. If it still fails, send the log (Tools > Messages, or the text the Errors tab shows).
 
 ## Runs
 | Run | Head | What it showed / what changed |

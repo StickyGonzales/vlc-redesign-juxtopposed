@@ -97,6 +97,11 @@ extern "C" char **environ;
 # include "maininterface/mainctx.hpp"   /* MainCtx creation */
 #endif
 #include "style/defaultthemeproviders.hpp"
+#ifdef __APPLE__
+# include <QFileOpenEvent>
+# include <QTimer>
+# include <QUrl>
+#endif
 #include "style/rdfonts.hpp"
 #include "util/brand.hpp"
 #include "util/quit_watchdog.hpp"
@@ -741,6 +746,62 @@ static void *Thread( void * );
 static void *ThreadCleanup( qt_intf_t *p_intf, CleanupReason cleanupReason );
 
 #ifdef Q_OS_MAC
+#ifdef __APPLE__
+/* redesign (macOS, issue #69): Finder opens files (double-click, Open With, a file dropped on
+ * the Dock icon) with an "open documents" Apple event, not on the command line; Qt turns it
+ * into QEvent::FileOpen on the application, at the start as when Cone already runs. VLC's own
+ * macOS interface handles these, the Qt interface did not: the file was ignored. The files of
+ * one event batch (several selected in Finder arrive one by one) go to the play queue
+ * together and the first one plays, as the command line does. */
+class MacFileOpenFilter : public QObject
+{
+public:
+    MacFileOpenFilter(qt_intf_t* intf, QObject* parent)
+        : QObject(parent)
+        , m_intf(intf)
+    {
+        m_batch.setSingleShot(true);
+        m_batch.setInterval(150);
+        connect(&m_batch, &QTimer::timeout, this, &MacFileOpenFilter::flush);
+    }
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (event->type() != QEvent::FileOpen)
+            return QObject::eventFilter(watched, event);
+
+        const auto* open = static_cast<QFileOpenEvent*>(event);
+        QUrl url = open->url();
+        if (!url.isValid() || url.isEmpty())
+            url = QUrl::fromLocalFile(open->file());
+        if (url.isValid() && !url.isEmpty())
+        {
+            msg_Dbg(m_intf, "macOS: open %s from Finder", qtu(url.toString()));
+            m_urls.append(url.toString(QUrl::FullyEncoded));
+            m_batch.start();
+        }
+        return true;
+    }
+
+private:
+    void flush()
+    {
+        if (m_urls.isEmpty() || !m_intf->p_mainPlaylistController)
+            return;
+        QVector<vlc::playlist::Media> medias;
+        for (const QString& mrl : std::as_const(m_urls))
+            medias.push_back(vlc::playlist::Media{ mrl, QString {} });
+        m_urls.clear();
+        m_intf->p_mainPlaylistController->append(medias, true);
+    }
+
+    qt_intf_t* const m_intf;
+    QStringList m_urls;
+    QTimer m_batch;
+};
+#endif
+
 /* Used to abort the app.exec() on OSX after libvlc_Quit is called */
 #include <CoreFoundation/CFRunLoop.h>
 #endif
@@ -1623,7 +1684,11 @@ static void *Thread( void *obj )
             app.installEventFilter(new DismissPopupEventFilter(&app));
         }
         else if( platform == QLatin1String("windows") || platform == QLatin1String("direct2d") ) { }
-        else if( platform == QLatin1String("cocoa") || platform == QLatin1String("ios") ) { }
+        else if( platform == QLatin1String("cocoa") || platform == QLatin1String("ios") ) {
+#ifdef __APPLE__
+            app.installEventFilter(new MacFileOpenFilter(p_intf, &app));
+#endif
+        }
         else
         {
             msg_Err( p_intf, "unknown Qt platform: %s", qtu(platform) );

@@ -68,6 +68,12 @@ private:
 
     std::optional<QSize> m_pendingSize;
     std::optional<QPoint> m_pendingPosition;
+
+#ifdef __APPLE__
+    // redesign (macOS, issue #69): the NSView handed to the video output, inside the video
+    // window's view (owned by it): not flipped and opaque black, see makeMainInterface()
+    void* m_videoView = nullptr;
+#endif
 };
 
 }

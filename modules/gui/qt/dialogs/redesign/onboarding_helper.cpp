@@ -147,6 +147,21 @@ QStringList OnboardingHelper::keycapsForKey(const QString& key) const
         return { key };
 
     QStringList caps;
+#ifdef __APPLE__
+    // redesign (macOS, issue #69): the Mac's own modifier symbols, in Apple's order (Control,
+    // Option, Shift, Command), as macOS menus show them; spelled out ("COMMAND", "CTRL") they
+    // pushed the key caps of the shortcuts screen past its right edge
+    if (code & KEY_MODIFIER_CTRL)
+        caps << QString(QChar(0x2303));
+    if (code & KEY_MODIFIER_ALT)
+        caps << QString(QChar(0x2325));
+    if (code & KEY_MODIFIER_SHIFT)
+        caps << QString(QChar(0x21E7));
+    if (code & KEY_MODIFIER_META)
+        caps << modifierCap(N_("Meta+"));
+    if (code & KEY_MODIFIER_COMMAND)
+        caps << QString(QChar(0x2318));
+#else
     if (code & KEY_MODIFIER_CTRL)
         caps << modifierCap(N_("Ctrl+"));
     if (code & KEY_MODIFIER_ALT)
@@ -157,6 +172,7 @@ QStringList OnboardingHelper::keycapsForKey(const QString& key) const
         caps << modifierCap(N_("Meta+"));
     if (code & KEY_MODIFIER_COMMAND)
         caps << modifierCap(N_("Command+"));
+#endif
 
     // arrow keys are drawn as arrows (Figma "Onboarding" shortcuts screen)
     switch (code & ~KEY_MODIFIER)

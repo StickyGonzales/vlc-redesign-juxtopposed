@@ -511,6 +511,68 @@ session(EXE, 'h264', True)
 session(EXE, 'hevc', False)
 
 
+# macOS file-open events (issue #69): Finder opens a file with an "open documents" Apple event,
+# as `open -a <app> <file>` does through LaunchServices. Warnings while the runner's handling of
+# a Cone started from its executable is unproven; the tester list checks Finder by hand
+def playing_file(name, seconds=15):
+    end = time.time() + seconds
+    while time.time() < end:
+        try:
+            if name in rc('status'):
+                t1 = rc_number('get_time')
+                time.sleep(2)
+                t2 = rc_number('get_time')
+                if t2 > t1:
+                    return f'{name} plays ({t1} s, then {t2} s)'
+        except Exception:  # noqa: BLE001 (the cli starts with the playlist)
+            pass
+        time.sleep(1)
+    raise CheckFailed(f'{name} is not playing {seconds} s later')
+
+
+def finder_open_running():
+    s = Session(EXE, os.path.join(MEDIA, 'test-h264.mp4'), 'finder-running')
+    try:
+        s.window()
+        time.sleep(3)
+        r = run(['open', '-a', APP, os.path.join(MEDIA, 'test-hevc.mp4')])
+        if r.returncode:
+            raise CheckFailed(f'open -a failed: {r.stderr.strip()}')
+        return 'the running Cone: ' + playing_file('test-hevc.mp4')
+    finally:
+        s.stop()
+
+
+def finder_open_launch():
+    # Cone started by LaunchServices with a file, as a double-click in Finder; the cli's socket
+    # through --args, which the file does not travel with (it comes as the Apple event)
+    if os.path.exists(RC_SOCK):
+        os.remove(RC_SOCK)
+    log_path = os.path.join(OUT, 'cone-finder-launch.log')
+    r = run(['open', '-n', '-a', APP, os.path.join(MEDIA, 'test-hevc.mp4'), '--args',
+             '--no-qt-privacy-ask', '--no-qt-cone-update-check', '--aout=adummy', '--input-repeat=50',
+             '--file-logging', f'--logfile={log_path}', '--log-verbose=2', '--extraintf=cli',
+             f'--rc-unix={RC_SOCK}'])
+    if r.returncode:
+        raise CheckFailed(f'open -a failed: {r.stderr.strip()}')
+    try:
+        end = time.time() + 30
+        while not os.path.exists(RC_SOCK) and time.time() < end:
+            time.sleep(0.5)
+        return 'a start from Finder: ' + playing_file('test-hevc.mp4', 20)
+    finally:
+        try:
+            rc('quit')
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(3)
+        run(['pkill', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+
+
+check('finder: a file opened while Cone runs plays there', finder_open_running, soft=True)
+check('finder: a start with a file plays it', finder_open_launch, soft=True)
+
+
 # information only: why the picture is black on the runner (MACOS_NOTES.md, "The black picture").
 # The same H.264 file with each of VLC's macOS video outputs, and with software decoding, each with
 # a screenshot (vout-<name>.png) and the colour in the middle of the video; VLC's own snapshot of
