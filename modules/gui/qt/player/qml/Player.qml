@@ -323,6 +323,15 @@ FocusScope {
 
         _keyPressed = true
 
+        // a volume key (Up / Down in Cone) while the bars are hidden changes the volume only: no
+        // keyboard navigation, which moved the focus into a bar and showed both bars
+        // (StickyGonzales, 2026-11-11)
+        if (controlBar.state !== "visible" && MainCtx.isVolumeKey(event.key, event.modifiers)) {
+            MainCtx.sendHotkey(event.key, event.modifiers)
+            event.accepted = true
+            return
+        }
+
         rootPlayer.Navigation.defaultKeyAction(event)
 
         //unhandled keys are forwarded as hotkeys
