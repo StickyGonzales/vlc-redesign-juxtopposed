@@ -24,9 +24,20 @@ Which way a Ctrl+Q took depended on where the keyboard focus was:
 - **With a menu or a panel focused,** the Qt shortcut wins and Ctrl+Q quits like the close button.
 
 ## 3. The fix
-`MainCtx::sendVLCHotkey()` (`maininterface/mainctx.cpp`):
-- A key set for "key-quit" (Ctrl+Q by default, or whatever the user set in Keyboard Shortcuts) calls `DialogsProvider::quit()` instead of going to VLC's hotkeys. This is the same path as the close button: state saved, watchdog armed, one quit only (`b_isDying`).
-- Every key the player sends to VLC goes through this function: key presses, and mouse-wheel keys.
+Ctrl+Q now does exactly what the window's close button does (`MainCtx::onWindowClose`):
+1. The quit watchdog is armed first, and the state is saved.
+2. Playback stops, so the video output closes before the interface (OpenGL needs the window's context). If the stop does not report "stopped" within 3 s, the quit goes on anyway.
+3. Then `DialogsProvider::quit()` runs.
+
+Before this fix, even the Qt shortcut and the menu's Quit skipped step 2.
+
+- **`MainCtx::quitLikeClose()`** (Q_INVOKABLE) calls `onWindowClose`. Both ways a Ctrl+Q can travel use it:
+  - `MainCtx::sendVLCHotkey()`, for any key set for "key-quit" (Ctrl+Q by default, or a key changed in Keyboard Shortcuts), instead of VLC's hotkeys;
+  - Qt's Ctrl+Q shortcut (`menus/qml/GlobalShortcuts.qml`).
+- **`onWindowClose` runs once** (`m_closing`): a close button after Ctrl+Q, or a held key, does not stop playback twice or start a second timer. `DialogsProvider::quit()` already ignored a second call.
+- **Unchanged:** the "..." menu's Quit (`DialogsProvider::quit()`), and macOS's Command+Q (the QuitSpy in `qt.cpp`).
+- **Review:** the first version sent the quit key to `DialogsProvider::quit()`, the menu's path. The independent review pointed out that this skips the close button's stop. This version takes the close button's path.
+- **qmlcheck:** errors 1 (the known stub), crashed 0.
 
 ## 4. Windows retest (PC)
 Use any video.
@@ -35,4 +46,5 @@ Use any video.
 3. **Paused, fullscreen:** Space to pause, F for fullscreen, Ctrl+Q: Cone closes.
 4. **Simulated 150 %:** start Cone with `$env:QT_SCALE_FACTOR = '1.5'` in PowerShell, play a video, open and close Settings with its X, Ctrl+Q: Cone closes. Then `Remove-Item Env:QT_SCALE_FACTOR`.
 5. **Settings survive:** change the volume, quit with Ctrl+Q and start again: the volume and the window size are kept (Ctrl+Q saves like the close button).
+7. **Close button still works:** play a video and close with the window's X: Cone closes as before. Press Ctrl+Q and, at once, click X: one quit, no error.
 6. **A changed quit key:** Settings > Controls > Keyboard Shortcuts, set Quit to another key (for example Ctrl+Shift+Q), restart, play a video, press it: Cone closes. Set it back afterwards.
