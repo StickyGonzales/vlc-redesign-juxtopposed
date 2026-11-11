@@ -28,6 +28,7 @@ Branch `wip/linux-flatpak`, made from `origin/wip/next-test`. Draft pull request
 1. flatpak-builder builds every module and Cone in the sandboxed build environment.
 2. In a second job on a plain Ubuntu runner (an ordinary user, as VLC refuses root), the bundle is installed with `flatpak install --user`, like a user would; the KDE runtime comes from Flathub.
 3. Cone starts in its sandbox (`flatpak run`) on Xvfb with a generated 12 s H.264 clip and its .srt, plays it to the end (`--play-and-exit`) and must end with exit code 0. Its log must show the Qt interface's video window, a video output, the FFmpeg decoder and the subtitle decoder. A screenshot at 6 s and the log are kept as the `flatpak-run` artifact.
+4. #116: the video plays inside Cone's window, under a headless Weston session (Cone as a native Wayland client through the Flatpak's wayland socket) and under Xvfb (`.github/scripts/linux-embed-check.sh`, shared with the other Linux packages; redesign/LINUX_WAYLAND_EMBED_NOTES.md on `wip/fix-linux-wayland-embed`). The Flatpak was not affected by #116 (its build finds wayland-scanner 1.23 and compiles the Wayland compositor); this keeps it that way.
 
 ## 3. Runs
 | Run | Result |

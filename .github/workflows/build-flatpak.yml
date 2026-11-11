@@ -76,6 +76,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@v4
         with:
           name: cone-player-bundle
@@ -88,7 +91,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends flatpak xvfb imagemagick >/dev/null
+          sudo apt-get install -y -q --no-install-recommends flatpak xvfb imagemagick weston >/dev/null
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           # the KDE runtime comes from Flathub, as on a user's computer
           flatpak install --user -y --noninteractive cone-player.flatpak >/dev/null
@@ -121,6 +124,20 @@ jobs:
           done
           grep -i "cannot load module\|qml.*error" out/cone.log | head -n 20 | tee -a "$GITHUB_STEP_SUMMARY" || true
           [ "$ok" = 1 ]
+
+      # #116: the video plays inside Cone's window in the Flatpak too, on Wayland (headless Weston,
+      # the Flatpak's wayland socket) and on X11 (redesign/LINUX_WAYLAND_EMBED_NOTES.md)
+      - name: Video inside Cone's window (Wayland and X11)
+        shell: bash
+        run: |
+          echo "### Video inside Cone's window (#116)" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p out/embed
+          fail=0
+          for mode in wayland x11; do
+            .github/scripts/linux-embed-check.sh "$mode" "flatpak-$mode" out/embed "$PWD/media/clip.mp4" \
+              flatpak run --user --filesystem="$PWD/media:ro" --filesystem="$PWD/out" "$APP_ID" || fail=1
+          done
+          [ "$fail" = 0 ]
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
