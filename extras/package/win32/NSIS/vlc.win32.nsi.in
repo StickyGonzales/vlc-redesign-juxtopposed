@@ -603,13 +603,14 @@ ${MementoSection} "$(Name_Section07)" SEC07
 !endif
 ${MementoSectionEnd}
 
+${MementoSectionDone}
+
 ; redesign (StickyGonzales, 2026-11-11): never remembered from the last install (Memento), so it
 ; starts unticked every time: once ticked, every later update deleted the settings (the first
-; start onboarding came back, the OpenSubtitles key was gone) /o "$(Name_Section08)" SEC08
+; start onboarding came back, the OpenSubtitles key was gone)
+Section /o "$(Name_Section08)" SEC08
   !insertmacro delprefs
 SectionEnd
-
-${MementoSectionDone}
 
 ; Installer section descriptions
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
