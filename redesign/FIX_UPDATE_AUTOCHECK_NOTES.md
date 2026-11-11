@@ -19,6 +19,7 @@ Branch `wip/fix-update-autocheck`. Draft pull request into `wip/next-test`. Stic
 - **Retries in the session:** a failed automatic check is tried again after **1, 5 and 15 minutes**, then not before the next start.
   - An answer (the automatic one or "Check now") ends the retries.
   - A retry stops if the option was turned off meanwhile.
+  - An automatic check that joins a running "Check now" (or the reverse) keeps its retries when the shared request fails (found by the independent review).
   - Each step is in the log ("update check: no answer, trying again in 60 s").
 - **Unchanged:**
   - "Later" (the day), "Skip this version", and "Check now" (asks at once and reports a failure).

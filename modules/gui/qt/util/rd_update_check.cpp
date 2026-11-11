@@ -180,6 +180,7 @@ RdUpdateCheck::RdUpdateCheck(qt_intf_t* intf, QObject* parent)
     Q_UNUSED(m_explicitCheck);
     Q_UNUSED(m_retries);
     Q_UNUSED(m_retryTimer);
+    Q_UNUSED(m_automaticPending);
 #endif
 }
 
@@ -246,6 +247,8 @@ void RdUpdateCheck::automaticCheck()
     // the option may have been turned off since the start
     if (!var_InheritBool(m_intf, "qt-cone-update-check"))
         return;
+    // a request already on its way ("Check now") answers this one too
+    m_automaticPending = true;
     request(false);
 #endif
 }
@@ -355,6 +358,8 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     m_job.reset();
     const bool explicitCheck = m_explicitCheck;
     m_explicitCheck = false;
+    const bool automatic = m_automaticPending;
+    m_automaticPending = false;
 
     const QJsonDocument answer = QJsonDocument::fromJson(body);
     const QJsonObject release = releaseOf(answer);
@@ -378,7 +383,7 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
         // notice of an earlier one stays as it is
         if (explicitCheck)
             setStatus(CheckFailed);
-        else
+        if (automatic)
             scheduleRetry();
         return;
     }

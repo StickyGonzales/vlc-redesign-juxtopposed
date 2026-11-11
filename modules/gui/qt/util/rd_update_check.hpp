@@ -118,6 +118,9 @@ private:
     bool m_explicitCheck = false;
     // the automatic checks of this session after a failed one (retryDelays)
     int m_retries = 0;
+    // an automatic check (start or retry) waits for the running request's answer: its failure
+    // is tried again even when "Check now" joined the same request
+    bool m_automaticPending = false;
     QTimer* m_retryTimer = nullptr;
     std::shared_ptr<Job> m_job;
 };
