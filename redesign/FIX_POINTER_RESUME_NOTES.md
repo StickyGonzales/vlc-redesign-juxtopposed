@@ -36,5 +36,5 @@ Use a video longer than a minute, in a window. Rest the pointer over the middle 
 5. **Fullscreen.**
    - F, Space to pause, wait, Space to resume: the pointer hides after the fullscreen delay (VLC's "Hide cursor and fullscreen controller" setting, 1 s by default), not after the keyboard's double time.
    - Moving the pointer to the bottom edge shows the bar and keeps the pointer.
-7. **Pinned bars.** Settings > Interface: pin the video controls. Play in a window, press Space twice: the bars stay and the pointer stays too. Unpin afterwards.
 6. **Up Next card and menus.** With the "..." menu or a sidebar panel open, or the Up Next card showing, the pointer never hides (unchanged).
+7. **Pinned bars.** Settings > Interface: pin the video controls. Play in a window, press Space twice: the bars stay and the pointer stays too. Unpin afterwards.
