@@ -268,6 +268,59 @@ void testExcluded()
         check(!excluded(QString::fromLatin1(path)), QStringLiteral("not excluded: ") + QString::fromLatin1(path));
 }
 
+// the show's name as the Up Next card and the Playback tab show it (displayName)
+void testDisplayNames()
+{
+    const QVector<QPair<QString, QString>> cases {
+        // release folders: the name before the season marker, without tags and the group
+        { "Show.S01.1080p.WEBRip.x265-GROUP", "Show" },
+        { "Some.Show.S01.1080p.WEBRip.10Bit.DDP5.1.x265-Group", "Some Show" },
+        { "The.Wand.S02.2160p.AMZN.WEB-DL.DDP5.1.H.265-NTb", "The Wand" },
+        { "the_wand_s01_720p_hdtv_x264", "the wand" },
+        { "The Wand - Season 1 (1080p BluRay x265 HEVC 10bit AAC 5.1)", "The Wand" },
+        { "The Wand Season 2 Complete 720p", "The Wand" },
+        { "The.Wand.Complete.Series.1080p", "The Wand" },
+        { "The.Wand.S01-S03.1080p.BluRay", "The Wand" },
+        { "The.Wand.S01E01-E03.1080p", "The Wand" },
+        { "The.Wand.1x01.720p", "The Wand" },
+        // a year ends the name, unless the name is the year
+        { "Doctor.Who.2005.S02.1080p.BluRay.x264-SHORTBREHD", "Doctor Who" },
+        { "Doctor Who (2005)", "Doctor Who" },
+        { "1883.S01.1080p.WEB", "1883" },
+        // brackets, sites and groups in front
+        { "[TGx] Some Show S01 720p", "Some Show" },
+        { "www.Torrenting.com - Some.Show.S01.1080p", "Some Show" },
+        { "Some Show S01 [1080p] [x265] [10bit] {MSD}", "Some Show" },
+        { "Some.Show.S01.MULTi.1080p.WEB.x264-GRP", "Some Show" },
+        // abbreviations keep their dots
+        { "S.W.A.T.2017.S01.720p.HDTV.x264-KILLERS", "S.W.A.T." },
+        { "Mr.Robot.S01.1080p.BluRay", "Mr Robot" },
+        // names that are already clean stay as they are
+        { "The Wand", "The Wand" },
+        { "Doctor Who", "Doctor Who" },
+        { "A Series of Unfortunate Events", "A Series of Unfortunate Events" },
+        { "Marvel's Agents", "Marvel's Agents" },
+        { "Anime", "Anime" },
+        // nothing but tags: the folder name, made plain
+        { "1080p.WEB", "1080p WEB" },
+    };
+    for (const auto& [folder, expected] : cases)
+        checkEqual(displayName(folder), expected, QStringLiteral("displayName(%1)").arg(folder));
+
+    // detect() names the show after its folder, cleaned
+    const Tree tree(numbered("Some.Show.S01.1080p.WEBRip.x265-GROUP/Some.Show.S01E", 1, 3,
+                             ".1080p.WEBRip.x265-GROUP.mkv", two));
+    const Show show = detect(tree.path("Some.Show.S01.1080p.WEBRip.x265-GROUP/Some.Show.S01E01.1080p.WEBRip.x265-GROUP.mkv"));
+    check(show.isShow, QStringLiteral("release folder: a show (%1)").arg(show.reason));
+    checkEqual(show.name, QStringLiteral("Some Show"), QStringLiteral("release folder: show name"));
+    check(show.root.endsWith(QStringLiteral("Some.Show.S01.1080p.WEBRip.x265-GROUP")),
+          QStringLiteral("release folder: the root stays the folder (%1)").arg(show.root));
+
+    const Tree seasons(numbered("Doctor.Who.2005.1080p.BluRay/Season 1/Doctor.Who.S01E", 1, 2, ".mkv", two));
+    const Show inSeason = detect(seasons.path("Doctor.Who.2005.1080p.BluRay/Season 1/Doctor.Who.S01E01.mkv"));
+    checkEqual(inSeason.name, QStringLiteral("Doctor Who"), QStringLiteral("season folder: show name"));
+}
+
 void testSeasonFolders()
 {
     const struct { const char* name; int number; } cases[] = {
@@ -563,6 +616,7 @@ int main()
     testParse();
     testExcluded();
     testSeasonFolders();
+    testDisplayNames();
     testShows();
     std::printf("rd_episode_parser: %d checks, %d failed\n", checks, failures);
     return failures == 0 ? 0 : 1;
