@@ -128,3 +128,18 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/linux-glibc-235` | `e297350badaeece4944612d777e8639453b0c4bf` | PR #112 merged, released in 1.3.0 |
 | `wip/up-next-card-tune` | `d94ad689a7cba1c750055617946b4a82edbd3a64` | Up Next card tune merged, released in 1.3.0 |
 | `wip/round-1.3.0` | `16ea09558ff577963d7fcc7d7f6d5308d731b6b3` | the 1.3.0 test build, merged |
+
+## 2026-11-11, StickyGonzales' decision on the unmerged branches
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/a839e9d9ddb97595a` | `0623e3febd6d594815f436a4b098edd0bbf534d8` | old notes branch (subtitle speed stall, slider audit), StickyGonzales chose delete |
+| `wip/beta-gate` | `277560ec9f77869f7a2bc15672df7ba0fef9bd80` | beta gate harness branch, StickyGonzales chose delete |
+| `wip/code-audit` | `1c8fe5a62714dccd0e827edae8d3bfab56a13769` | CODE_AUDIT notes, StickyGonzales chose delete |
+| `wip/verify-harness` | `43961c6b60b73cc4e0c1e34917d1d25966f828fc` | verify harness branch, StickyGonzales chose delete |
+| `wip/verify-linux` | `771aae56f7db41cc822eb56d0a85877b1888610d` | LINUX_VERIFY notes, StickyGonzales chose delete |
+| `wip/verify-sheets` | `b07ef7ea3be16e89a912171f30a4382fb523fe68` | verify sheets notes, StickyGonzales chose delete |
+| `wip/fix-deb-asset-name` | `e8d509b9a2a755ab79a3e4cd258ffe6f8b420593` | PR #89 merged; leftover notes commit, StickyGonzales chose delete |
+| `wip/fix-pause-rate-clock` | `f29fc12a3d522d19cba72dbece78778e94cd3e17` | the #52 fix and FIX_PAUSE_RATE_NOTES.md (with the draft reply) are in wip/next-test through PR #55; StickyGonzales chose delete |
+
+Kept for now: `wip/fix-visualizer` (its ICC-profile change is not in wip/next-test; StickyGonzales decides).
