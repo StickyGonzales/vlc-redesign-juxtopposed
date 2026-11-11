@@ -323,10 +323,9 @@ FocusScope {
 
         _keyPressed = true
 
-        // a volume key (Up / Down in Cone) while the bars are hidden changes the volume only: no
-        // keyboard navigation, which moved the focus into a bar and showed both bars
-        // (StickyGonzales, 2026-11-11)
-        if (controlBar.state !== "visible" && MainCtx.isVolumeKey(event.key, event.modifiers)) {
+        // maximized or fullscreen (StickyGonzales' movie mode, 2026-11-11): a volume key while the bars
+        // are hidden changes the volume only, with no keyboard navigation into a bar
+        if (controlBar.state !== "visible" && rootPlayer._volumeKeyHidesNoBars(event)) {
             MainCtx.sendHotkey(event.key, event.modifiers)
             event.accepted = true
             return
@@ -362,6 +361,19 @@ FocusScope {
     }
 
     // Functions
+
+    // StickyGonzales' movie mode (2026-11-11): maximized or fullscreen, Up / Down (Cone's volume
+    // keys over the video) and the keys set for volume up, down and mute change the volume without
+    // showing the bars. The arrows carry the keypad modifier on Windows: it is ignored
+    function _volumeKeyHidesNoBars(event) {
+        const visibility = MainCtx.intfMainWindow.visibility
+        if (visibility !== Window.Maximized && visibility !== Window.FullScreen)
+            return false
+        const modifiers = event.modifiers & ~Qt.KeypadModifier
+        if ((event.key === Qt.Key_Up || event.key === Qt.Key_Down) && modifiers === Qt.NoModifier)
+            return true
+        return MainCtx.isVolumeKey(event.key, modifiers)
+    }
 
     function lockUnlockAutoHide(lock) {
         if (lock) {
@@ -2486,9 +2498,9 @@ FocusScope {
     target: MainCtx.intfMainWindow
 
         Keys.onPressed: (event) => {
-            // a volume key changes the volume and shows its message, not the bars
-            // (StickyGonzales, 2026-11-11); keyboard navigation inside the bars keeps them up
-            if (!Player.isInteractive && MainCtx.isVolumeKey(event.key, event.modifiers))
+            // maximized or fullscreen: a volume key changes the volume and shows its message, not
+            // the bars (StickyGonzales, 2026-11-11); in a window any key shows them as before
+            if (!Player.isInteractive && rootPlayer._volumeKeyHidesNoBars(event))
                 return
             if (Player.isInteractive)
                 interactiveAutoHideTimer.restart()

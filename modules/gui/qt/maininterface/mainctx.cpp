@@ -647,7 +647,8 @@ static bool isActionKey(vlc_object_t* obj, const char* option, int vlckey)
  * shows its on-screen message, but not the top bar and the control bar (Player.qml) */
 bool MainCtx::isVolumeKey(int key, int modifiers) const
 {
-    QKeyEvent event(QEvent::KeyPress, key, Qt::KeyboardModifiers(modifiers));
+    // the arrows carry the keypad modifier on Windows; the key options never name it
+    QKeyEvent event(QEvent::KeyPress, key, Qt::KeyboardModifiers(modifiers) & ~Qt::KeypadModifier);
     const int vlckey = qtEventToVLCKey(&event);
     vlc_object_t* obj = VLC_OBJECT(p_intf);
     return isActionKey(obj, "key-vol-up", vlckey) || isActionKey(obj, "key-vol-down", vlckey)
