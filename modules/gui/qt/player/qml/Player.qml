@@ -323,6 +323,14 @@ FocusScope {
 
         _keyPressed = true
 
+        // maximized or fullscreen (StickyGonzales' movie mode, 2026-11-11): a volume key while the bars
+        // are hidden changes the volume only, with no keyboard navigation into a bar
+        if (controlBar.state !== "visible" && rootPlayer._volumeKeyHidesNoBars(event)) {
+            MainCtx.sendHotkey(event.key, event.modifiers)
+            event.accepted = true
+            return
+        }
+
         rootPlayer.Navigation.defaultKeyAction(event)
 
         //unhandled keys are forwarded as hotkeys
@@ -353,6 +361,19 @@ FocusScope {
     }
 
     // Functions
+
+    // StickyGonzales' movie mode (2026-11-11): maximized or fullscreen, Up / Down (Cone's volume
+    // keys over the video) and the keys set for volume up, down and mute change the volume without
+    // showing the bars. The arrows carry the keypad modifier on Windows: it is ignored
+    function _volumeKeyHidesNoBars(event) {
+        const visibility = MainCtx.intfMainWindow.visibility
+        if (visibility !== Window.Maximized && visibility !== Window.FullScreen)
+            return false
+        const modifiers = event.modifiers & ~Qt.KeypadModifier
+        if ((event.key === Qt.Key_Up || event.key === Qt.Key_Down) && modifiers === Qt.NoModifier)
+            return true
+        return MainCtx.isVolumeKey(event.key, modifiers)
+    }
 
     function lockUnlockAutoHide(lock) {
         if (lock) {
@@ -2477,6 +2498,10 @@ FocusScope {
     target: MainCtx.intfMainWindow
 
         Keys.onPressed: (event) => {
+            // maximized or fullscreen: a volume key changes the volume and shows its message, not
+            // the bars (StickyGonzales, 2026-11-11); in a window any key shows them as before
+            if (!Player.isInteractive && rootPlayer._volumeKeyHidesNoBars(event))
+                return
             if (Player.isInteractive)
                 interactiveAutoHideTimer.restart()
             else
