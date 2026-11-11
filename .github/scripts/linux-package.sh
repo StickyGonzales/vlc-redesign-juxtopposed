@@ -156,6 +156,11 @@ while read -r f; do
     "$PATCHELF" --set-rpath "\$ORIGIN/$lib:\$ORIGIN/$vlc:\$ORIGIN/$deps" "$f"
 done < <(elf_files)
 
+# the Qt interface's Wayland compositor: without it, on a Wayland desktop the video opens in a
+# separate window with no controls (#116, redesign/LINUX_WAYLAND_EMBED_NOTES.md)
+[ -f "$U/lib/vlc/plugins/gui/libqt_wayland_plugin.so" ] || {
+    echo "linux-package.sh: plugins/gui/libqt_wayland_plugin.so is missing (built without Wayland)" >&2; exit 1; }
+
 # the plugin cache keeps each plugin's size and time: rebuilt after the RUNPATH change, or VLC
 # would load every plugin at each start
 CACHEGEN=$(find "$U" -name vlc-cache-gen -type f | head -n 1)

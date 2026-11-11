@@ -55,7 +55,10 @@ RUN apt-get update --error-on=any && apt-get install -y --no-install-recommends 
 
 # VLC's Wayland code needs wayland-scanner 1.23 and wayland-protocols 1.33 (Ubuntu 22.04 has 1.20
 # and 1.25): the scanner and the protocol files only, from source. VLC still links Ubuntu 22.04's
-# libwayland-client 1.20, so it uses nothing older systems lack; the package takes the system's
+# libwayland-client 1.20, so it uses nothing older systems lack; the package takes the system's.
+# The scanner's pkg-config file goes where PKG_CONFIG_PATH looks (--libdir; its default here was
+# /usr/local/lib64/pkgconfig, so configure saw Ubuntu's scanner 1.20 and built Cone without any
+# Wayland support: #116, redesign/LINUX_WAYLAND_EMBED_NOTES.md); the image build checks both versions.
 ARG WAYLAND_VERSION=1.23.1
 ARG WAYLAND_SHA256=864fb2a8399e2d0ec39d56e9d9b753c093775beadc6022ce81f441929a81e5ed
 ARG WAYLAND_PROTOCOLS_VERSION=1.41
@@ -64,14 +67,18 @@ RUN cd /tmp \
  && curl -sSLf -o wayland.tar.xz "https://gitlab.freedesktop.org/wayland/wayland/-/releases/${WAYLAND_VERSION}/downloads/wayland-${WAYLAND_VERSION}.tar.xz" \
  && echo "${WAYLAND_SHA256}  wayland.tar.xz" | sha256sum -c - \
  && tar xf wayland.tar.xz && cd "wayland-${WAYLAND_VERSION}" \
- && meson setup build --prefix=/usr/local -Dlibraries=false -Ddocumentation=false -Dtests=false -Ddtd_validation=false \
+ && meson setup build --prefix=/usr/local --libdir=lib/x86_64-linux-gnu -Dlibraries=false -Ddocumentation=false -Dtests=false -Ddtd_validation=false \
  && ninja -C build install && cd /tmp \
  && curl -sSLf -o wp.tar.xz "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/${WAYLAND_PROTOCOLS_VERSION}/downloads/wayland-protocols-${WAYLAND_PROTOCOLS_VERSION}.tar.xz" \
  && echo "${WAYLAND_PROTOCOLS_SHA256}  wp.tar.xz" | sha256sum -c - \
  && tar xf wp.tar.xz && cd "wayland-protocols-${WAYLAND_PROTOCOLS_VERSION}" \
  && meson setup build --prefix=/usr/local -Dtests=false \
  && ninja -C build install \
- && rm -rf /tmp/wayland* /tmp/wp.tar.xz
+ && rm -rf /tmp/wayland* /tmp/wp.tar.xz \
+ && PKG_CONFIG_PATH=/usr/local/share/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig \
+    pkg-config --atleast-version="${WAYLAND_VERSION}" wayland-scanner \
+ && PKG_CONFIG_PATH=/usr/local/share/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig \
+    pkg-config --atleast-version="${WAYLAND_PROTOCOLS_VERSION}" wayland-protocols
 
 # Qt 6.8.3, the version Cone uses on Windows (qmlcheck checks against it too): the essentials
 # (qtbase, qtdeclarative, qtsvg, qtwayland, ICU) and qtshadertools for qsb
