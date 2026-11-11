@@ -21,7 +21,7 @@ preview (pre-release). The fixes list leads with the settings fix (StickyGonzale
   API key, username and password are kept even if Cone Player closes while Settings is open.
 - **Volume keys don't bring up the bars in movie mode.** When Cone Player is maximized or fullscreen,
   Up / Down and the mouse wheel over the video change the volume and show the volume message only;
-  the top bar and the control bar stay hidden. (Update this line if Ctrl+Up / Ctrl+Down are fixed too.) In a normal window they show as before.
+  the top bar and the control bar stay hidden. In a normal window they show as before.
 
 ## New
 
