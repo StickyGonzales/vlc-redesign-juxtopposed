@@ -676,6 +676,16 @@ void MainCtx::sendHotkey(Qt::Key key , Qt::KeyboardModifiers modifiers)
 
 void MainCtx::sendVLCHotkey(int vlcHotkey)
 {
+    /* redesign (redesign/FIX_CTRLQ_QUIT_NOTES.md): the quit key (Ctrl+Q) quits like the
+     * window's close button and the menu's Quit. While the player prefers hotkeys, its keys reach
+     * VLC's hotkeys before Qt's shortcuts, and the hotkeys module's quit called libvlc_Quit()
+     * directly: no saved state and no quit watchdog, so a quit that stalled left Cone running
+     * with its window (ended by hand after about 40 s, PC tests 2026-11-08 and 2026-11-11) */
+    if (isActionKey(VLC_OBJECT(p_intf), "key-quit", vlcHotkey))
+    {
+        DialogsProvider::getInstance()->quit();
+        return;
+    }
 #ifdef VLC_BRAND_PUBLIC
     if (m_windowVisibility == QWindow::FullScreen && isToggleFullscreenKey(VLC_OBJECT(p_intf), vlcHotkey))
     {
