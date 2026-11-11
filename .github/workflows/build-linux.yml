@@ -140,13 +140,22 @@ jobs:
           # listed in the runner's ubuntu.sources or sources.list; jammy.Dockerfile, UBUNTU_MIRROR),
           # the build runs on the runner's network (--network host), and a failed attempt shows
           # apt's own errors
-          MIRROR=$(grep -hoE 'https?://[^ ]*azure\.archive\.ubuntu\.com/ubuntu/?' \
-                     /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null | head -n 1)
-          [ -n "$MIRROR" ] && MIRROR="${MIRROR%/}/"
-          echo "Ubuntu archive for the image: ${MIRROR:-archive.ubuntu.com (no runner mirror found)}"
-          for h in archive.ubuntu.com security.ubuntu.com ${MIRROR:+$(echo "$MIRROR" | cut -d/ -f3)}; do
+          # (the runner image names its mirrors in apt-mirrors.txt, used as "mirror+file:" sources;
+          # kernel.org's full Ubuntu mirror, security included, is the last choice)
+          MIRROR=
+          for m in $(cat /etc/apt/apt-mirrors.txt 2>/dev/null | cut -f1) \
+                   $(grep -hoE 'https?://[^ ]*azure\.archive\.ubuntu\.com/ubuntu/?' \
+                       /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null) \
+                   http://mirrors.edge.kernel.org/ubuntu/; do
+            h=$(echo "$m" | cut -d/ -f3)
+            if getent hosts "$h" > /dev/null; then echo "resolves: $h"; [ -z "$MIRROR" ] && MIRROR="${m%/}/"
+            else echo "does not resolve: $h"; fi
+          done
+          for h in archive.ubuntu.com security.ubuntu.com; do
             getent hosts "$h" > /dev/null && echo "resolves: $h" || echo "does not resolve: $h"
           done
+          echo "Ubuntu archive for the image: ${MIRROR:-archive.ubuntu.com (no runner mirror resolves)}" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
           for i in 1 2 3; do
             docker build --network host --progress=plain --build-arg UBUNTU_MIRROR="$MIRROR" -t "$VLC_IMAGE" \
               -f .github/linux/jammy.Dockerfile .github/linux > image-build.log 2>&1 && break
