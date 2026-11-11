@@ -2477,6 +2477,10 @@ FocusScope {
     target: MainCtx.intfMainWindow
 
         Keys.onPressed: (event) => {
+            // a volume key changes the volume and shows its message, not the bars
+            // (StickyGonzales, 2026-11-11); keyboard navigation inside the bars keeps them up
+            if (!Player.isInteractive && MainCtx.isVolumeKey(event.key, event.modifiers))
+                return
             if (Player.isInteractive)
                 interactiveAutoHideTimer.restart()
             else

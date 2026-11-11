@@ -627,15 +627,12 @@ void MainCtx::onVOutChanged( bool video )
 #ifdef KeyPress
 #undef KeyPress
 #endif
-#ifdef VLC_BRAND_PUBLIC
-/* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the "Toggle fullscreen" key (F) of a
- * fullscreen window leaves it, however it was entered. VLC's own handling toggles the video's
- * fullscreen only: after the top bar's button had made the window fullscreen through the
- * interface, the first F turned the video's fullscreen on (nothing to see) and only a second F
- * left (PC test, 2026-11-08) */
-static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
+
+/* redesign: true when the VLC key code is one of the keys set for the option (a tab
+ * separated list, like "key-vol-up") */
+static bool isActionKey(vlc_object_t* obj, const char* option, int vlckey)
 {
-    char* keys = var_InheritString(obj, "key-toggle-fullscreen");
+    char* keys = var_InheritString(obj, option);
     if (!keys)
         return false;
     bool match = false;
@@ -644,6 +641,28 @@ static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
         match = vlc_str2keycode(key) == uint_fast32_t(vlckey);
     free(keys);
     return match;
+}
+
+/* redesign (StickyGonzales, 2026-11-11): a volume key (up, down, mute) changes the volume and
+ * shows its on-screen message, but not the top bar and the control bar (Player.qml) */
+bool MainCtx::isVolumeKey(int key, int modifiers) const
+{
+    QKeyEvent event(QEvent::KeyPress, key, Qt::KeyboardModifiers(modifiers));
+    const int vlckey = qtEventToVLCKey(&event);
+    vlc_object_t* obj = VLC_OBJECT(p_intf);
+    return isActionKey(obj, "key-vol-up", vlckey) || isActionKey(obj, "key-vol-down", vlckey)
+        || isActionKey(obj, "key-vol-mute", vlckey);
+}
+
+#ifdef VLC_BRAND_PUBLIC
+/* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the "Toggle fullscreen" key (F) of a
+ * fullscreen window leaves it, however it was entered. VLC's own handling toggles the video's
+ * fullscreen only: after the top bar's button had made the window fullscreen through the
+ * interface, the first F turned the video's fullscreen on (nothing to see) and only a second F
+ * left (PC test, 2026-11-08) */
+static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
+{
+    return isActionKey(obj, "key-toggle-fullscreen", vlckey);
 }
 #endif
 

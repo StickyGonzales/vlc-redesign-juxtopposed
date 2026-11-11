@@ -296,6 +296,8 @@ public:
     bool usingTouch() const { return m_usingTouch; }
 
     Q_INVOKABLE bool backdropBlurRequested() const { return var_InheritBool(p_intf, "qt-backdrop-blur"); }
+    // redesign: the key (a Qt key and Qt modifiers) is set for volume up, down or mute
+    Q_INVOKABLE bool isVolumeKey(int key, int modifiers) const;
 
     Q_INVOKABLE static inline void setCursor(Qt::CursorShape cursor) { QApplication::setOverrideCursor(QCursor(cursor)); }
     Q_INVOKABLE static inline void restoreCursor(void) { QApplication::restoreOverrideCursor(); }
