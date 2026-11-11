@@ -761,6 +761,7 @@ public:
         : QObject(parent)
         , m_intf(intf)
     {
+        msg_Dbg(m_intf, "macOS: listening for files opened from Finder");
         m_batch.setSingleShot(true);
         m_batch.setInterval(150);
         connect(&m_batch, &QTimer::timeout, this, &MacFileOpenFilter::flush);

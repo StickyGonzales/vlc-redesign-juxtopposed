@@ -549,7 +549,10 @@ def finder_open_launch():
     if os.path.exists(RC_SOCK):
         os.remove(RC_SOCK)
     log_path = os.path.join(OUT, 'cone-finder-launch.log')
-    r = run(['open', '-n', '-a', APP, os.path.join(MEDIA, 'test-hevc.mp4'), '--args',
+    # Qt's macOS application logging (the delegate's launch and open-files calls) into Cone's log,
+    # to see whether the launch's open event reaches Qt at all (run 17 and 18: it did not play)
+    r = run(['open', '-n', '-a', APP, '--env', 'QT_LOGGING_RULES=qt.qpa.application*=true;qt.qpa.events*=true',
+             os.path.join(MEDIA, 'test-hevc.mp4'), '--args',
              '--no-qt-privacy-ask', '--no-qt-cone-update-check', '--aout=adummy', '--input-repeat=50',
              '--file-logging', f'--logfile={log_path}', '--log-verbose=2', '--extraintf=cli',
              f'--rc-unix={RC_SOCK}'])
