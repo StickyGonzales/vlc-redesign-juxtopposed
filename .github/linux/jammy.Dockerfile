@@ -8,7 +8,11 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# apt retries a failed download, and "apt-get update --error-on=any" stops at a package list it
+# could not fetch (with the reason) instead of going on to "Unable to locate package"
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
+
+RUN apt-get update --error-on=any && apt-get install -y --no-install-recommends \
     ca-certificates curl git file patch xz-utils bzip2 unzip python3 python3-pip \
     gcc g++ make autoconf automake libtool gettext autopoint pkg-config cmake meson ninja-build \
     nasm yasm bison flex gperf ragel \
