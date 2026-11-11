@@ -137,6 +137,79 @@ jobs:
           path: smoke-out/
           retention-days: 1
 
+  # #116: the video plays inside Cone's window, on Wayland (a headless Weston session, Cone as a
+  # native Wayland client: the Qt interface's Wayland compositor) and on X11 (Xvfb), for the
+  # tarball, the AppImage and the .deb (linux-embed-check.sh, redesign/LINUX_WAYLAND_EMBED_NOTES.md)
+  embed:
+    needs: smoke-media
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Download the portable tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-x86_64
+          path: smoke-in/tarball
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - name: Download the AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-appimage-x86_64
+          path: smoke-in/appimage
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - name: Download the Debian package
+        uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-deb-amd64
+          path: smoke-in/deb
+          run-id: ${{ inputs.build-run-id }}
+          github-token: ${{ inputs.build-run-id && github.token || '' }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-linux-smoke-media
+          path: smoke-in/media
+      # Weston and Xvfb, and the desktop libraries the tarball and the AppImage take from the system
+      - name: Weston, Xvfb and desktop libraries
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get update -q && \
+            sudo timeout 240 apt-get install -y -q --no-install-recommends weston xvfb \
+              libegl1 libegl-mesa0 libgl1-mesa-dri libopengl0 libxcb-cursor0 libxkbcommon-x11-0 \
+              libjack-jackd2-0 libssh-4 libpipewire-0.3-0t64 libsmbclient0 libgtk-3-0t64 && break
+            echo "::warning::apt attempt $i failed or stalled"
+            [ "$i" = 3 ] && exit 1
+          done
+          weston --version
+      - name: Video inside Cone's window (Wayland and X11)
+        run: |
+          echo "### Video inside Cone's window (#116)" >> "$GITHUB_STEP_SUMMARY"
+          CLIP=smoke-in/media/test-h264.mp4
+          mkdir -p run && tar -xJf smoke-in/tarball/*.tar.xz -C run
+          TARBALL=$(ls -d "$PWD"/run/Cone-*/)cone
+          APPIMAGE=$(ls "$PWD"/smoke-in/appimage/*.AppImage | head -n 1)
+          chmod +x "$APPIMAGE"
+          sudo apt-get install -y -q "$(ls "$PWD"/smoke-in/deb/*.deb | head -n 1)" > /dev/null
+          fail=0
+          for mode in wayland x11; do
+            .github/scripts/linux-embed-check.sh "$mode" "tarball-$mode" embed-out "$CLIP" "$TARBALL" || fail=1
+            # the AppImage unpacks itself (no FUSE on the runner), as AppImage's own runtime offers
+            APPIMAGE_EXTRACT_AND_RUN=1 .github/scripts/linux-embed-check.sh "$mode" "appimage-$mode" embed-out "$CLIP" "$APPIMAGE" || fail=1
+            .github/scripts/linux-embed-check.sh "$mode" "deb-$mode" embed-out "$CLIP" /usr/bin/cone-player || fail=1
+          done
+          [ "$fail" = 0 ]
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          name: cone-linux-smoke-results-embed
+          path: embed-out/
+          retention-days: 1
+
   # Debian 12 (glibc 2.36): the tarball starts there and plays a clip with its subtitles in the Qt
   # interface (Xvfb, Mesa's software OpenGL, dummy audio). Ubuntu 22.04 (and Linux Mint 21, built
   # on it) is the 22.04 runner above (redesign/LINUX_OLDER_DISTROS_NOTES.md)
