@@ -9,7 +9,7 @@ name: build-flatpak
 
 on:
   push:
-    branches: [wip/linux-flatpak]
+    branches: [wip/linux-flatpak, wip/flathub-prep]
     paths-ignore:
       - 'redesign/**'
       - 'CLAUDE.md'
@@ -59,6 +59,39 @@ jobs:
           bundle: cone-player.flatpak
           cache-key: flatpak-builder-${{ hashFiles('extras/package/flatpak/*.yml') }}
           upload-artifact: true
+          # the screenshots as Flathub's build mirrors them (the repo linter checks it)
+          mirror-screenshots-url: https://dl.flathub.org/media/
+
+      # Flathub's own checks, with Flathub's linter (org.flatpak.Builder): the manifest, the
+      # AppStream file and the built repository (redesign/SUBMIT_TO_FLATHUB.md). Any error fails
+      # the run, except appid-url-not-reachable: Flathub wants github.com/StickyGonzales/ConePlayer
+      # for this app ID, a repository only StickyGonzales can create or rename (the notes, 4)
+      - name: Flathub lint
+        shell: bash
+        run: |
+          command -v python3 >/dev/null || dnf install -y -q python3 >/dev/null
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder >/dev/null
+          lint() { flatpak run --command=flatpak-builder-lint org.flatpak.Builder "$@" || true; }
+          M=extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml
+          mkdir -p out
+          lint manifest "$M" > out/lint-manifest.json
+          lint repo repo > out/lint-repo.json
+          flatpak run --command=appstreamcli org.flatpak.Builder validate --explain \
+            extras/package/flatpak/io.github.StickyGonzales.ConePlayer.metainfo.xml | tee out/appstreamcli.txt
+          ok=1
+          for f in out/lint-manifest.json out/lint-repo.json; do
+            echo "### $f" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; echo '```' >> "$GITHUB_STEP_SUMMARY"
+            errors=$(python3 -c 'import json,sys
+          try: d=json.load(open(sys.argv[1]))
+          except Exception: print("unreadable-output"); sys.exit()
+          print(" ".join(e for e in d.get("errors", []) if e != "appid-url-not-reachable"))' "$f")
+            if [ -n "$errors" ]; then echo "::error::$f: $errors"; ok=0; fi
+            grep -q appid-url-not-reachable "$f" && echo "::warning::$f: appid-url-not-reachable (github.com/StickyGonzales/ConePlayer does not exist yet; redesign/SUBMIT_TO_FLATHUB.md)"
+          done
+          grep -q "Validation was successful" out/appstreamcli.txt || { echo "::error::appstreamcli validate failed"; ok=0; }
+          [ "$ok" = 1 ]
 
       # the bundle for the sandbox run (the job below)
       - uses: actions/upload-artifact@v4

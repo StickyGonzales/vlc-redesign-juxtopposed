@@ -12,25 +12,33 @@ runtime: org.kde.Platform
 runtime-version: '6.10'
 sdk: org.kde.Sdk
 command: cone
+# Sandbox permissions, each one what a media player needs (redesign/SUBMIT_TO_FLATHUB.md):
 finish-args:
-  - --share=ipc
-  - --share=network
+  # display: Wayland, X11 only where there is no Wayland; ipc for X11's shared memory
   - --socket=wayland
   - --socket=fallback-x11
-  - --socket=pulseaudio
+  - --share=ipc
+  # OpenGL / Vulkan rendering and VA-API / VDPAU hardware video decoding
   - --device=dri
-  # the media folders (library, "Open with"); anything else goes through the file chooser portal
+  # sound (PipeWire systems answer through pipewire-pulse)
+  - --socket=pulseaudio
+  # network streams (Open Network Stream), podcasts, OpenSubtitles downloads
+  - --share=network
+  # the media folders: the library scans them; downloaded subtitles are saved next to the video
+  # (Videos, Downloads) and snapshots go to Pictures. Music is only read. Every other file comes
+  # through the file chooser portal, "Open with" or drag and drop
   - --filesystem=xdg-videos
-  - --filesystem=xdg-music
-  - --filesystem=xdg-download:ro
+  - --filesystem=xdg-download
+  - --filesystem=xdg-pictures
+  - --filesystem=xdg-music:ro
+  # USB drives and discs, read only
   - --filesystem=/media:ro
   - --filesystem=/run/media:ro
-  # media controls (MPRIS) and the hand-off of a file to the running window use this name
+  # the desktop's media controls and media keys (MPRIS); the same name lets a second start hand
+  # its file to the window already open
   - --own-name=org.mpris.MediaPlayer2.cone
-  # no screen saver or sleep while a video plays
+  # no screen saver or screen lock while a video plays
   - --talk-name=org.freedesktop.ScreenSaver
-  - --talk-name=org.freedesktop.PowerManagement.Inhibit
-  - --talk-name=org.gnome.SessionManager
 cleanup:
   - /include
   - /lib/pkgconfig
@@ -166,7 +174,7 @@ modules:
       - ./bootstrap
       - >-
         BUILDCC=gcc QMAKE6="$(command -v qmake6 || command -v qmake)" ./configure --prefix=/app
-        --with-brand=public --disable-debug --disable-skins2
+        --with-brand=public --with-brand-version=1.2.0 --disable-debug --disable-skins2
       - make -j"$FLATPAK_BUILDER_N_JOBS"
       - make install
       # the plugin cache, as VLC's packages ship it
