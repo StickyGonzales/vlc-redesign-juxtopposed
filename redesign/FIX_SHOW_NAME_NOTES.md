@@ -15,14 +15,18 @@ A show kept in a release folder showed that folder's raw name: "Some.Show.S01.10
 - **Spacing:** dots and underscores become spaces.
 - **Abbreviations:** runs of single letters get their dots back ("S.W.A.T.").
 - **Fallback:** when nothing is left, the folder name with spaces.
+- **Names first:** the first word is always kept, even when it looks like a tag or a year ("Web Therapy", "Cam Girl", "Internal Affairs", "1883"). A season word cuts only before a number ("Season 1"; "The Series" and "A Series of Unfortunate Events" are names). A pack word ("Complete", "Multi", "Subs") cuts only before what a pack adds ("The.Wand.Complete.Series.1080p"); "The Complete Story" stays whole.
+- **Known limit:** a year inside the name cuts it ("Class.of.2009.S01" shows "Class of", "Space.1999.S01" shows "Space"). A folder name cannot tell those apart from "Doctor.Who.2005.S02", where the year is not part of the name, and that second kind is far more common.
 - **What stays the same:**
   - The show's key, which keeps its answers, credits points and track choices, stays the folder path, so earlier answers still apply.
   - The "folder supplies the title" check for numbered files still reads the raw folder name.
   - The extra folder words are used only here, never in episode titles ("The Complete Story" keeps its title).
 - **Unit tests** (`tests/test_rd_episode_parser.cpp`, `testDisplayNames`):
-  - 25 folder names: release folders, season packs, years, brackets, sites, groups, abbreviations, and names that are already clean;
+  - 35 folder names: release folders, season packs, years, brackets, sites, groups, abbreviations, and names that are already clean;
   - `detect()` on a release folder and on a season folder.
-  - Locally: `rd_episode_parser: 504 checks, 0 failed` (the earlier cases unchanged).
+  - Locally: `rd_episode_parser: 514 checks, 0 failed` (the earlier cases unchanged).
+
+- **Independent review** (2026-11-11): found "The Series", "The Complete Story" and names starting with a tag word ("Web Therapy") cut wrongly; fixed as above, with those names added to the tests.
 
 ## 3. Windows retest (PC)
 1. Make a folder `Some.Show.S01.1080p.WEBRip.x265-GROUP` with three short videos named `Some.Show.S01E01.1080p.WEBRip.x265-GROUP.mkv`, `...S01E02...`, `...S01E03...`. Any clips will do, at least 2 minutes each, for example the generated "Test Show" episodes renamed.

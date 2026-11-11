@@ -517,12 +517,26 @@ QString displayName(const QString& folderName)
         // release tag ("1080p", "WEBRip", "x265-GRP")
         if (marker.match(t).hasMatch())
             break;
-        if (seasonWords.contains(lower) && (i + 1 == tokens.size() || isNumber(tokens.at(i + 1))))
+        // "Season 1", "Series 2" (but "The Series", "A Series of ..." are names)
+        if (seasonWords.contains(lower) && i + 1 < tokens.size() && isNumber(tokens.at(i + 1)))
             break;
-        if (isYear(lower) && !kept.isEmpty())
+        // the name comes first: a tag word opens no cut ("Web Therapy", "Cam Girl", "1883")
+        if (kept.isEmpty())
+        {
+            kept.append(t);
+            continue;
+        }
+        if (isYear(lower) || isNoise(lower))
             break;
-        if (isNoise(lower) || folderNameNoise().contains(lower.section(QChar('-'), 0, 0)))
-            break;
+        // a pack's words cut only before what a pack adds ("The.Wand.Complete.Series.1080p",
+        // "Complete 720p"), not inside a name ("The Complete Story")
+        if (folderNameNoise().contains(lower.section(QChar('-'), 0, 0)))
+        {
+            const QString following = i + 1 < tokens.size() ? tokens.at(i + 1).toLower() : QString();
+            if (following.isEmpty() || marker.match(following).hasMatch() || seasonWords.contains(following)
+                    || isNoise(following) || isYear(following) || folderNameNoise().contains(following))
+                break;
+        }
         kept.append(t);
     }
     // dashes left at the end ("Show - S01" -> "Show")

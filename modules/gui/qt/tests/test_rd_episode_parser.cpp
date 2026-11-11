@@ -301,8 +301,19 @@ void testDisplayNames()
         { "A Series of Unfortunate Events", "A Series of Unfortunate Events" },
         { "Marvel's Agents", "Marvel's Agents" },
         { "Anime", "Anime" },
+        // words a release can carry are names too (independent review, 2026-11-11)
+        { "The Series", "The Series" },
+        { "The.Seasons.S01.720p", "The Seasons" },
+        { "The Complete Story", "The Complete Story" },
+        { "Web.Therapy.S01.720p", "Web Therapy" },
+        { "Cam.Girl.S01", "Cam Girl" },
+        { "Internal.Affairs.S01.1080p", "Internal Affairs" },
+        { "La.Casa.de.Papel.Temporada.1", "La Casa de Papel" },
+        { "30.Rock.S01.720p", "30 Rock" },
+        { "The.100.S01.1080p", "The 100" },
+        { "BREAKING.BAD.S01", "BREAKING BAD" },
         // nothing but tags: the folder name, made plain
-        { "1080p.WEB", "1080p WEB" },
+        { "1080p.WEB", "1080p" },
     };
     for (const auto& [folder, expected] : cases)
         checkEqual(displayName(folder), expected, QStringLiteral("displayName(%1)").arg(folder));
