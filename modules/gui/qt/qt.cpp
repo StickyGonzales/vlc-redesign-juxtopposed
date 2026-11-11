@@ -749,7 +749,8 @@ static void *ThreadCleanup( qt_intf_t *p_intf, CleanupReason cleanupReason );
 #ifdef __APPLE__
 /* redesign (macOS, issue #69): Finder opens files (double-click, Open With, a file dropped on
  * the Dock icon) with an "open documents" Apple event, not on the command line; Qt turns it
- * into QEvent::FileOpen on the application, at the start as when Cone already runs. VLC's own
+ * into QEvent::FileOpen on the application, at the start (before the interface exists, so the
+ * filter is installed right after the QApplication) as when Cone already runs. VLC's own
  * macOS interface handles these, the Qt interface did not: the file was ignored. The files of
  * one event batch (several selected in Finder arrive one by one) go to the play queue
  * together and the first one plays, as the command line does. */
@@ -787,8 +788,14 @@ protected:
 private:
     void flush()
     {
-        if (m_urls.isEmpty() || !m_intf->p_mainPlaylistController)
+        if (m_urls.isEmpty())
             return;
+        // a start from Finder: the files wait until the play queue and the main interface exist
+        if (!m_intf->p_mainPlaylistController || !m_intf->p_mi)
+        {
+            m_batch.start();
+            return;
+        }
         QVector<vlc::playlist::Media> medias;
         for (const QString& mrl : std::as_const(m_urls))
             medias.push_back(vlc::playlist::Media{ mrl, QString {} });
@@ -1151,6 +1158,12 @@ static void *Thread( void *obj )
     /* Start the QApplication here */
     QApplication app( argc, argv );
     app.setProperty("initialStyle", app.style()->name());
+#ifdef __APPLE__
+    // as early as possible: a start from Finder delivers its file before the interface exists
+    // (build-macos run 17: installed after the main interface, the file of the start was lost)
+    if( !p_intf->b_isDialogProvider )
+        app.installEventFilter(new MacFileOpenFilter(p_intf, &app));
+#endif
 
     {
         // Install custom translator:
@@ -1684,11 +1697,7 @@ static void *Thread( void *obj )
             app.installEventFilter(new DismissPopupEventFilter(&app));
         }
         else if( platform == QLatin1String("windows") || platform == QLatin1String("direct2d") ) { }
-        else if( platform == QLatin1String("cocoa") || platform == QLatin1String("ios") ) {
-#ifdef __APPLE__
-            app.installEventFilter(new MacFileOpenFilter(p_intf, &app));
-#endif
-        }
+        else if( platform == QLatin1String("cocoa") || platform == QLatin1String("ios") ) { }
         else
         {
             msg_Err( p_intf, "unknown Qt platform: %s", qtu(platform) );
