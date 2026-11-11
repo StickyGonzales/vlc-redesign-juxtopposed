@@ -23,4 +23,10 @@ preview (pre-release). The fixes list leads with the settings fix (StickyGonzale
   Up / Down and the volume keys change the volume and show the volume message only; the top bar and
   the control bar stay hidden. In a normal window they show as before.
 
+## New
+
+- **Seek with the mouse wheel.** With the pointer on the timeline, each wheel notch jumps 10 seconds,
+  forward when you scroll up, back when you scroll down. Elsewhere on the control bar the wheel still does
+  nothing, and over the video it still changes the volume.
+
 (The rest of 1.4.0 is added as it is merged.)
