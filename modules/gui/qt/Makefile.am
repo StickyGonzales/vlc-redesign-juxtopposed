@@ -411,6 +411,10 @@ libqt_plugin_la_SOURCES = \
 	util/csdbuttonmodel.cpp util/csdbuttonmodel.hpp \
 	util/csdmenu.cpp util/csdmenu.hpp \
 	util/rd_update_check.cpp util/rd_update_check.hpp \
+	util/rd_background_queue.cpp util/rd_background_queue.hpp \
+	util/rd_storage.cpp util/rd_storage.hpp \
+	util/rd_storage_model.cpp util/rd_storage_model.hpp \
+	util/rd_volume.cpp util/rd_volume.hpp \
 	util/imagehelper.cpp util/imagehelper.hpp \
 	util/keyhelper.cpp util/keyhelper.hpp \
 	util/listcache.hxx util/listcache.hpp \
@@ -635,6 +639,8 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/csdbuttonmodel.moc.cpp \
 	util/csdmenu.moc.cpp \
 	util/rd_update_check.moc.cpp \
+	util/rd_background_queue.moc.cpp \
+	util/rd_storage.moc.cpp \
 	util/keyhelper.moc.cpp \
 	util/listcache.moc.cpp \
 	util/locallistcacheloader.moc.cpp \
@@ -2430,6 +2436,30 @@ test_rd_show_tracks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
 test_rd_show_tracks_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_show_tracks_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 TESTS += test_rd_show_tracks
+
+# test_rd_storage_model (Cone's storage cleanup rules): QtCore only
+check_PROGRAMS += test_rd_storage_model
+test_rd_storage_model_SOURCES = \
+	tests/test_rd_storage_model.cpp \
+	util/rd_storage_model.cpp util/rd_storage_model.hpp
+test_rd_storage_model_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_storage_model_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_storage_model_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_storage_model_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_storage_model
+
+# test_rd_background_queue (Cone's one background queue): QtCore only
+check_PROGRAMS += test_rd_background_queue
+test_rd_background_queue_SOURCES = \
+	tests/test_rd_background_queue.cpp \
+	util/rd_background_queue.cpp util/rd_background_queue.hpp
+nodist_test_rd_background_queue_SOURCES = \
+	util/rd_background_queue.moc.cpp
+test_rd_background_queue_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_background_queue_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_background_queue_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_background_queue_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_background_queue
 
 # test_rd_osd_parse (Cone's on-screen messages): QtCore only
 

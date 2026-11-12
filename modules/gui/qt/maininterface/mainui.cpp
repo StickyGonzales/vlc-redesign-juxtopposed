@@ -112,6 +112,9 @@
 #define DoubleClickIgnoringItem QQuickItem
 #endif
 
+#include "util/rd_background_queue.hpp"
+#include "util/rd_storage.hpp"
+
 #include "videosurface.hpp"
 #include "mainctx.hpp"
 #ifdef _WIN32
@@ -120,8 +123,12 @@
 #include "mainctx_submodels.hpp"
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
+#include <QElapsedTimer>
 #include <QQuickRenderControl>
 #include <QQuickWindow>
+
+#include <cstdlib>
+#include <memory>
 
 // Qt Quick's context matcher of QML shortcuts, exported for QtQuick.Templates (qquickshortcut.cpp)
 typedef bool (*ShortcutContextMatcher)(QObject *, Qt::ShortcutContext);
@@ -302,6 +309,13 @@ void MainUI::registerQMLTypes()
     // redesign: shared by the dialogs and the player blocks below (Auto-sync of a download)
     AddSubtitles* addSubtitles = nullptr;
 
+    // redesign: Cone's one background queue (redesign/STORAGE_CLEANUP_NOTES.md). Made first, so
+    // it is the first child to go when the interface closes: it stops every job at once and
+    // waits for its threads before anything they use goes
+    RdBackgroundQueue* background = new RdBackgroundQueue(this);
+    RdBackgroundQueue::setInstance(background);
+    background->setLogger([intf = m_intf](const QString& line) { msg_Dbg(intf, "%s", qtu(line)); });
+
     assert(!g_qmlTypesAreRegistered);
 
     {
@@ -458,6 +472,35 @@ void MainUI::registerQMLTypes()
         // Cone extra (Decision 71): autoplay of the next episode of a show folder
         RdUpNext* upNext = new RdUpNext(m_intf, m_mainCtx, effects, this);
         qmlRegisterSingletonInstance<RdUpNext>(uri, versionMajor, versionMinor, "RdUpNext", upNext);
+        // redesign: Cone's own data per show and movie, kept tidy (STORAGE_CLEANUP_NOTES.md)
+        RdStorage* storage = new RdStorage(m_intf, m_intf->p_mainPlayerController, this);
+        upNext->setStorage(storage);
+        if (addSubtitles)
+            addSubtitles->setStorage(storage);
+
+        // the background queue waits while a file opens and while the user seeks (also by a
+        // key: a jump of the time), so playback gets the drive and the processor first
+        PlayerController* player = m_intf->p_mainPlayerController;
+        connect(player, &PlayerController::inputChanged, background, [background](bool hasInput) {
+            if (hasInput)
+                background->hold(QStringLiteral("opening a file"), 8000);
+        });
+        connect(player, &PlayerController::playingStateChanged, background, [background](PlayerController::PlayingState state) {
+            if (state == PlayerController::PLAYING_STATE_PLAYING)
+                background->release(QStringLiteral("opening a file"));
+        });
+        connect(player, &PlayerController::seekRequested, background, [background]() {
+            background->hold(QStringLiteral("seeking"), 1500);
+        });
+        auto clock = std::make_shared<QElapsedTimer>();
+        auto lastTime = std::make_shared<qint64>(-1);
+        connect(player, &PlayerController::timeChanged, background, [background, player, clock, lastTime]() {
+            const qint64 time = player->getTime().toMilliseconds();
+            const qint64 wall = clock->isValid() ? clock->restart() : (clock->start(), 0);
+            if (*lastTime >= 0 && std::llabs((time - *lastTime) - wall) > 2000)
+                background->hold(QStringLiteral("seeking"), 1500);
+            *lastTime = time;
+        });
         RdProfiles* profiles = new RdProfiles(m_intf, m_mainCtx, this);
         // a profile switch brings its autoplay options (UP_NEXT_PLAN.md Q5)
         connect(profiles, &RdProfiles::applied, upNext, &RdUpNext::reloadSettings);

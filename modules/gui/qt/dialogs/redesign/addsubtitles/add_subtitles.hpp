@@ -39,6 +39,8 @@
 #include "subtitle_matcher.hpp"
 #include "subtitle_store.hpp"
 
+class RdStorage;
+
 /**
  * redesign (Add Subtitles, W6.5; video 6:02-6:24, Figma "Add Subtitles to Playlist/Folder"):
  * the dialog's logic, a QML singleton ("AddSubtitles").
@@ -164,6 +166,11 @@ public:
     // the dialog closed without saving: stops what is still running
     Q_INVOKABLE void cancel();
 
+    // Cone's own data kept tidy (STORAGE_CLEANUP_NOTES.md): each download is registered with
+    // its video; a show or movie found at another place takes its links along; a forgotten one
+    // drops them; deleted downloads leave every link
+    void setStorage(RdStorage* storage);
+
 signals:
     void openRequested();
     // the dialog's work is done: it closes
@@ -223,6 +230,8 @@ private:
     QString defaultSearchText() const;
     void saveAccount();
     void writeStore();
+    // a change asked by the storage cleanup; waits until the store is read
+    void whenStoreLoaded(std::function<void()> action);
 
     // playback: adds the saved subtitles of the media that starts
     void onInputChanged(bool hasInput);
@@ -278,6 +287,8 @@ private:
 
     SubtitleStore m_store;
     bool m_storeLoaded = false;
+    QVector<std::function<void()>> m_afterStoreLoad;
+    RdStorage* m_storage = nullptr;
     // playback: the media whose subtitles are added once it plays
     QString m_pendingApply;
 };

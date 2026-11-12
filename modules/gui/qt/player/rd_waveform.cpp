@@ -22,15 +22,13 @@
 #include "rd_waveform.hpp"
 #include "rd_waveform_scanner.hpp"
 
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QMetaObject>
-#include <QRunnable>
 #include <QSaveFile>
-#include <QThread>
+#include <QPointer>
 
 #include <vlc_configuration.h>
 #include <vlc_input_item.h>
@@ -38,6 +36,8 @@
 #include <vlc_url.h>
 
 #include "player/player_controller.hpp"
+#include "util/rd_background_queue.hpp"
+#include "util/rd_storage.hpp"
 
 namespace {
 
@@ -47,14 +47,10 @@ const QByteArray kCacheMagic = QByteArrayLiteral("RDWF");
 constexpr char kCacheVersion = 2;
 constexpr int kCacheHeaderSize = 7;
 
+// named after the file's path, size and last change (RdStorage moves it with its show)
 QString cachePath(const QString& dir, const QFileInfo& file)
 {
-    QByteArray key = file.absoluteFilePath().toUtf8();
-    key += '\n' + QByteArray::number(file.size());
-    key += '\n' + QByteArray::number(file.lastModified().toMSecsSinceEpoch());
-    return dir + QLatin1Char('/')
-           + QString::fromLatin1(QCryptographicHash::hash(key, QCryptographicHash::Sha1).toHex())
-           + QStringLiteral(".wf");
+    return RdStorage::waveformFile(dir, file);
 }
 
 // the cached levels (`found` false: not cached); a hit counts as a use for the eviction order
@@ -105,67 +101,12 @@ void writeCache(const QString& dir, const QString& path, const QByteArray& level
 
 } // namespace
 
-/**
- * One look at a file, on the worker thread: the cache first, then a scan, whose result is
- * cached. A cancelled scan reports nothing.
- */
-class RdWaveformJob : public QRunnable
-{
-public:
-    RdWaveformJob(RdWaveform* owner, int generation, std::shared_ptr<RdWaveformScanner> scanner,
-                  const QString& path, const QString& cacheDir)
-        : m_owner(owner)
-        , m_generation(generation)
-        , m_scanner(std::move(scanner))
-        , m_path(path)
-        , m_cacheDir(cacheDir)
-    {
-    }
-
-    void run() override
-    {
-        QByteArray levels;
-        bool found = false;
-        const QFileInfo info(m_path);
-        if (info.isFile() && !m_scanner->cancelled())
-        {
-            const QString cached = cachePath(m_cacheDir, info);
-            levels = readCache(cached, &found);
-            if (!found)
-            {
-                levels = m_scanner->run();
-                if (m_scanner->cancelled())
-                    return;
-                writeCache(m_cacheDir, cached, levels);
-            }
-        }
-        if (m_scanner->cancelled())
-            return;
-
-        // the owner waits for this job before it goes (~RdWaveform)
-        RdWaveform* owner = m_owner;
-        const int generation = m_generation;
-        QMetaObject::invokeMethod(owner, [owner, generation, levels, found]() {
-            owner->onScanEnded(generation, levels, found);
-        }, Qt::QueuedConnection);
-    }
-
-private:
-    RdWaveform* m_owner;
-    int m_generation;
-    std::shared_ptr<RdWaveformScanner> m_scanner;
-    QString m_path;
-    QString m_cacheDir;
-};
 
 RdWaveform::RdWaveform(qt_intf_t* intf, PlayerController* player, QObject* parent)
     : QObject(parent)
     , m_intf(intf)
     , m_player(player)
-    , m_pool(std::make_unique<QThreadPool>())
 {
-    m_pool->setMaxThreadCount(1);
-    m_pool->setThreadPriority(QThread::LowestPriority);
 
     if (char* dir = config_GetUserDir(VLC_USERDATA_DIR))
     {
@@ -180,19 +121,10 @@ RdWaveform::RdWaveform(qt_intf_t* intf, PlayerController* player, QObject* paren
 
 RdWaveform::~RdWaveform()
 {
-    cancelScan();
     // a cancelled scan stops at its next packet or seek; a demuxer call in progress finishes
-    // first (file reads are not interruptible on Windows), which is one pass over the file at
-    // most, as for the player's own input thread that libvlc joins at quit too. The worker is
-    // always joined: one left running would still use VLC's modules and objects while libvlc
-    // is torn down, and the process's end would cut it off in the middle
-    m_pool->clear();
-    if (!m_pool->waitForDone(kQuitWaitMs))
-    {
-        msg_Warn(m_intf, "waveform: the scan did not stop within %d ms, still waiting",
-                 kQuitWaitMs);
-        m_pool->waitForDone();
-    }
+    // first (file reads are not interruptible on Windows). The background queue joins its
+    // thread when the interface closes (it goes first), so no scan outlives libvlc
+    cancelScan();
 }
 
 void RdWaveform::acquire()
@@ -254,9 +186,46 @@ void RdWaveform::startScan()
     // the scan's objects hang from the libvlc instance, which outlives the interface
     m_running = std::make_shared<RdWaveformScanner>(VLC_OBJECT(vlc_object_instance(m_intf)),
                                                     m_uri, m_length);
-    m_pool->start(new RdWaveformJob(this, ++m_generation, m_running, path, m_cacheDir));
+    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
+    if (!queue)
+        return;
+    // a job of the background queue: one at a time with the others, paused while the user
+    // seeks or a more urgent job runs, not in Cone's first minute. The cache first, then a
+    // scan, whose result is cached
+    const int generation = ++m_generation;
+    std::shared_ptr<RdWaveformScanner> scanner = m_running;
+    const QString cacheDir = m_cacheDir;
+    auto levels = std::make_shared<QByteArray>();
+    auto found = std::make_shared<bool>(false);
+    auto cached = std::make_shared<QString>();
+    QPointer<RdWaveform> self(this);
+    m_jobId = queue->post(QStringLiteral("waveform"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Normal,
+        [scanner, path, cacheDir, levels, found, cached](const std::shared_ptr<RdBackgroundQueue::Control>& control) {
+            scanner->setControl(control);
+            control->setCancelHook([scanner]() { scanner->cancel(); });
+            const QFileInfo info(path);
+            if (info.isFile() && !scanner->cancelled())
+            {
+                *cached = cachePath(cacheDir, info);
+                *levels = readCache(*cached, found.get());
+                if (!*found)
+                {
+                    *levels = scanner->run();
+                    if (!scanner->cancelled())
+                        writeCache(cacheDir, *cached, *levels);
+                }
+            }
+            control->setCancelHook({});
+        },
+        [self, generation, scanner, levels, found, cached, path]() {
+            if (!self || scanner->cancelled())
+                return;
+            self->onScanEnded(generation, *levels, *found);
+            if (RdStorage* storage = RdStorage::instance(); storage && !levels->isEmpty() && !cached->isEmpty())
+                storage->waveformUsed(*cached, path);
+        }, true);
     m_scanClock.start();
-    msg_Dbg(m_intf, "waveform: job started for the playing file");
+    msg_Dbg(m_intf, "waveform: job queued for the playing file");
 }
 
 void RdWaveform::cancelScan()
@@ -265,6 +234,9 @@ void RdWaveform::cancelScan()
         return;
     m_running->cancel();
     m_running.reset();
+    if (RdBackgroundQueue* queue = RdBackgroundQueue::instance(); queue && m_jobId)
+        queue->cancel(m_jobId);
+    m_jobId = 0;
     ++m_generation;
 }
 

@@ -22,7 +22,6 @@
 #include <QElapsedTimer>
 #include <QObject>
 #include <QString>
-#include <QThreadPool>
 
 #include <memory>
 
@@ -36,12 +35,11 @@ class RdWaveformScanner;
  * Playback tab's "Show Waveform on Seekbar").
  *
  * Nothing runs until a seek bar asks for it (acquire(), while the option is on). Then the
- * playing file's loudness profile is read from the cache, or scanned (RdWaveformScanner) on a
- * single worker thread at the lowest priority, so playback and the UI never wait for it. A
- * media change cancels the scan in flight; so does the last seek bar letting go (release()).
- * Switching the option on during playback starts the scan of the playing file at once. A scan
- * ends on its own within RdWaveformScanner::kTimeBudgetSeconds, and quitting waits at most
- * `kQuitWaitMs` for a cancelled one.
+ * playing file's loudness profile is read from the cache, or scanned (RdWaveformScanner) as a
+ * job of the background queue (RdBackgroundQueue: one job at a time, low priority, paused while
+ * the user seeks), so playback and the UI never wait for it. A media change cancels the scan in
+ * flight; so does the last seek bar letting go (release()). A scan ends on its own within
+ * RdWaveformScanner::kTimeBudgetSeconds; quitting cancels it and the queue joins its thread.
  *
  * Only local files are scanned (a stream would be read a second time over the network), and
  * only once the player knows their duration.
@@ -60,9 +58,6 @@ class RdWaveform : public QObject
 
 public:
     static constexpr int kCacheMaxEntries = 2000;
-    // quitting logs a warning when a cancelled scan takes longer than this to stop (one
-    // normally stops within a millisecond)
-    static constexpr int kQuitWaitMs = 500;
 
     RdWaveform(qt_intf_t* intf, PlayerController* player, QObject* parent = nullptr);
     ~RdWaveform() override;
@@ -79,7 +74,6 @@ signals:
     void levelsChanged();
 
 private:
-    friend class RdWaveformJob;
 
     void onInputChanged();
     void startScan();
@@ -90,8 +84,8 @@ private:
     qt_intf_t* m_intf = nullptr;
     PlayerController* m_player = nullptr;
 
-    // one low priority worker thread for every scan (joined when VLC quits, see ~RdWaveform)
-    std::unique_ptr<QThreadPool> m_pool;
+    // the scan, a job of the background queue (RdBackgroundQueue)
+    quint64 m_jobId = 0;
     QString m_cacheDir;
 
     int m_users = 0;

@@ -23,6 +23,7 @@
 
 class QTimer;
 
+#include <functional>
 #include <memory>
 
 #include "qt.hpp"
@@ -101,6 +102,9 @@ private:
     void scheduleRetry();
     void recordAnswer();
     void request(bool explicitCheck);
+    // the request itself, as a job of the background queue (RdBackgroundQueue)
+    void startRequest();
+    void finishQueued();
     void onReply(int httpStatus, const QByteArray& body);
     void setStatus(Status status);
     void setNoticeVisible(bool visible);
@@ -123,6 +127,9 @@ private:
     bool m_automaticPending = false;
     QTimer* m_retryTimer = nullptr;
     std::shared_ptr<Job> m_job;
+    // the request waits in the background queue, or holds its slot until it is answered
+    bool m_queued = false;
+    std::function<void()> m_queueFinish;
 };
 
 #endif // RD_UPDATE_CHECK_HPP
