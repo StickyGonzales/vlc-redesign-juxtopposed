@@ -61,7 +61,7 @@ Each Linux build is checked on GitHub: it plays H.264 and HEVC with subtitles, s
 
 ### macOS (experimental preview)
 
-For testers: a [preview of 1.4.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/macos-v1.4.0) for Apple Silicon (`Cone-1.4.0-macos-arm64.dmg`) and Intel Macs (`Cone-1.4.0-macos-x86_64.dmg`), macOS 12 or later. It isn't signed by Apple, so the first start needs right-click > **Open**. It hasn't been tried on a real Mac yet, so please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
+For testers: a [preview of 1.4.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/macos-v1.4.0) `Cone-1.4.0-macos-x86_64.dmg`, for Intel Macs and, through Rosetta, Apple Silicon Macs (the native Apple Silicon build follows soon), macOS 12 or later. It isn't signed by Apple, so the first start needs right-click > **Open**. It hasn't been tried on a real Mac yet, so please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
