@@ -9,6 +9,8 @@
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
 #   watchdog ends is a warning (known HEVC quit stall, STATUS.md), only a process that outlives the
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
+#   portable zip, notices: a watched file opened with the update notice forced on shows the resume
+#   toast and the update notice stacked, not overlapping; the notice takes the toast's place after it.
 #   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
 #   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
@@ -824,6 +826,94 @@ function Check-UpNextNext([string]$exe) {
     }
 }
 
+# an element whose name ends with $suffix (the update notice: "<name> <version> is available")
+function Uia-FindSuffix($hwnd, [string]$suffix, [int]$timeoutMs) {
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+            try {
+                if ($e.Current.Name.EndsWith($suffix) -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { return $e }
+            } catch {}
+        }
+        Start-Sleep -Milliseconds 250
+    } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
+    return $null
+}
+
+# the notices at the bottom stack (redesign/POPUP_STACK_NOTES.md): a file watched to 2:00 opened
+# again with the update notice forced on (CONE_UPDATE_CHECK_TEST_FILE) shows the resume toast and
+# the update notice one above the other, never overlapping, on the same center line, 10 px apart;
+# when the toast goes (a seek answers it) the notice slides down into its place
+function Check-PopupStack([string]$exe) {
+    $tag = 'popup-stack'
+    $video = Join-Path $Media 'Smoke Show\Smoke Show S01E03.mp4'
+    $answer = Join-Path $Out 'update-answer.json'
+    '{"tag_name": "v9.9.9", "html_url": "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v9.9.9"}' |
+        Set-Content -Path $answer -Encoding ASCII
+    $s = $null
+    try {
+        # watch to 2:00 of 7:00 and quit: the media library keeps the progress
+        $log = Join-Path $Out "cone-$tag-watch.log"
+        $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check', '--file-logging', "--logfile=`"$log`"",
+               '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
+        Log "start $exe $($a -join ' ')"
+        $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+        $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = "$tag-watch" }
+        if (-not (Check-Window $s)) { return }
+        Wait-Rc 20
+        Start-Sleep -Seconds 2
+        Rc 'seek 120' | Out-Null
+        Start-Sleep -Seconds 2
+        try { Rc 'quit' | Out-Null } catch {}
+        if (-not $s.proc.WaitForExit(15000)) { throw 'the first session did not quit' }
+
+        # again, with the update notice forced on
+        $log = Join-Path $Out "cone-$tag.log"
+        $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
+               '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
+        Log "start $exe $($a -join ' ') (CONE_UPDATE_CHECK_TEST_FILE=$answer)"
+        $env:CONE_UPDATE_CHECK_TEST_FILE = $answer
+        try { $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru }
+        finally { Remove-Item Env:CONE_UPDATE_CHECK_TEST_FILE -ErrorAction SilentlyContinue }
+        $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
+        if (-not (Check-Window $s)) { return }
+        Check "$tag`: the resume toast and the update notice stack without overlapping" {
+            Wait-Rc 20
+            $r = Uia-Find $s.hwnd 'Resume dialog' 15000
+            $u = Uia-FindSuffix $s.hwnd ' is available' 15000
+            if (-not $r -or -not $u) { Shot "$tag-missing"; throw "resume toast found: $([bool]$r), update notice found: $([bool]$u); both expected" }
+            Start-Sleep -Milliseconds 600   # past a slide
+            $rr = $r.Current.BoundingRectangle; $ur = $u.Current.BoundingRectangle
+            Shot "$tag-two"
+            $rt = "($([int]$rr.X), $([int]$rr.Y), $([int]$rr.Width), $([int]$rr.Height))"
+            $ut = "($([int]$ur.X), $([int]$ur.Y), $([int]$ur.Width), $([int]$ur.Height))"
+            $hOverlap = -not ($rr.Right -le $ur.Left -or $ur.Right -le $rr.Left)
+            $vOverlap = -not ($rr.Bottom -le $ur.Top -or $ur.Bottom -le $rr.Top)
+            if ($hOverlap -and $vOverlap) { throw "they overlap: resume toast $rt, update notice $ut" }
+            if ($ur.Bottom -gt $rr.Top) { throw "the update notice is not above the resume toast: $ut / $rt" }
+            $gap = [int]($rr.Top - $ur.Bottom)
+            if ($gap -lt 6 -or $gap -gt 14) { throw "$gap px between them (10 expected): $ut / $rt" }
+            $dc = [math]::Abs(($rr.Left + $rr.Width / 2) - ($ur.Left + $ur.Width / 2))
+            if ($dc -gt 2) { throw "not on the same center line ($([int]$dc) px apart): $ut / $rt" }
+            Rc 'seek 10' | Out-Null
+            Start-Sleep -Milliseconds 1000
+            $u2 = Uia-FindSuffix $s.hwnd ' is available' 2000
+            $gone = Uia-Find $s.hwnd 'Resume dialog' 0
+            Shot "$tag-after"
+            if ($gone) { throw 'the resume toast still shows after the seek' }
+            if (-not $u2 -or [math]::Abs($u2.Current.BoundingRectangle.Bottom - $rr.Bottom) -gt 2) {
+                throw "the update notice did not take the toast's place (its bottom $(if ($u2) { [int]$u2.Current.BoundingRectangle.Bottom }), the toast's $([int]$rr.Bottom))"
+            }
+            "resume toast $rt, update notice $ut above it, $gap px apart, centers $([int]$dc) px apart; then the notice moved down to the toast's place"
+        } | Out-Null
+    } catch {
+        Add-Result $tag 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -1008,6 +1098,7 @@ if (-not $zipExe) {
     # start, then ended) the runner no longer lets the next Cone take the foreground for a click
     # (build-windows #206)
     Check-UpNextNext $zipExe.FullName
+    Check-PopupStack $zipExe.FullName
     Run-FirstStart $zipExe.FullName
     Run-OpenInRunning $zipExe.FullName
 }
