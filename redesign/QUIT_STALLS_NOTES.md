@@ -25,7 +25,10 @@ Branch `wip/fix-quit-stalls`. Draft pull request into `wip/next-test`. StickyGon
 |---|---|
 | `include/vlc_picture_pool.h`, `src/misc/picture_pool.c`, `src/libvlccore.sym` | `picture_pool_Cancel(pool, bool)`: while a pool is canceled, `picture_pool_Wait()` returns NULL instead of blocking, and canceling wakes the threads already waiting. |
 | `src/input/decoder.c` | **Flush:** the video decoder's pool is canceled when the flush is requested, so a waiting frame thread gets NULL, its frame fails (it is flushed anyway) and the decoder thread reaches the flush. The pool is resumed once the decoder thread has flushed (and in the synchronous path), unless the decoder is being deleted. **Delete:** the pool is canceled and the video output flushed (`vout_FlushAll`) *before* the decoder thread is joined, so the queued pictures (and their D3D11 surfaces) go back and every wait ends. |
+| `src/input/decoder.c` (pool creation) | A pool created while the decoder flushes or stops (a format change in that moment) starts canceled, like the one it replaces. |
 | `src/test/picture_pool.c` | Unit test: a canceled empty pool returns NULL, a thread already waiting wakes up on cancel, and the pool works again after the cancel is lifted. |
+
+**Limit:** with D3D11VA / DXVA2, a frame thread can also wait for a hardware surface (`va_pool_Get`, a semaphore wait in modules/codec/avcodec/va_surface.c), and the pool cancel does not wake that wait. Flush and Delete both flush the video output first, which hands back the surfaces its queued pictures hold. A stall remains possible only if libavcodec's own reference frames use up every surface. The fork already sized the HEVC surface pool for that (16 + 2 + 2, frame threads counted twice: 9323061a32, fea8ac6d03, 883156a0ad). Section 5 runs on the PC's hardware decoding to cover this case, which the CI runners (software decoding) cannot.
 
 Nothing in the Qt interface changes. The VideoLAN report draft is `redesign/upstream/decoder-picture-wait-deadlock.md` (not posted).
 
@@ -64,3 +67,11 @@ Use the HEVC test media: the generated `test-hevc-2a.mp4` (the build's smoke-med
    - The previous-frame key (if bound) still steps back.
    - Subtitle track switching.
    - An H.264 file plays and quits as before.
+
+## 6. Independent review
+A fresh subagent reviewed the full diff. It found no crash or deadlock in the core change: every new access is under the fifo lock, Delete during a flush cannot undo the cancel, and every `decoder_NewPicture()` caller handles NULL. Fixed from its findings:
+- A pool made during a flush or stop now starts canceled.
+- The Delete comment no longer claims to wake the hardware surface wait. The limit is written down in section 3.
+- The new quit checks keep the first attempt's failure as the result. Before, the retry reported "already exited".
+- The Linux track wait no longer fails on a cli that is not up yet.
+- The PC script keeps going after a failed round and writes the summary after every round.

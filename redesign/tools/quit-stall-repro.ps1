@@ -47,8 +47,8 @@ for ($r = 1; $r -le $Rounds; $r++) {
     Remove-Item $log -ErrorAction SilentlyContinue
     $a = @('--no-qt-privacy-ask', '--input-repeat=50', '--file-logging', "--logfile=`"$log`"", '--log-verbose=2',
            '--extraintf=cli', "--rc-host=127.0.0.1:$Port", '--rc-quiet', "`"$Video`"")
+    $ids = @(); $stalls = @(); $quit = $null; $err = $null
     $p = Start-Process -FilePath $Exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $Exe) -PassThru
-    $stalls = @(); $quit = $null
     try {
         $sw = [Diagnostics.Stopwatch]::StartNew()
         while ($true) {
@@ -68,13 +68,15 @@ for ($r = 1; $r -le $Rounds; $r++) {
         $sw = [Diagnostics.Stopwatch]::StartNew()
         try { Rc 'quit' | Out-Null } catch {}
         if ($p.WaitForExit(12000)) { $quit = [math]::Round($sw.Elapsed.TotalSeconds, 2) }
+    } catch {
+        $err = $_.Exception.Message
     } finally {
         if (-not $p.HasExited) { try { $p.Kill() } catch {}; $p.WaitForExit(5000) | Out-Null }
     }
     Start-Sleep -Milliseconds 300
     $wd = (Test-Path $log) -and (Select-String -Path $log -Pattern 'did not finish quitting' -SimpleMatch -Quiet)
-    $line = "round $r`: tracks $($ids -join ',') | stalls: $(if ($stalls) { $stalls -join '; ' } else { 'none' }) | quit: $(if ($null -ne $quit) { "$quit s" } else { 'HUNG, killed' })$(if ($wd) { ' (quit watchdog)' })"
+    $line = "round $r`: tracks $($ids -join ',') | stalls: $(if ($stalls) { $stalls -join '; ' } else { 'none' }) | quit: $(if ($null -ne $quit) { "$quit s" } else { 'HUNG, killed' })$(if ($wd) { ' (quit watchdog)' })$(if ($err) { " | error: $err" })"
     Write-Host $line
     $summary += $line
+    $summary | Set-Content -Path (Join-Path $Out 'summary.txt') -Encoding UTF8
 }
-$summary | Set-Content -Path (Join-Path $Out 'summary.txt') -Encoding UTF8

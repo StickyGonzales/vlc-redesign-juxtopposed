@@ -731,7 +731,10 @@ def check_audio_switch(exe, env):
                 if time.time() > end:
                     raise CheckFailed(f'two audio tracks expected, "atrack" lists {ids}')
                 time.sleep(0.5)
-                ids = audio_track_ids()
+                try:
+                    ids = audio_track_ids()
+                except OSError:  # the cli interface starts with the playlist
+                    pass
             time.sleep(2)
             done = []
             for k in range(6):
@@ -749,7 +752,18 @@ def check_audio_switch(exe, env):
             return f'6 switches between tracks {ids}, the time changes after each: {", ".join(done)}'
         check(f'{tag}: playback continues after each audio track switch', switch)
 
+        first = []   # the first attempt's failure: the process has exited, a retry cannot quit again
+
         def quit_fast():
+            if first:
+                raise CheckFailed(first[0])
+            try:
+                return quit_once()
+            except CheckFailed as e:
+                first.append(str(e))
+                raise
+
+        def quit_once():
             if s.proc.poll() is not None:
                 raise CheckFailed(f'Cone had already exited (exit code {s.proc.returncode})')
             s.focus()

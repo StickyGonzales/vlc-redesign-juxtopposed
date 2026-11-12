@@ -860,19 +860,23 @@ function Check-AudioSwitch([string]$exe) {
             }
             "6 switches between tracks $($ids -join ', '), the time changes after each: $($done -join ', ')"
         } | Out-Null
+        # the first attempt's failure stays the result: the process has exited, a retry cannot quit again
+        $script:AudioSwitchQuitError = $null
         Check "$tag`: quit after the switches takes under 2 s" {
+            if ($script:AudioSwitchQuitError) { throw $script:AudioSwitchQuitError }
+            $script:AudioSwitchQuitError = 'Cone had already exited'
             if ($s.proc.HasExited) { throw 'Cone had already exited' }
             Focus-Window $s.hwnd
             $sw = [Diagnostics.Stopwatch]::StartNew()
             Keys @(0x11, 0x51)   # Ctrl+Q
             $ended = $s.proc.WaitForExit($QuitLimitSeconds * 1000)
             $secs = [math]::Round($sw.Elapsed.TotalSeconds, 2)
-            if (-not $ended) { Shot "$tag-quit-hang"; throw "Cone was still running $QuitLimitSeconds s after Ctrl+Q" }
+            if (-not $ended) { Shot "$tag-quit-hang"; $script:AudioSwitchQuitError = "Cone was still running $QuitLimitSeconds s after Ctrl+Q"; throw $script:AudioSwitchQuitError }
             Start-Sleep -Milliseconds 300
             if ((Test-Path $s.log) -and (Select-String -Path $s.log -Pattern 'quit watchdog: Cone did not finish quitting' -SimpleMatch -Quiet)) {
-                throw "ended by the quit watchdog after $secs s"
+                $script:AudioSwitchQuitError = "ended by the quit watchdog after $secs s"; throw $script:AudioSwitchQuitError
             }
-            if ($secs -ge 2) { throw "took $secs s (limit 2 s)" }
+            if ($secs -ge 2) { $script:AudioSwitchQuitError = "took $secs s (limit 2 s)"; throw $script:AudioSwitchQuitError }
             "ended after $secs s"
         } | Out-Null
     } catch {

@@ -805,6 +805,10 @@ static int ModuleThread_UpdateVideoFormat( decoder_t *p_dec, vlc_video_context *
             goto error;
         }
 
+        /* a pool made while the decoder flushes or stops starts canceled too,
+         * like the one it replaces */
+        if( p_owner->aborting || p_owner->flushing )
+            picture_pool_Cancel( pool, true );
         p_owner->video.out_pool = pool;
     }
 
@@ -2565,10 +2569,11 @@ void vlc_input_decoder_Delete( vlc_input_decoder_t *p_owner )
     if( p_owner->cat == VIDEO_ES )
     {
         /* The decoder (or one of its frame threads) may be waiting for a free
-         * picture or hardware surface. Those only come back when the video
-         * output releases the pictures it queued, which it does not do on its
-         * own while the input is stopping: release them now and stop the
-         * waits, otherwise joining the decoder thread below never returns. */
+         * picture, or for a hardware surface held by a queued picture. Those
+         * only come back when the video output releases the pictures it
+         * queued, which it does not do on its own while the input is
+         * stopping: release them now and stop the picture waits, otherwise
+         * joining the decoder thread below may not return. */
         if( p_owner->video.out_pool != NULL )
             picture_pool_Cancel( p_owner->video.out_pool, true );
         if( p_owner->video.vout != NULL && p_owner->video.started )
