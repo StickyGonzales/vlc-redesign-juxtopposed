@@ -46,6 +46,7 @@ struct picture_pool_t {
 
     vlc_atomic_rc_t    refs;
     bool released;
+    bool canceled;
     struct vlc_list inuse_list;
     struct vlc_list available_list;
 };
@@ -146,6 +147,7 @@ picture_pool_NewCommon(void)
     vlc_cond_init(&pool->wait);
     vlc_atomic_rc_init(&pool->refs);
     pool->released = false;
+    pool->canceled = false;
 
     return pool;
 }
@@ -224,13 +226,31 @@ picture_t *picture_pool_Get(picture_pool_t *pool)
     return picture_pool_ClonePicture(pool, pic);
 }
 
+void picture_pool_Cancel(picture_pool_t *pool, bool canceled)
+{
+    vlc_mutex_lock(&pool->lock);
+    assert(vlc_atomic_rc_get(&pool->refs) > 0);
+
+    pool->canceled = canceled;
+    if (canceled)
+        vlc_cond_broadcast(&pool->wait);
+    vlc_mutex_unlock(&pool->lock);
+}
+
 picture_t *picture_pool_Wait(picture_pool_t *pool)
 {
     vlc_mutex_lock(&pool->lock);
     assert(vlc_atomic_rc_get(&pool->refs) > 0);
 
     while (vlc_list_is_empty(&pool->available_list))
+    {
+        if (pool->canceled)
+        {
+            vlc_mutex_unlock(&pool->lock);
+            return NULL;
+        }
         vlc_cond_wait(&pool->wait, &pool->lock);
+    }
 
     picture_t *pic = picture_pool_GetAvailableLocked(pool);
 

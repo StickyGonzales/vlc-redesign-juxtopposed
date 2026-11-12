@@ -94,11 +94,24 @@ VLC_API void picture_pool_Release( picture_pool_t * );
 VLC_API picture_t * picture_pool_Get( picture_pool_t * ) VLC_USED;
 
 /**
+ * Cancels or resumes the waits of a pool.
+ *
+ * While a pool is canceled, picture_pool_Wait() returns NULL instead of
+ * blocking when no picture is available, and a thread already blocked in it
+ * wakes up and returns NULL. The owner cancels the pool before it flushes or
+ * stops the user of the pool, since the pictures that user waits for may only
+ * come back once it has stopped waiting.
+ *
+ * @note This function is thread-safe.
+ */
+VLC_API void picture_pool_Cancel(picture_pool_t *, bool canceled);
+
+/**
  * Obtains a picture from a pool.
  *
  * The picture must be released with picture_Release().
  *
- * @return a picture or NULL on memory error
+ * @return a picture, or NULL on memory error or while the pool is canceled
  *
  * @note This function is thread-safe.
  */

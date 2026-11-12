@@ -9,6 +9,8 @@
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
 #   watchdog ends is a warning (known HEVC quit stall, STATUS.md), only a process that outlives the
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
+#   portable zip, HEVC audio track switch (test-hevc-2a.mp4, 16 B-frames, two audio tracks): the
+#   time moves after each of 6 switches, then Ctrl+Q ends Cone in under 2 s without the watchdog.
 #   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
 #   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
@@ -824,6 +826,62 @@ function Check-UpNextNext([string]$exe) {
     }
 }
 
+# HEVC with 16 B-frames and two audio tracks (test-hevc-2a.mp4): every audio track switch flushes
+# the decoders; the video must keep playing after each one, and Ctrl+Q must then end Cone in under
+# 2 s without the quit watchdog (redesign/QUIT_STALLS_NOTES.md). The 30 s file repeats, so the time
+# moves on or starts over after a switch; a stall leaves it standing still
+function Check-AudioSwitch([string]$exe) {
+    $tag = 'zip-hevc-audio-switch'
+    $s = Start-Cone $exe (Join-Path $Media 'test-hevc-2a.mp4') (Join-Path $Media 'test.srt') $tag
+    try {
+        if (-not (Check-Window $s)) { return }
+        Check "$tag`: playback continues after each audio track switch" {
+            Wait-Rc 20
+            $ids = @()
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ($ids.Count -lt 2) {
+                if ($sw.Elapsed.TotalSeconds -gt 15) { throw "two audio tracks expected, 'atrack' lists: $($ids -join ', ')" }
+                Start-Sleep -Milliseconds 500
+                $ids = @([regex]::Matches((Rc 'atrack'), '(?m)^\s*\|\s*(\d+) - ') | ForEach-Object { $_.Groups[1].Value })
+            }
+            Start-Sleep -Seconds 2
+            $done = @()
+            for ($k = 0; $k -lt 6; $k++) {
+                $target = $ids[($k + 1) % $ids.Count]
+                $t1 = Rc-Number 'get_time'
+                Rc "atrack $target" | Out-Null
+                Start-Sleep -Milliseconds 2500
+                $t2 = Rc-Number 'get_time'
+                if ($t2 -eq $t1) {
+                    Shot "$tag-stalled"
+                    throw "switch $($k + 1) (to track $target): the time stands at $t1 s 2.5 s later; the video stalled"
+                }
+                $done += "$t1->$t2"
+            }
+            "6 switches between tracks $($ids -join ', '), the time changes after each: $($done -join ', ')"
+        } | Out-Null
+        Check "$tag`: quit after the switches takes under 2 s" {
+            if ($s.proc.HasExited) { throw 'Cone had already exited' }
+            Focus-Window $s.hwnd
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            Keys @(0x11, 0x51)   # Ctrl+Q
+            $ended = $s.proc.WaitForExit($QuitLimitSeconds * 1000)
+            $secs = [math]::Round($sw.Elapsed.TotalSeconds, 2)
+            if (-not $ended) { Shot "$tag-quit-hang"; throw "Cone was still running $QuitLimitSeconds s after Ctrl+Q" }
+            Start-Sleep -Milliseconds 300
+            if ((Test-Path $s.log) -and (Select-String -Path $s.log -Pattern 'quit watchdog: Cone did not finish quitting' -SimpleMatch -Quiet)) {
+                throw "ended by the quit watchdog after $secs s"
+            }
+            if ($secs -ge 2) { throw "took $secs s (limit 2 s)" }
+            "ended after $secs s"
+        } | Out-Null
+    } catch {
+        Add-Result $tag 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+    }
+}
+
 # a full session with every check; a session whose quit failed runs once more (from the start)
 function Run-Session([string]$exe, [string]$codec, [bool]$full, [string]$tag) {
     $video = Join-Path $Media "test-$codec.mp4"
@@ -1004,6 +1062,7 @@ if (-not $zipExe) {
         "portable: $((Get-ChildItem $portable -Recurse -File -Name | Select-Object -First 8) -join ', '); nothing in %APPDATA%\Cone"
     } | Out-Null
     Run-Session $zipExe.FullName 'hevc' $true 'zip-hevc'
+    Check-AudioSwitch $zipExe.FullName
     # before the first-start and open-in-running checks: after those (a Cone raised by a second
     # start, then ended) the runner no longer lets the next Cone take the foreground for a click
     # (build-windows #206)

@@ -1941,6 +1941,16 @@ error:
         block_Release( frame );
 }
 
+/* Undoes the picture_pool_Cancel() of vlc_input_decoder_Flush() once the
+ * flush is done, unless the decoder is being deleted. */
+static void DecoderResumePoolLocked( vlc_input_decoder_t *p_owner )
+{
+    vlc_fifo_Assert( p_owner->p_fifo );
+    if( p_owner->cat == VIDEO_ES && p_owner->video.out_pool != NULL
+     && !p_owner->aborting )
+        picture_pool_Cancel( p_owner->video.out_pool, false );
+}
+
 static void DecoderThread_Flush( vlc_input_decoder_t *p_owner )
 {
     decoder_t *p_dec = &p_owner->dec;
@@ -2024,6 +2034,7 @@ static void *DecoderThread( void *p_data )
             p_owner->flushing = false;
             p_owner->out_started = false;
             p_owner->i_preroll_end = PREROLL_NONE;
+            DecoderResumePoolLocked( p_owner );
             continue;
         }
 
@@ -2551,6 +2562,19 @@ void vlc_input_decoder_Delete( vlc_input_decoder_t *p_owner )
     p_owner->b_waiting = false;
     vlc_fifo_Signal( p_owner->p_fifo );
 
+    if( p_owner->cat == VIDEO_ES )
+    {
+        /* The decoder (or one of its frame threads) may be waiting for a free
+         * picture or hardware surface. Those only come back when the video
+         * output releases the pictures it queued, which it does not do on its
+         * own while the input is stopping: release them now and stop the
+         * waits, otherwise joining the decoder thread below never returns. */
+        if( p_owner->video.out_pool != NULL )
+            picture_pool_Cancel( p_owner->video.out_pool, true );
+        if( p_owner->video.vout != NULL && p_owner->video.started )
+            vout_FlushAll( p_owner->video.vout );
+    }
+
     /* Make sure we aren't waiting/decoding anymore */
     vlc_cond_signal( &p_owner->wait_request );
     vlc_fifo_Unlock( p_owner->p_fifo );
@@ -2819,6 +2843,11 @@ void vlc_input_decoder_Flush( vlc_input_decoder_t *p_owner )
     else if( cat == VIDEO_ES )
     {
         p_owner->video.drained = false;
+        /* A frame thread blocked in picture_pool_Wait() keeps the decoder
+         * thread inside the decoder, so the flush request would never be
+         * served: stop the waits until the decoder thread has flushed. */
+        if( p_owner->video.out_pool != NULL )
+            picture_pool_Cancel( p_owner->video.out_pool, true );
         if( p_owner->video.vout && p_owner->video.started
          && p_owner->frames_countdown != -1 )
         {
@@ -2866,6 +2895,7 @@ void vlc_input_decoder_Flush( vlc_input_decoder_t *p_owner )
         vlc_fifo_Lock(p_owner->p_fifo);
         p_owner->flushing = false;
         p_owner->i_preroll_end = PREROLL_NONE;
+        DecoderResumePoolLocked(p_owner);
         vlc_fifo_Unlock(p_owner->p_fifo);
     }
 }

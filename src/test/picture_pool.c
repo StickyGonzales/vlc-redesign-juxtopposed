@@ -27,6 +27,8 @@
 #include <assert.h>
 
 #include <vlc_common.h>
+#include <vlc_threads.h>
+#include <vlc_tick.h>
 #include <vlc_es.h>
 #include <vlc_picture_pool.h>
 
@@ -36,6 +38,11 @@ const char vlc_module_name[] = "test_picture_pool";
 
 static video_format_t fmt;
 static picture_pool_t *pool;
+
+static void *wait_picture(void *data)
+{
+    return picture_pool_Wait(data);
+}
 
 static void test(bool zombie)
 {
@@ -75,6 +82,26 @@ static void test(bool zombie)
         pics[i] = picture_pool_Wait(pool);
         assert(pics[i] != NULL);
     }
+
+    /* a canceled pool does not block when it is empty */
+    picture_pool_Cancel(pool, true);
+    assert(picture_pool_Wait(pool) == NULL);
+    picture_pool_Cancel(pool, false);
+
+    /* and canceling it wakes a thread that is already waiting */
+    vlc_thread_t th;
+    void *res;
+    if (vlc_clone(&th, wait_picture, pool) == 0) {
+        vlc_tick_sleep(VLC_TICK_FROM_MS(50));
+        picture_pool_Cancel(pool, true);
+        vlc_join(th, &res);
+        assert(res == NULL);
+        picture_pool_Cancel(pool, false);
+    }
+
+    picture_Release(pics[0]);
+    pics[0] = picture_pool_Wait(pool);
+    assert(pics[0] != NULL);
 
     if (!zombie)
         for (unsigned i = 0; i < PICTURES; i++)

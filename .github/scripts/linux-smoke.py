@@ -2,7 +2,7 @@
 # Smoke checks of a Cone (public) Linux build on a GitHub Ubuntu runner, after every Linux build
 # (smoke-linux.yml); the Linux counterpart of win64-smoke.ps1 (redesign/LINUX_SMOKE_NOTES.md).
 #   linux-smoke.py --tarball <Cone-*-linux-x86_64.tar.xz> --deb <cone-player_*.deb>
-#                  --media <folder with test-h264.mp4, test-hevc.mp4, test.srt> --out <folder>
+#                  --media <folder with test-h264.mp4, test-hevc.mp4, test-hevc-2a.mp4, test.srt> --out <folder>
 # Runs under Xvfb, openbox and a D-Bus session with the accessibility bus (smoke-linux.yml starts
 # them): the interface's controls are found through AT-SPI (Qt's accessibility, as UI Automation
 # on Windows), the input is real X input (xdotool), the playback state comes from VLC's cli
@@ -704,6 +704,73 @@ def session(exe, codec, tag, full, env=None):
         s.stop()
 
 
+def audio_track_ids():
+    """the audio track ids "atrack" lists (| 1 - English [...]), without "Disable" (-1)"""
+    ids = []
+    for line in rc('atrack').splitlines():
+        m = re.match(r'\s*\|\s*(\d+) - ', line)
+        if m:
+            ids.append(m.group(1))
+    return ids
+
+
+def check_audio_switch(exe, env):
+    """HEVC with 16 B-frames and two audio tracks: every audio track switch flushes the
+    decoders; the video must keep playing after each one, and Ctrl+Q must then end Cone
+    in under 2 s without the quit watchdog (redesign/QUIT_STALLS_NOTES.md)"""
+    tag = 'tar-hevc-audio-switch'
+    s = Session(exe, os.path.join(MEDIA, 'test-hevc-2a.mp4'), tag, env, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def switch():
+            end = time.time() + 15
+            ids = []
+            while len(ids) < 2:
+                if time.time() > end:
+                    raise CheckFailed(f'two audio tracks expected, "atrack" lists {ids}')
+                time.sleep(0.5)
+                ids = audio_track_ids()
+            time.sleep(2)
+            done = []
+            for k in range(6):
+                target = ids[(k + 1) % len(ids)]
+                t1 = rc_number('get_time')
+                rc(f'atrack {target}')
+                time.sleep(2.5)
+                t2 = rc_number('get_time')
+                # the 30 s file repeats (--input-repeat): the time moves on or starts over
+                if t2 == t1:
+                    shot(f'{tag}-stalled')
+                    raise CheckFailed(f'switch {k + 1} (to track {target}): time {t1} s, then {t2} s '
+                                      f'2.5 s later; the video stalled')
+                done.append(f'{t1}->{t2}')
+            return f'6 switches between tracks {ids}, the time changes after each: {", ".join(done)}'
+        check(f'{tag}: playback continues after each audio track switch', switch)
+
+        def quit_fast():
+            if s.proc.poll() is not None:
+                raise CheckFailed(f'Cone had already exited (exit code {s.proc.returncode})')
+            s.focus()
+            xdo('key', 'ctrl+q')
+            t = time.time()
+            try:
+                s.proc.wait(10)
+            except subprocess.TimeoutExpired:
+                raise CheckFailed('Cone still runs 10 s after Ctrl+Q')
+            took = time.time() - t
+            with open(s.log, errors='replace') as f:
+                if 'did not finish quitting' in f.read():
+                    raise CheckFailed(f'the quit watchdog ended Cone ({took:.2f} s)')
+            if took >= 2:
+                raise CheckFailed(f'Cone took {took:.2f} s to quit (2 s or more)')
+            return f'ended after {took:.2f} s'
+        check(f'{tag}: quit after the switches takes under 2 s', quit_fast)
+    finally:
+        s.stop()
+
+
 def episode_of(status):
     m = re.search(r'S01E0(\d)', status)
     return int(m.group(1)) if m else 0
@@ -842,6 +909,7 @@ env = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
            XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
 session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
+check_audio_switch(os.path.join(folder, 'cone'), env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
 
