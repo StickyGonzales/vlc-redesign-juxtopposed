@@ -168,7 +168,9 @@ CI fix: `QStringBuilder` (on in VLC's build) needs an explicit `QString` before 
 |---|---|
 | unit-tests #1 (6149afd) | green |
 | build-windows #237, build-linux #125 (6149afd) | compile error (`QStringBuilder` into a `QJsonValue`), fixed |
-| build-windows, build-linux, unit-tests on the fixes | see the pull request |
+| unit-tests #2 (43283737270), b0d1950 | **green**: storage model 52, queue 28, and the 5 older test programs |
+| build-windows #238 (43283746401), b0d1950 | **green**, every smoke check (show detection, credits, waveforms, the Up Next card and the update check now go through the queue) |
+| build-linux #126 (43283754480), b0d1950 | **green**, every smoke check (Ubuntu 24.04 and 22.04, Debian 12, Wayland / X11 embed) |
 
 ## 9. Windows retest (PC session)
 Build: build-windows on `wip/storage-cleanup`, Cone portable. In Settings, turn on "Save a log" (or start with `--file-logging --log-verbose=2`).
