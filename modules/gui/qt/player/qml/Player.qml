@@ -603,10 +603,19 @@ FocusScope {
                     // (redesign/FIX_CURSOR_HIDE_NOTES.md). Only the topmost item with a cursor
                     // under the pointer sets it: the items above the video leave it unset
                     // (panelDismissArea below)
+                    // The bars stay twice as long after a key (keyboard mode, for moving
+                    // through the controls); the pointer does not wait for that: it hides on
+                    // the normal delay after the last mouse move, key or start of playback
+                    // (pointerIdleTimer), so after Space resumes it goes in about 3 s, not 6 s
+                    // (redesign/FIX_POINTER_RESUME_NOTES.md)
                     Binding on cursorShape {
                         when: Player.playingState === Player.PLAYING_STATE_PLAYING
                             && playerToolbarVisibilityFSM.started
-                            && !playerToolbarVisibilityFSM.isVisible
+                            && (!playerToolbarVisibilityFSM.isVisible
+                                || (playerToolbarVisibilityFSM.keyboardShown
+                                    && !playerToolbarVisibilityFSM.isLocked
+                                    && !playerToolbarVisibilityFSM.pinned
+                                    && !pointerIdleTimer.running))
                             && !interactiveAutoHideTimer.running
                             && !rootPlayer._mouseNearTop && !rootPlayer._mouseNearBottom
                             && (!Brand.isPublic
@@ -1789,6 +1798,30 @@ FocusScope {
         running: false
         repeat: false
         interval: 3000
+    }
+
+    // the pointer's own idle time (Binding on cursorShape above): the bars' normal delay, from
+    // the last mouse move, key, or start of playback
+    Timer {
+        id: pointerIdleTimer
+        repeat: false
+        interval: playerToolbarVisibilityFSM.hideDelay
+    }
+
+    Connections {
+        target: playerToolbarVisibilityFSM
+
+        function onMouseMove() { pointerIdleTimer.restart() }
+        function onKeyboardMove() { pointerIdleTimer.restart() }
+    }
+
+    Connections {
+        target: Player
+
+        function onPlayingStateChanged() {
+            if (Player.playingState === Player.PLAYING_STATE_PLAYING)
+                pointerIdleTimer.restart()
+        }
     }
 
     NavigationBox {
