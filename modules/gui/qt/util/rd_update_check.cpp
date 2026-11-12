@@ -22,6 +22,7 @@
 #include "rd_update_check.hpp"
 
 #include <QDate>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QFile>
 #include <QJsonArray>
@@ -35,6 +36,8 @@
 #include <QUrl>
 
 #include <vlc_interrupt.h>
+
+#include <iterator>
 
 #include "dialogs/redesign/addsubtitles/subtitle_web.hpp"
 
@@ -66,6 +69,14 @@ const QString releasePagePrefix = QStringLiteral("https://github.com/");
 constexpr int startupDelay = 4000;
 // the request gives up after this long (a stalled connection or DNS lookup)
 constexpr int requestTimeout = 15000;
+// a start asks again when GitHub last answered longer ago than this
+constexpr qint64 recheckAfterSecs = 6 * 60 * 60;
+// a failed automatic check (Wi-Fi not up yet at the start, a timeout) is tried again after these
+// delays, in the same session; then not before the next start
+constexpr int retryDelays[] = { 60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000 };
+// tests only (CONE_UPDATE_CHECK_TEST_FILE set): the retry delays ten times shorter (6 s, 30 s,
+// 90 s), so "offline at the start, then online" can be tested in a minute
+constexpr int testRetryScale = 10;
 // tests only: a file whose content stands for GitHub's answer (HTTP 200), so the notice can be
 // tested on a real build without a server (redesign/UPDATE_SKIP_NOTES.md); unset in normal use
 const char testAnswerVariable[] = "CONE_UPDATE_CHECK_TEST_FILE";
@@ -159,10 +170,17 @@ RdUpdateCheck::RdUpdateCheck(qt_intf_t* intf, QObject* parent)
     }
     m_skippedVersion = settings->value(settingsGroup + QStringLiteral("SkippedVersion")).toString();
 
+    m_retryTimer = new QTimer(this);
+    m_retryTimer->setSingleShot(true);
+    connect(m_retryTimer, &QTimer::timeout, this, &RdUpdateCheck::automaticCheck);
+
     QTimer::singleShot(startupDelay, this, &RdUpdateCheck::startupCheck);
 #else
     Q_UNUSED(m_intf);
     Q_UNUSED(m_explicitCheck);
+    Q_UNUSED(m_retries);
+    Q_UNUSED(m_retryTimer);
+    Q_UNUSED(m_automaticPending);
 #endif
 }
 
@@ -205,18 +223,66 @@ void RdUpdateCheck::startupCheck()
         setNoticeVisible(true);
     }
 
-    // at most one request a day, counted from the attempt (a failed one included)
-    if (settings->value(settingsGroup + QStringLiteral("CheckedOn")).toDate() == today)
+    // a request when GitHub last answered more than 6 hours ago; only an answer counts, so a
+    // start without a network (or a failed request) never stands for a check
+    // (1.1.x counted the attempt, "CheckedOn": a check that failed at the start blocked the day)
+    settings->remove(settingsGroup + QStringLiteral("CheckedOn"));
+    // UTC, ISO 8601 ("2026-11-11T08:30:00Z"), readable in the settings file
+    const QDateTime answered = QDateTime::fromString(
+        settings->value(settingsGroup + QStringLiteral("AnsweredAt")).toString(), Qt::ISODate);
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    if (answered.isValid() && answered <= now && answered.secsTo(now) < recheckAfterSecs)
+    {
+        msg_Dbg(m_intf, "update check: GitHub answered %lld min ago, no request",
+                static_cast<long long>(answered.secsTo(now) / 60));
         return;
-    settings->setValue(settingsGroup + QStringLiteral("CheckedOn"), today);
+    }
+    automaticCheck();
+#endif
+}
+
+void RdUpdateCheck::automaticCheck()
+{
+#ifdef VLC_BRAND_PUBLIC
+    // the option may have been turned off since the start
+    if (!var_InheritBool(m_intf, "qt-cone-update-check"))
+        return;
+    // a request already on its way ("Check now") answers this one too
+    m_automaticPending = true;
     request(false);
+#endif
+}
+
+void RdUpdateCheck::scheduleRetry()
+{
+#ifdef VLC_BRAND_PUBLIC
+    if (m_retries >= int(std::size(retryDelays)))
+    {
+        msg_Dbg(m_intf, "update check: no answer, not tried again before the next start");
+        return;
+    }
+    int delay = retryDelays[m_retries++];
+    if (!qEnvironmentVariableIsEmpty(testAnswerVariable))
+        delay /= testRetryScale;
+    msg_Dbg(m_intf, "update check: no answer, trying again in %d s", delay / 1000);
+    m_retryTimer->start(delay);
+#endif
+}
+
+void RdUpdateCheck::recordAnswer()
+{
+#ifdef VLC_BRAND_PUBLIC
+    m_intf->mainSettings->setValue(settingsGroup + QStringLiteral("AnsweredAt"),
+                                   QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    // answered: no retry pending
+    m_retries = 0;
+    m_retryTimer->stop();
 #endif
 }
 
 void RdUpdateCheck::checkNow()
 {
 #ifdef VLC_BRAND_PUBLIC
-    m_intf->mainSettings->setValue(settingsGroup + QStringLiteral("CheckedOn"), QDate::currentDate());
     request(true);
 #endif
 }
@@ -292,6 +358,8 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     m_job.reset();
     const bool explicitCheck = m_explicitCheck;
     m_explicitCheck = false;
+    const bool automatic = m_automaticPending;
+    m_automaticPending = false;
 
     const QJsonDocument answer = QJsonDocument::fromJson(body);
     const QJsonObject release = releaseOf(answer);
@@ -301,6 +369,7 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     if (httpStatus == 404 || (httpStatus == 200 && answer.isArray() && release.isEmpty()))
     {
         msg_Dbg(m_intf, "update check: no release yet");
+        recordAnswer();
         setNoticeVisible(false);
         setStatus(UpToDate);
         return;
@@ -310,11 +379,16 @@ void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
     if (httpStatus != 200 || version.isEmpty())
     {
         msg_Dbg(m_intf, "update check failed (HTTP %d)", httpStatus);
-        // a failed check at the start stays silent; the notice of an earlier one stays as it is
+        // a failed automatic check stays silent and is tried again later in the session; the
+        // notice of an earlier one stays as it is
         if (explicitCheck)
             setStatus(CheckFailed);
+        if (automatic)
+            scheduleRetry();
         return;
     }
+
+    recordAnswer();
 
     QSettings* settings = m_intf->mainSettings;
     if (!isNewer(version, currentVersion()))
