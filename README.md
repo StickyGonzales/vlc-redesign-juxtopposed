@@ -42,18 +42,18 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 
 | Download | File | How |
 |---|---|---|
-| **Installer** (recommended) | `coneplayer-1.3.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
-| **Portable zip** | `ConePlayer-1.3.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
+| **Installer** (recommended) | `coneplayer-1.4.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
+| **Portable zip** | `ConePlayer-1.4.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
 ### Linux (beta)
 
-Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.3.0 beta 4](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.3.0-beta4). It needs 64-bit x86 and glibc 2.35 or newer: Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 36 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
+Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.4.0 beta 5](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.4.0-beta5). It needs 64-bit x86 and glibc 2.35 or newer: Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 36 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
 
 | Download | How |
 |---|---|
-| **Debian / Ubuntu package** `cone-player_1.3.0-beta4_amd64.deb` | `sudo apt install ./cone-player_1.3.0-beta4_amd64.deb`. Installs into `/opt/cone-player` with the command `cone-player`, a menu entry and "Open with" for videos, music and subtitles. Remove it with `sudo apt remove cone-player`. |
-| **AppImage** `Cone-1.3.0-beta4-x86_64.AppImage` | `chmod +x` it and start it. AppImageLauncher or Gear Lever can add it to the menu with its icon. |
-| **Tarball** `Cone-1.3.0-beta4-linux-x86_64.tar.xz` | Unpack it and start `./cone`, or run `./install.sh` to install it for your user without sudo (`~/.local`, menu entry, icons, "Open with"). Remove it with `~/.local/share/cone-player/uninstall.sh`. |
+| **Debian / Ubuntu package** `cone-player_1.4.0-beta5_amd64.deb` | `sudo apt install ./cone-player_1.4.0-beta5_amd64.deb`. Installs into `/opt/cone-player` with the command `cone-player`, a menu entry and "Open with" for videos, music and subtitles. Remove it with `sudo apt remove cone-player`. |
+| **AppImage** `Cone-1.4.0-beta5-x86_64.AppImage` | `chmod +x` it and start it. AppImageLauncher or Gear Lever can add it to the menu with its icon. |
+| **Tarball** `Cone-1.4.0-beta5-linux-x86_64.tar.xz` | Unpack it and start `./cone`, or run `./install.sh` to install it for your user without sudo (`~/.local`, menu entry, icons, "Open with"). Remove it with `~/.local/share/cone-player/uninstall.sh`. |
 
 None of them makes Cone your default player: pick it in "Open with", or set it as the default in your desktop's settings. A file you open while Cone Player runs plays in its window. A folder named `portable` next to the AppImage or `./cone` keeps settings and the library there.
 
@@ -61,7 +61,7 @@ Each Linux build is checked on GitHub: it plays H.264 and HEVC with subtitles, s
 
 ### macOS (experimental preview)
 
-For testers: a [preview of 1.3.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/macos-v1.3.0) for Apple Silicon (`Cone-1.3.0-macos-arm64.dmg`) and Intel Macs (`Cone-1.3.0-macos-x86_64.dmg`), macOS 12 or later. It isn't signed by Apple, so the first start needs right-click > **Open**. It hasn't been tried on a real Mac yet, so please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
+For testers: a [preview of 1.4.0](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/macos-v1.4.0) for Apple Silicon (`Cone-1.4.0-macos-arm64.dmg`) and Intel Macs (`Cone-1.4.0-macos-x86_64.dmg`), macOS 12 or later. It isn't signed by Apple, so the first start needs right-click > **Open**. It hasn't been tried on a real Mac yet, so please [report](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) what you find.
 
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
@@ -80,7 +80,7 @@ The files are not code-signed yet, so Windows SmartScreen may warn the first tim
 
 **Player**
 - **Floating bars.** The top bar and the control bar float over the video and hide when the mouse rests, and so does the pointer while the video plays. Ctrl+\ hides them on demand.
-- **Seek bar.** Thumbnails while you hover, an optional audio waveform, and the subtitle timeline for timing subtitles by eye.
+- **Seek bar.** Thumbnails while you hover, the mouse wheel to jump 10 seconds per notch, an optional audio waveform, and the subtitle timeline for timing subtitles by eye.
 - **Cone volume.** A volume slider shaped like the cone, up to 200 %.
 - **Queue, bookmarks and chapters** in one sidebar. Ctrl+B adds a bookmark at once.
 - **On-screen messages** in a Cone-style box that names the key you pressed, so a stray key is easy to spot.
@@ -152,12 +152,14 @@ Every shortcut can be changed in the Keyboard Shortcuts window (main menu).
 </details>
 
 <details>
-<summary>Known issues (1.3.0)</summary>
+<summary>Known issues (1.4.0)</summary>
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
 - Closing Cone Player sometimes takes up to 5 seconds after its window disappears, until it ends itself. Settings and the resume position are kept.
 - Auto-sync moves the whole subtitle track by one amount, so it can't fix subtitles that drift apart after an ad break or a cut scene, and it works with text subtitles only.
 - Finding the credits needs a folder of 3 or more episodes on your computer.
+- Clean show names drop a year at the end of a name: a folder "Class.of.2009" shows as "Class of".
+- macOS: double-clicking a file in Finder while Cone Player is closed opens Cone without playing the file; open it again or drag it onto the window. Opening files while Cone is already running works.
 - The Subtitle Duration Factor slider is still hidden: in this VLC 4 engine it made ASS / SSA subtitles disappear.
 - New Cone Player texts are in English in every language for now.
 - The portable zip doesn't show up in Windows' "Open with" menu. Use the installer for that, or drag files onto Cone Player.
