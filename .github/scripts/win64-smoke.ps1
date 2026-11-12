@@ -10,7 +10,7 @@
 #   watchdog ends is a warning (known HEVC quit stall, STATUS.md), only a process that outlives the
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
 #   portable zip, HEVC audio track switch (test-hevc-2a.mp4, 16 B-frames, two audio tracks): the
-#   time moves after each of 6 switches, then Ctrl+Q ends Cone in under 2 s without the watchdog.
+#   time moves after each of 6 switches, then Ctrl+Q ends Cone in under 3 s without the watchdog.
 #   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
 #   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
@@ -828,7 +828,9 @@ function Check-UpNextNext([string]$exe) {
 
 # HEVC with 16 B-frames and two audio tracks (test-hevc-2a.mp4): every audio track switch flushes
 # the decoders; the video must keep playing after each one, and Ctrl+Q must then end Cone in under
-# 2 s without the quit watchdog (redesign/QUIT_STALLS_NOTES.md). The 30 s file repeats, so the time
+# 3 s without the quit watchdog (redesign/QUIT_STALLS_NOTES.md: the runner's software rendering
+# alone takes 1.5-2 s for a clean H.264 quit, so its limit is the H.264 quit's 3 s; the PC's 2 s
+# target is measured with redesign/tools/quit-stall-repro.ps1). The 30 s file repeats, so the time
 # moves on or starts over after a switch; a stall leaves it standing still
 function Check-AudioSwitch([string]$exe) {
     $tag = 'zip-hevc-audio-switch'
@@ -862,7 +864,7 @@ function Check-AudioSwitch([string]$exe) {
         } | Out-Null
         # the first attempt's failure stays the result: the process has exited, a retry cannot quit again
         $script:AudioSwitchQuitError = $null
-        Check "$tag`: quit after the switches takes under 2 s" {
+        Check "$tag`: quit after the switches takes under 3 s, no watchdog" {
             if ($script:AudioSwitchQuitError) { throw $script:AudioSwitchQuitError }
             $script:AudioSwitchQuitError = 'Cone had already exited'
             if ($s.proc.HasExited) { throw 'Cone had already exited' }
@@ -876,7 +878,7 @@ function Check-AudioSwitch([string]$exe) {
             if ((Test-Path $s.log) -and (Select-String -Path $s.log -Pattern 'quit watchdog: Cone did not finish quitting' -SimpleMatch -Quiet)) {
                 $script:AudioSwitchQuitError = "ended by the quit watchdog after $secs s"; throw $script:AudioSwitchQuitError
             }
-            if ($secs -ge 2) { $script:AudioSwitchQuitError = "took $secs s (limit 2 s)"; throw $script:AudioSwitchQuitError }
+            if ($secs -ge 3) { $script:AudioSwitchQuitError = "took $secs s (limit 3 s)"; throw $script:AudioSwitchQuitError }
             "ended after $secs s"
         } | Out-Null
     } catch {

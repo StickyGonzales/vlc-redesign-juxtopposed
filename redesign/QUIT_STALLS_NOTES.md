@@ -36,8 +36,8 @@ Nothing in the Qt interface changes. The VideoLAN report draft is `redesign/upst
 | Check | Where |
 |---|---|
 | New media `test-hevc-2a.mp4`: 30 s, 480p HEVC with 16 B-frames in a row (b-adapt 0, b-pyramid, ref 6), two AAC tracks 440 / 660 Hz (eng / deu) | `.github/scripts/smoke-media.sh` |
-| **New smoke check, Windows** (`Check-AudioSwitch`): 6 audio track switches 2.5 s apart; after each, the time must change (the file repeats). Then Ctrl+Q must end Cone in **under 2 s**, without the quit watchdog. | `.github/scripts/win64-smoke.ps1`, build-windows smoke |
-| **New smoke check, Linux** (`check_audio_switch`): the same steps on the tarball | `.github/scripts/linux-smoke.py`, build-linux smoke |
+| **New smoke check, Windows** (`Check-AudioSwitch`): 6 audio track switches 2.5 s apart; after each, the time must change (the file repeats). Then Ctrl+Q must end Cone without the quit watchdog, in **under 3 s on the runner**. The runner's limit is the H.264 quit check's 3 s because its software rendering alone takes 1.5 to 2 s for a clean quit (#231: H.264 1.6 s, HEVC 2.01 s, installed H.264 1.48 s). The 2 s target is measured on the PC (section 5). | `.github/scripts/win64-smoke.ps1`, build-windows smoke |
+| **New smoke check, Linux** (`check_audio_switch`): the same steps on the tarball, quit under 2 s | `.github/scripts/linux-smoke.py`, build-linux smoke |
 | The existing quit and HEVC smoke checks (quit within 3 s, HEVC quit by the watchdog a warning) | unchanged |
 | PC script: the same switches and quit through the cli, for any exe | `redesign/tools/quit-stall-repro.ps1` |
 
@@ -46,10 +46,10 @@ Runs (filled in below as they finish):
 | Run | What | Result |
 |---|---|---|
 | build-windows #227, #228, build-linux #120 | the first commit (5c798eb) | cancelled after the review, rebuilt below |
-| build-windows #231 (43223628366), fe9ff5a | Cone (public), this branch, with the new smoke check | running |
-| build-windows #232 (43223634851), fe9ff5a | vlc profile, this branch | running |
+| build-windows #231 (43223628366), fe9ff5a | Cone (public), this branch, with the new smoke check | compiled. Smoke: every check passed but one. The new check: playback moved after all 6 switches (3->7, 8->12, 12->16, 17->21, 22->26, 27->1); the quit took 2.16 s, no watchdog, over the then 2 s limit. The runner's own clean quits in the same run: 1.48 to 2.01 s. Limit set to 3 s on the runner (above). |
+| build-windows #232 (43223634851), fe9ff5a | vlc profile, this branch | **green** |
 | build-windows #229 (43222935921) | vlc profile, `wip/next-test` (no fix): for the classification on the PC | running |
-| build-linux #121 (43223640964), fe9ff5a | Linux, this branch, with the new smoke check | running |
+| build-linux #121 (43223640964), fe9ff5a | Linux, this branch, with the new smoke check | **green**. Ubuntu 24.04: 6 switches, the time moves after each (4->10, 10->17, 17->23, 24->0, 0->7, 7->13), quit 0.16 s; every other check passed (H.264 quit 0.26 s, HEVC 0.16 s). Ubuntu 22.04, Debian 12 and the Wayland / X11 embed checks green too. |
 
 ## 5. Windows retest (PC session)
 Use the HEVC test media: the generated `test-hevc-2a.mp4` (the build's smoke-media artifact, or `smoke-media.sh`) and the x265 film of the quit recipe (<TEST_MOVIE>). Run every step once; close everything after.
