@@ -202,7 +202,8 @@ class Session:
             # the window manager's own window for Cone: Qt's inner windows carry the same pid, and
             # on a slow start (a sanitizer build) the search lists one of them first, which cannot
             # be activated
-            managed = [w for w in found if w in client_windows()]
+            clients = client_windows()
+            managed = [w for w in found if w in clients]
             for w in managed:
                 geo = xdo('getwindowgeometry', w)
                 if 'Geometry:' in geo:
@@ -344,6 +345,13 @@ def check_seek_bar_rest(s):
         if not r:
             raise CheckFailed('the seek bar ("Progress") is not shown')
         x, y, w, h = r
+        # an earlier hold (the seek of check_seek, "seeking", 1.5 s) ends first, so "paused" below
+        # is the seek bar's
+        xdo('mousemove', x + w // 2, y - 200)
+        end = time.time() + 8
+        while time.time() < end and state().startswith('paused'):
+            time.sleep(0.25)
+        s.show_bars()
         for d in range(0, 60, 6):
             xdo('mousemove', x + int(w * 0.3) + d, y + h // 2)
             time.sleep(0.05)
