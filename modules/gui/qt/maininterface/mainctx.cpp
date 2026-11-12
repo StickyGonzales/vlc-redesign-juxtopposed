@@ -85,10 +85,8 @@
 #ifdef _WIN32
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QThread>
 #include <QTimer>
-
-#include <chrono>
-#include <thread>
 #endif
 
 #include <vlc_interface.h>
@@ -1176,7 +1174,7 @@ void MainCtx::requestQuit(const char* source)
     {
         msg_Warn(p_intf, "quit: CONE_TEST_HANG_QUIT is set, the quit blocks here (test only)");
         for (;;)
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            QThread::msleep(1000);
     }
 
     if (m_videoSurfaceProvider)
