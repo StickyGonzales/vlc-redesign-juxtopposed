@@ -399,6 +399,9 @@ public:
      * @brief ask for the application to terminate
      */
     void onWindowClose(QWindow* );
+    /* redesign (redesign/FIX_CTRLQ_QUIT_NOTES.md): the quit key (Ctrl+Q) quits exactly like the
+     * window's close button (onWindowClose): playback stops first, then the quit */
+    Q_INVOKABLE void quitLikeClose();
     /* redesign: writes the interface state the destructor saves (and the window geometry
      * when asked), so a quit that never reaches the destructor keeps it */
     void saveSettings(bool withGeometry);
@@ -515,6 +518,8 @@ protected:
     bool m_smoothScroll = true;
 
     bool m_preferHotkeys = false;
+    // redesign: onWindowClose ran (a quit is under way); a second close or quit key does nothing
+    bool m_closing = false;
 
     int m_maxVolume = 125;
     int m_fsSensitivity = 40;

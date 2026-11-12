@@ -32,7 +32,8 @@ Item {
     ShortcutExt{ context: Qt.WindowShortcut; sequence:"Ctrl+Y"; onActivated: DialogsProvider.savePlayingToPlaylist(); }
     ShortcutExt{ sequence:"Ctrl+R"; onActivated: DialogsProvider.openAndTranscodingDialogs(); }
     ShortcutExt{ sequence:"Ctrl+S"; onActivated: DialogsProvider.openAndStreamingDialogs(); }
-    ShortcutExt{ sequence:"Ctrl+Q"; onActivated: DialogsProvider.quit(); }
+    // redesign: quits like the window's close button: playback stops first (MainCtx::quitLikeClose)
+    ShortcutExt{ sequence:"Ctrl+Q"; onActivated: MainCtx.quitLikeClose(); }
     ShortcutExt{ sequence:"Ctrl+E"; onActivated: DialogsProvider.extendedDialog(); }
     ShortcutExt{ sequence:"Ctrl+I"; onActivated: DialogsProvider.mediaInfoDialog(); }
     ShortcutExt{ sequence:"Ctrl+J"; onActivated: DialogsProvider.mediaCodecDialog(); }
