@@ -108,7 +108,22 @@ Smoke checks on GitHub's `macos-15` runner (Apple Silicon, macOS 15.8, a virtual
 4. **The update notice:** Settings shows "Check for updates" On. Cone's checker looks at the Windows / Linux releases; there is no macOS release, so a Mac build should not point to one. Left as is in this experimental build (a code change, not CI); to be decided before any macOS release.
 5. **Not built:** Sparkle (VLC's macOS updater), VLC's native macOS interface (Cone's design is the only interface), the fancy .dmg background (VLC's shows VLC's cone). Intel is built on every run since 2026-11-08.
 
-## The black picture: the runner, not Cone (run 10, both architectures)
+## The see-through or half-drawn picture: Cone, also on a real Mac (issue #69)
+The tester's Mac (issue #69, macOS on Apple Silicon) showed the **video area see-through** (the text editor behind the window showed in Cone's video area) with **the picture only partly drawn** (a band at the top, the picture pushed down), and after the first file often **no picture at all**; sound and subtitles worked. So the section below, "the runner, not Cone", was wrong: it is in Cone's macOS video path, and the runner's black picture is most likely the same fault on a dark desktop.
+
+**Why.**
+- **How the video is embedded:** Cone uses VLC's "platform" compositor on macOS (`maininterface/compositor_platform.cpp`). It is a top-level window with a video window inside it and Cone's interface (a transparent Qt Quick window) above both. VLC's macOS video output (`samplebufferdisplay`, AVSampleBufferDisplayLayer) got Qt's own view of the video window (`QNSView`).
+- **Partly drawn:** the output places its picture for an ordinary, unflipped macOS view: `y = height - y - h` (`VLCSampleBufferDisplay.m`, `frameForPlace`). Qt's view is flipped (origin at the top), so the picture could land at the wrong height.
+- **See-through:** the output paints nothing outside the picture, and Qt's view has no background. In the letterbox bands, and before the first frame, only the transparent interface window lay above, so the desktop behind Cone showed through.
+
+**The fix** (`compositor_platform.cpp`, macOS only).
+- The output now gets a plain NSView of Cone's own inside the video window: unflipped, opaque black (like VLC.app's video area), and always the video window's size.
+- The bands are black and the picture sits where VLC places it.
+- It is made through the Objective-C runtime (the file is C++), with no message that returns a struct, so Intel and Apple Silicon behave the same.
+
+**On the runner** (build-macos run 17) the video area now draws: screen colour 135 to 222 in the middle of the video, 0 in every run before. A real Mac confirms it (tester list, step 1).
+
+## The black picture on the runner (run 10, both architectures; see the section above)
 On both runners the video area stays black while Cone's interface and the subtitles draw:
 
 ![Cone on the runner, run 10](fix-shots/macos-runner-run10.png)
@@ -130,8 +145,27 @@ Each of VLC's macOS video outputs was tried on the same H.264 file, with a scree
 - **Only the display is black.** The one video output that opens on the runner is `samplebufferdisplay`, Apple's AVSampleBufferDisplayLayer on Metal.
 - **No OpenGL on the runner.** The runners are virtual machines with Apple's paravirtual GPU ("Metal device: Apple Paravirtual device"). They have no OpenGL at all: Qt's OpenGL context fails, and so do the three OpenGL outputs.
 - **A missing scaler.** Every start logs "IOServiceMatching failed for: AppleM2ScalerParavirtDriver". That is the hardware scaler service AVSampleBufferDisplayLayer uses to put video on screen, and it is missing in the virtual machine.
-- **Conclusion.** The same output and the same embedding (Qt's "platform" compositor, as upstream VLC uses on macOS) cannot draw video on this virtual GPU. This is the runner, most likely, not Cone. Only a real Mac can confirm it: the first step of the tester list.
+- **Conclusion at the time (corrected above).** It was put down to the runner's virtual GPU. Issue #69 showed the same family of fault on a real Mac, so it was Cone's video embedding.
 - **The one oddity.** "blending YUVA to CVPN failed" (the subtitles blended into the picture buffer) shows on the runner too. If a real Mac shows the picture but not the subtitles, that is where to look.
+
+## Opening files from Finder, and folders macOS protects (issue #69)
+- **Finder did nothing.** Finder opens files with an "open documents" Apple event, not on the command line. Qt delivers it as `QEvent::FileOpen` to the application. VLC's own macOS interface handles it; Cone's Qt interface did not.
+  - **Fix:** `qt.cpp` handles it (macOS only): the files go to the play queue and the first plays. This covers a double-click, Open With, a drop on the Dock icon, a start from Finder, and a Cone that already runs.
+  - **Several files at once:** the files of one Finder action arrive one by one and are added together.
+- **Open With did not list Cone.** The bundle declared no document types.
+  - **Fix:** `Info.plist` now lists video, audio and playlist types (`CFBundleDocumentTypes`, rank Alternate). Cone shows under Open With without taking over the files.
+- **Playlists with songs on the Desktop.** The tester's `.m3u` listed `.mp3` files under `~/Desktop`, and each failed with "Your media can't be opened".
+  - **Cause:** macOS protects the Desktop, Documents and Downloads folders. An app needs the user's permission to read files there that the user did not open directly, and the songs in a playlist are such files.
+  - **Fix:** `Info.plist` now has the purpose strings (`NSDesktopFolderUsageDescription`, Documents, Downloads, removable and network drives), so macOS asks with a reason.
+  - **If access was refused once:** System Settings > Privacy & Security > Files and Folders > Cone Player: turn Desktop Folder on.
+  - **Each new build asks again:** macOS remembers the permission per signature, and Cone's ad-hoc signature changes with every build.
+- **Smoke:** two checks open a file through LaunchServices (`open -a`, as Finder does): one while Cone runs (passes on both runners, run 17), one starting Cone with the file. The second failed in run 17: at the start the open event came before the event filter existed, so the filter is now installed right after the QApplication and the files wait for the play queue. Both stay warnings until they pass on the runners.
+
+## The shortcuts page of the first start (issue #69)
+- **What the tester saw:** "COMMAND" and "CTRL" written out made the key caps of "Learn the basic keyboard shortcuts" run past the right edge, and a "/" sat on a label.
+- **Mac key symbols** (`onboarding_helper.cpp`, macOS only): the modifiers are shown as the Mac's own symbols, ⌃ ⌥ ⇧ ⌘, in Apple's order.
+- **The queue shortcut:** "Show / Hide Queue" is ⌘L on a Mac. It is a Qt shortcut, and Qt's Ctrl is the Command key there; the page had shown "CTRL L".
+- **Fitting the window** (`Onboarding.qml`): the key and label columns take the width of their widest row, and if both blocks are still wider than the page, they shrink to fit. This holds on any system, with any keys and any language.
 
 ## Opening an unsigned app (for testers)
 Cone Player for macOS has no Apple Developer ID, so macOS says it "cannot be opened because Apple cannot check it for malicious software" the first time. Either way below works once; after that it opens normally.
@@ -157,6 +191,26 @@ Any Mac with macOS 12 or later: the `-macos-arm64.dmg` for Apple Silicon (M1 and
 6. **Quit:** Cmd+Q quits within a few seconds.
 7. **Anything odd:** a crash (copy the first 40 lines of macOS's report), a freeze, cut-off text, blurry text on a Retina display.
 
+## Tester list for the issue #69 fixes (about 10 minutes)
+A build from the PR of `wip/macos-fixes` (Actions > build-macos > the run > Artifacts: `cone-macos-arm64`). Each step: what to do, and what you should see.
+1. **The picture.**
+   - **Do:** play a 16:9 video in a window that is taller than the video, then a second video right after.
+   - **See:** the whole picture, with black bands above and below; nothing of the desktop or another window shows through, and the second video shows too.
+   - **Then:** resize the window and go fullscreen and back; the picture follows.
+2. **Finder, Cone closed.**
+   - **Do:** quit Cone, then double-click a video in Finder, or right-click > Open With > Cone Player.
+   - **See:** Cone starts and plays it. Cone may not be the default player, but it is listed under Open With.
+3. **Finder, Cone open.**
+   - **Do:** with a video playing, open another one from Finder (Open With > Cone Player, or drop it on Cone's Dock icon).
+   - **See:** the new file plays in the same window. Select three files and Open With Cone: all three are in the queue and the first plays.
+4. **The first-start shortcuts page.**
+   - **Do:** start Cone once with `open -a "Cone Player" --args --qt-privacy-ask` and go to "Learn the basic keyboard shortcuts".
+   - **See:** every key cap is inside the page, the modifiers show as ⌃ ⌥ ⇧ ⌘, and Show / Hide Queue reads ⌘ L.
+5. **A playlist with songs on the Desktop.**
+   - **Do:** open your `.m3u` again.
+   - **See:** macOS asks whether Cone Player may access the Desktop folder; after Allow, the songs play.
+   - **If it does not ask:** System Settings > Privacy & Security > Files and Folders > Cone Player > Desktop Folder on, then open it again. If it still fails, send the log (Tools > Messages, or the text the Errors tab shows).
+
 ## Runs
 | Run | Head | What it showed / what changed |
 |---|---|---|
@@ -171,6 +225,8 @@ Any Mac with macOS 12 or later: the `-macos-arm64.dmg` for Apple Silicon (M1 and
 | #10 | 1d030deb4b | merged `wip/next-test`; **both architectures built** (Apple Silicon 43 min; Intel 2 h 40 min, its first build, no compiler cache). Smoke: Apple Silicon passes everything except one HEVC session, which exited by itself (code 0) after its window appeared, its log overwritten by the retry; Intel passes everything except the HEVC quit (3.22 s, then 3.46 s, limit 3 s). The video output tries (section "The black picture"). Then: each start its own log, the time check's retry in a fresh session, the HEVC quit time a warning, VLC's snapshots kept |
 | #11 | 519b7260ff | both architectures **built** (Apple Silicon 12 min, Intel 34 min with the compiler cache). Smoke: **Intel green** (warnings: Settings/Escape); Apple Silicon passes everything except the HEVC playback check: Cone quit twice 3 to 4 s after its start, caused by the smoke script's stdin (section "Smoke checks"). Then: Cone gets an open stdin |
 | #12 | cbb1bf04e3 | both built. Smoke: playback passes on both (no more quit at the start); Cmd+Q now ended by the quit watchdog on both (5 to 8 s): the open stdin held the cli's reader (section "Smoke checks"). Then: no `--rc-fake-tty`, stdin `/dev/null`, whole replies read |
+| #18 | b42852d0ac | both architectures built and smoke-tested (Apple Silicon's smoke after one runner-less cancel). Picture draws on both (Apple Silicon 113 to 135, Intel 205). Finder: a file opened while Cone runs plays (pass, both); a start with a file still does not play (warning, both), although the filter now listens from the QApplication on: the launch's open event does not reach Qt at all. Next run: Qt's macOS application logging for that check |
+| #17 | fdb49562c9 | wip/macos-fixes (issue #69). Intel built in attempt 1; Apple Silicon got no runner in runs 15-17 (cancelled after 15 min of waiting, three times) and built in attempt 2. **The picture now draws on the runners:** screen colour in the middle of the video 135 to 222 (Apple Silicon) and 188 to 222 (Intel), was 0 in every run before; VLC's own snapshot 237 to 239 as before. So the runner's black picture was the same embedding fault as the tester's, and the video view of Cone's own fixes it there. Finder: a file opened while Cone runs plays in it (pass, both); a start with a file did not play it (warning, both): the open event came before the filter, which was installed after the main interface. Then: the filter right after the QApplication, the files waiting for the play queue. Warnings as before: Escape in Settings; Intel's HEVC quit 3.33 s |
 | #13 | 489d93c479 | **all green**: both architectures built (Apple Silicon 15 min, Intel 24 min with the compiler cache) and both smoke jobs pass (.dmg, signature, window, H.264 and HEVC playback, subtitles, Settings, Cmd+Q, every plug-in, own folders); one warning left, Escape in Settings (on the tester list). The video output tries as before: decoded frames full colour, screen black |
 | #9 | a559a4a7ca | build, app, signature and .dmg **green** (the latest .dmg: artifact `cone-macos-arm64` of run 41346080677, and `wip-macos-build--macos-arm64.dmg` on the test-builds draft); the smoke job **never started**: it waited about 15 minutes for a free macOS runner and was cancelled without running a step |
 

@@ -92,6 +92,72 @@ cat > "$C/Info.plist" <<EOF
     <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSLocalNetworkUsageDescription</key><string>Cone Player looks for media servers and devices on your network (UPnP, Bonjour) for its Network view.</string>
+    <key>NSDesktopFolderUsageDescription</key><string>Cone Player plays the media and playlists you keep on your Desktop, and the files a playlist there lists.</string>
+    <key>NSDocumentsFolderUsageDescription</key><string>Cone Player plays the media and playlists you keep in Documents, and the files a playlist there lists.</string>
+    <key>NSDownloadsFolderUsageDescription</key><string>Cone Player plays the media and playlists you keep in Downloads, and the files a playlist there lists.</string>
+    <key>NSRemovableVolumesUsageDescription</key><string>Cone Player plays media from USB drives and memory cards.</string>
+    <key>NSNetworkVolumesUsageDescription</key><string>Cone Player plays media from network drives.</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key><string>Video</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSHandlerRank</key><string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.movie</string>
+                <string>public.video</string>
+                <string>public.audiovisual-content</string>
+                <string>public.mpeg-4</string>
+                <string>com.apple.quicktime-movie</string>
+                <string>public.avi</string>
+                <string>public.mpeg</string>
+                <string>public.mpeg-2-transport-stream</string>
+                <string>org.matroska.mkv</string>
+                <string>org.webmproject.webm</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>mkv</string><string>webm</string><string>avi</string><string>mp4</string><string>m4v</string>
+                <string>mov</string><string>wmv</string><string>flv</string><string>ts</string><string>m2ts</string>
+                <string>mts</string><string>mpg</string><string>mpeg</string><string>ogv</string><string>3gp</string>
+                <string>vob</string><string>divx</string><string>rmvb</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key><string>Audio</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSHandlerRank</key><string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.audio</string>
+                <string>public.mp3</string>
+                <string>public.mpeg-4-audio</string>
+                <string>org.xiph.flac</string>
+                <string>org.xiph.ogg-audio</string>
+                <string>com.microsoft.waveform-audio</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>mp3</string><string>m4a</string><string>aac</string><string>flac</string><string>ogg</string>
+                <string>opus</string><string>wav</string><string>wma</string><string>mka</string><string>aiff</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key><string>Playlist</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSHandlerRank</key><string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.m3u-playlist</string>
+                <string>public.playlist</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>m3u</string><string>m3u8</string><string>pls</string><string>xspf</string><string>cue</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
 EOF

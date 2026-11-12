@@ -97,6 +97,11 @@ extern "C" char **environ;
 # include "maininterface/mainctx.hpp"   /* MainCtx creation */
 #endif
 #include "style/defaultthemeproviders.hpp"
+#ifdef __APPLE__
+# include <QFileOpenEvent>
+# include <QTimer>
+# include <QUrl>
+#endif
 #include "style/rdfonts.hpp"
 #include "util/brand.hpp"
 #include "util/quit_watchdog.hpp"
@@ -741,6 +746,70 @@ static void *Thread( void * );
 static void *ThreadCleanup( qt_intf_t *p_intf, CleanupReason cleanupReason );
 
 #ifdef Q_OS_MAC
+#ifdef __APPLE__
+/* redesign (macOS, issue #69): Finder opens files (double-click, Open With, a file dropped on
+ * the Dock icon) with an "open documents" Apple event, not on the command line; Qt turns it
+ * into QEvent::FileOpen on the application, at the start (before the interface exists, so the
+ * filter is installed right after the QApplication) as when Cone already runs. VLC's own
+ * macOS interface handles these, the Qt interface did not: the file was ignored. The files of
+ * one event batch (several selected in Finder arrive one by one) go to the play queue
+ * together and the first one plays, as the command line does. */
+class MacFileOpenFilter : public QObject
+{
+public:
+    MacFileOpenFilter(qt_intf_t* intf, QObject* parent)
+        : QObject(parent)
+        , m_intf(intf)
+    {
+        msg_Dbg(m_intf, "macOS: listening for files opened from Finder");
+        m_batch.setSingleShot(true);
+        m_batch.setInterval(150);
+        connect(&m_batch, &QTimer::timeout, this, &MacFileOpenFilter::flush);
+    }
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (event->type() != QEvent::FileOpen)
+            return QObject::eventFilter(watched, event);
+
+        const auto* open = static_cast<QFileOpenEvent*>(event);
+        QUrl url = open->url();
+        if (!url.isValid() || url.isEmpty())
+            url = QUrl::fromLocalFile(open->file());
+        if (url.isValid() && !url.isEmpty())
+        {
+            msg_Dbg(m_intf, "macOS: open %s from Finder", qtu(url.toString()));
+            m_urls.append(url.toString(QUrl::FullyEncoded));
+            m_batch.start();
+        }
+        return true;
+    }
+
+private:
+    void flush()
+    {
+        if (m_urls.isEmpty())
+            return;
+        // a start from Finder: the files wait until the play queue and the main interface exist
+        if (!m_intf->p_mainPlaylistController || !m_intf->p_mi)
+        {
+            m_batch.start();
+            return;
+        }
+        QVector<vlc::playlist::Media> medias;
+        for (const QString& mrl : std::as_const(m_urls))
+            medias.push_back(vlc::playlist::Media{ mrl, QString {} });
+        m_urls.clear();
+        m_intf->p_mainPlaylistController->append(medias, true);
+    }
+
+    qt_intf_t* const m_intf;
+    QStringList m_urls;
+    QTimer m_batch;
+};
+#endif
+
 /* Used to abort the app.exec() on OSX after libvlc_Quit is called */
 #include <CoreFoundation/CFRunLoop.h>
 #endif
@@ -1090,6 +1159,12 @@ static void *Thread( void *obj )
     /* Start the QApplication here */
     QApplication app( argc, argv );
     app.setProperty("initialStyle", app.style()->name());
+#ifdef __APPLE__
+    // as early as possible: a start from Finder delivers its file before the interface exists
+    // (build-macos run 17: installed after the main interface, the file of the start was lost)
+    if( !p_intf->b_isDialogProvider )
+        app.installEventFilter(new MacFileOpenFilter(p_intf, &app));
+#endif
 
     {
         // Install custom translator:
