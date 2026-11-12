@@ -21,14 +21,21 @@ The fixes list leads with the settings fix (StickyGonzales, 2026-11-11).
 
 ## Fixed and new
 
+### Your settings
 - **Updating no longer deletes your settings.** The installer has an option "Delete preferences and cache", unticked by default. Earlier installers remembered it: if it had been ticked once, every later update deleted Cone Player's settings again, so the first-start screens came back and the OpenSubtitles API key, accent color, shows and library choices were gone. **If that happened to you with the 1.3.0 update, it won't happen again:** from 1.4.0 the option starts unticked on every install, and an update keeps your settings unless you tick it yourself. Lost settings can't be brought back, so please enter your OpenSubtitles API key once more.
-- **Seek with the mouse wheel.** With the pointer on the timeline, each wheel notch jumps 10 seconds, forward when you scroll up, back when you scroll down. Elsewhere on the control bar the wheel still does nothing, and over the video it still changes the volume.
-- **The OpenSubtitles account is saved as you type** (Settings > Subtitles > OpenSubtitles), so the API key, username and password are kept even if Cone Player closes while Settings is open.
-- **Volume without the bars when maximized.** When Cone Player is maximized or fullscreen, the Up / Down keys and the mouse wheel over the video change the volume and show only the volume message; the top bar and the control bar stay hidden. In a normal window they show as before.
-- **The update notice works again.** Cone Player checks for a new version on its own when it starts, tries again a few times if you're offline at first, and checks at most every 6 hours.
-- **Clean show names.** A show in a folder named like a download ("Some.Show.S01.1080p.WEBRip.x265-GROUP") is now called "Some Show" on the Up Next card and in the sidebar's Playback tab. Your answers for shows you already set up are kept.
-- **Ctrl+Q always quits** right away, like the window's close button. Before, right after Settings was closed, it could leave Cone Player running.
-- **The pointer hides again about 3 seconds after Space resumes playback** (it took about 6 seconds).
+- **The OpenSubtitles account is saved as you type** (Settings > Subtitles > OpenSubtitles): the API key, username and password are on disk the moment you type them, even if Cone Player closes while Settings is open.
+
+### Playing
+- **Seek with the mouse wheel.** With the pointer on the timeline, each wheel notch jumps 10 seconds, forward when you scroll up, back when you scroll down. A touchpad's scrolling adds up the same way. Elsewhere on the control bar the wheel still does nothing, and over the video it still changes the volume.
+- **Volume without the bars when maximized.** When Cone Player is maximized or fullscreen ("movie mode"), the Up / Down keys and the mouse wheel over the video change the volume and show only the volume message; the top bar and the control bar stay hidden. In a normal window they show as before, and Ctrl+Up / Ctrl+Down still show them.
+- **The pointer hides again about 3 seconds after Space resumes playback** (it took about 6 seconds). With pinned bars (Settings > Interface), the pointer now stays after a key press too, as it does after a mouse move.
+- **Ctrl+Q always quits,** the same way as the window's close button: playback stops first, then Cone Player closes, which can take up to about 3 seconds. Before, right after Settings had been closed, Ctrl+Q could leave Cone Player running.
+
+### Up Next and shows
+- **Clean show names.** A show in a folder named like a download ("Some.Show.S01.1080p.WEBRip.x265-GROUP", "Doctor.Who.2005.1080p.BluRay") is now called "Some Show" or "Doctor Who" on the Up Next card and in the sidebar's Playback tab, instead of the whole folder name. Words like "Season" are only removed before a number, so a show called "Season of the Witch" keeps its name. Your answers for shows you already set up (autoplay, Fixed time, tracks) are kept: they belong to the folder, not to the name.
+
+### Update notice
+- **The update notice works again.** Cone Player checks GitHub for a new version on its own, a few seconds after it starts. Only a real answer from GitHub counts: if you're offline at first, it tries again after 6 seconds, 30 seconds and 90 seconds, and on the next start. It checks at most every 6 hours, so a new release shows the same day. Pressing **Check now** (Settings > General) while it is still retrying keeps those retries going.
 
 ## Download
 
@@ -42,6 +49,15 @@ Two downloads, both for Windows 10 / 11, 64-bit. Their checksums are in `SHA256S
 1. Unzip it anywhere and run `Cone.exe` in the `ConePlayer-1.4.0` folder. Nothing gets installed.
 2. Settings stay in the `portable` folder next to `Cone.exe`. Delete that folder to use `%APPDATA%\Cone` instead (shared with an installed Cone Player).
 
+## Tips
+
+- **Updating:** run the new installer and keep **"Upgrade using previous settings"**: your settings, library and shows stay. Only choose the advanced option and tick "Delete preferences and cache" if you want a clean start.
+- **Jumping around:** the mouse wheel on the timeline moves 10 seconds per notch. On the keyboard: Alt+Left / Right 10 seconds, Ctrl+Left / Right 1 minute, Ctrl+Alt+Left / Right 5 minutes.
+- **Movie mode:** maximize the window or press F for fullscreen, and change the volume with Up / Down or the mouse wheel without bringing up the bars.
+- **Up Next at the wrong moment?** Sidebar > Playback > "Up Next for <your show>": switch to **Fixed** and type how long before the end the card should show (for example 1:30). **Reset** goes back to Automatic.
+- **Subtitles out of sync?** Sidebar > Subtitles > Synchronization > **Auto-sync**; **Undo** puts them back.
+- **OpenSubtitles:** a free account on opensubtitles.com gives you an API key (your profile > API consumers). Paste it in Settings > Subtitles > OpenSubtitles.
+- **A different color:** Settings > General > Accent color > **Custom** takes any hex code.
 ## Known issues
 
 - On a few HEVC files with many B-frames, switching the audio track can still stall the video, and quitting can then take 5 seconds before Cone Player ends itself. Settings and the resume position are kept.
@@ -81,7 +97,15 @@ Cone Player is not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, 
 - **The OpenSubtitles account is saved as you type.**
 - **The update notice works again,** with retries when you're offline at first.
 - **Clean show names:** "Some.Show.S01.1080p.WEBRip.x265-GROUP" shows as "Some Show" (a year at the end of a name is dropped: "Class.of.2009" shows as "Class of").
-- **Ctrl+Q always quits** right away, and **the pointer hides about 3 seconds after Space resumes playback.**
+- **Ctrl+Q always quits** (playback stops first, then Cone Player closes), and **the pointer hides about 3 seconds after Space resumes playback**; with pinned bars it stays after a key press.
+
+**Under the hood:**
+- The Linux packages are built on Ubuntu 22.04 again after the build image broke (it now gets its packages from the runner's own Ubuntu mirror and stops loudly if a package is missing), and every build checks on Wayland and X11 that the video plays inside Cone's window.
+- **Flatpak and AUR packages are prepared but not published yet:** a Flatpak build (io.github.StickyGonzales.ConePlayer) runs and plays in the sandbox on GitHub, and an AUR package (cone-player-bin) is ready. They come with a later release.
+
+**Tips:**
+- On Wayland, check that the video now plays inside the window; if it doesn't, please tell us your desktop (GNOME, KDE, ...) and distribution in Issues.
+- The mouse wheel on the timeline jumps 10 seconds per notch; Up / Down or the wheel over the video change the volume without the bars when maximized or fullscreen.
 
 **Downloads:**
 - **AppImage**: download, `chmod +x` it, start it. AppImageLauncher or Gear Lever add it to the menu with its icon. A folder named `portable` next to it keeps settings and library there.
@@ -104,8 +128,8 @@ SHA-256: (written by release-linux)
 
 **Fixed on macOS** (from a tester's report, issue #69):
 - **The picture is drawn correctly.** The video area was see-through or only partly drawn, and after the first file often black. It now shows the whole picture with black bands, and the desktop no longer shows through.
-- **Opening files from Finder while Cone Player runs:** a double-click, Open With > Cone Player or a drop on the Dock icon plays the file in the open window; several files go into the queue. Cone Player is now listed under Open With.
-- **Mac key symbols on the first start's shortcuts page** (⌃ ⌥ ⇧ ⌘), and the page fits its window.
+- **Opening files from Finder while Cone Player runs:** a double-click, Open With > Cone Player or a drop on the Dock icon plays the file in the open window; several files go into the queue. Cone Player is now listed under Open With for video, audio and playlist files, without becoming your default player.
+- **Mac key symbols on the first start's shortcuts page** (âŒƒ âŒ¥ â‡§ âŒ˜), and the page fits its window.
 - **Desktop access for playlists:** a playlist with songs on the Desktop, in Documents or Downloads now makes macOS ask for access, instead of failing. If you refused once: System Settings > Privacy & Security > Files and Folders > Cone Player > Desktop Folder.
 
 It also has everything new in Cone Player 1.4.0 for Windows (wheel seeking, clean show names, the update check, Ctrl+Q / Cmd+Q, the pointer).
@@ -119,12 +143,16 @@ It also has everything new in Cone Player 1.4.0 for Windows (wheel seeking, clea
    - Or in Terminal: `xattr -dr com.apple.quarantine "/Applications/Cone Player.app"`
 3. Each new version may ask again for folder access, because its signature changes.
 
+**Tips:**
+- Drag a video onto the window or the Dock icon to play it; Cmd+P opens Settings, Cmd+Q quits.
+- If a playlist's songs on the Desktop won't play: System Settings > Privacy & Security > Files and Folders > Cone Player > Desktop Folder.
+
 **Known issue:** double-clicking a file in Finder while Cone Player is closed opens Cone without playing the file; open it again or drag it onto the window. Opening files while Cone is already running works.
 
 > **Testers wanted (about 10 minutes).** It hasn't been confirmed on a real Mac yet. Please tell us in [Issues](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/issues) your Mac model and macOS version, and for each step "works" or what happened (a screenshot helps):
 > 1. **The picture:** play a 16:9 video in a window taller than the video, then a second video: the whole picture with black bands, nothing showing through. Resize, go fullscreen and back: the picture follows.
 > 2. **Finder, Cone open:** with a video playing, open another one with Open With > Cone Player or drop it on the Dock icon: it plays in the same window. Three files at once: all in the queue, the first plays.
-> 3. **The shortcuts page:** start Cone once with `open -a "Cone Player" --args --qt-privacy-ask` and go to "Learn the basic keyboard shortcuts": every key cap fits, the modifiers show as ⌃ ⌥ ⇧ ⌘, and Show / Hide Queue reads ⌘ L.
+> 3. **The shortcuts page:** start Cone once with `open -a "Cone Player" --args --qt-privacy-ask` and go to "Learn the basic keyboard shortcuts": every key cap fits, the modifiers show as âŒƒ âŒ¥ â‡§ âŒ˜, and Show / Hide Queue reads âŒ˜ L.
 > 4. **A playlist with songs on the Desktop:** open it: macOS asks for Desktop access; after Allow, the songs play.
 > 5. **The basics:** pause, seek, volume, fullscreen (button, F, Escape), subtitles from an .srt of the same name, Cmd+P for Settings, Cmd+Q quits.
 
