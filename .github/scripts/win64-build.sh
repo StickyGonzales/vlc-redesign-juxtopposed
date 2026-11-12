@@ -3,6 +3,8 @@
 # mounted at /build.
 #   win64-build.sh build      build.sh through ccache, then the portable zip
 #   win64-build.sh installer  the NSIS installer of an already built tree (make package-win32-exe)
+#   win64-build.sh stage-for-signing          release signing: stage the tree, copy Cone.exe to sign/unsigned
+#   win64-build.sh package-signed <Cone.exe>  release signing: the installer and zip with the signed Cone.exe
 # Environment: VLC_BRAND (vlc or public), VLC_PREBUILT_CONTRIBS_URL (empty: contribs from source),
 # BRAND_VERSION (public profile's version), BRAND_PACKAGE_SUFFIX (public package names, e.g. -beta).
 #
@@ -75,8 +77,42 @@ installer)
     cd win64
     make package-win32-exe
     ;;
+stage-for-signing)
+    # release signing (CODE_SIGNING_POLICY.md): the package folder staged and stripped as the
+    # installer takes it, then its Cone.exe is handed to the workflow, which sends it to SignPath
+    cd win64
+    make package-win32-src
+    set -- vlc-*/Cone.exe
+    [ $# -eq 1 ] && [ -f "$1" ] || { echo "::error::expected one vlc-*/Cone.exe, found: $*"; exit 1; }
+    mkdir -p /build/sign/unsigned
+    cp "$1" /build/sign/unsigned/Cone.exe
+    echo "staged for signing: win64/$1"
+    ;;
+package-signed)
+    # release signing: the signed Cone.exe ($2, relative to /build) into the staged package folder,
+    # then the installer and the zip of that folder as it is (package.mak's *-staged targets: no new
+    # staging or stripping, which would undo the signature). SIGNING_DRY_RUN=true (the workflow's
+    # signing-dry-run input) takes the unsigned file, to check this path without SignPath.
+    SIGNED=/build/$2
+    [ -f "$SIGNED" ] || { echo "::error::no signed Cone.exe at $2"; exit 1; }
+    cd win64
+    set -- vlc-*/Cone.exe
+    [ $# -eq 1 ] && [ -f "$1" ] || { echo "::error::expected one vlc-*/Cone.exe, found: $*"; exit 1; }
+    STAGED=$1
+    if [ "${SIGNING_DRY_RUN:-}" != true ] && cmp -s "$SIGNED" "$STAGED"; then
+        echo "::error::the signed Cone.exe is the same file as the unsigned one"
+        exit 1
+    fi
+    cp "$SIGNED" "$STAGED"
+    make package-win32-exe-staged
+    make package-win32-zip-staged BRAND_PACKAGE_SUFFIX="${BRAND_PACKAGE_SUFFIX:-}"
+    # the folder both packages were made from still holds exactly that Cone.exe (the workflow
+    # checks the zip's copy on the runner)
+    cmp "$STAGED" "$SIGNED"
+    ls -la ./*-win64.zip ./*-win64.exe
+    ;;
 *)
-    echo "usage: $0 build|installer" >&2
+    echo "usage: $0 build|installer|stage-for-signing|package-signed <signed Cone.exe>" >&2
     exit 2
     ;;
 esac

@@ -30,6 +30,12 @@ on:
         description: 'Package name suffix (public profile, e.g. -beta)'
         type: string
         default: ''
+      signing-dry-run:
+        # release signing (CODE_SIGNING_POLICY.md): runs the signing path of a release without
+        # SignPath, the unsigned Cone.exe standing in for the signed one, to check the packaging
+        description: 'Check the release signing path without SignPath (public profile)'
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       brand:
@@ -50,6 +56,16 @@ on:
         # package names like a pushed tag does; a manual release run builds a branch, not the tag
         type: string
         default: ''
+    secrets:
+      # release signing (CODE_SIGNING_POLICY.md, redesign/SUBMIT_TO_SIGNPATH.md): a release signs
+      # Cone.exe and the installer through SignPath only when this secret and the repository
+      # variable SIGNPATH_ORGANIZATION_ID are set; otherwise it is built unsigned, as before
+      SIGNPATH_API_TOKEN:
+        required: false
+    outputs:
+      signed:
+        description: "'true' when Cone.exe and the installer were signed through SignPath"
+        value: ${{ jobs.win64.outputs.signed }}
 
 concurrency:
   # one queue per branch and brand profile: a vlc and a public build of the same branch run side by
@@ -72,9 +88,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     # contents: write for the test builds' draft pre-release (.github/scripts/test-build-assets.sh);
-    # a calling workflow (release.yml) must grant it to its build job
+    # actions: read for SignPath, which fetches the unsigned files from this run's artifacts; a
+    # calling workflow (release.yml) must grant both to its build job
     permissions:
       contents: write
+      actions: read
+    outputs:
+      signed: ${{ steps.signing.outputs.signed }}
     steps:
       - name: Free disk space
         run: |
@@ -183,6 +203,7 @@ jobs:
         run: docker pull "$VLC_IMAGE"
 
       - name: Build in VideoLAN's image
+        id: build
         env:
           PACKAGE_SUFFIX_INPUT: ${{ inputs.package-suffix }}
           VERSION_INPUT: ${{ inputs.version }}
@@ -209,6 +230,8 @@ jobs:
             echo "::warning::the package suffix is not -<letters, digits, dots>: not used"
             BRAND_PACKAGE_SUFFIX=""
           fi
+          # the signing path makes the zip again, under the same name
+          echo "package_suffix=$BRAND_PACKAGE_SUFFIX" >> "$GITHUB_OUTPUT"
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             -e VLC_PREBUILT_CONTRIBS_URL="${{ steps.sha.outputs.url }}" \
             -e VLC_BRAND="$VLC_BRAND" \
@@ -254,13 +277,141 @@ jobs:
       # brand layer: Cone's NSIS installer next to the zip (redesign/INSTALLER_NOTES.md); the zip is
       # uploaded first, so a failing installer still leaves it; a failure here keeps a test build
       # green, a release fails
-      - name: Cone installer
+      # release signing (CODE_SIGNING_POLICY.md, redesign/SUBMIT_TO_SIGNPATH.md): "signpath" for a
+      # release when the SIGNPATH_API_TOKEN secret and the SIGNPATH_ORGANIZATION_ID variable exist,
+      # "dry-run" for a manual run with signing-dry-run (the signing path without SignPath), "off"
+      # otherwise: the installer is built as before and nothing is signed
+      - name: Release signing
+        id: signing
         if: env.VLC_BRAND == 'public'
+        env:
+          RELEASE: ${{ inputs.release }}
+          DRY_RUN: ${{ inputs.signing-dry-run }}
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        run: |
+          MODE=off
+          if [ "$RELEASE" = true ] && [ -n "$SIGNPATH_API_TOKEN" ] && [ -n "$SIGNPATH_ORGANIZATION_ID" ]; then
+            MODE=signpath
+            MSG="Code signing: Cone.exe and the installer are signed through SignPath"
+          elif [ "$DRY_RUN" = true ]; then
+            MODE=dry-run
+            MSG="Code signing: dry run of the signing path, nothing is signed"
+          elif [ "$RELEASE" = true ]; then
+            MSG="Code signing: off (no SIGNPATH_API_TOKEN secret or SIGNPATH_ORGANIZATION_ID variable), the release is unsigned"
+            echo "::notice::$MSG"
+          else
+            MSG="Code signing: off (test build)"
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "signed=$([ "$MODE" = signpath ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "$MSG"
+          echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cone installer
+        if: env.VLC_BRAND == 'public' && steps.signing.outputs.mode == 'off'
         continue-on-error: ${{ !inputs.release }}
         run: |
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
             "$VLC_IMAGE" .github/scripts/win64-build.sh installer
           ls -la win64/*.exe
+
+      # the signing path: Cone.exe is signed first, then the installer and the zip are made with the
+      # signed Cone.exe, then the installer itself is signed; every SignPath request waits for an
+      # approver's manual approval in SignPath (up to 2 hours each)
+      - name: Stage the release files for signing
+        if: steps.signing.outputs.mode == 'signpath' || steps.signing.outputs.mode == 'dry-run'
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
+            "$VLC_IMAGE" .github/scripts/win64-build.sh stage-for-signing
+          ls -la sign/unsigned
+
+      - name: Upload the unsigned Cone.exe for SignPath
+        id: upload-exe
+        if: steps.signing.outputs.mode == 'signpath'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: sign/unsigned/Cone.exe
+          archive: false
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign Cone.exe (SignPath, waits for the approval)
+        if: steps.signing.outputs.mode == 'signpath'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'cone-player' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_EXE_CONFIGURATION_SLUG || 'cone-exe' }}
+          github-artifact-id: ${{ steps.upload-exe.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 7200
+          output-artifact-directory: sign/signed-exe
+          skip-decompress: true
+
+      - name: Installer and zip with the signed Cone.exe
+        if: steps.signing.outputs.mode == 'signpath' || steps.signing.outputs.mode == 'dry-run'
+        env:
+          SIGNING_DRY_RUN: ${{ steps.signing.outputs.mode == 'dry-run' }}
+          BRAND_PACKAGE_SUFFIX: ${{ steps.build.outputs.package_suffix }}
+        run: |
+          if [ "$SIGNING_DRY_RUN" = true ]; then
+            mkdir -p sign/signed-exe
+            cp sign/unsigned/Cone.exe sign/signed-exe/Cone.exe
+          fi
+          FILES=(sign/signed-exe/*)
+          [ ${#FILES[@]} -eq 1 ] && [ -f "${FILES[0]}" ] \
+            || { echo "::error::expected one signed file in sign/signed-exe: ${FILES[*]}"; exit 1; }
+          SIGNED=${FILES[0]}
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/build" -w /build -e HOME=/tmp \
+            -e SIGNING_DRY_RUN -e BRAND_PACKAGE_SUFFIX \
+            "$VLC_IMAGE" .github/scripts/win64-build.sh package-signed "$SIGNED"
+          # the zip holds exactly the signed Cone.exe
+          ZIP=$(ls win64/*-win64.zip | head -n 1)
+          unzip -p "$ZIP" '*/Cone.exe' | cmp - "$SIGNED" \
+            || { echo "::error::$ZIP does not hold the signed Cone.exe"; exit 1; }
+          echo "Cone.exe in $ZIP: $(sha256sum "$SIGNED" | cut -d' ' -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the unsigned installer for SignPath
+        id: upload-installer
+        if: steps.signing.outputs.mode == 'signpath'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: win64/coneplayer-*-win64.exe
+          archive: false
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign the installer (SignPath, waits for the approval)
+        if: steps.signing.outputs.mode == 'signpath'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'cone-player' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_CONFIGURATION_SLUG || 'cone-installer' }}
+          github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 7200
+          output-artifact-directory: sign/signed-installer
+          skip-decompress: true
+
+      - name: Signed installer in place
+        if: steps.signing.outputs.mode == 'signpath'
+        run: |
+          FILES=(sign/signed-installer/*)
+          [ ${#FILES[@]} -eq 1 ] && [ -f "${FILES[0]}" ] \
+            || { echo "::error::expected one signed installer: ${FILES[*]}"; exit 1; }
+          TARGET=$(ls win64/coneplayer-*-win64.exe)
+          if cmp -s "${FILES[0]}" "$TARGET"; then
+            echo "::error::the signed installer is the same file as the unsigned one"
+            exit 1
+          fi
+          cp "${FILES[0]}" "$TARGET"
+          echo "Signed installer $(basename "$TARGET"): $(sha256sum "$TARGET" | cut -d' ' -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: env.VLC_BRAND == 'public' && hashFiles('win64/coneplayer-*-win64.exe') != ''
