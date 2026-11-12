@@ -782,7 +782,7 @@ def check_popup_stack(exe, env):
     """the notices at the bottom stack (redesign/POPUP_STACK_NOTES.md): a file watched to 2:00 opened
     again with the update notice forced on shows the resume toast and the update notice one above
     the other, never overlapping, on the same center line, 10 px apart; when the toast goes the
-    notice slides down into its place"""
+    notice slides down into its place (the toast closes by itself 10 s after it shows)"""
     video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E03.mp4')
     answer = os.path.join(WORK, 'update-answer.json')
     with open(answer, 'w') as f:
@@ -824,6 +824,8 @@ def check_popup_stack(exe, env):
             time.sleep(0.6)   # past a slide
             r = find('Resume dialog', 2)
             u = find_where(is_update, 2)
+            if not r or not u:
+                raise CheckFailed(f'resume toast {r}, update notice {u}: both expected 0.6 s later')
             shot(f'{tag}-two')
             overlap = not (r[1] >= u[1] + u[3] or u[1] >= r[1] + r[3]
                            or r[0] >= u[0] + u[2] or u[0] >= r[0] + r[2])
@@ -837,14 +839,17 @@ def check_popup_stack(exe, env):
             dc = abs((r[0] + r[2] / 2) - (u[0] + u[2] / 2))
             if dc > 2:
                 raise CheckFailed(f'not on the same center line ({dc:.0f} px apart): {u} / {r}')
-            # the toast goes (a seek answers it): the notice slides down into its place
-            rc('seek 10')
-            time.sleep(1.0)
-            u2 = find_where(is_update, 2)
+            # the toast closes by itself 10 s after it shows (ResumeDialog's timeout): the notice
+            # slides down into its place
+            end = time.time() + 14
+            while find('Resume dialog', 0) and time.time() < end:
+                time.sleep(0.25)
             gone = find('Resume dialog', 0)
-            shot(f'{tag}-after')
             if gone:
-                raise CheckFailed(f'the resume toast still shows after the seek: {gone}')
+                raise CheckFailed(f'the resume toast still shows 14 s later: {gone}')
+            time.sleep(0.6)   # past the slide
+            u2 = find_where(is_update, 2)
+            shot(f'{tag}-after')
             if not u2 or abs((u2[1] + u2[3]) - (r[1] + r[3])) > 2:
                 raise CheckFailed(f'the update notice did not take the toast\'s place: {u2}, toast was {r}')
             return (f'resume toast {r}, update notice {u} above it, {gap} px apart, centers {dc:.0f} px apart; '

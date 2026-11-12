@@ -27,7 +27,11 @@
 // The Up Next card (bottom right) keeps its place: the whole stack moves up above it whenever the
 // widest notice would reach it, so no notice ever covers its Next episode button. The on-screen
 // message has its own place at the top (RdOsdMessage) and the tray popup is its own window.
-// Each notice reports its size while it shows (0 otherwise) and reads its bottom from here.
+// Each notice reports its size while it shows (0 otherwise) and reads its bottom from here. Every
+// value is in the player's coordinates; the notices in the window's overlay (profile, update) map
+// them with overlayX() / overlayBottom(): with client-side decorations the window has a frame
+// margin around the interface (MainCtx.windowExtendedMargin). Only a notice's lift over the ones
+// under it slides; a window resize, fullscreen or a panel moves the whole stack at once.
 pragma Singleton
 
 import QtQml
@@ -56,6 +60,9 @@ QtObject {
 
     // set by Player.qml while the Up Next card shows: its left edge from the window's left
     property real upNextLeft: 0
+
+    // the frame around the interface inside the window (client-side decorations, windowed)
+    readonly property real frameMargin: MainCtx.windowExtendedMargin
 
     readonly property real gap: VLCStyle.dp(10, VLCStyle.scale)
     readonly property real edgeGap: VLCStyle.dp(24, VLCStyle.scale)
@@ -93,15 +100,39 @@ QtObject {
         return Math.max(b, RdPanels.upNextCardTop + gap)
     }
 
+    // the interface's width in an overlay this wide
+    function innerWidth(overlayWidth) {
+        return overlayWidth - 2 * frameMargin
+    }
+
+    // a notice of this width in the window's overlay: its x
+    function overlayX(overlayWidth, noticeWidth) {
+        return Math.round(frameMargin + centerX(innerWidth(overlayWidth)) - noticeWidth / 2)
+    }
+
+    // a notice whose bottom is `bottom` above the interface's bottom: its y in the overlay
+    function overlayY(overlayHeight, noticeHeight, bottom) {
+        return overlayHeight - frameMargin - noticeHeight - bottom
+    }
+
+    // how far a notice sits above the stack's bottom (the notices under it); the part that slides
+    function profileLift() {
+        return resumeHeight > 0 ? resumeHeight + gap : 0
+    }
+
+    function updateLift() {
+        return profileLift() + (profileHeight > 0 ? profileHeight + gap : 0)
+    }
+
     function resumeBottom(windowWidth) {
         return base(windowWidth)
     }
 
     function profileBottom(windowWidth) {
-        return resumeBottom(windowWidth) + (resumeHeight > 0 ? resumeHeight + gap : 0)
+        return base(windowWidth) + profileLift()
     }
 
     function updateBottom(windowWidth) {
-        return profileBottom(windowWidth) + (profileHeight > 0 ? profileHeight + gap : 0)
+        return base(windowWidth) + updateLift()
     }
 }

@@ -844,13 +844,22 @@ function Uia-FindSuffix($hwnd, [string]$suffix, [int]$timeoutMs) {
 # the notices at the bottom stack (redesign/POPUP_STACK_NOTES.md): a file watched to 2:00 opened
 # again with the update notice forced on (CONE_UPDATE_CHECK_TEST_FILE) shows the resume toast and
 # the update notice one above the other, never overlapping, on the same center line, 10 px apart;
-# when the toast goes (a seek answers it) the notice slides down into its place
+# when the toast goes (it closes by itself 10 s after it shows) the notice slides down into its place.
+# The earlier sessions made real update checks: their stored answer is removed first, so this one
+# asks (reads the test file), and the forced answer is removed after it
 function Check-PopupStack([string]$exe) {
     $tag = 'popup-stack'
     $video = Join-Path $Media 'Smoke Show\Smoke Show S01E03.mp4'
     $answer = Join-Path $Out 'update-answer.json'
     '{"tag_name": "v9.9.9", "html_url": "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v9.9.9"}' |
         Set-Content -Path $answer -Encoding ASCII
+    $ini = Join-Path $ZipDir 'ConePlayer-*\portable\Cone\vlc-qt-interface.ini'
+    function Clear-UpdateAnswer {
+        foreach ($f in @(Get-ChildItem $ini -ErrorAction SilentlyContinue)) {
+            $keep = Get-Content $f.FullName | Where-Object { $_ -notmatch '^(AnsweredAt|LatestVersion|ReleasePage|DismissedOn|SkippedVersion)=' }
+            Set-Content -Path $f.FullName -Value $keep -Encoding UTF8
+        }
+    }
     $s = $null
     try {
         # watch to 2:00 of 7:00 and quit: the media library keeps the progress
@@ -869,6 +878,7 @@ function Check-PopupStack([string]$exe) {
         if (-not $s.proc.WaitForExit(15000)) { throw 'the first session did not quit' }
 
         # again, with the update notice forced on
+        Clear-UpdateAnswer
         $log = Join-Path $Out "cone-$tag.log"
         $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
                '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
@@ -896,12 +906,13 @@ function Check-PopupStack([string]$exe) {
             if ($gap -lt 6 -or $gap -gt 14) { throw "$gap px between them (10 expected): $ut / $rt" }
             $dc = [math]::Abs(($rr.Left + $rr.Width / 2) - ($ur.Left + $ur.Width / 2))
             if ($dc -gt 2) { throw "not on the same center line ($([int]$dc) px apart): $ut / $rt" }
-            Rc 'seek 10' | Out-Null
-            Start-Sleep -Milliseconds 1000
+            # the toast closes by itself 10 s after it shows (ResumeDialog's timeout)
+            $sw2 = [Diagnostics.Stopwatch]::StartNew()
+            while ((Uia-Find $s.hwnd 'Resume dialog' 0) -and $sw2.Elapsed.TotalSeconds -lt 14) { Start-Sleep -Milliseconds 250 }
+            if (Uia-Find $s.hwnd 'Resume dialog' 0) { throw 'the resume toast still shows 14 s later' }
+            Start-Sleep -Milliseconds 600   # past the slide
             $u2 = Uia-FindSuffix $s.hwnd ' is available' 2000
-            $gone = Uia-Find $s.hwnd 'Resume dialog' 0
             Shot "$tag-after"
-            if ($gone) { throw 'the resume toast still shows after the seek' }
             if (-not $u2 -or [math]::Abs($u2.Current.BoundingRectangle.Bottom - $rr.Bottom) -gt 2) {
                 throw "the update notice did not take the toast's place (its bottom $(if ($u2) { [int]$u2.Current.BoundingRectangle.Bottom }), the toast's $([int]$rr.Bottom))"
             }
@@ -911,6 +922,7 @@ function Check-PopupStack([string]$exe) {
         Add-Result $tag 'fail' "unexpected error: $($_.Exception.Message)"
     } finally {
         Stop-Cone $s
+        Clear-UpdateAnswer
     }
 }
 

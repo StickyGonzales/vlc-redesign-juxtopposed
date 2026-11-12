@@ -2439,14 +2439,9 @@ FocusScope {
         anchors.horizontalCenterOffset: RdNoticeStack.centerX(rootPlayer.width) - rootPlayer.width / 2
         anchors.bottom: parent.bottom
         // Figma "continue": 24 px above the control bar (visual audit A21), above the Up Next card
-        // when they would meet
+        // when they would meet; the lowest notice, nothing under it to slide over
         anchors.bottomMargin: RdNoticeStack.resumeBottom(rootPlayer.width)
         z: 2
-
-        Behavior on anchors.bottomMargin {
-            enabled: resumeToast.visible
-            NumberAnimation { duration: RdNoticeStack.slideDuration; easing.type: Easing.OutCubic }
-        }
 
         // it hugs its sentence (Figma) and wraps it when the room is narrower
         maxWidth: rootPlayer._toastRoom

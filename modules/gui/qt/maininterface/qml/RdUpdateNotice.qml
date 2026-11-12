@@ -38,22 +38,22 @@ T.Popup {
 
     parent: T.Overlay.overlay
 
-    readonly property real _windowWidth: parent ? parent.width : 0
+    readonly property real _overlayWidth: parent ? parent.width : 0
+    // the interface's width (the window less its frame margin), the stack's coordinates
+    readonly property real _windowWidth: RdNoticeStack.innerWidth(_overlayWidth)
 
-    x: Math.round(RdNoticeStack.centerX(_windowWidth) - width / 2)
-    y: (parent ? parent.height : 0) - height - RdNoticeStack.updateBottom(_windowWidth)
+    // its place over the notices under it: the only part that slides, when one of them comes or
+    // goes; a resize, fullscreen or an open panel moves it at once with the rest of the stack
+    property real _lift: RdNoticeStack.updateLift()
+    Behavior on _lift {
+        enabled: root.opened
+        NumberAnimation { duration: RdNoticeStack.slideDuration; easing.type: Easing.OutCubic }
+    }
+
+    x: RdNoticeStack.overlayX(_overlayWidth, width)
+    y: RdNoticeStack.overlayY(parent ? parent.height : 0, height, RdNoticeStack.base(_windowWidth) + _lift)
     width: Math.min(content.implicitWidth, RdNoticeStack.room(_windowWidth))
     height: VLCStyle.dp(52, VLCStyle.scale)
-
-    // the notices under it come and go: it slides into its new place
-    Behavior on y {
-        enabled: root.opened
-        NumberAnimation { duration: RdNoticeStack.slideDuration; easing.type: Easing.OutCubic }
-    }
-    Behavior on x {
-        enabled: root.opened
-        NumberAnimation { duration: RdNoticeStack.slideDuration; easing.type: Easing.OutCubic }
-    }
 
     readonly property bool _shown: visible && opacity > 0
     Binding {
@@ -65,6 +65,11 @@ T.Popup {
         target: RdNoticeStack
         property: "updateWidth"
         value: root._shown ? root.width : 0
+    }
+    // gone with its view: its place in the stack goes too
+    Component.onDestruction: {
+        RdNoticeStack.updateHeight = 0
+        RdNoticeStack.updateWidth = 0
     }
 
     padding: 0
