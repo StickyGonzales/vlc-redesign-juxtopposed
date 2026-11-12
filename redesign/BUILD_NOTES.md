@@ -341,7 +341,7 @@ Bugs found (row, what differs from Figma / the video, severity, screenshot):
 - P7-14 MED: Settings search "volume" filters the category list to Controls and Audio, but the right pane stays on "Global Settings" and is empty. (sbs_D_search.png)
 - P5-27 MED: mini player bottom row: the queue button follows the artist label instead of sitting at the right edge; long folder / artist labels are not elided. (sbs_L_mini.png)
 - P5-23 / P6-04 MED: with music playing, the compact library resizes the music view (cover re-centred in the remaining area); Figma "Player - Music-1" keeps the cover centred on the window under the panel. (sbs_C_compact_music.png)
-- P7-06 MED: Chapters tab: three wheel notches scroll the list by about 2 px; the first chapter shows "--:--" instead of 00:00:00; times are mm:ss, Figma hh:mm:ss. (sbs_Q_chapters_moana.png, Q12_chapters_wheel.png)
+- P7-06 MED: Chapters tab: three wheel notches scroll the list by about 2 px; the first chapter shows "--:--" instead of 00:00:00; times are mm:ss, Figma hh:mm:ss. (sbs_Q_chapters_film.png, Q12_chapters_wheel.png)
 - P4-17 / IA-38 MED: settings sidebar Audio tab: Stereo Mode dropdown is blank and the accent "Test" button is missing. (sbs_S_side_as.png)
 - P8-47 MED: Customize Player: a control dropped onto the bar has no dashed frame like the others; no insertion marker while dragging; a drop between the next button and the time label is ignored without feedback. (c_K_drag.png, c_K_drag2.png)
 - IB-07 LOW: full library sidebar: the current category icon is orange on one screenshot and filled gray on another of the same page. (L09_season1_grid.png, sbs_L_sidebar_state.png)

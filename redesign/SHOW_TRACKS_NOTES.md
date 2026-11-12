@@ -8,7 +8,7 @@ Branch `wip/show-tracks`, made from `origin/wip/next-test`. Draft pull request i
 - **Applies it to the next episodes** of the show as they start.
 - **By language, not by track position:**
   - the track's **language tag**: `en`, `eng`, `English` and `en-US` are one language;
-  - when it has none, a **language name that is a whole word of the track's title**, e.g. "1Vegamovies.tw - English";
+  - when it has none, a **language name that is a whole word of the track's title**, e.g. "1SiteName.tw - English";
   - a short code in a title is not taken for a language: ".tw" of a web address is not Twi.
 - **No matching track** in an episode: that episode keeps its default.
 - **Subtitles off** is remembered too.
@@ -60,7 +60,7 @@ Branch `wip/show-tracks`, made from `origin/wip/next-test`. Draft pull request i
 |---|---|---|
 | S01E01 | audio Hindi, English; subtitles Hindi, English | defaults Hindi; English audio and subtitles picked → saved `audio eng`, `subtitles eng` |
 | S01E02 | audio Tamil, Hindi, **English**; subtitles Tamil, **English** | English audio (track 3) and English subtitles (track 2) applied |
-| S01E03 | no language tags; "1Vegamovies.tw - Hindi / - English" | English audio and subtitles found by their names |
+| S01E03 | no language tags; "1SiteName.tw - Hindi / - English" | English audio and subtitles found by their names |
 | S01E04 | no English (Hindi + an untagged track) | the defaults stay (Hindi), logged "not in this episode"; subtitles turned off → saved `subtitles off` |
 | Season 2 / S02E01 | audio Spanish, **English**; subtitles English (on by default) | the same show: English audio applied, subtitles off applied |
 | a plain film | Hindi, English | its defaults stay; a pick there is not saved |
@@ -71,12 +71,12 @@ Not run in the sandbox: Forget all in Settings (retest step 6).
 
 ## Windows retest (PC session)
 Build: build-windows #174 (or `gh workflow run build-windows.yml --ref wip/show-tracks`), Cone (portable).
-- **Test folder:** `Show/Season 1/Show S01E01.mkv` … `S01E03`, `Show/Season 2/Show S02E01.mkv`, with Hindi and English audio and subtitles in different orders. The dual-audio files from the report do: "1Vegamovies.tw - Hindi / - English".
+- **Test folder:** `Show/Season 1/Show S01E01.mkv` … `S01E03`, `Show/Season 2/Show S02E01.mkv`, with Hindi and English audio and subtitles in different orders. The dual-audio files from the report do: "1SiteName.tw - Hindi / - English".
 - **A plain film** with two audio tracks.
 
 1. **Pick.** In S01E01, open the audio tracks popup, pick English; open the subtitle tracks popup, pick English.
 2. **Next episode.** Play S01E02, in another track order: English audio and English subtitles are already checked in the popups.
-3. **Names only.** An episode whose tracks have no language, only names ("1Vegamovies.tw - English"): English is checked.
+3. **Names only.** An episode whose tracks have no language, only names ("1SiteName.tw - English"): English is checked.
 4. **Off.** In S01E02, subtitles > None. Play S01E03: no subtitles. Play S02E01 (Season 2): English audio, no subtitles.
 5. **Missing language.** An episode without English audio: its default audio plays, nothing breaks.
 6. **Forget all.** Settings > Playback > Episodes > Remembered shows shows "tracks for 1 show"; Forget all. The next episode starts with its own defaults again.

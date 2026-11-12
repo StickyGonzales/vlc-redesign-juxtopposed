@@ -77,9 +77,9 @@ void testTags()
 
 void testTitles()
 {
-    checkEqual(languageInTitle(s("1Vegamovies.tw - English")), "eng", "the name after a web address");
-    checkEqual(languageInTitle(s("1Vegamovies.tw - Hindi")), "hin", "Hindi");
-    checkEqual(languageInTitle(s("1Vegamovies.tw")), "", "a web address alone: \"tw\" is not Twi");
+    checkEqual(languageInTitle(s("1SiteName.tw - English")), "eng", "the name after a web address");
+    checkEqual(languageInTitle(s("1SiteName.tw - Hindi")), "hin", "Hindi");
+    checkEqual(languageInTitle(s("1SiteName.tw")), "", "a web address alone: \"tw\" is not Twi");
     checkEqual(languageInTitle(s("Track 1 - [English]")), "eng", "VLC's own track name");
     checkEqual(languageInTitle(s("English SDH")), "eng", "with SDH");
     checkEqual(languageInTitle(s("Español (Latinoamérica)")), "spa", "a native name");
@@ -91,8 +91,8 @@ void testTitles()
 
 void testTrackLanguage()
 {
-    checkEqual(trackLanguage(s("eng"), s("1Vegamovies.tw - Hindi")), "eng", "the tag wins over the title");
-    checkEqual(trackLanguage(s(""), s("1Vegamovies.tw - Hindi")), "hin", "no tag: the title");
+    checkEqual(trackLanguage(s("eng"), s("1SiteName.tw - Hindi")), "eng", "the tag wins over the title");
+    checkEqual(trackLanguage(s(""), s("1SiteName.tw - Hindi")), "hin", "no tag: the title");
     checkEqual(trackLanguage(s("und"), s("English")), "eng", "an undetermined tag: the title");
     checkEqual(trackLanguage(s(""), s("Track 2")), "", "neither");
 }
@@ -105,7 +105,7 @@ void testMatch()
     checkEqual(matchTrack(e1, s("eng")), 1, "English is second");
     checkEqual(matchTrack(e2, s("eng")), 0, "English is first");
     // no tags, the language in the names (the reported files)
-    const QVector<Track> e3 = { { s(""), s("1Vegamovies.tw - Hindi") }, { s(""), s("1Vegamovies.tw - English") } };
+    const QVector<Track> e3 = { { s(""), s("1SiteName.tw - Hindi") }, { s(""), s("1SiteName.tw - English") } };
     checkEqual(matchTrack(e3, s("eng")), 1, "by the name");
     // the language is missing
     const QVector<Track> e4 = { { s(""), s("Track 1") }, { s("hin"), s("Hindi") } };

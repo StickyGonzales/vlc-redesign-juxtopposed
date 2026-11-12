@@ -28,7 +28,7 @@
  * get the same one.
  *
  * A track's language is its language tag ("en", "eng", "English", "en-US": all "eng"), or, when
- * it has none, a language name that is a whole word of its title ("1Vegamovies.tw - English").
+ * it has none, a language name that is a whole word of its title ("1SiteName.tw - English").
  * Only names count in a title: a short code there is too often something else (".tw" of a web
  * address is not Twi).
  *
