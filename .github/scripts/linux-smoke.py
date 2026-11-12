@@ -166,6 +166,12 @@ def rc_number(cmd):
     raise CheckFailed(f'no number from "{cmd}"')
 
 
+def client_windows():
+    """the windows the window manager manages (_NET_CLIENT_LIST), as decimal ids like xdotool's"""
+    out = run(['xprop', '-root', '_NET_CLIENT_LIST']).stdout
+    return {str(int(x, 16)) for x in re.findall(r'0x[0-9a-fA-F]+', out)}
+
+
 class Session:
     def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None):
         self.tag = tag
@@ -192,7 +198,12 @@ class Session:
         while time.time() < end:
             if self.proc.poll() is not None:
                 raise CheckFailed(f'Cone exited with {self.proc.returncode} before its window appeared')
-            for w in xdo('search', '--onlyvisible', '--pid', self.proc.pid).split():
+            found = xdo('search', '--onlyvisible', '--pid', self.proc.pid).split()
+            # the window manager's own window for Cone: Qt's inner windows carry the same pid, and
+            # on a slow start (a sanitizer build) the search lists one of them first, which cannot
+            # be activated
+            managed = [w for w in found if w in client_windows()]
+            for w in managed:
                 geo = xdo('getwindowgeometry', w)
                 if 'Geometry:' in geo:
                     width = int(geo.split('Geometry:')[1].split('x')[0])
