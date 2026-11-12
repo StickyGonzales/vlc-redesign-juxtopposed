@@ -27,7 +27,7 @@ it changes.
   allow ("unsigned binaries of upstream OSS projects"). The uninstaller the installer writes on the PC is not
   signed, so removing Cone in Settings > Apps still shows "Unknown publisher".
 - **Each release needs your approval in SignPath twice** (first `Cone.exe`, then the installer, which contains
-  the signed `Cone.exe`). The release workflow waits up to 2 hours for each approval, then fails.
+  the signed `Cone.exe`). The release workflow waits up to 1 hour for each approval, then fails.
 - **Every team member needs two-factor authentication** on GitHub and on SignPath (step 2).
 
 ## 1. Merge the policy page before applying
@@ -153,7 +153,7 @@ variable.
 1. Release as usual (a version tag on `redesign`). The run summary says "Code signing: Cone.exe and the installer
    are signed through SignPath".
 2. SignPath e-mails you twice during the run: open each signing request and **Approve** it. The first is
-   `Cone.exe`, the second (a few minutes later) the installer. Each waits up to 2 hours.
+   `Cone.exe`, the second (a few minutes later) the installer. Each waits up to 1 hour.
 3. When the release is out, download the installer, right-click it > Properties > **Digital Signatures**: it
    lists "SignPath Foundation". Or in PowerShell:
    `Get-AuthenticodeSignature "$env:USERPROFILE\Downloads\coneplayer-<version>-win64.exe" | Format-List Status, SignerCertificate`

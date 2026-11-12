@@ -104,8 +104,10 @@ package-signed)
         exit 1
     fi
     cp "$SIGNED" "$STAGED"
-    make package-win32-exe-staged
+    # the zip first: makensis writes spad-setup.exe into the folder, which the zip's exclude list
+    # does not catch (the normal build makes its zip before any installer too)
     make package-win32-zip-staged BRAND_PACKAGE_SUFFIX="${BRAND_PACKAGE_SUFFIX:-}"
+    make package-win32-exe-staged
     # the folder both packages were made from still holds exactly that Cone.exe (the workflow
     # checks the zip's copy on the runner)
     cmp "$STAGED" "$SIGNED"

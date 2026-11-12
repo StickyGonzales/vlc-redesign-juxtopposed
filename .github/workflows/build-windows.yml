@@ -318,7 +318,7 @@ jobs:
 
       # the signing path: Cone.exe is signed first, then the installer and the zip are made with the
       # signed Cone.exe, then the installer itself is signed; every SignPath request waits for an
-      # approver's manual approval in SignPath (up to 2 hours each)
+      # approver's manual approval in SignPath (up to 1 hour each: two waits and the build stay within the job's 350 minutes)
       - name: Stage the release files for signing
         if: steps.signing.outputs.mode == 'signpath' || steps.signing.outputs.mode == 'dry-run'
         run: |
@@ -347,7 +347,7 @@ jobs:
           artifact-configuration-slug: ${{ vars.SIGNPATH_EXE_CONFIGURATION_SLUG || 'cone-exe' }}
           github-artifact-id: ${{ steps.upload-exe.outputs.artifact-id }}
           wait-for-completion: true
-          wait-for-completion-timeout-in-seconds: 7200
+          wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: sign/signed-exe
           skip-decompress: true
 
@@ -373,6 +373,20 @@ jobs:
           unzip -p "$ZIP" '*/Cone.exe' | cmp - "$SIGNED" \
             || { echo "::error::$ZIP does not hold the signed Cone.exe"; exit 1; }
           echo "Cone.exe in $ZIP: $(sha256sum "$SIGNED" | cut -d' ' -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+          # the smoke checks take the zip that is released: the artifact again, from the new zip
+          rm -rf dist
+          mkdir dist
+          unzip -q "$ZIP" -d dist
+
+      - name: Upload the zip with the signed Cone.exe for the smoke checks
+        if: steps.signing.outputs.mode == 'signpath' || steps.signing.outputs.mode == 'dry-run'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: vlc-redesign-win64-public
+          path: dist/
+          overwrite: true
+          retention-days: 1
 
       - name: Upload the unsigned installer for SignPath
         id: upload-installer
@@ -395,7 +409,7 @@ jobs:
           artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_CONFIGURATION_SLUG || 'cone-installer' }}
           github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
           wait-for-completion: true
-          wait-for-completion-timeout-in-seconds: 7200
+          wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: sign/signed-installer
           skip-decompress: true
 
