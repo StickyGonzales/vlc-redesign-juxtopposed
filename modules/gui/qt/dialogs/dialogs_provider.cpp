@@ -169,6 +169,13 @@ void DialogsProvider::quit()
 {
     if (b_isDying)
         return;
+    /* redesign: Quit in the menu (or any caller) quits like the close button: the windows go at
+     * once and playback stops first (MainCtx::requestQuit), which calls back here to quit */
+    if (p_intf->p_mi != nullptr && !p_intf->p_mi->isClosing())
+    {
+        p_intf->p_mi->requestQuit("Quit");
+        return;
+    }
     b_isDying = true;
     QuitWatchdog::arm(p_intf);
     assert(qApp);

@@ -101,6 +101,8 @@ public static class RdSmoke {
     }, IntPtr.Zero);
     return best;
   }
+  public static bool Visible(IntPtr h) { return IsWindowVisible(h); }
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
 }
 "@
 [RdSmoke]::SetProcessDPIAware() | Out-Null
@@ -774,6 +776,46 @@ function Check-PluginsLoad($s) {
     }
 }
 
+# the quit feels instant (redesign/QUIT_INSTANT_NOTES.md): closed like the window's close button (a
+# WM_CLOSE, no keyboard focus needed), the window is hidden within 0.5 s and the process is gone within
+# the watchdog's 5 s. With CONE_TEST_HANG_QUIT the quit blocks on purpose after the watchdog is armed:
+# only the watchdog can end it, and the process must be gone within 6 s
+function Close-AndTime($s, [string]$what, [double]$limit) {
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    [RdSmoke]::PostMessage($s.hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CLOSE
+    $hidden = $null
+    while ($sw.Elapsed.TotalSeconds -lt $limit + 2) {
+        if ($null -eq $hidden -and -not [RdSmoke]::Visible($s.hwnd)) { $hidden = $sw.Elapsed.TotalSeconds }
+        if ($s.proc.HasExited) { break }
+        Start-Sleep -Milliseconds 25
+    }
+    $gone = if ($s.proc.HasExited) { $sw.Elapsed.TotalSeconds } else { $null }
+    if ($null -eq $gone) { try { $s.proc.Kill() } catch {}; throw "$what`: Cone was still running $([math]::Round($limit + 2, 1)) s after the close" }
+    if ($null -eq $hidden -or $hidden -gt 0.5) { throw "$what`: the window was hidden only after $([math]::Round([double]$hidden, 2)) s (limit 0.5 s)" }
+    if ($gone -gt $limit) { throw "$what`: the process ended after $([math]::Round($gone, 2)) s (limit $limit s)" }
+    "window hidden after $([math]::Round($hidden, 2)) s, process gone after $([math]::Round($gone, 2)) s"
+}
+function Check-QuitInstant([string]$exe) {
+    $video = Join-Path $Media 'test-h264.mp4'; $subs = Join-Path $Media 'test.srt'
+    $s = Start-Cone $exe $video $subs 'quit-instant'
+    try {
+        if (-not (Check-Window $s)) { return }
+        Start-Sleep -Seconds 4
+        Check 'quit-instant: the window goes at once, the process within 5 s' { Close-AndTime $s 'close' $WatchdogSeconds } | Out-Null
+    } finally { Stop-Cone $s }
+    $env:CONE_TEST_HANG_QUIT = '1'
+    try { $s = Start-Cone $exe $video $subs 'quit-hang' } finally { Remove-Item Env:CONE_TEST_HANG_QUIT -ErrorAction SilentlyContinue }
+    try {
+        if (-not (Check-Window $s)) { return }
+        Start-Sleep -Seconds 4
+        Check 'quit-hang: a quit that never finishes is ended by the watchdog within 6 s' {
+            $r = Close-AndTime $s 'hung close' 6
+            if (-not (Select-String -Path $s.log -Pattern 'quit watchdog: Cone did not finish quitting' -SimpleMatch -Quiet)) { throw "$r, but the log has no watchdog line" }
+            "$r (ended by the watchdog)"
+        } | Out-Null
+    } finally { Stop-Cone $s }
+}
+
 # Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode, and that
 # episode is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
 # redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md). The show's 7-minute episodes show the card in their last
@@ -1113,6 +1155,7 @@ if (-not $zipExe) {
     # start, then ended) the runner no longer lets the next Cone take the foreground for a click
     # (build-windows #206)
     Check-UpNextNext $zipExe.FullName
+    Check-QuitInstant $zipExe.FullName
     Check-PopupStack $zipExe.FullName
     Run-FirstStart $zipExe.FullName
     Run-OpenInRunning $zipExe.FullName
