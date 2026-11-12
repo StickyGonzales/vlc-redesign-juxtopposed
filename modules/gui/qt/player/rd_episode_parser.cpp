@@ -481,6 +481,97 @@ int seasonFolderNumber(const QString& folderName)
     return -1;
 }
 
+// words that end a show's name in a release folder's name, besides the release tags: release
+// sites and groups, and what a season pack adds ("Complete", "Multi Subs"); only for
+// displayName(), never for episode titles ("The Complete Story")
+static const QSet<QString>& folderNameNoise()
+{
+    static const QSet<QString> words {
+        "tgx", "psa", "rartv", "torrentgalaxy", "galaxyrg", "msd", "ntb", "ion10", "dvdscr", "cam",
+        "hdcam", "subbed", "dubbed", "multi", "dual", "complete", "multisub", "multisubs", "esub",
+        "esubs", "subs"
+    };
+    return words;
+}
+
+QString displayName(const QString& folderName)
+{
+    // sites in front ("www.Site.org - Show.S01"), then everything clean() makes plain
+    static const QRegularExpression site(QStringLiteral(
+        "\\b(?:www\\.)?[a-z0-9-]+\\.(?:com|org|net|to|tv|se|me|info|cc|io|xyz|ws|lol|nz|ru)\\b\\s*-?\\s*"), caseless);
+    static const QRegularExpression marker(QStringLiteral(
+        "^(?:s\\d{1,2}(?:[-e]\\S*)?|e\\d{2,3}|\\d{1,2}x\\d{2,3}|ep\\d{1,3})$"), caseless);
+    static const QSet<QString> seasonWords { "season", "seasons", "series", "staffel", "saison", "temporada" };
+
+    QString text = folderName;
+    text.remove(site);
+    const QStringList tokens = clean(text).split(QChar(' '), Qt::SkipEmptyParts);
+
+    QStringList kept;
+    for (qsizetype i = 0; i < tokens.size(); ++i)
+    {
+        const QString& t = tokens.at(i);
+        const QString lower = t.toLower();
+        // the season or episode marker ("S01", "S01E02", "S01-S03", "1x02", "Season 1") ends the
+        // name, so does a year ("Doctor Who 2005", but "1883" alone stays) and the first
+        // release tag ("1080p", "WEBRip", "x265-GRP")
+        if (marker.match(t).hasMatch())
+            break;
+        // "Season 1", "Series 2" (but "The Series", "A Series of ..." are names)
+        if (seasonWords.contains(lower) && i + 1 < tokens.size() && isNumber(tokens.at(i + 1)))
+            break;
+        // the name comes first: a tag word opens no cut ("Web Therapy", "Cam Girl", "1883")
+        if (kept.isEmpty())
+        {
+            kept.append(t);
+            continue;
+        }
+        if (isYear(lower) || isNoise(lower))
+            break;
+        // a pack's words cut only before what a pack adds ("The.Wand.Complete.Series.1080p",
+        // "Complete 720p"), not inside a name ("The Complete Story")
+        if (folderNameNoise().contains(lower.section(QChar('-'), 0, 0)))
+        {
+            const QString following = i + 1 < tokens.size() ? tokens.at(i + 1).toLower() : QString();
+            if (following.isEmpty() || marker.match(following).hasMatch() || seasonWords.contains(following)
+                    || isNoise(following) || isYear(following) || folderNameNoise().contains(following))
+                break;
+        }
+        kept.append(t);
+    }
+    // dashes left at the end ("Show - S01" -> "Show")
+    while (!kept.isEmpty() && QStringView(kept.last()).trimmed().toString().remove(QChar('-')).isEmpty())
+        kept.removeLast();
+    if (!kept.isEmpty())
+    {
+        // runs of single letters get the dots of an abbreviation back ("S W A T" -> "S.W.A.T.")
+        QStringList joined;
+        QString letters;
+        for (const QString& word : kept)
+        {
+            if (word.size() == 1 && word.at(0).isLetter())
+            {
+                letters += word + QChar('.');
+                continue;
+            }
+            if (!letters.isEmpty())
+            {
+                joined.append(letters.size() > 2 ? letters : letters.left(1));
+                letters.clear();
+            }
+            joined.append(word);
+        }
+        if (!letters.isEmpty())
+            joined.append(letters.size() > 2 ? letters : letters.left(1));
+        const QString name = joined.join(QChar(' ')).trimmed();
+        if (!name.isEmpty())
+            return name;
+    }
+    // nothing left (only tags): the folder name with dots and underscores as spaces
+    const QString plain = clean(folderName);
+    return plain.isEmpty() ? folderName : plain;
+}
+
 bool isSpecialsFolder(const QString& folderName)
 {
     return seasonFolderNumber(folderName) == 0;
@@ -567,7 +658,8 @@ Show detect(const QString& filePath, const Options& options)
         show.root = folderPath;
         folders.append({ folderPath, -1 });
     }
-    show.name = QFileInfo(show.root).fileName();
+    const QString rootName = QFileInfo(show.root).fileName();
+    show.name = displayName(rootName);
 
     int audioFiles = 0;
     int videoFiles = 0;
@@ -625,7 +717,7 @@ Show detect(const QString& filePath, const Options& options)
     if (now.strength == Strength::Weak && now.stem.isEmpty())
     {
         // the folder supplies the title ("Anime/01.mkv"), not "Downloads" or "2024"
-        const QString title = plainWords(show.name);
+        const QString title = plainWords(rootName);
         if (title.isEmpty() || isNumber(QString(title).remove(QChar(' '))) || genericFolders().contains(title)
                 || seasonFolderNumber(title) >= 0)
             return fail("no show title");

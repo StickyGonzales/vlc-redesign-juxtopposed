@@ -22,7 +22,8 @@
 // reads as in "Settings - subtitles", and built like its text rows ("Font", and the empty fields of
 // "Settings - network": 320x36, value in FG/A2, 38 px line). The source stays off until an API
 // key is entered; the username and password are optional and raise the daily download quota.
-// Kept by AddSubtitles in the interface's settings, applied when a field is left.
+// Kept by AddSubtitles in the interface's settings, saved as they are typed (a key pasted and the
+// Settings window closed at once was lost, StickyGonzales 2026-11-11) and trimmed when a field is left.
 import QtQuick
 
 import VLC.MainInterface
@@ -59,6 +60,7 @@ SettingsSection {
             committedText: AddSubtitles.apiKey
             echoMode: TextInput.Password
             Accessible.name: qsTr("OpenSubtitles API key")
+            onTextEdited: AddSubtitles.apiKey = text
             onEditingFinished: AddSubtitles.apiKey = text.trim()
         }
     }
@@ -73,6 +75,7 @@ SettingsSection {
             text: AddSubtitles.username
             committedText: AddSubtitles.username
             Accessible.name: qsTr("OpenSubtitles username")
+            onTextEdited: AddSubtitles.username = text
             onEditingFinished: AddSubtitles.username = text.trim()
         }
     }
@@ -88,6 +91,7 @@ SettingsSection {
             committedText: AddSubtitles.password
             echoMode: TextInput.Password
             Accessible.name: qsTr("OpenSubtitles password")
+            onTextEdited: AddSubtitles.password = text
             onEditingFinished: AddSubtitles.password = text
         }
     }

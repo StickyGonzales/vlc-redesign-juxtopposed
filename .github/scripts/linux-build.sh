@@ -127,6 +127,9 @@ build()
     # public: no skins interface (Cone has only the redesign); the update checker is off on
     # Linux anyway (configure's default)
     if [ "$VLC_BRAND" = public ]; then extra+=(--disable-skins2); fi
+    # Wayland is required: without it configure only warns and Cone has no video inside its window
+    # on a Wayland desktop (#116, redesign/LINUX_WAYLAND_EMBED_NOTES.md)
+    extra+=(--enable-wayland)
 
     ./bootstrap
     mkdir -p build-linux

@@ -134,9 +134,34 @@ jobs:
       # Ubuntu 22.04, its libraries and the official Qt 6.8.3 (aqtinstall): about 5 minutes
       - name: Build image
         run: |
+          # From the runners archive.ubuntu.com and security.ubuntu.com stopped resolving
+          # (build-linux #106-#112: "Could not resolve", then every package "Unable to locate").
+          # The image's apt uses the runner's own Ubuntu mirror instead (Azure's copy of the archive,
+          # listed in the runner's ubuntu.sources or sources.list; jammy.Dockerfile, UBUNTU_MIRROR),
+          # the build runs on the runner's network (--network host), and a failed attempt shows
+          # apt's own errors
+          # (the runner image names its mirrors in apt-mirrors.txt, used as "mirror+file:" sources;
+          # kernel.org's full Ubuntu mirror, security included, is the last choice)
+          MIRROR=
+          for m in $(cat /etc/apt/apt-mirrors.txt 2>/dev/null | cut -f1) \
+                   $(grep -hoE 'https?://[^ ]*azure\.archive\.ubuntu\.com/ubuntu/?' \
+                       /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null) \
+                   http://mirrors.edge.kernel.org/ubuntu/; do
+            h=$(echo "$m" | cut -d/ -f3)
+            if getent hosts "$h" > /dev/null; then echo "resolves: $h"; [ -z "$MIRROR" ] && MIRROR="${m%/}/"
+            else echo "does not resolve: $h"; fi
+          done
+          for h in archive.ubuntu.com security.ubuntu.com; do
+            getent hosts "$h" > /dev/null && echo "resolves: $h" || echo "does not resolve: $h"
+          done
+          echo "Ubuntu archive for the image: ${MIRROR:-archive.ubuntu.com (no runner mirror resolves)}" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
           for i in 1 2 3; do
-            docker build -q -t "$VLC_IMAGE" -f .github/linux/jammy.Dockerfile .github/linux && break
-            echo "::warning::image build attempt $i failed"
+            docker build --network host --progress=plain --build-arg UBUNTU_MIRROR="$MIRROR" -t "$VLC_IMAGE" \
+              -f .github/linux/jammy.Dockerfile .github/linux > image-build.log 2>&1 && break
+            echo "::warning::image build attempt $i failed; the end of its log:"
+            grep -E ' (Err:|W:|E:|Ign:|Hit:|Get:[0-9]+ http[^ ]* [a-z-]+ (InRelease|Release))' image-build.log | head -n 60
+            tail -n 40 image-build.log
             [ "$i" = 3 ] && exit 1
             sleep 20
           done

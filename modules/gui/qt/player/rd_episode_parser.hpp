@@ -80,6 +80,12 @@ int seasonFolderNumber(const QString& folderName);
 // Season 0 / S00 / Specials
 bool isSpecialsFolder(const QString& folderName);
 
+// the show's name to display, out of its folder's name ("Some.Show.S01.1080p.WEBRip.x265-GRP" ->
+// "Some Show", "Doctor Who (2005)" -> "Doctor Who"): cut at the season / episode marker or the
+// year, without release tags, groups, sites and brackets, dots and underscores made spaces;
+// the folder name itself when nothing is left. Pure function
+QString displayName(const QString& folderName);
+
 struct Options
 {
     // library music folders: anything inside never counts
@@ -97,7 +103,7 @@ struct Show
     QString reason;
     // show root folder (parent of the season folder, or the episode's folder)
     QString root;
-    // display name: the root folder's name ("The Wand")
+    // display name: the root folder's name, cleaned (displayName: "The Wand")
     QString name;
     // the show's episodes in play order (season, episode, then natural file name); specials
     // folders are left out unless the current file is in one (then only that folder)

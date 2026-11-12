@@ -118,3 +118,46 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 |---|---|---|
 | `wip/up-next-credits-scan` | `8700961a25c9a5a292a76697660840f7e894161f` | PR #107 merged into wip/next-test |
 | `wip/stage-107` | `4521447d8737a9ac6d75de78ee144fb585bc79b5` | test build of #107 merged onto wip/next-test, merged into wip/next-test |
+
+## 2026-11-08, Cone Player 1.3.0 released (CLAUDE.md branch rule)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/autosync-undo-message` | `905e3441b4ded2ab5feb44e229a8d4f97cb43088` | PR #110 merged, released in 1.3.0 |
+| `wip/linux-live-usb-checklist` | `2d4519eda05d6027756ff03b0d91814684aec3e6` | PR #111 merged, released in 1.3.0 |
+| `wip/linux-glibc-235` | `e297350badaeece4944612d777e8639453b0c4bf` | PR #112 merged, released in 1.3.0 |
+| `wip/up-next-card-tune` | `d94ad689a7cba1c750055617946b4a82edbd3a64` | Up Next card tune merged, released in 1.3.0 |
+| `wip/round-1.3.0` | `16ea09558ff577963d7fcc7d7f6d5308d731b6b3` | the 1.3.0 test build, merged |
+
+## 2026-11-11, StickyGonzales' decision on the unmerged branches
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/a839e9d9ddb97595a` | `0623e3febd6d594815f436a4b098edd0bbf534d8` | old notes branch (subtitle speed stall, slider audit), StickyGonzales chose delete |
+| `wip/beta-gate` | `277560ec9f77869f7a2bc15672df7ba0fef9bd80` | beta gate harness branch, StickyGonzales chose delete |
+| `wip/code-audit` | `1c8fe5a62714dccd0e827edae8d3bfab56a13769` | CODE_AUDIT notes, StickyGonzales chose delete |
+| `wip/verify-harness` | `43961c6b60b73cc4e0c1e34917d1d25966f828fc` | verify harness branch, StickyGonzales chose delete |
+| `wip/verify-linux` | `771aae56f7db41cc822eb56d0a85877b1888610d` | LINUX_VERIFY notes, StickyGonzales chose delete |
+| `wip/verify-sheets` | `b07ef7ea3be16e89a912171f30a4382fb523fe68` | verify sheets notes, StickyGonzales chose delete |
+| `wip/fix-deb-asset-name` | `e8d509b9a2a755ab79a3e4cd258ffe6f8b420593` | PR #89 merged; leftover notes commit, StickyGonzales chose delete |
+| `wip/fix-pause-rate-clock` | `f29fc12a3d522d19cba72dbece78778e94cd3e17` | the #52 fix and FIX_PAUSE_RATE_NOTES.md (with the draft reply) are in wip/next-test through PR #55; StickyGonzales chose delete |
+| `wip/fix-visualizer` | `5ef8dcec493b39508b18bf937b0123ad53c13e6e` | window title already in wip/next-test ("Cone Player"); the ICC-profile hang theory was never confirmed and the white visualizer / slow quit were fixed by the HEVC surface and Spectrometer fixes (2026-10-25); StickyGonzales chose delete, no retest |
+
+## 2026-11-11, PC fixes merged
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/pc-fixes-1.3.1` | `bf9e459369c3fdb210674c75a16ab3fee04ce2dd` | merged into wip/next-test (settings on update, account saved as typed, volume in movie mode) |
+| `wip/up-next-plan` | `b8309be9992b5d379233b37a1ff12938a8d5b06d` | PR #44 closed (everything in it shipped in 1.1.0 to 1.3.0); StickyGonzales chose delete |
+| `wip/seekbar-wheel` | `fb097056997b6c2bf76cdefa71bc6b35d35775a1` | merged into wip/next-test (wheel seeking on the timeline) |
+
+## 2026-11-11, Linux fixes, Flatpak, Flathub prep and AUR merged
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-linux-jammy-image` | `29e7f9de3ce6de7eccf87159514b6995ca127792` | PR #119 merged (Linux build image) |
+| `wip/fix-linux-wayland-embed` | `5cf3e27ed88a285a8c1e6a3a79b11f6d34e735c9` | PR #120 merged (Wayland embed, #116) |
+| `wip/linux-flatpak` | `9a212bdb2f4175bb5439cc7b9f73d11c2c63e679` | PR #114 merged (Flatpak) |
+| `wip/flathub-prep` | `e289f8e85c6cac41573253f3d9dccf242eb01062` | PR #115 merged (Flathub prep) |
+| `wip/aur-cone-player-bin` | `ed5664bf02537cf11564c5394036e3a64596e8da` | PR #113 merged (AUR package) |
+| `wip/round-linux-1.4.0` | `3cfbf2f0c2b804bc95058a1780b533cb4b65a541` | the combined test build of the five, merged into wip/next-test |

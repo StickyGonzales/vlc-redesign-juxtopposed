@@ -627,15 +627,12 @@ void MainCtx::onVOutChanged( bool video )
 #ifdef KeyPress
 #undef KeyPress
 #endif
-#ifdef VLC_BRAND_PUBLIC
-/* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the "Toggle fullscreen" key (F) of a
- * fullscreen window leaves it, however it was entered. VLC's own handling toggles the video's
- * fullscreen only: after the top bar's button had made the window fullscreen through the
- * interface, the first F turned the video's fullscreen on (nothing to see) and only a second F
- * left (PC test, 2026-11-08) */
-static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
+
+/* redesign: true when the VLC key code is one of the keys set for the option (a tab
+ * separated list, like "key-vol-up") */
+static bool isActionKey(vlc_object_t* obj, const char* option, int vlckey)
 {
-    char* keys = var_InheritString(obj, "key-toggle-fullscreen");
+    char* keys = var_InheritString(obj, option);
     if (!keys)
         return false;
     bool match = false;
@@ -644,6 +641,29 @@ static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
         match = vlc_str2keycode(key) == uint_fast32_t(vlckey);
     free(keys);
     return match;
+}
+
+/* redesign (StickyGonzales, 2026-11-11): a volume key (up, down, mute) changes the volume and
+ * shows its on-screen message, but not the top bar and the control bar (Player.qml) */
+bool MainCtx::isVolumeKey(int key, int modifiers) const
+{
+    // the arrows carry the keypad modifier on Windows; the key options never name it
+    QKeyEvent event(QEvent::KeyPress, key, Qt::KeyboardModifiers(modifiers) & ~Qt::KeypadModifier);
+    const int vlckey = qtEventToVLCKey(&event);
+    vlc_object_t* obj = VLC_OBJECT(p_intf);
+    return isActionKey(obj, "key-vol-up", vlckey) || isActionKey(obj, "key-vol-down", vlckey)
+        || isActionKey(obj, "key-vol-mute", vlckey);
+}
+
+#ifdef VLC_BRAND_PUBLIC
+/* redesign (redesign/FIX_FULLSCREEN_EXIT_NOTES.md): the "Toggle fullscreen" key (F) of a
+ * fullscreen window leaves it, however it was entered. VLC's own handling toggles the video's
+ * fullscreen only: after the top bar's button had made the window fullscreen through the
+ * interface, the first F turned the video's fullscreen on (nothing to see) and only a second F
+ * left (PC test, 2026-11-08) */
+static bool isToggleFullscreenKey(vlc_object_t* obj, int vlckey)
+{
+    return isActionKey(obj, "key-toggle-fullscreen", vlckey);
 }
 #endif
 
@@ -656,6 +676,16 @@ void MainCtx::sendHotkey(Qt::Key key , Qt::KeyboardModifiers modifiers)
 
 void MainCtx::sendVLCHotkey(int vlcHotkey)
 {
+    /* redesign (redesign/FIX_CTRLQ_QUIT_NOTES.md): the quit key (Ctrl+Q) quits like the
+     * window's close button. While the player prefers hotkeys, its keys reach
+     * VLC's hotkeys before Qt's shortcuts, and the hotkeys module's quit called libvlc_Quit()
+     * directly: no saved state and no quit watchdog, so a quit that stalled left Cone running
+     * with its window (ended by hand after about 40 s, PC tests 2026-11-08 and 2026-11-11) */
+    if (isActionKey(VLC_OBJECT(p_intf), "key-quit", vlcHotkey))
+    {
+        quitLikeClose();
+        return;
+    }
 #ifdef VLC_BRAND_PUBLIC
     if (m_windowVisibility == QWindow::FullScreen && isToggleFullscreenKey(VLC_OBJECT(p_intf), vlcHotkey))
     {
@@ -1093,10 +1123,21 @@ namespace {
 constexpr int kCloseStopTimeoutMs = 3000;
 }
 
+void MainCtx::quitLikeClose()
+{
+    onWindowClose(nullptr);
+}
+
 void MainCtx::onWindowClose( QWindow* )
 {
     PlaylistController* playlistController = p_intf->p_mainPlaylistController;
     PlayerController* playerController = p_intf->p_mainPlayerController;
+
+    // redesign: one close: a second one (the close button after Ctrl+Q, a repeated key) would
+    // stop again and start a second timer
+    if (m_closing)
+        return;
+    m_closing = true;
 
     // redesign: the quit starts here (the stop below can hang in the core): save and arm
     QuitWatchdog::arm(p_intf);

@@ -60,6 +60,32 @@ T.ProgressBar {
     Accessible.onIncreaseAction: Player.jumpFwd()
     Accessible.onDecreaseAction: Player.jumpBwd()
 
+    // redesign (StickyGonzales, 2026-11-11, an exception to Decision 54 for this bar only): the
+    // wheel over the bar seeks, one notch (120) a short jump (10 s, as Alt+Right), up or away
+    // forward; touchpad scrolls add up to whole notches. The control bar still takes the wheel
+    // everywhere else, so it never reaches the video behind it
+    property real _wheelRest: 0
+
+    WheelHandler {
+        target: null
+        enabled: control.enabled
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+
+        onWheel: (event) => {
+            event.accepted = true
+            const delta = event.angleDelta.y !== 0 ? event.angleDelta.y : -event.angleDelta.x
+            control._wheelRest += delta
+            while (control._wheelRest >= 120) {
+                Player.jumpFwd()
+                control._wheelRest -= 120
+            }
+            while (control._wheelRest <= -120) {
+                Player.jumpBwd()
+                control._wheelRest += 120
+            }
+        }
+    }
+
     function showChapterMarks() {
         _isSeekPointsShown = true
         seekpointTimer.restart()

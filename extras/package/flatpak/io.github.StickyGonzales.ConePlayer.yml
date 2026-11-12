@@ -1,0 +1,205 @@
+# Cone Player as a Flatpak (redesign/FLATPAK_NOTES.md): a first step toward Flathub, nothing is
+# submitted. Built by .github/workflows/build-flatpak.yml (flatpak-builder in Flathub's KDE 6.10
+# image), or by hand from the repository root:
+#   flatpak-builder --user --install --force-clean build-flatpak \
+#     extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml
+#   flatpak run io.github.StickyGonzales.ConePlayer
+# The KDE runtime brings Qt 6.10 (the Qt the other Linux builds use from Debian); the libraries
+# VLC needs that the runtime lacks are built below. Cone itself is built from this checkout
+# (type: dir); a Flathub submission would point at a release tag instead.
+app-id: io.github.StickyGonzales.ConePlayer
+runtime: org.kde.Platform
+runtime-version: '6.10'
+sdk: org.kde.Sdk
+command: cone
+# Sandbox permissions, each one what a media player needs (redesign/SUBMIT_TO_FLATHUB.md):
+finish-args:
+  # display: Wayland, X11 only where there is no Wayland; ipc for X11's shared memory
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  # OpenGL / Vulkan rendering and VA-API / VDPAU hardware video decoding
+  - --device=dri
+  # sound (PipeWire systems answer through pipewire-pulse)
+  - --socket=pulseaudio
+  # network streams (Open Network Stream), podcasts, OpenSubtitles downloads
+  - --share=network
+  # the media folders: the library scans them; downloaded subtitles are saved next to the video
+  # (Videos, Downloads) and snapshots go to Pictures. Music is only read. Every other file comes
+  # through the file chooser portal, "Open with" or drag and drop
+  - --filesystem=xdg-videos
+  - --filesystem=xdg-download
+  - --filesystem=xdg-pictures
+  - --filesystem=xdg-music:ro
+  # USB drives and discs, read only
+  - --filesystem=/media:ro
+  - --filesystem=/run/media:ro
+  # the desktop's media controls and media keys (MPRIS); the same name lets a second start hand
+  # its file to the window already open
+  - --own-name=org.mpris.MediaPlayer2.cone
+  # no screen saver or screen lock while a video plays
+  - --talk-name=org.freedesktop.ScreenSaver
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /share/man
+  - /share/doc
+  - '*.la'
+  - '*.a'
+modules:
+  # VLC's scripts (playlist parsers, extensions); VLC's contrib takes the same version
+  - name: lua
+    buildsystem: simple
+    cleanup:
+      - /bin
+      - /man
+    build-commands:
+      - make -j"$FLATPAK_BUILDER_N_JOBS" linux MYCFLAGS="-fPIC"
+      - make install INSTALL_TOP=/app
+      - |
+        mkdir -p /app/lib/pkgconfig
+        cat > /app/lib/pkgconfig/lua.pc <<PC
+        prefix=/app
+        libdir=\${prefix}/lib
+        includedir=\${prefix}/include
+        Name: Lua
+        Description: Lua language engine
+        Version: 5.4.4
+        Libs: -L\${libdir} -llua -lm -ldl
+        Cflags: -I\${includedir}
+        PC
+    sources:
+      - type: archive
+        url: https://www.lua.org/ftp/lua-5.4.4.tar.gz
+        mirror-urls:
+          - https://downloads.videolan.org/pub/contrib/lua/lua-5.4.4.tar.gz
+        sha256: 164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61
+
+  # FFmpeg: the runtime's build leaves out most video decoders; VLC decodes through it
+  - name: ffmpeg
+    config-opts:
+      - --enable-gpl
+      - --enable-shared
+      - --disable-static
+      - --disable-programs
+      - --disable-doc
+      - --enable-postproc
+      - --enable-libdav1d
+      - --enable-vaapi
+    cleanup:
+      - /share/ffmpeg
+    sources:
+      - type: git
+        url: https://github.com/FFmpeg/FFmpeg.git
+        tag: n7.1.2
+        commit: f893221c8d89cb798b829bebe71d55e1a3f242fd
+
+  # Matroska (MKV, WebM)
+  - name: libebml
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+      - -DCMAKE_BUILD_TYPE=Release
+      # its CMakeLists asks for CMake 3.1, which CMake 4 (the SDK's) refuses without this
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    sources:
+      - type: git
+        url: https://github.com/Matroska-Org/libebml.git
+        tag: release-1.4.5
+        commit: 1878e784321673561039a6a37076b2736f4dc98f
+  - name: libmatroska
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_SHARED_LIBS=ON
+      - -DCMAKE_BUILD_TYPE=Release
+      # its CMakeLists asks for CMake 3.1, which CMake 4 (the SDK's) refuses without this
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    sources:
+      - type: git
+        url: https://github.com/Matroska-Org/libmatroska.git
+        tag: release-1.7.1
+        commit: f5315fddda2d434e47035c038549a808d8b8eac7
+
+  # MPEG-TS (broadcast recordings, Blu-ray rips): the release tarball (its git tree's bootstrap
+  # cannot read the SDK's automake version) with the fixes VLC's contrib applies (packet length
+  # checks; contrib/src/dvbpsi, the same tarball and checksum)
+  - name: libdvbpsi
+    config-opts:
+      - --disable-static
+    sources:
+      - type: archive
+        url: https://download.videolan.org/pub/libdvbpsi/1.3.3/libdvbpsi-1.3.3.tar.bz2
+        sha256: 02b5998bcf289cdfbd8757bedd5987e681309b0a25b3ffe6cebae599f7a00112
+      - type: patch
+        paths:
+          - ../../../contrib/src/dvbpsi/dvbpsi-noexamples.patch
+          - ../../../contrib/src/dvbpsi/0001-really-identify-duplicates.patch
+          - ../../../contrib/src/dvbpsi/0002-really-reset-packet-counter.patch
+          - ../../../contrib/src/dvbpsi/0001-dvbpsi_packet_push-compute-sizes-using-pointer-to-en.patch
+          - ../../../contrib/src/dvbpsi/0002-dvbpsi_packet_push-check-adaptation-field-length.patch
+          - ../../../contrib/src/dvbpsi/0003-dvbpsi_packet_push-check-section-pointers-field.patch
+          - ../../../contrib/src/dvbpsi/0004-dvbpsi_packet_push-check-section-length.patch
+
+  # styled subtitles (ASS / SSA)
+  - name: libass
+    buildsystem: meson
+    sources:
+      - type: git
+        url: https://github.com/libass/libass.git
+        tag: 0.17.3
+        commit: e46aedea0a0d17da4c4ef49d84b94a7994664ab5
+
+  # the media library (Home, Music, Recent, Continue Watching); VLC's contrib takes the same
+  # version, linked into its media library plugin
+  - name: medialibrary
+    buildsystem: meson
+    config-opts:
+      - -Ddefault_library=static
+      - -Dlibvlc=disabled
+      - -Dlibtool_workaround=true
+      - -Dtests=disabled
+    sources:
+      - type: archive
+        url: https://downloads.videolan.org/pub/contrib/medialibrary/medialibrary-0.13.2.tar.bz2
+        sha256: acda95dae8f357cf1ea6c71ac3979235555dae5fef5d33d218d14d1e5d729682
+
+  - name: cone
+    buildsystem: simple
+    build-options:
+      # the Flatpak's own desktop ID for the window (Wayland app id, X11 class), the media
+      # controls and the sound mixer (modules/gui/qt/util/brand.hpp)
+      cppflags: -DCONE_DESKTOP_ID=io.github.StickyGonzales.ConePlayer
+    build-commands:
+      # BUILDCC: the compiler for VLC's build-time helpers (the SDK has no c99 wrapper)
+      - ./bootstrap
+      - >-
+        BUILDCC=gcc QMAKE6="$(command -v qmake6 || command -v qmake)" ./configure --prefix=/app
+        --with-brand=public --with-brand-version=1.2.0 --disable-debug --disable-skins2
+      - make -j"$FLATPAK_BUILDER_N_JOBS"
+      - make install
+      # the plugin cache, as VLC's packages ship it
+      - "$(find /app -name vlc-cache-gen -type f | head -n 1) /app/lib/vlc/plugins"
+      - CONE_FLATPAK_DIR=cone-flatpak sh cone-flatpak/install-desktop.sh /app
+    sources:
+      - type: dir
+        path: ../../..
+        skip:
+          - build-linux
+          - build-flatpak
+          - stage
+          - linux
+          - contrib/linux-ml
+          - contrib/linux-ml-build
+          - contrib/linux-pp
+          - .ccache
+          - .flatpak-builder
+      # the copied tree leaves out this manifest's folder, so its files come in on their own
+      - type: file
+        path: install-desktop.sh
+        dest: cone-flatpak
+      - type: file
+        path: cone
+        dest: cone-flatpak
+      - type: file
+        path: io.github.StickyGonzales.ConePlayer.metainfo.xml
+        dest: cone-flatpak

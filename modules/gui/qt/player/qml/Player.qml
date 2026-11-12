@@ -323,6 +323,14 @@ FocusScope {
 
         _keyPressed = true
 
+        // maximized or fullscreen (StickyGonzales' movie mode, 2026-11-11): a volume key while the bars
+        // are hidden changes the volume only, with no keyboard navigation into a bar
+        if (controlBar.state !== "visible" && rootPlayer._volumeKeyHidesNoBars(event)) {
+            MainCtx.sendHotkey(event.key, event.modifiers)
+            event.accepted = true
+            return
+        }
+
         rootPlayer.Navigation.defaultKeyAction(event)
 
         //unhandled keys are forwarded as hotkeys
@@ -353,6 +361,19 @@ FocusScope {
     }
 
     // Functions
+
+    // StickyGonzales' movie mode (2026-11-11): maximized or fullscreen, Up / Down (Cone's volume
+    // keys over the video) and the keys set for volume up, down and mute change the volume without
+    // showing the bars. The arrows carry the keypad modifier on Windows: it is ignored
+    function _volumeKeyHidesNoBars(event) {
+        const visibility = MainCtx.intfMainWindow.visibility
+        if (visibility !== Window.Maximized && visibility !== Window.FullScreen)
+            return false
+        const modifiers = event.modifiers & ~Qt.KeypadModifier
+        if ((event.key === Qt.Key_Up || event.key === Qt.Key_Down) && modifiers === Qt.NoModifier)
+            return true
+        return MainCtx.isVolumeKey(event.key, modifiers)
+    }
 
     function lockUnlockAutoHide(lock) {
         if (lock) {
@@ -582,10 +603,19 @@ FocusScope {
                     // (redesign/FIX_CURSOR_HIDE_NOTES.md). Only the topmost item with a cursor
                     // under the pointer sets it: the items above the video leave it unset
                     // (panelDismissArea below)
+                    // The bars stay twice as long after a key (keyboard mode, for moving
+                    // through the controls); the pointer does not wait for that: it hides on
+                    // the normal delay after the last mouse move, key or start of playback
+                    // (pointerIdleTimer), so after Space resumes it goes in about 3 s, not 6 s
+                    // (redesign/FIX_POINTER_RESUME_NOTES.md)
                     Binding on cursorShape {
                         when: Player.playingState === Player.PLAYING_STATE_PLAYING
                             && playerToolbarVisibilityFSM.started
-                            && !playerToolbarVisibilityFSM.isVisible
+                            && (!playerToolbarVisibilityFSM.isVisible
+                                || (playerToolbarVisibilityFSM.keyboardShown
+                                    && !playerToolbarVisibilityFSM.isLocked
+                                    && !playerToolbarVisibilityFSM.pinned
+                                    && !pointerIdleTimer.running))
                             && !interactiveAutoHideTimer.running
                             && !rootPlayer._mouseNearTop && !rootPlayer._mouseNearBottom
                             && (!Brand.isPublic
@@ -1770,6 +1800,30 @@ FocusScope {
         interval: 3000
     }
 
+    // the pointer's own idle time (Binding on cursorShape above): the bars' normal delay, from
+    // the last mouse move, key, or start of playback
+    Timer {
+        id: pointerIdleTimer
+        repeat: false
+        interval: playerToolbarVisibilityFSM.hideDelay
+    }
+
+    Connections {
+        target: playerToolbarVisibilityFSM
+
+        function onMouseMove() { pointerIdleTimer.restart() }
+        function onKeyboardMove() { pointerIdleTimer.restart() }
+    }
+
+    Connections {
+        target: Player
+
+        function onPlayingStateChanged() {
+            if (Player.playingState === Player.PLAYING_STATE_PLAYING)
+                pointerIdleTimer.restart()
+        }
+    }
+
     NavigationBox {
         id: navBox
         visible: Player.isInteractive && navBox.show
@@ -2477,6 +2531,10 @@ FocusScope {
     target: MainCtx.intfMainWindow
 
         Keys.onPressed: (event) => {
+            // maximized or fullscreen: a volume key changes the volume and shows its message, not
+            // the bars (StickyGonzales, 2026-11-11); in a window any key shows them as before
+            if (!Player.isInteractive && rootPlayer._volumeKeyHidesNoBars(event))
+                return
             if (Player.isInteractive)
                 interactiveAutoHideTimer.restart()
             else

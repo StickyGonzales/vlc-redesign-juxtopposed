@@ -915,7 +915,8 @@ T.Popup {
             readonly property var rightRows: [
                 { label: qsTr("Toggle Fullscreen"), options: ["key-toggle-fullscreen"] },
                 { label: qsTr("Increase / Decrease Volume"), options: ["key-vol-up", "key-vol-down"] },
-                { label: qsTr("Show / Hide Queue"), key: "Ctrl+l" },
+                // Qt's Ctrl is the Command key on macOS
+                { label: qsTr("Show / Hide Queue"), key: Qt.platform.os === "osx" ? "Command+l" : "Ctrl+l" },
                 { label: qsTr("Mute / Unmute"), options: ["key-vol-mute"] },
                 { label: qsTr("Take a Snapshot"), options: ["key-snapshot"] },
                 { label: qsTr("Record"), options: ["key-record"] }
@@ -934,7 +935,9 @@ T.Popup {
             }
 
             // two blocks from x 62 (Figma "Frame 204"): label column 220, 20, keys column 153,
-            // 150 between the blocks; wider keys or labels take the space between the blocks first
+            // 150 between the blocks; wider keys or labels take the space between the blocks first,
+            // and when even 40 between the blocks is too little (long key names or labels, a
+            // narrow window) the blocks shrink to the width there is, never past the right edge
             Row {
                 id: blocks
 
@@ -942,6 +945,8 @@ T.Popup {
 
                 x: root.dp(62)
                 y: root.dp(154)
+                transformOrigin: Item.TopLeft
+                scale: implicitWidth > available && implicitWidth > 0 ? available / implicitWidth : 1
                 spacing: {
                     let used = 0
                     for (let i = 0; i < blockRepeater.count; ++i) {
@@ -980,7 +985,7 @@ T.Popup {
                             }
 
                             y: root.dp(7)
-                            width: Math.max(root.dp(220), widest)
+                            width: Math.max(root.dp(220), widest, implicitWidth)
                             spacing: root.dp(54)
 
                             Repeater {
@@ -1015,7 +1020,9 @@ T.Popup {
                                 return w
                             }
 
-                            width: widest
+                            // the Column's implicitWidth is its widest row, also once the key
+                            // caps' text is laid out (itemAt() in "widest" may run before that)
+                            width: Math.max(widest, implicitWidth)
 
                             Repeater {
                                 id: keyRepeater

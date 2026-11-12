@@ -77,3 +77,7 @@ static-lib/
 /redesign/reference/*.mp4
 /redesign/tools/privacy.local.txt
 __pycache__/
+
+# flatpak-builder state (extras/package/flatpak)
+/.flatpak-builder/
+/build-flatpak/

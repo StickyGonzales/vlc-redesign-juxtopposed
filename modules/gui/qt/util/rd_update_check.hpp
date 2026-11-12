@@ -21,6 +21,8 @@
 #include <QObject>
 #include <QString>
 
+class QTimer;
+
 #include <memory>
 
 #include "qt.hpp"
@@ -30,8 +32,9 @@
  * own update checker (src/misc/update.c, videolan.org) is never built into Cone, and in the
  * vlc profile this object stays idle.
  *
- * At most once a day, a few seconds after the start, while the "qt-cone-update-check" option is
- * on and the first-run privacy question has been answered, it asks GitHub for the latest release
+ * A few seconds after the start, when GitHub last answered more than 6 hours ago, while the
+ * "qt-cone-update-check" option is on and the first-run privacy question has been answered, it
+ * asks GitHub for the latest release
  * of Cone (one GET of the releases API, no data beyond the request itself; on Linux the newest
  * Linux release, tagged linux-v..., pre-releases included). A newer version
  * than this build's shows the notice (RdUpdateNotice.qml): "Download" opens the release page in
@@ -39,6 +42,9 @@
  * version again (a newer one still shows; Settings > General can undo the skip). Nothing is
  * downloaded or installed. "Check now" (Settings > General) asks at once and reports the result,
  * a skipped version included.
+ *
+ * Only a check GitHub answered counts (the time is kept); one that failed (no network yet at the
+ * start, a timeout) is tried again 1, 5 and 15 minutes later in the same session.
  */
 class RdUpdateCheck : public QObject
 {
@@ -91,6 +97,9 @@ private:
     struct Job;
 
     void startupCheck();
+    void automaticCheck();
+    void scheduleRetry();
+    void recordAnswer();
     void request(bool explicitCheck);
     void onReply(int httpStatus, const QByteArray& body);
     void setStatus(Status status);
@@ -107,6 +116,12 @@ private:
     QString m_skippedVersion;
     // the running request answers "Check now": its result is reported
     bool m_explicitCheck = false;
+    // the automatic checks of this session after a failed one (retryDelays)
+    int m_retries = 0;
+    // an automatic check (start or retry) waits for the running request's answer: its failure
+    // is tried again even when "Check now" joined the same request
+    bool m_automaticPending = false;
+    QTimer* m_retryTimer = nullptr;
     std::shared_ptr<Job> m_job;
 };
 

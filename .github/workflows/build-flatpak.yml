@@ -1,0 +1,180 @@
+# Cone Player as a Flatpak (redesign/FLATPAK_NOTES.md): builds
+# extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml with flatpak-builder in
+# Flathub's KDE 6.10 build image, then installs the bundle and starts Cone inside the Flatpak
+# sandbox under Xvfb with a generated clip. A first step toward Flathub: nothing is submitted or
+# published; the bundle is a one-day artifact. Runs on pushes to wip/linux-flatpak and by hand:
+#   Actions > build-flatpak > Run workflow (or: gh workflow run build-flatpak.yml --ref <branch>)
+# GitHub offers the manual run only once this file is on the default branch (redesign).
+name: build-flatpak
+
+on:
+  push:
+    branches: [wip/linux-flatpak, wip/flathub-prep]
+    paths-ignore:
+      - 'redesign/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  workflow_dispatch:
+
+concurrency:
+  group: build-flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ID: io.github.StickyGonzales.ConePlayer
+
+jobs:
+  # a short H.264 clip with an .srt, as the smoke checks' media (smoke-media.sh)
+  media:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test clip
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
+          mkdir -p media
+          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=854x480:rate=30 \
+            -f lavfi -i sine=frequency=440:sample_rate=48000 -t 12 \
+            -c:v libx264 -pix_fmt yuv420p -c:a aac media/clip.mp4
+          printf '1\n00:00:01,000 --> 00:00:10,000\nCone in its Flatpak\n' > media/clip.srt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-test-media
+          path: media/
+          retention-days: 1
+
+  flatpak:
+    needs: media
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml
+          bundle: cone-player.flatpak
+          cache-key: flatpak-builder-${{ hashFiles('extras/package/flatpak/*.yml') }}
+          upload-artifact: true
+          # the screenshots as Flathub's build mirrors them (the repo linter checks it)
+          mirror-screenshots-url: https://dl.flathub.org/media/
+
+      # Flathub's own checks, with Flathub's linter (org.flatpak.Builder): the manifest, the
+      # AppStream file and the built repository (redesign/SUBMIT_TO_FLATHUB.md). Any error fails
+      # the run, except appid-url-not-reachable: Flathub wants github.com/StickyGonzales/ConePlayer
+      # for this app ID, a repository only StickyGonzales can create or rename (the notes, 4)
+      - name: Flathub lint
+        shell: bash
+        run: |
+          command -v python3 >/dev/null || dnf install -y -q python3 >/dev/null
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder >/dev/null
+          lint() { flatpak run --command=flatpak-builder-lint org.flatpak.Builder "$@" || true; }
+          M=extras/package/flatpak/io.github.StickyGonzales.ConePlayer.yml
+          mkdir -p out
+          lint manifest "$M" > out/lint-manifest.json
+          lint repo repo > out/lint-repo.json
+          flatpak run --command=appstreamcli org.flatpak.Builder validate --explain \
+            extras/package/flatpak/io.github.StickyGonzales.ConePlayer.metainfo.xml | tee out/appstreamcli.txt
+          ok=1
+          for f in out/lint-manifest.json out/lint-repo.json; do
+            echo "### $f" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; echo '```' >> "$GITHUB_STEP_SUMMARY"
+            errors=$(python3 -c 'import json,sys
+          try: d=json.load(open(sys.argv[1]))
+          except Exception: print("unreadable-output"); sys.exit()
+          print(" ".join(e for e in d.get("errors", []) if e != "appid-url-not-reachable"))' "$f")
+            if [ -n "$errors" ]; then echo "::error::$f: $errors"; ok=0; fi
+            grep -q appid-url-not-reachable "$f" && echo "::warning::$f: appid-url-not-reachable (github.com/StickyGonzales/ConePlayer does not exist yet; redesign/SUBMIT_TO_FLATHUB.md)"
+          done
+          grep -q "Validation was successful" out/appstreamcli.txt || { echo "::error::appstreamcli validate failed"; ok=0; }
+          [ "$ok" = 1 ]
+
+      # the bundle for the sandbox run (the job below)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-player-bundle
+          path: cone-player.flatpak
+          retention-days: 1
+
+  # the bundle installed like a user would on an ordinary Ubuntu (as the runner's own user: VLC
+  # refuses to run as root, and Flathub's build image runs as root with no way to add a user),
+  # then Cone started in its sandbox: the Qt interface on Xvfb, the clip played to its end
+  # (--play-and-exit), its log kept
+  sandbox:
+    needs: flatpak
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: cone-player-bundle
+      - uses: actions/download-artifact@v4
+        with:
+          name: flatpak-test-media
+          path: media
+
+      - name: Run in the sandbox
+        shell: bash
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends flatpak xvfb imagemagick weston >/dev/null
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # the KDE runtime comes from Flathub, as on a user's computer
+          flatpak install --user -y --noninteractive cone-player.flatpak >/dev/null
+          flatpak info --user "$APP_ID" | sed -n '1,12p' | tee -a "$GITHUB_STEP_SUMMARY"
+          mkdir -p out
+          Xvfb :99 -screen 0 1280x800x24 -nolisten tcp &
+          sleep 2
+          export DISPLAY=:99
+          START=$(date +%s)
+          timeout 90 flatpak run --user --filesystem="$PWD/media:ro" --filesystem="$PWD/out" \
+            "$APP_ID" --no-qt-privacy-ask --no-qt-cone-update-check --aout=adummy --play-and-exit \
+            --file-logging --logfile="$PWD/out/cone.log" --log-verbose=2 \
+            "$PWD/media/clip.mp4" > out/stdout.txt 2>&1 &
+          PID=$!
+          sleep 6
+          if command -v import >/dev/null; then import -window root out/cone-flatpak.png || true; fi
+          CODE=0; wait "$PID" || CODE=$?
+          SECS=$(( $(date +%s) - START ))
+          echo "exit code $CODE after $SECS s" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "--- Cone's output"; tail -n 60 out/stdout.txt || true
+          touch out/cone.log
+          ok=1
+          [ "$CODE" = 0 ] || { echo "::error::Cone did not end cleanly (exit code $CODE)"; ok=0; }
+          # the Qt interface gives the video its window; then a video output, the decoder, and the
+          # .srt next to the clip (found by VLC's subtitle autodetection)
+          for want in 'using vout window module "qt"' 'using vout display module' \
+                      'using video decoder module "avcodec"' 'using spu decoder module "subsdec"'; do
+            if grep -qF "$want" out/cone.log; then echo "found: $want" | tee -a "$GITHUB_STEP_SUMMARY"
+            else echo "::error::not in the log: $want"; ok=0; fi
+          done
+          grep -i "cannot load module\|qml.*error" out/cone.log | head -n 20 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          [ "$ok" = 1 ]
+
+      # #116: the video plays inside Cone's window in the Flatpak too, on Wayland (headless Weston,
+      # the Flatpak's wayland socket) and on X11 (redesign/LINUX_WAYLAND_EMBED_NOTES.md)
+      - name: Video inside Cone's window (Wayland and X11)
+        shell: bash
+        run: |
+          echo "### Video inside Cone's window (#116)" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p out/embed
+          fail=0
+          for mode in wayland x11; do
+            .github/scripts/linux-embed-check.sh "$mode" "flatpak-$mode" out/embed "$PWD/media/clip.mp4" \
+              flatpak run --user --filesystem="$PWD/media:ro" --filesystem="$PWD/out" "$APP_ID" || fail=1
+          done
+          [ "$fail" = 0 ]
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: flatpak-run
+          path: out/
+          retention-days: 1

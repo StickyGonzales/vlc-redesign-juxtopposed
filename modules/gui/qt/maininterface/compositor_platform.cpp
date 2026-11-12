@@ -27,9 +27,64 @@
 
 #ifdef __APPLE__
 #include <objc/runtime.h>
+#include <objc/message.h>
 #endif
 
 using namespace vlc;
+
+#ifdef __APPLE__
+namespace {
+
+// NSRect (CGRect) on 64-bit macOS
+struct RdNSRect
+{
+    double x, y, w, h;
+};
+
+// an Objective-C message from C++ (this file is not Objective-C++). Only messages that return
+// nothing, an object or a pointer: a struct return would need objc_msgSend_stret on x86_64
+template <typename R = void, typename... Args>
+R rdSend(id object, const char* selector, Args... args)
+{
+    using Send = R (*)(id, SEL, Args...);
+    return reinterpret_cast<Send>(objc_msgSend)(object, sel_registerName(selector), args...);
+}
+
+// redesign (macOS, issue #69): the view the video output draws into. VLC's macOS outputs place
+// their layers for an unflipped NSView (samplebufferdisplay: y = height - y - h) and paint
+// nothing outside the picture; Qt's own view (QNSView) is flipped and has no background, so on a
+// real Mac the picture could sit at the wrong height and the letterbox bands, where only the
+// transparent interface window lies above, showed whatever was behind Cone. This plain NSView
+// is unflipped, opaque black (as the video area of VLC.app) and follows the video window's size.
+// Returns the view, owned by its superview, or nullptr
+id rdMakeVideoView(id superview, double width, double height)
+{
+    const id viewClass = reinterpret_cast<id>(objc_getClass("NSView"));
+    const id colorClass = reinterpret_cast<id>(objc_getClass("NSColor"));
+    if (!superview || !viewClass || !colorClass)
+        return nullptr;
+
+    const id view = rdSend<id>(rdSend<id>(viewClass, "alloc"), "initWithFrame:",
+                               RdNSRect{0, 0, width, height});
+    if (!view)
+        return nullptr;
+
+    rdSend(view, "setWantsLayer:", static_cast<BOOL>(YES));
+    if (const id layer = rdSend<id>(view, "layer"))
+    {
+        const id black = rdSend<id>(colorClass, "blackColor");
+        rdSend(layer, "setBackgroundColor:", rdSend<void*>(black, "CGColor"));
+        rdSend(layer, "setOpaque:", static_cast<BOOL>(YES));
+    }
+    // NSViewWidthSizable | NSViewHeightSizable: the video window's size, always
+    rdSend(view, "setAutoresizingMask:", static_cast<unsigned long>(2 | 16));
+    rdSend(superview, "addSubview:", view);
+    rdSend(view, "release"); // the superview keeps it
+    return view;
+}
+
+}
+#endif
 
 
 CompositorPlatform::CompositorPlatform(qt_intf_t *p_intf, QObject *parent)
@@ -115,6 +170,13 @@ bool CompositorPlatform::makeMainInterface(MainCtx *mainCtx, std::function<void 
 
     m_quickWindow->raise(); // Make sure quick window is above the video window.
 
+#ifdef __APPLE__
+    m_videoView = rdMakeVideoView(reinterpret_cast<id>(m_videoWindow->winId()),
+                                  m_videoWindow->width(), m_videoWindow->height());
+    if (!m_videoView)
+        msg_Warn(m_intf, "macOS: no video view of its own, the video draws into Qt's view");
+#endif
+
     return ret;
 }
 
@@ -147,7 +209,8 @@ bool CompositorPlatform::setupVoutWindow(vlc_window_t *p_wnd, VoutDestroyCb dest
 
 #ifdef __APPLE__
     p_wnd->type = VLC_WINDOW_TYPE_NSOBJECT;
-    p_wnd->handle.nsobject = reinterpret_cast<id>(m_videoWindow->winId());
+    p_wnd->handle.nsobject = m_videoView ? reinterpret_cast<id>(m_videoView)
+                                         : reinterpret_cast<id>(m_videoWindow->winId());
 
     return true;
 #endif

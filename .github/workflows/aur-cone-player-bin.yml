@@ -1,0 +1,152 @@
+# The AUR package cone-player-bin (extras/package/aur, redesign/SUBMIT_TO_AUR.md): on every
+# published Linux release (a linux-v... tag, pre-releases included) it sets the PKGBUILD to that
+# release's tarball (version, sha256), builds and checks it with makepkg and namcap in an Arch
+# container, and pushes PKGBUILD and .SRCINFO to the AUR with the SSH key in the repository secret
+# AUR_SSH_PRIVATE_KEY. Without that secret, or on a run that is not a release, it only builds and
+# checks (a dry run). By hand: Actions > aur-cone-player-bin > Run workflow (tag, push yes/no).
+name: aur-cone-player-bin
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Linux release tag (empty: the newest linux-v release)'
+        type: string
+        default: ''
+      push:
+        description: 'Push to the AUR (needs the AUR_SSH_PRIVATE_KEY secret)'
+        type: boolean
+        default: false
+  # changes to the package itself on its branch: a dry run with the newest Linux release
+  push:
+    branches: [wip/aur-cone-player-bin]
+    paths:
+      - 'extras/package/aur/**'
+      - '.github/workflows/aur-cone-player-bin.yml'
+
+concurrency:
+  group: aur-cone-player-bin
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  aur:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'linux-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: archlinux:base-devel
+    defaults:
+      run:
+        shell: bash
+    env:
+      # the AUR's SSH host key, as aur.archlinux.org lists it (ED25519)
+      AUR_HOST_FINGERPRINT: 'SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4'
+    steps:
+      - name: Tools
+        run: pacman -Syu --noconfirm --needed git openssh namcap jq >/dev/null
+
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: extras/package/aur
+
+      - name: Release
+        id: release
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${EVENT_TAG:-$INPUT_TAG}"
+          if [ -z "$TAG" ]; then
+            # the newest Linux release, pre-releases included (drafts are not listed)
+            TAG=$(curl -sSLf -H "Authorization: Bearer $GH_TOKEN" \
+                    "https://api.github.com/repos/$GITHUB_REPOSITORY/releases?per_page=50" \
+                  | jq -r '[.[] | select(.draft == false) | select(.tag_name | startswith("linux-v"))][0].tag_name')
+          fi
+          [ -n "$TAG" ] && [ "$TAG" != null ] || { echo "::error::no Linux release found"; exit 1; }
+          FILEVER=${TAG#linux-v}
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "file=Cone-$FILEVER-linux-x86_64.tar.xz" >> "$GITHUB_OUTPUT"
+          echo "Linux release: $TAG" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Update the PKGBUILD
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          FILE: ${{ steps.release.outputs.file }}
+        run: |
+          useradd -m builder
+          mkdir -p /pkg && cp extras/package/aur/cone-player-bin/PKGBUILD /pkg/
+          curl -sSLf --retry 3 -o "/pkg/$FILE" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$FILE"
+          extras/package/aur/update-pkgbuild.sh "$TAG" "/pkg/$FILE" /pkg/PKGBUILD | tee -a "$GITHUB_STEP_SUMMARY"
+          chown -R builder /pkg
+
+      # the package must build from the PKGBUILD, install, start and leave nothing behind
+      - name: Build and check
+        working-directory: /pkg
+        run: |
+          su builder -c "makepkg --printsrcinfo > .SRCINFO && makepkg -f --nodeps"
+          . ./PKGBUILD
+          deps=("${depends[@]}"); for o in "${optdepends[@]}"; do deps+=("${o%%:*}"); done
+          pacman -S --noconfirm --needed "${deps[@]}" >/dev/null
+          namcap PKGBUILD
+          namcap cone-player-bin-*.pkg.tar.zst > namcap.txt || true
+          if grep " E: " namcap.txt | grep -v "ELF files outside of a valid path ('opt/')"; then
+            echo "::error::namcap reported an error (above)"; exit 1
+          fi
+          echo "namcap: $(grep -c ' W: ' namcap.txt) warnings (bundled libraries in /opt, see redesign/SUBMIT_TO_AUR.md)" >> "$GITHUB_STEP_SUMMARY"
+          pacman -U --noconfirm cone-player-bin-*.pkg.tar.zst >/dev/null
+          su builder -c "cone-player --version" > version.txt 2>&1 || true
+          head -n 1 version.txt | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -q '^Cone Player' version.txt || { echo "::error::cone-player --version did not answer"; cat version.txt; exit 1; }
+          if grep -q 'stale plugins cache' version.txt; then echo "::error::VLC's plugin cache is stale"; exit 1; fi
+          pacman -R --noconfirm cone-player-bin >/dev/null
+          [ ! -e /opt/cone-player ] || { echo "::error::/opt/cone-player left behind"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cone-player-bin-aur
+          path: |
+            /pkg/PKGBUILD
+            /pkg/.SRCINFO
+            /pkg/namcap.txt
+          include-hidden-files: true
+          retention-days: 7
+
+      - name: Push to the AUR
+        env:
+          AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          WANT_PUSH: ${{ github.event_name == 'release' || inputs.push == true }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if [ "$WANT_PUSH" != true ]; then
+            echo "dry run: not pushed to the AUR" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if [ -z "$AUR_KEY" ]; then
+            echo "::warning::no AUR_SSH_PRIVATE_KEY secret: not pushed to the AUR (redesign/SUBMIT_TO_AUR.md)"; exit 0
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$AUR_KEY" > ~/.ssh/aur && chmod 600 ~/.ssh/aur
+          ssh-keyscan -t ed25519 aur.archlinux.org 2>/dev/null > /tmp/aur_host
+          FP=$(ssh-keygen -lf /tmp/aur_host | awk '{print $2}')
+          [ "$FP" = "$AUR_HOST_FINGERPRINT" ] || { echo "::error::aur.archlinux.org host key $FP, expected $AUR_HOST_FINGERPRINT"; exit 1; }
+          cp /tmp/aur_host ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          git clone ssh://aur@aur.archlinux.org/cone-player-bin.git /aur
+          cp /pkg/PKGBUILD /pkg/.SRCINFO /aur/
+          cd /aur
+          git config user.name "StickyGonzales"
+          git config user.email "103277167+StickyGonzales@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then
+            echo "the AUR already has $TAG" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          git commit -q -m "Update to $(grep '^pkgver=' PKGBUILD | cut -d= -f2) ($TAG)"
+          git push origin HEAD:master
+          echo "pushed $TAG to the AUR" | tee -a "$GITHUB_STEP_SUMMARY"
+          rm -f ~/.ssh/aur
