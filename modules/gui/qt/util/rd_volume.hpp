@@ -44,6 +44,10 @@ struct Info
 // the volume of an existing path; empty when it did not answer within `timeoutMs`
 Info volumeOf(const QString& path, int timeoutMs = 2000);
 
+// where the volume a path would be on is mounted, from the path and the system's mount table
+// only: never touches the drive ("E:/", "//server/share/", "/media/usb", "/")
+QString mountRootOf(const QString& path);
+
 // the file system, for the cleanup's rules: every answer within `timeoutMs`
 class SystemFileSystem : public rdstorage::FileSystem
 {

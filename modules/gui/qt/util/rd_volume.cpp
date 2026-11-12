@@ -32,6 +32,7 @@
 # include <windows.h>
 #endif
 #ifdef __APPLE__
+# include <sys/mount.h>
 # include <sys/attr.h>
 # include <unistd.h>
 # include <uuid/uuid.h>
@@ -129,9 +130,19 @@ Info lookUp(const QString& path)
     {
         // a share: its server and share name (a mapped letter's own name may change)
         info.network = true;
-        const QString name = QString::fromUtf8(device).isEmpty() ? QString::fromStdWString(root)
-                                                                 : QString::fromUtf8(device);
-        info.id = QStringLiteral("net:") + QDir::fromNativeSeparators(name).toLower();
+        // its UNC name; a mapped letter with no name known: the share's serial number (never
+        // the letter, which may name another share tomorrow)
+        QString name = QString::fromUtf8(device);
+        if (name.isEmpty() && root.rfind(L"\\\\", 0) == 0)
+            name = QString::fromStdWString(root);
+        if (!name.isEmpty())
+        {
+            info.id = QStringLiteral("net:") + QDir::fromNativeSeparators(name).toLower();
+            return info;
+        }
+        DWORD serial = 0;
+        if (GetVolumeInformationW(root.c_str(), nullptr, 0, &serial, nullptr, nullptr, nullptr, 0) && serial)
+            info.id = QStringLiteral("netserial:") + QString::number(serial, 16);
         return info;
     }
     wchar_t guid[MAX_PATH] = {};
@@ -173,6 +184,56 @@ Info lookUp(const QString& path)
 }
 
 } // namespace
+
+QString mountRootOf(const QString& path)
+{
+    const QString clean = QDir::cleanPath(QDir::fromNativeSeparators(path));
+#ifdef _WIN32
+    // a drive letter or a share's server and name
+    if (clean.size() >= 2 && clean.at(1) == QLatin1Char(':'))
+        return clean.left(2).toUpper() + QLatin1Char('/');
+    if (clean.startsWith(QLatin1String("//")))
+    {
+        const QStringList parts = clean.mid(2).split(QLatin1Char('/'));
+        if (parts.size() >= 2)
+            return QStringLiteral("//") + parts.at(0) + QLatin1Char('/') + parts.at(1) + QLatin1Char('/');
+    }
+    return {};
+#else
+    // the longest mount point above the path, from the mount table (no access to the drive)
+    QStringList mounts;
+# ifdef __linux__
+    QFile table(QStringLiteral("/proc/self/mounts"));
+    if (table.open(QIODevice::ReadOnly))
+    {
+        for (const QByteArray& line : table.readAll().split('\n'))
+        {
+            const QList<QByteArray> fields = line.split(' ');
+            if (fields.size() < 2)
+                continue;
+            // spaces in a mount point are written as \040
+            QByteArray point = fields.at(1);
+            point.replace("\\040", " ");
+            mounts.append(QString::fromUtf8(point));
+        }
+    }
+# elif defined(__APPLE__)
+    struct statfs* list = nullptr;
+    const int count = getmntinfo(&list, MNT_NOWAIT);
+    for (int i = 0; i < count; ++i)
+        mounts.append(QString::fromUtf8(list[i].f_mntonname));
+# endif
+    QString best = QStringLiteral("/");
+    for (const QString& point : mounts)
+    {
+        if (point.size() <= best.size())
+            continue;
+        if (clean == point || clean.startsWith(point.endsWith(QLatin1Char('/')) ? point : point + QLatin1Char('/')))
+            best = point;
+    }
+    return best;
+#endif
+}
 
 Info volumeOf(const QString& path, int timeoutMs)
 {

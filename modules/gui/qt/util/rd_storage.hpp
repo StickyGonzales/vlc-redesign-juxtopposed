@@ -124,6 +124,9 @@ private:
     QTimer m_saveTimer;
     QTimer m_dailyTimer;
     bool m_dailyRunning = false;
+    // changes made, and the last one written to rd-storage.json
+    quint64 m_changes = 0;
+    quint64 m_savedChanges = 0;
     bool m_pictureCapQueued = false;
 };
 

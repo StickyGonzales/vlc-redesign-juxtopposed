@@ -22,10 +22,14 @@
 // fingerprint matching, credits scans, waveforms, Up Next pictures, the update check and the
 // storage cleanup run one at a time, at low priority, instead of in parallel.
 // - one job at a time: a long job that can pause (a credits scan, a waveform) pauses when a more
-//   urgent one comes (show detection) and goes on after it; nothing else ever runs beside it
+//   urgent one comes (show detection) and goes on after it; nothing else ever runs beside it. An
+//   async job (a request answered later: the update check, an Up Next picture) holds the slot
+//   against jobs of its priority or lower; a more urgent one may start while it waits
 // - nothing heavy in the first minute after Cone opens (light jobs may: the update check is one
 //   small request, show detection one folder listing)
-// - paused while the user seeks, hovers or drags the seek bar, or opens a file (hold())
+// - paused while the user seeks, hovers or drags the seek bar, or opens a file (hold()): no job
+//   starts, a running one waits at its gate; only an urgent light job (show detection: one folder
+//   listing, which the track choice of the file opening waits for) still starts
 // - stopped at once on quit (shutdown())
 // - each job's start and end go to the debug log
 // QtCore only (tests/test_rd_background_queue.cpp).
@@ -121,8 +125,9 @@ public:
 
     void setLogger(std::function<void(const QString&)> logger) { m_logger = std::move(logger); }
 
-    // tests: the most jobs that ever ran at once (not counting one paused at its gate)
-    int maxActive() const { return m_maxActive.load(); }
+    // tests: the most jobs that ever ran at once (not counting one paused at its gate, nor an
+    // async one waiting for its answer)
+    int maxActive() const { return m_counts->max.load(); }
     int pending() const { return int(m_pending.size()); }
 
 signals:
@@ -165,8 +170,13 @@ private:
     quint64 m_nextId = 1;
     bool m_shutdown = false;
     std::function<void(const QString&)> m_logger;
-    std::atomic<int> m_active{ 0 };
-    std::atomic<int> m_maxActive{ 0 };
+    // the jobs actually running, shared with the jobs' threads (they may outlive a call)
+    struct Counts
+    {
+        std::atomic<int> active{ 0 };
+        std::atomic<int> max{ 0 };
+    };
+    std::shared_ptr<Counts> m_counts = std::make_shared<Counts>();
 };
 
 #endif

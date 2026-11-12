@@ -122,13 +122,14 @@
 #endif
 #include "mainctx_submodels.hpp"
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
 #include <QElapsedTimer>
+
+#include <cmath>
+#include <memory>
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && defined(QT_DECLARATIVE_PRIVATE)
 #include <QQuickRenderControl>
 #include <QQuickWindow>
-
-#include <cstdlib>
-#include <memory>
 
 // Qt Quick's context matcher of QML shortcuts, exported for QtQuick.Templates (qquickshortcut.cpp)
 typedef bool (*ShortcutContextMatcher)(QObject *, Qt::ShortcutContext);
@@ -469,11 +470,12 @@ void MainUI::registerQMLTypes()
         // media, and the profiles (top bar layout, settings)
         qmlRegisterSingletonInstance<RdNowPlaying>(uri, versionMajor, versionMinor, "RdNowPlaying",
                                                    new RdNowPlaying(m_mainCtx, m_intf->p_mainPlayerController, this));
+        // redesign: Cone's own data per show and movie, kept tidy (STORAGE_CLEANUP_NOTES.md);
+        // before Up Next, so it is read before the first show is detected
+        RdStorage* storage = new RdStorage(m_intf, m_intf->p_mainPlayerController, this);
         // Cone extra (Decision 71): autoplay of the next episode of a show folder
         RdUpNext* upNext = new RdUpNext(m_intf, m_mainCtx, effects, this);
         qmlRegisterSingletonInstance<RdUpNext>(uri, versionMajor, versionMinor, "RdUpNext", upNext);
-        // redesign: Cone's own data per show and movie, kept tidy (STORAGE_CLEANUP_NOTES.md)
-        RdStorage* storage = new RdStorage(m_intf, m_intf->p_mainPlayerController, this);
         upNext->setStorage(storage);
         if (addSubtitles)
             addSubtitles->setStorage(storage);
@@ -492,14 +494,22 @@ void MainUI::registerQMLTypes()
         connect(player, &PlayerController::seekRequested, background, [background]() {
             background->hold(QStringLiteral("seeking"), 1500);
         });
+        // a seek by a key: the time jumps more than the playback (at its rate) moved
         auto clock = std::make_shared<QElapsedTimer>();
         auto lastTime = std::make_shared<qint64>(-1);
         connect(player, &PlayerController::timeChanged, background, [background, player, clock, lastTime]() {
             const qint64 time = player->getTime().toMilliseconds();
             const qint64 wall = clock->isValid() ? clock->restart() : (clock->start(), 0);
-            if (*lastTime >= 0 && std::llabs((time - *lastTime) - wall) > 2000)
+            const bool playing = player->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING;
+            const double expected = playing ? double(wall) * player->getRate() : 0.0;
+            if (*lastTime >= 0 && std::fabs(double(time - *lastTime) - expected) > 2000.0)
                 background->hold(QStringLiteral("seeking"), 1500);
             *lastTime = time;
+        });
+        // a pause, or a file opening, starts the count again (the time stood still meanwhile)
+        connect(player, &PlayerController::playingStateChanged, background, [clock, lastTime]() {
+            clock->invalidate();
+            *lastTime = -1;
         });
         RdProfiles* profiles = new RdProfiles(m_intf, m_mainCtx, this);
         // a profile switch brings its autoplay options (UP_NEXT_PLAN.md Q5)

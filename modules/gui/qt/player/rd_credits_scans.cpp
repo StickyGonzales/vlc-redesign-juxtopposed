@@ -280,8 +280,10 @@ void RdCreditsScans::relocate(const QString& oldShowKey, const QString& newShowK
             continue;
         }
         // an episode found in the new folder keeps its scan; one that is not there goes
+        // (matched by name and size: it is there; its key reads its size and date, on the drive
+        // that was just read)
         const QString newPath = media.value(normalized(it->path));
-        if (!newPath.isEmpty() && QFileInfo::exists(newPath))
+        if (!newPath.isEmpty())
         {
             FileInfo info = it.value();
             info.path = newPath;

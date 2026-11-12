@@ -215,7 +215,7 @@ bool SubtitleStore::relocate(const QString& oldRoot, const QString& newRoot, con
         // subtitles kept inside the show's folder moved with it
         const QString path = rule.value(QStringLiteral("path")).toString();
         if (!path.isEmpty() && isUnder(pathKey(path), from))
-            rule.insert(QStringLiteral("path"), newRoot + pathKey(path).mid(from.size()));
+            rule.insert(QStringLiteral("path"), QString(newRoot + pathKey(path).mid(from.size())));
         movedFolders.insert(to + it.key().mid(from.size()), rule);
         it = folders.erase(it);
         changed = true;

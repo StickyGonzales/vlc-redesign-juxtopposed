@@ -1115,7 +1115,8 @@ void RdUpNext::startSubtitleScan(qint64 lengthMs)
         return;
     // a job of the background queue: the episode's subtitles, read once
     auto end = std::make_shared<qint64>(-1);
-    queue->post(QStringLiteral("credits subtitles"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal,
+    // heavy: an embedded text track is read from the episode itself
+    queue->post(QStringLiteral("credits subtitles"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Normal,
         [scan, lengthMs, log, end](const std::shared_ptr<RdBackgroundQueue::Control>& control) {
             control->setCancelHook([scan]() { scan->cancel(); });
             const QVector<rdcredits::Line> lines = scan->run();

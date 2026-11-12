@@ -74,7 +74,8 @@ All rules are in `util/rd_storage_model.*`, which is pure QtCore and unit-tested
   - It goes on afterwards. Nothing ever runs beside it.
 - **Nothing heavy in the first minute** after Cone opens. "Heavy" means credits scans, waveforms, pictures and the cleanup.
   - Light jobs may run early: the update check (one small request), show detection (one folder listing, which the track choice of the first file needs), the storage load.
-- **Paused** while the seek bar is hovered or dragged, during a seek (also a key's jump in time) and while a file opens (until it plays, at most 8 s). A running long job waits at its next packet.
+- **Paused** while the seek bar is hovered or dragged, during a seek (also a key's jump in time, at the playback's rate) and while a file opens (until it plays, at most 8 s). A running long job waits at its next packet. Only an urgent light job starts while paused: show detection for the file opening, so its saved tracks are applied before it plays.
+- **Async jobs** (the update check, an Up Next picture) hold the slot against jobs of their priority or lower; a more urgent one (show detection) does not wait for their answer.
 - **On quit:** every job is cancelled at once (the scanners' VLC interrupt), and the queue joins its threads before the interface goes.
 - **Each job's own rules stay:** credits scans wait on battery saver; the update check keeps its retries.
 - **Debug log:** `background: start <job> (#n)`, `background: end <job> (#n, <ms> ms)`, `paused (<reason>)`, `resumed`, `<job> pauses for <job>`, `goes on`.
@@ -97,9 +98,9 @@ All rules are in `util/rd_storage_model.*`, which is pure QtCore and unit-tested
 
 ## 5. Unit tests
 `.github/scripts/unit-tests.sh` (CI: `unit-tests.yml`) builds and runs all of Cone's QtCore-only tests.
-- **test_rd_storage_model, 51 checks:**
+- **test_rd_storage_model, 52 checks:**
   - a renamed show folder (the entry, picture and waveform follow);
-  - a show moved to another drive (2 of 3 episodes; 1 is not enough);
+  - a show moved to another drive (2 of 3 episodes; 1 is not enough; a folder inside the show is not a move);
   - a renamed movie folder, and another size not matching;
   - a drive back under another letter (no drive or another volume at the old letter is not "missing"; the show at the new letter matches);
   - an empty mount folder (disconnected, kept 20 days; mounted with the folder gone: missing);
@@ -110,7 +111,7 @@ All rules are in `util/rd_storage_model.*`, which is pure QtCore and unit-tested
   - the caps (300 / 1,000);
   - Forget all (pictures and downloads, not waveforms; shows forgotten, movies kept);
   - JSON round trip.
-- **test_rd_background_queue, 22 checks:**
+- **test_rd_background_queue, 28 checks:**
   - 30 jobs (pausable and not, urgent ones arriving while others run): never two at once, also by the queue's own count;
   - priority order;
   - the first-minute rule (a light job at once, a heavy one after the period);
@@ -118,6 +119,8 @@ All rules are in `util/rd_storage_model.*`, which is pure QtCore and unit-tested
   - a hold that ends by itself;
   - a long job pausing for an urgent one;
   - an async request holding the slot, and its timeout;
+  - a dropped waiting job's `done` runs;
+  - show detection runs during a hold, other jobs wait;
   - shutdown at once, also with a paused job, and nothing after it;
   - the log lines.
 - **Proved to fail when broken:**
@@ -125,19 +128,49 @@ All rules are in `util/rd_storage_model.*`, which is pure QtCore and unit-tested
   - The queue with its one-at-a-time rule disabled: 6 failures.
 - Locally (Qt 6.4): all 7 test programs pass. The existing ones: show tracks 33, episode parser 514, credits audio 17, credits point 106, on-screen message parser 39.
 
-## 6. Limits
+## 6. Independent review
+A fresh subagent reviewed the whole diff. Confirmed and fixed:
+1. **A waiting credits scan that was cancelled** (Up Next off, Forget all) left the scans stopped for the rest of the session.
+   - Its owner is now told it is over.
+   - New test: a dropped waiting job's `done` runs, and the job never runs.
+2. **The opening hold delayed show detection until the file played**, so the saved tracks switched audibly after the start.
+   - Urgent light jobs now run during a hold.
+   - Async jobs no longer block more urgent ones.
+   - New test.
+3. **A save could be lost on quit** when its job was still waiting. The last changes are now written on quit unless the save went through.
+4. **Linux and macOS: `/` (the system drive) counted every path as "read this session"**, so legacy entries on other drives were looked at.
+   - Fix: a path's mount point now comes from the mount table, with no access to the drive, and must be one of the session's.
+5. **"credits subtitles" was light**, so it ran in the first minute. It is now heavy.
+6. **Pause race:** a job resumed and paused again before it woke left the next job waiting. The queue now checks again.
+7. **Async jobs' finish held raw pointers into the queue.** The queue's counters are now shared.
+8. **A renamed picture or waveform whose new name existed** left the old file behind. The old file is now deleted.
+9. **Fast playback (5× and more) and resuming after a pause** looked like seeks. The check now uses the playback rate and only counts while playing.
+10. **Includes in mainui.cpp** are moved outside a Qt 6.9-only block.
+
+Also taken from its "plausible" list:
+- **Nested folders:** a show's root seen one folder lower (`Show/Season 1`) is never matched as a move. New test.
+- **Older downloads:** files from before this version start their 30 days now, so a season downloaded long ago is not all deleted (and downloaded again) on the first check.
+- **Startup order:** the storage is read before the first show is detected.
+- **No disk access on the UI thread** when the credits data moves.
+- **A mapped network drive with no UNC name known** gets its serial number, never its letter.
+
+CI fix: `QStringBuilder` (on in VLC's build) needs an explicit `QString` before a `QJsonValue` (build-windows #237 and build-linux #125 stopped there).
+
+## 7. Limits
 - **"Last connected"** means the last day Cone read from the drive (a played file on it), not the last time it was plugged in. Cone never looks at drives it does not use.
 - **A movie whose file was renamed** (not just its folder) is not matched: a name and size are the fingerprint, and a size alone could match another file.
 - **Subtitle links of movies that never play again** after this version stay; they are a few hundred bytes each. Shows are imported from Up Next's store.
 - **Network shares on Windows** are told apart by their UNC name. The same share mapped to another letter is the same volume.
 - **macOS:** the volume UUID comes from `getattrlist`, else the device; not built on this branch (macOS builds run on `wip/macos-build`).
 
-## 7. Runs
+## 8. Runs
 | Run | Result |
 |---|---|
-| build-windows, build-linux, unit-tests on this branch | see the pull request |
+| unit-tests #1 (6149afd) | green |
+| build-windows #237, build-linux #125 (6149afd) | compile error (`QStringBuilder` into a `QJsonValue`), fixed |
+| build-windows, build-linux, unit-tests on the fixes | see the pull request |
 
-## 8. Windows retest (PC session)
+## 9. Windows retest (PC session)
 Build: build-windows on `wip/storage-cleanup`, Cone portable. In Settings, turn on "Save a log" (or start with `--file-logging --log-verbose=2`).
 
 The data files are in `portable\Cone\`: `rd-storage.json`, `rd-shows.json`, `rd-subtitles.json`, `waveforms\`, `subtitles\opensubtitles\`; the pictures are in the cache folder's `up-next\`.

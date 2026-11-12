@@ -178,6 +178,13 @@ void testShowOtherDrive()
     const Entry one = show(QStringLiteral("E:/X"), QStringLiteral("VOL-E"), {
         file(QStringLiteral("Show S01E01.mkv"), 1001), file(QStringLiteral("Show S01E02.mkv"), 5555) });
     check(!other.findMatch(one).has_value(), "other drive: one episode of the same size is not enough");
+
+    // the same show's root seen one level lower ("Show/Season 1"): not a move
+    Model nested;
+    nested.recordPlay(show(QStringLiteral("D:/TV/Show"), QStringLiteral("VOL-D"), kEpisodes), T0);
+    const Entry inner = show(QStringLiteral("D:/TV/Show/Season 1"), QStringLiteral("VOL-D"), {
+        file(QStringLiteral("Show S01E01.mkv"), 1001), file(QStringLiteral("Show S01E02.mkv"), 1002) });
+    check(!nested.findMatch(inner).has_value(), "other drive: a folder inside the show is not a move");
 }
 
 // a movie in a renamed folder: the file of the same name and size

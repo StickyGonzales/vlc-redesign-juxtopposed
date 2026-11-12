@@ -291,6 +291,10 @@ std::optional<Match> Model::findMatch(const Entry& seen) const
         const Entry& entry = it.value();
         if (it.key() == seenKey || entry.kind != seen.kind || entry.files.isEmpty())
             continue;
+        // a folder inside the other (the show's root seen one level higher or lower): the
+        // same show, not a move
+        if (under(it.key(), seenKey) || under(seenKey, it.key()))
+            continue;
         if (seen.kind == Kind::Movie && (entry.files.size() != 1 || seen.files.size() != 1))
             continue;
 

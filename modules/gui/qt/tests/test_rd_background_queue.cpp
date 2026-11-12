@@ -133,10 +133,10 @@ void testPriorityOrder()
             order.append(name);
         };
     };
-    queue.post(QStringLiteral("low"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Low, job(QStringLiteral("low")));
-    queue.post(QStringLiteral("normal"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal, job(QStringLiteral("normal")));
-    queue.post(QStringLiteral("urgent"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Urgent, job(QStringLiteral("urgent")));
-    queue.post(QStringLiteral("normal 2"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal, job(QStringLiteral("normal 2")));
+    queue.post(QStringLiteral("low"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Low, job(QStringLiteral("low")));
+    queue.post(QStringLiteral("normal"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Normal, job(QStringLiteral("normal")));
+    queue.post(QStringLiteral("urgent"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Urgent, job(QStringLiteral("urgent")));
+    queue.post(QStringLiteral("normal 2"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Normal, job(QStringLiteral("normal 2")));
     waitUntil([]() { return false; }, 50);
     check(order.isEmpty(), "priority: nothing runs while held");
     queue.release(QStringLiteral("test"));
@@ -181,7 +181,7 @@ void testHoldPauses()
     waitUntil([]() { return false; }, 200);
     check(steps.load() <= at + 1, "hold: a running job pauses while the user seeks");
     std::atomic<bool> other{ false };
-    queue.post(QStringLiteral("other"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Urgent,
+    queue.post(QStringLiteral("other"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::High,
                [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { other = true; });
     waitUntil([]() { return false; }, 100);
     check(!other.load(), "hold: no job starts while held");
@@ -243,13 +243,18 @@ void testAsyncHoldsSlot()
                             finish();
                         });
                     });
-    // posted once the request is on its way: an urgent job still waits for it
+    // posted once the request is on its way: a job of a lower priority waits for it, an urgent
+    // one does not (the request only waits for its answer)
     waitUntil([&]() { return asyncStarted.load(); }, 2000);
-    queue.post(QStringLiteral("later"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Urgent,
+    std::atomic<bool> urgentRanBefore{ false };
+    queue.post(QStringLiteral("later"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal,
                [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { laterRanAfter = asyncDone.load(); });
+    queue.post(QStringLiteral("show detection"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Urgent,
+               [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { urgentRanBefore = !asyncDone.load(); });
     waitUntil([&]() { return queue.pending() == 0 && asyncDone.load(); }, 2000);
     waitUntil([]() { return false; }, 100);
-    check(laterRanAfter.load(), "async: the next job waits until the request answered");
+    check(laterRanAfter.load(), "async: a job of a lower priority waits until the request answered");
+    check(urgentRanBefore.load(), "async: an urgent job does not wait for the request");
 
     // an async job that never answers frees the slot after its time
     std::atomic<bool> afterTimeout{ false };
@@ -258,6 +263,41 @@ void testAsyncHoldsSlot()
     queue.post(QStringLiteral("next"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Low,
                [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { afterTimeout = true; });
     check(waitUntil([&]() { return afterTimeout.load(); }, 2000), "async: a silent request times out");
+}
+
+// a waiting job dropped: its owner hears it is over (credits scans wait for that)
+void testCancelPending()
+{
+    RdBackgroundQueue queue(nullptr, 0);
+    queue.hold(QStringLiteral("test"));
+    std::atomic<bool> ran{ false };
+    std::atomic<bool> done{ false };
+    const quint64 id = queue.post(QStringLiteral("credits scan"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Low,
+                                  [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { ran = true; },
+                                  [&]() { done = true; });
+    queue.cancel(id);
+    check(waitUntil([&]() { return done.load(); }, 1000), "cancel: a dropped waiting job's done runs");
+    queue.release(QStringLiteral("test"));
+    waitUntil([]() { return false; }, 100);
+    check(!ran.load(), "cancel: a dropped job never runs");
+}
+
+// held (a file opens): an urgent light job (show detection) still runs, nothing else
+void testHoldLetsUrgentLight()
+{
+    RdBackgroundQueue queue(nullptr, 0);
+    queue.hold(QStringLiteral("opening a file"));
+    std::atomic<bool> detection{ false };
+    std::atomic<bool> other{ false };
+    queue.post(QStringLiteral("waveform"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal,
+               [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { other = true; });
+    queue.post(QStringLiteral("show detection"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Urgent,
+               [&](const std::shared_ptr<RdBackgroundQueue::Control>&) { detection = true; });
+    check(waitUntil([&]() { return detection.load(); }, 1000), "hold: show detection runs while a file opens");
+    waitUntil([]() { return false; }, 100);
+    check(!other.load(), "hold: other jobs wait");
+    queue.release(QStringLiteral("opening a file"));
+    check(waitUntil([&]() { return other.load(); }, 1000), "hold: they run after it");
 }
 
 void testShutdown()
@@ -322,6 +362,8 @@ int main(int argc, char** argv)
     testHoldPauses();
     testPreemption();
     testAsyncHoldsSlot();
+    testCancelPending();
+    testHoldLetsUrgentLight();
     testShutdown();
     testLog();
     std::printf("rd_background_queue: %d checks, %d failed\n", checks, failures);

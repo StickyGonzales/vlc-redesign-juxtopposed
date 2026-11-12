@@ -26,7 +26,7 @@ namespace {
 
 RdBackgroundQueue* g_instance = nullptr;
 
-// the jobs actually running (a job paused at its gate is not), shared with their controls
+// the jobs actually running (a job paused at its gate is not)
 struct Counters
 {
     std::atomic<int>* active;
@@ -207,9 +207,16 @@ void RdBackgroundQueue::cancel(quint64 id)
     {
         if ((*it)->id != id)
             continue;
-        (*it)->control->cancel();
-        log(QStringLiteral("dropped %1 (#%2)").arg((*it)->name).arg(id));
+        const std::shared_ptr<Job> job = *it;
+        job->control->cancel();
+        log(QStringLiteral("dropped %1 (#%2)").arg(job->name).arg(id));
         m_pending.erase(it);
+        // its owner learns it is over (it may wait for it), as after a running job's cancel
+        if (job->done)
+            QMetaObject::invokeMethod(this, [this, job]() {
+                if (!m_shutdown)
+                    job->done();
+            }, Qt::QueuedConnection);
         return;
     }
     if (const auto running = m_running.value(id))
@@ -311,10 +318,13 @@ void RdBackgroundQueue::schedule()
     const std::shared_ptr<Job> next = nextJob(&waitStartup);
     if (waitStartup && !m_startupTimer.isActive())
         m_startupTimer.start(std::max<qint64>(0, m_startupDelayMs - m_age.elapsed()) + 1);
-    if (!m_holds.isEmpty())
+    // held: only an urgent light job starts (show detection for the file opening)
+    const bool held = !m_holds.isEmpty();
+    if (held && !(next && next->weight == Weight::Light && next->priority == Urgent))
         return;
 
-    // the job running now (one asked to pause counts until it stopped at its gate)
+    // the job running now (one asked to pause counts until it stopped at its gate); an async
+    // job waiting for its answer holds the slot against jobs of its priority or lower only
     std::shared_ptr<Job> active;
     std::shared_ptr<Job> parked;
     for (const auto& job : m_running)
@@ -325,6 +335,8 @@ void RdBackgroundQueue::schedule()
                 || (job->priority == parked->priority && job->id < parked->id))
                 parked = job;
         }
+        else if (job->start && next && next->priority < job->priority)
+            continue;
         else
             active = job;
     }
@@ -336,9 +348,14 @@ void RdBackgroundQueue::schedule()
         {
             log(QStringLiteral("%1 (#%2) pauses for %3").arg(active->name).arg(active->id).arg(next->name));
             active->control->setPaused(true);
+            // resumed a moment ago and not awake yet: it is still at its gate, no signal comes
+            if (active->control->m_parked.load())
+                QMetaObject::invokeMethod(this, &RdBackgroundQueue::schedule, Qt::QueuedConnection);
         }
         return;
     }
+    if (held && parked)
+        parked.reset();
 
     if (parked && (!next || parked->priority <= next->priority))
     {
@@ -369,15 +386,13 @@ void RdBackgroundQueue::startJob(const std::shared_ptr<Job>& job)
     const quint64 id = job->id;
     if (job->start)
     {
-        // an async job takes the slot until it says it is done (or its time is up)
-        Counters counters{ &m_active, &m_maxActive };
-        counters.enter();
+        // an async job takes the slot until it says it is done (or its time is up); it does its
+        // work elsewhere (a request, a thumbnailer), so it is not counted as running here
         QPointer<RdBackgroundQueue> self(this);
         auto finished = std::make_shared<std::atomic<bool>>(false);
-        Finish finish = [self, id, finished, counters]() {
+        Finish finish = [self, id, finished]() {
             if (finished->exchange(true))
                 return;
-            counters.leave();
             QMetaObject::invokeMethod(self.data(), [self, id]() {
                 if (self)
                     self->finished(id);
@@ -396,12 +411,11 @@ void RdBackgroundQueue::startJob(const std::shared_ptr<Job>& job)
     QPointer<RdBackgroundQueue> self(this);
     std::shared_ptr<Control> control = job->control;
     Work work = job->work;
-    std::atomic<int>* active = &m_active;
-    std::atomic<int>* maxActive = &m_maxActive;
-    m_pool.start([self, id, control, work, active, maxActive]() {
+    const std::shared_ptr<Counts> counts = m_counts;
+    m_pool.start([self, id, control, work, counts]() {
         // background work never takes time from playback
         QThread::currentThread()->setPriority(QThread::LowestPriority);
-        Counters counters{ active, maxActive };
+        Counters counters{ &counts->active, &counts->max };
         t_counters = &counters;
         counters.enter();
         if (!control->cancelled())

@@ -99,11 +99,15 @@ private:
     QHash<QString, QPair<Presence, QString>> m_answers;
 };
 
-bool underAny(const QString& path, const QStringList& roots)
+// a path on a drive Cone read this session: its mount point (from the mount table, the drive
+// is not touched) is one of theirs. "/" holds only what no other mount point holds
+bool onSessionDrive(const QString& path, const QStringList& roots)
 {
-    const QString key = Model::key(path);
-    for (const QString& root : roots)
-        if (Model::under(key, Model::key(root)))
+    const QString root = Model::key(rdvolume::mountRootOf(path));
+    if (root.isEmpty())
+        return false;
+    for (const QString& sessionRoot : roots)
+        if (Model::key(sessionRoot) == root)
             return true;
     return false;
 }
@@ -206,8 +210,9 @@ RdStorage::~RdStorage()
 {
     if (g_storage == this)
         g_storage = nullptr;
-    // a change not written yet: written now (a small file), the queue has stopped
-    if (m_loaded && m_saveTimer.isActive())
+    // a change not written yet (the timer waits, or its save job was dropped by the queue's
+    // stop): written now, a small file
+    if (m_loaded && m_changes != m_savedChanges)
     {
         const QString path = storePath();
         QDir().mkpath(QFileInfo(path).absolutePath());
@@ -400,7 +405,8 @@ void RdStorage::setDownloadOwners(const QHash<QString, QString>& owners)
     RdBackgroundQueue* queue = RdBackgroundQueue::instance();
     if (!queue)
         return;
-    // the downloads from before the registry: their last change counts as their last use
+    // the downloads from before the registry: counted as used now, so the 30 days start with
+    // this version (a season downloaded long ago is not all deleted on the first check)
     auto found = std::make_shared<QVector<QPair<QString, qint64>>>();
     QPointer<RdStorage> self(this);
     queue->post(QStringLiteral("storage downloads"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Low,
@@ -418,7 +424,7 @@ void RdStorage::setDownloadOwners(const QHash<QString, QString>& owners)
                 {
                     if (self->m_model.artifacts().contains(file.first))
                         continue;
-                    self->m_model.addArtifact(file.first, ArtifactKind::Download, owners.value(file.first), file.second);
+                    self->m_model.addArtifact(file.first, ArtifactKind::Download, owners.value(file.first), now());
                     changed = true;
                 }
                 if (changed)
@@ -452,8 +458,10 @@ void RdStorage::forgetAll()
 
 void RdStorage::scheduleSave()
 {
-    if (m_loaded)
-        m_saveTimer.start();
+    if (!m_loaded)
+        return;
+    ++m_changes;
+    m_saveTimer.start();
 }
 
 void RdStorage::save()
@@ -462,8 +470,12 @@ void RdStorage::save()
     if (!m_loaded || !queue)
         return;
     const QByteArray json = QJsonDocument(m_model.toJson()).toJson(QJsonDocument::Compact);
-    queue->post(QStringLiteral("storage save"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Low,
-        [json](const std::shared_ptr<RdBackgroundQueue::Control>&) {
+    const quint64 changes = m_changes;
+    QPointer<RdStorage> self(this);
+    queue->post(QStringLiteral("storage save"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::High,
+        [json](const std::shared_ptr<RdBackgroundQueue::Control>& control) {
+            if (control->cancelled())
+                return;
             const QString path = storePath();
             if (path.isEmpty())
                 return;
@@ -474,6 +486,11 @@ void RdStorage::save()
                 file.write(json);
                 file.commit();
             }
+        },
+        [self, changes]() {
+            // written, unless it was dropped (quit) or more changed meanwhile
+            if (self && self->m_changes == changes)
+                self->m_savedChanges = changes;
         });
 }
 
@@ -515,7 +532,7 @@ void RdStorage::dailyTick()
                 Presence presence = item.volume.isEmpty() ? Presence::Unchecked : Presence::Disconnected;
                 QString volumeNow;
                 // a drive Cone has not read this session is never woken
-                if (underAny(item.path, roots))
+                if (onSessionDrive(item.path, roots))
                     presence = presenceOf(fs, item.path, item.volume, &volumeNow);
                 answers->insert(Model::key(item.path), { presence, volumeNow });
             }
@@ -594,7 +611,13 @@ void RdStorage::renameArtifacts(const QVector<Moved>& moved)
                         : waveformFile(waveforms, QFileInfo(item.newPath));
                 if (target.isEmpty() || target == item.file || !QFile::exists(item.file))
                     continue;
-                if (QFile::exists(target) || QFile::rename(item.file, target))
+                // the new name made already (the show played there before): the old one goes
+                if (QFile::exists(target))
+                {
+                    QFile::remove(item.file);
+                    renamed->append({ item.file, target });
+                }
+                else if (QFile::rename(item.file, target))
                     renamed->append({ item.file, target });
             }
         },
