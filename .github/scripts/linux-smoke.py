@@ -319,6 +319,38 @@ def check_seek(s):
     return check(f'{s.tag}: seek bar responds', body)
 
 
+def check_seek_bar_rest(s):
+    """the background queue waits while the pointer moves over the seek bar, and goes on once it
+    rests there (redesign/PERF_AUDIT_NOTES.md: a resting pointer held it for good)"""
+    def state():
+        lines = [l for l in open(s.log, errors='replace')
+                 if 'background: paused' in l or 'background: resumed' in l]
+        return lines[-1].split('background: ')[1].strip() if lines else ''
+    def body():
+        s.focus()
+        s.show_bars()
+        r = find('Progress', 3, role='slider')
+        if not r:
+            raise CheckFailed('the seek bar ("Progress") is not shown')
+        x, y, w, h = r
+        for d in range(0, 60, 6):
+            xdo('mousemove', x + int(w * 0.3) + d, y + h // 2)
+            time.sleep(0.05)
+        time.sleep(0.5)
+        moving = state()
+        if not moving.startswith('paused'):
+            raise CheckFailed(f'the queue did not wait while the pointer moved over the seek bar (last: "{moving}")')
+        end = time.time() + 8
+        while time.time() < end and not state().startswith('resumed'):
+            time.sleep(0.25)
+        rest = state()
+        if not rest.startswith('resumed'):
+            raise CheckFailed(f'the pointer rests on the seek bar and the queue still waits after 8 s (last: "{rest}")')
+        xdo('mousemove', x + w // 2, y - 200)
+        return f'moving: "{moving}", resting: "{rest}"'
+    return check(f'{s.tag}: the background queue goes on while the pointer rests on the seek bar', body)
+
+
 def check_settings(s):
     def body():
         s.focus()
@@ -690,6 +722,8 @@ def session(exe, codec, tag, full, env=None):
             check_osd(s)
             check_settings(s)
             check_seek(s)
+            if codec == 'h264':
+                check_seek_bar_rest(s)
             check_menu(s)
             check_speed(s)
             if codec == 'h264':

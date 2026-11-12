@@ -194,6 +194,39 @@ void testHoldPauses()
     check(waitUntil([&]() { return !queue.held(); }, 1000), "hold: released by itself");
 }
 
+// a job paused at its gate sleeps until it is resumed or cancelled: its `stop` is not asked over
+// and over (it was every 100 ms, ten wake-ups a second for as long as the seek bar was hovered;
+// redesign/PERF_AUDIT_NOTES.md), and a cancel still ends the wait at once
+void testParkedJobSleeps()
+{
+    RdBackgroundQueue queue(nullptr, 0);
+    std::atomic<int> asked{ 0 };
+    std::atomic<bool> started{ false };
+    std::atomic<bool> parked{ false };
+    std::atomic<bool> done{ false };
+    std::atomic<bool> result{ true };
+    const quint64 id = queue.post(QStringLiteral("parked"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Low,
+        [&](const std::shared_ptr<RdBackgroundQueue::Control>& control) {
+            started = true;
+            while (!control->paused())
+                QThread::msleep(2);
+            parked = true;
+            result = control->waitWhilePaused([&]() { ++asked; return false; });
+            done = true;
+        }, {}, true);
+    check(waitUntil([&]() { return started.load(); }, 2000), "parked: the job starts");
+    queue.hold(QStringLiteral("seek bar"));
+    check(waitUntil([&]() { return parked.load(); }, 2000), "parked: the job stops at its gate");
+    const int before = asked.load();
+    waitUntil([]() { return false; }, 1000);
+    check(asked.load() - before <= 1, "parked: a paused job is not woken while it waits (no polling)");
+    check(!done.load(), "parked: still waiting while held");
+    queue.cancel(id);
+    check(waitUntil([&]() { return done.load(); }, 1000), "parked: a cancel ends the wait at once");
+    check(!result.load(), "parked: the wait reports the cancel");
+    queue.release(QStringLiteral("seek bar"));
+}
+
 void testPreemption()
 {
     RdBackgroundQueue queue(nullptr, 0);
@@ -360,6 +393,7 @@ int main(int argc, char** argv)
     testPriorityOrder();
     testStartupDelay();
     testHoldPauses();
+    testParkedJobSleeps();
     testPreemption();
     testAsyncHoldsSlot();
     testCancelPending();

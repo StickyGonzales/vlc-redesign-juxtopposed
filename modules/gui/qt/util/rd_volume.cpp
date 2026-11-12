@@ -245,15 +245,30 @@ Info volumeOf(const QString& path, int timeoutMs)
 
 rdstorage::FileSystem::Answer SystemFileSystem::exists(const QString& path)
 {
+    const QString root = mountRootOf(path);
+    if (m_silentRoots.contains(root))
+        return Answer::NoAnswer;
     bool found = false;
     if (!withTimeout<bool>(m_timeoutMs, [path]() { return QFileInfo::exists(path); }, &found))
+    {
+        m_silentRoots.insert(root);
         return Answer::NoAnswer;
+    }
     return found ? Answer::Yes : Answer::No;
 }
 
 QString SystemFileSystem::volumeOf(const QString& path)
 {
-    return rdvolume::volumeOf(path, m_timeoutMs).id;
+    const QString root = mountRootOf(path);
+    if (m_silentRoots.contains(root))
+        return {};
+    Info info;
+    if (!withTimeout<Info>(m_timeoutMs, [path]() { return lookUp(path); }, &info))
+    {
+        m_silentRoots.insert(root);
+        return {};
+    }
+    return info.id;
 }
 
 } // namespace rdvolume
