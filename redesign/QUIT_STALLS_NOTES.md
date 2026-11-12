@@ -48,7 +48,8 @@ Runs (filled in below as they finish):
 | build-windows #227, #228, build-linux #120 | the first commit (5c798eb) | cancelled after the review, rebuilt below |
 | build-windows #231 (43223628366), fe9ff5a | Cone (public), this branch, with the new smoke check | compiled. Smoke: every check passed but one. The new check: playback moved after all 6 switches (3->7, 8->12, 12->16, 17->21, 22->26, 27->1); the quit took 2.16 s, no watchdog, over the then 2 s limit. The runner's own clean quits in the same run: 1.48 to 2.01 s. Limit set to 3 s on the runner (above). |
 | build-windows #232 (43223634851), fe9ff5a | vlc profile, this branch | **green** |
-| build-windows #229 (43222935921) | vlc profile, `wip/next-test` (no fix): for the classification on the PC | running |
+| build-windows #229 (43222935921) | vlc profile, `wip/next-test` (no fix): for the classification on the PC | **green** (the zip for section 5 step 1) |
+| build-windows #233 (43230314575), 97b28c7 | Cone (public), this branch, with the runner's 3 s limit | **green**, every smoke check passed. The new check: the time moved after all 6 switches (3->7, 8->12, 12->16, 17->21, 22->26, 27->0), quit 1.28 s, no watchdog. The same run's HEVC quit 1.28 s, installed H.264 1.5 s. |
 | build-linux #121 (43223640964), fe9ff5a | Linux, this branch, with the new smoke check | **green**. Ubuntu 24.04: 6 switches, the time moves after each (4->10, 10->17, 17->23, 24->0, 0->7, 7->13), quit 0.16 s; every other check passed (H.264 quit 0.26 s, HEVC 0.16 s). Ubuntu 22.04, Debian 12 and the Wayland / X11 embed checks green too. |
 
 ## 5. Windows retest (PC session)
@@ -57,8 +58,8 @@ Use the HEVC test media: the generated `test-hevc-2a.mp4` (the build's smoke-med
    `powershell -File redesign\tools\quit-stall-repro.ps1 -Exe <TEST_MEDIA_DIR>\builds\vlc-nofix\vlc.exe -Video <file> -Rounds 5`
    on both files, then the same with the released Cone 1.3.x `Cone.exe`. Note per round: stalls, quit seconds, watchdog. A stall or a quit of 2 s or more with `vlc.exe` means **VLC 4 core**. Write the verdict for each issue into STATUS.md.
 2. **The fix, plain VLC:** the same script with #232's `vlc.exe` (vlc profile, with the fix): no stall in any round, every quit under 1 s.
-3. **The fix, Cone:** deploy #231 into `builds\current`, then run the script with its `Cone.exe` on both files, 5 rounds each. Expect no stall, every quit under 1 s, no `did not finish quitting` in the logs.
-4. **By hand in Cone (#231):**
+3. **The fix, Cone:** deploy #233 into `builds\current`, then run the script with its `Cone.exe` on both files, 5 rounds each. Expect no stall, every quit under 1 s, no `did not finish quitting` in the logs.
+4. **By hand in Cone (#233):**
    - Open the x265 film and switch the audio track in the tracks popup 5 times while it plays: the picture keeps moving each time.
    - Then close with the window's X: the window and the process are gone within 1 s.
    - Repeat with Ctrl+Q.
