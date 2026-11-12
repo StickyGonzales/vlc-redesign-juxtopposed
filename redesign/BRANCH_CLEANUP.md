@@ -161,3 +161,14 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/flathub-prep` | `e289f8e85c6cac41573253f3d9dccf242eb01062` | PR #115 merged (Flathub prep) |
 | `wip/aur-cone-player-bin` | `ed5664bf02537cf11564c5394036e3a64596e8da` | PR #113 merged (AUR package) |
 | `wip/round-linux-1.4.0` | `3cfbf2f0c2b804bc95058a1780b533cb4b65a541` | the combined test build of the five, merged into wip/next-test |
+
+## 2026-11-12, Cone Player 1.4.0 round
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/macos-fixes` | `4f370df77af36822d42ef4d04d93081c0174e51c` | PR #118 merged (macOS fixes, issue #69) |
+| `wip/fix-update-autocheck` | `8afcd1ba95272fb372cc837b1a5a561f2504b0a1` | PR #121 merged (update check) |
+| `wip/fix-show-name-clean` | `821fb60de5dca99e79daed4928434855ae0f326f` | PR #122 merged (clean show names) |
+| `wip/fix-ctrlq-quit` | `14b33daa80786832b68c1df32af222fa399bd3bf` | PR #123 merged (Ctrl+Q) |
+| `wip/fix-pointer-hide-resume` | `b1303a0f6a93f89b1f1e125d8577b1234f8b0aeb` | PR #124 merged (pointer after Space) |
+| `wip/round-1.4.0` | `7162f781885f8779cd956aba3a2b5bb7959c0586` | the 1.4.0 combined test build, merged into wip/next-test |
