@@ -855,6 +855,13 @@ def check_popup_stack(exe, env):
             return (f'resume toast {r}, update notice {u} above it, {gap} px apart, centers {dc:.0f} px apart; '
                     f'after the toast went the notice moved to {u2}')
         check(f'{tag}: the resume toast and the update notice stack without overlapping', body)
+        # a clean quit: a killed Cone makes the next start ask to restore its playlist ("closed
+        # abruptly"), and that dialog would stand in front of the next checks' windows
+        try:
+            rc('quit')
+            s.proc.wait(15)
+        except Exception:  # noqa: BLE001
+            pass
     finally:
         s.stop()
 

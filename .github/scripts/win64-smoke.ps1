@@ -918,6 +918,9 @@ function Check-PopupStack([string]$exe) {
             }
             "resume toast $rt, update notice $ut above it, $gap px apart, centers $([int]$dc) px apart; then the notice moved down to the toast's place"
         } | Out-Null
+        # a clean quit: a killed Cone makes the next start ask to restore its playlist
+        try { Rc 'quit' | Out-Null } catch {}
+        $s.proc.WaitForExit(15000) | Out-Null
     } catch {
         Add-Result $tag 'fail' "unexpected error: $($_.Exception.Message)"
     } finally {
