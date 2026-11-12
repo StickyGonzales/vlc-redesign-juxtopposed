@@ -93,7 +93,8 @@ Not on screen: the profile notice (it needs a profile switch with settings that 
 |---|---|
 | build-windows #235 (43259627528), 8bfceaa | **green**. The new check: toast (235, 582, 553×52), notice (188, 520, 648×52) above it, 10 px apart, centers 0 px apart; then the notice took the toast's place. |
 | build-linux #123 (43259619815), 8bfceaa | The new check **passed**: toast (367, 590, 545×52), notice (320, 528, 640×52), 10 px, centers 0; after it, (320, 590). The installed and .deb quit checks then failed: the popup-stack session had been killed, so their start showed the "closed abruptly" dialog. Fixed in a6dbe22 (a clean quit). |
-| build-linux / build-windows on a6dbe22 | see the pull request |
+| build-linux #124 (43267097808), a6dbe22 | **green**, every smoke check (the new one, and the installed and .deb sessions after it), Ubuntu 24.04 and 22.04, Debian 12, the Wayland / X11 embed checks |
+| build-windows #236 (43267107083), a6dbe22 | **green**, every smoke check |
 
 ## 7. Windows retest (PC session)
 Build: build-windows on `wip/fix-popup-stack`, Cone portable.
