@@ -45,19 +45,20 @@ Runs (filled in below as they finish):
 
 | Run | What | Result |
 |---|---|---|
-| build-windows #227 (43222902413) | Cone (public), this branch, with the new smoke check | running |
-| build-windows #228 (43222908999) | vlc profile, this branch | running |
+| build-windows #227, #228, build-linux #120 | the first commit (5c798eb) | cancelled after the review, rebuilt below |
+| build-windows #231 (43223628366), fe9ff5a | Cone (public), this branch, with the new smoke check | running |
+| build-windows #232 (43223634851), fe9ff5a | vlc profile, this branch | running |
 | build-windows #229 (43222935921) | vlc profile, `wip/next-test` (no fix): for the classification on the PC | running |
-| build-linux #120 (43222915125) | Linux, this branch, with the new smoke check | running |
+| build-linux #121 (43223640964), fe9ff5a | Linux, this branch, with the new smoke check | running |
 
 ## 5. Windows retest (PC session)
 Use the HEVC test media: the generated `test-hevc-2a.mp4` (the build's smoke-media artifact, or `smoke-media.sh`) and the x265 film of the quit recipe (<TEST_MOVIE>). Run every step once; close everything after.
 1. **Whose bug.** Unzip #229's vlc-profile zip (no fix) into `<TEST_MEDIA_DIR>\builds\vlc-nofix`. Run:
    `powershell -File redesign\tools\quit-stall-repro.ps1 -Exe <TEST_MEDIA_DIR>\builds\vlc-nofix\vlc.exe -Video <file> -Rounds 5`
    on both files, then the same with the released Cone 1.3.x `Cone.exe`. Note per round: stalls, quit seconds, watchdog. A stall or a quit of 2 s or more with `vlc.exe` means **VLC 4 core**. Write the verdict for each issue into STATUS.md.
-2. **The fix, plain VLC:** the same script with #228's `vlc.exe` (vlc profile, with the fix): no stall in any round, every quit under 1 s.
-3. **The fix, Cone:** deploy #227 into `builds\current`, then run the script with its `Cone.exe` on both files, 5 rounds each. Expect no stall, every quit under 1 s, no `did not finish quitting` in the logs.
-4. **By hand in Cone (#227):**
+2. **The fix, plain VLC:** the same script with #232's `vlc.exe` (vlc profile, with the fix): no stall in any round, every quit under 1 s.
+3. **The fix, Cone:** deploy #231 into `builds\current`, then run the script with its `Cone.exe` on both files, 5 rounds each. Expect no stall, every quit under 1 s, no `did not finish quitting` in the logs.
+4. **By hand in Cone (#231):**
    - Open the x265 film and switch the audio track in the tracks popup 5 times while it plays: the picture keeps moving each time.
    - Then close with the window's X: the window and the process are gone within 1 s.
    - Repeat with Ctrl+Q.
