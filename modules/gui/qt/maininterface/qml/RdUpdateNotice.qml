@@ -18,9 +18,10 @@
 
 // redesign: Cone's update notice (util/rd_update_check.cpp, redesign/UPDATE_NOTICE_NOTES.md).
 // No Figma frame (Decision 21): the style of the profile notice (RdProfileNotice.qml, after the
-// Figma "continue" toast: 52 high pill, radius 16, BG/A3, Inter 16 FG/2, a primary button),
-// centered over the bottom of the window, 18 px above the control bar (above the window's
-// bottom in the library). "Download" opens the release page in the browser, "Later" (and Escape
+// Figma "continue" toast: 52 high pill, radius 16, BG/A3, Inter 16 FG/2, a primary button). It
+// takes its place in the notices' stack (RdNoticeStack, POPUP_STACK_NOTES.md): the top one,
+// centered over the video area, 24 px above the control bar or above the notices under it, and
+// never over the Up Next card's Next episode button. "Download" opens the release page in the browser, "Later" (and Escape
 // on its buttons) hides it until the next day, "Skip this version" never offers that version
 // again. It never takes the keyboard focus from the player, nor its Escape (fullscreen).
 import QtQuick
@@ -37,19 +38,39 @@ T.Popup {
 
     parent: T.Overlay.overlay
 
-    x: Math.round(((parent ? parent.width : 0) - width) / 2)
-    // the library has no control bar: the notice sits 18 px above the window's bottom there
-    readonly property real _barHeight: (MainCtx.effectiveMainInterfaceMode !== MainCtx.MAININTERFACE_MODE_PLAYER) ? 0
-                                       : (RdPanels.controlBarHeight > 0) ? RdPanels.controlBarHeight
-                                                                         : VLCStyle.rd_controlBarHeight
+    readonly property real _overlayWidth: parent ? parent.width : 0
+    // the interface's width (the window less its frame margin), the stack's coordinates
+    readonly property real _windowWidth: RdNoticeStack.innerWidth(_overlayWidth)
 
-    // never over the Up Next card (its Next episode button): above it while it shows
-    readonly property real _bottomClear: Math.max(_barHeight + VLCStyle.dp(18, VLCStyle.scale),
-                                                  RdPanels.upNextCardTop > 0 ? RdPanels.upNextCardTop + VLCStyle.dp(12, VLCStyle.scale) : 0)
+    // its place over the notices under it: the only part that slides, when one of them comes or
+    // goes; a resize, fullscreen or an open panel moves it at once with the rest of the stack
+    property real _lift: RdNoticeStack.updateLift()
+    Behavior on _lift {
+        enabled: root.opened
+        NumberAnimation { duration: RdNoticeStack.slideDuration; easing.type: Easing.OutCubic }
+    }
 
-    y: (parent ? parent.height : 0) - height - _bottomClear
-    width: Math.min(content.implicitWidth, (parent ? parent.width : 0) - 2 * VLCStyle.margin_large)
+    x: RdNoticeStack.overlayX(_overlayWidth, width)
+    y: RdNoticeStack.overlayY(parent ? parent.height : 0, height, RdNoticeStack.base(_windowWidth) + _lift)
+    width: Math.min(content.implicitWidth, RdNoticeStack.room(_windowWidth))
     height: VLCStyle.dp(52, VLCStyle.scale)
+
+    readonly property bool _shown: visible && opacity > 0
+    Binding {
+        target: RdNoticeStack
+        property: "updateHeight"
+        value: root._shown ? root.height : 0
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "updateWidth"
+        value: root._shown ? root.width : 0
+    }
+    // gone with its view: its place in the stack goes too
+    Component.onDestruction: {
+        RdNoticeStack.updateHeight = 0
+        RdNoticeStack.updateWidth = 0
+    }
 
     padding: 0
     modal: false

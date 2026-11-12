@@ -12,6 +12,7 @@ import argparse
 import ctypes
 import ctypes.util
 import glob
+import json
 import os
 import re
 import shutil
@@ -166,13 +167,18 @@ def rc_number(cmd):
 
 
 class Session:
-    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True):
+    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
         # first_start: Cone's first start (the onboarding), as on a fresh install
-        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+        # update_answer: a file standing for GitHub's answer (CONE_UPDATE_CHECK_TEST_FILE), the update
+        # check on; otherwise the check is off
+        if update_answer:
+            env = dict(env or os.environ, CONE_UPDATE_CHECK_TEST_FILE=update_answer)
+        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize',
+             *([] if update_answer else ['--no-qt-cone-update-check']),
              '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
              f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
              '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), video]
@@ -754,6 +760,112 @@ def check_up_next(exe, env):
         s.stop()
 
 
+def find_where(pred, timeout=0.0):
+    """the first showing element `pred` accepts: (x, y, w, h) on the screen, or None"""
+    end = time.time() + timeout
+    while True:
+        for acc in _walk(cone_app()):
+            try:
+                if not pred(acc):
+                    continue
+                x, y, w, h = acc.queryComponent().getExtents(pyatspi.DESKTOP_COORDS)
+                if w > 0 and h > 0:
+                    return (x, y, w, h)
+            except Exception:  # noqa: BLE001
+                continue
+        if time.time() >= end:
+            return None
+        time.sleep(0.25)
+
+
+def check_popup_stack(exe, env):
+    """the notices at the bottom stack (redesign/POPUP_STACK_NOTES.md): a file watched to 2:00 opened
+    again with the update notice forced on shows the resume toast and the update notice one above
+    the other, never overlapping, on the same center line, 10 px apart; when the toast goes the
+    notice slides down into its place (the toast closes by itself 10 s after it shows)"""
+    video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E03.mp4')
+    answer = os.path.join(WORK, 'update-answer.json')
+    with open(answer, 'w') as f:
+        json.dump([{'tag_name': 'linux-v9.9.9', 'draft': False, 'prerelease': True,
+                    'html_url': 'https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v9.9.9'}], f)
+    tag = 'popup-stack'
+
+    # watch to 2:00 of 7:00 and quit: the media library keeps the progress
+    s = Session(exe, video, tag + '-watch', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+        time.sleep(2)
+        rc('seek 120')
+        time.sleep(2)
+        rc('quit')
+        s.proc.wait(15)
+    except Exception as e:  # noqa: BLE001
+        RESULTS.append((f'{tag}: watch a file to 2:00', 'fail', str(e)))
+        log(f'FAIL  {tag}: watch a file to 2:00  {e}')
+        return
+    finally:
+        s.stop()
+
+    s = Session(exe, video, tag, env, repeat=False, subs=False, update_answer=answer)
+    try:
+        if not check_window(s):
+            return
+
+        def is_update(acc):
+            return (acc.name or '').endswith(' is available') and acc.getRoleName() == 'alert'
+
+        def body():
+            r = find('Resume dialog', 15)
+            u = find_where(is_update, 15)
+            if not r or not u:
+                shot(f'{tag}-missing')
+                raise CheckFailed(f'resume toast {r}, update notice {u}: both expected')
+            time.sleep(0.6)   # past a slide
+            r = find('Resume dialog', 2)
+            u = find_where(is_update, 2)
+            if not r or not u:
+                raise CheckFailed(f'resume toast {r}, update notice {u}: both expected 0.6 s later')
+            shot(f'{tag}-two')
+            overlap = not (r[1] >= u[1] + u[3] or u[1] >= r[1] + r[3]
+                           or r[0] >= u[0] + u[2] or u[0] >= r[0] + r[2])
+            if overlap:
+                raise CheckFailed(f'they overlap: resume toast {r}, update notice {u}')
+            if u[1] + u[3] > r[1]:
+                raise CheckFailed(f'the update notice is not above the resume toast: {u} / {r}')
+            gap = r[1] - (u[1] + u[3])
+            if not 6 <= gap <= 14:
+                raise CheckFailed(f'{gap} px between them (10 expected): {u} / {r}')
+            dc = abs((r[0] + r[2] / 2) - (u[0] + u[2] / 2))
+            if dc > 2:
+                raise CheckFailed(f'not on the same center line ({dc:.0f} px apart): {u} / {r}')
+            # the toast closes by itself 10 s after it shows (ResumeDialog's timeout): the notice
+            # slides down into its place
+            end = time.time() + 14
+            while find('Resume dialog', 0) and time.time() < end:
+                time.sleep(0.25)
+            gone = find('Resume dialog', 0)
+            if gone:
+                raise CheckFailed(f'the resume toast still shows 14 s later: {gone}')
+            time.sleep(0.6)   # past the slide
+            u2 = find_where(is_update, 2)
+            shot(f'{tag}-after')
+            if not u2 or abs((u2[1] + u2[3]) - (r[1] + r[3])) > 2:
+                raise CheckFailed(f'the update notice did not take the toast\'s place: {u2}, toast was {r}')
+            return (f'resume toast {r}, update notice {u} above it, {gap} px apart, centers {dc:.0f} px apart; '
+                    f'after the toast went the notice moved to {u2}')
+        check(f'{tag}: the resume toast and the update notice stack without overlapping', body)
+        # a clean quit: a killed Cone makes the next start ask to restore its playlist ("closed
+        # abruptly"), and that dialog would stand in front of the next checks' windows
+        try:
+            rc('quit')
+            s.proc.wait(15)
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        s.stop()
+
+
 def rc_time():
     """the playback time in seconds, None while nothing plays (the cli gives no number)"""
     try:
@@ -844,6 +956,7 @@ session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
+check_popup_stack(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():

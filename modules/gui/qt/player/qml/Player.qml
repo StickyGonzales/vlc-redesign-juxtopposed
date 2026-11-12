@@ -296,6 +296,10 @@ FocusScope {
         RdPanels.close()
         RdPanels.uiHidden = false
         RdPanels.upNextCardTop = 0
+        RdNoticeStack.upNextLeft = 0
+        RdNoticeStack.resumeHeight = 0
+        RdNoticeStack.resumeWidth = 0
+        RdNoticeStack.playerShown = false
     }
 
     Keys.priority: Keys.AfterItem
@@ -2397,16 +2401,46 @@ FocusScope {
                                              : 0
     readonly property real _toastRoom: width - _videoInset - _toastRightInset - 2 * VLCStyle.margin_normal
 
-    // redesign: resume toast centered just above the control bar (video 14:00-14:10, W3.8)
+    // the notices at the bottom (this resume toast, the profile and the update notices over every
+    // view) stack in one place over the video area (RdNoticeStack, POPUP_STACK_NOTES.md)
+    Binding {
+        target: RdNoticeStack
+        property: "playerShown"
+        value: !rootPlayer._leaving
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "axisOffset"
+        value: (rootPlayer._videoInset - rootPlayer._toastRightInset) / 2
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "playerRoom"
+        value: rootPlayer._toastRoom
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "resumeHeight"
+        value: (resumeToast.visible && resumeToast.opacity > 0) ? resumeToast.height : 0
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "resumeWidth"
+        value: (resumeToast.visible && resumeToast.opacity > 0) ? resumeToast.width : 0
+    }
+
+    // redesign: resume toast centered just above the control bar (video 14:00-14:10, W3.8), the
+    // lowest of the notices' stack
     ResumeDialog {
         id: resumeToast
 
         anchors.horizontalCenter: parent.horizontalCenter
         // centered over the video area, right of the compact library and left of an open panel
-        anchors.horizontalCenterOffset: (rootPlayer._videoInset - rootPlayer._toastRightInset) / 2
-        anchors.bottom: controlBar.top
-        // Figma "continue": 24 px above the control bar (visual audit A21)
-        anchors.bottomMargin: VLCStyle.dp(24, VLCStyle.scale)
+        anchors.horizontalCenterOffset: RdNoticeStack.centerX(rootPlayer.width) - rootPlayer.width / 2
+        anchors.bottom: parent.bottom
+        // Figma "continue": 24 px above the control bar (visual audit A21), above the Up Next card
+        // when they would meet; the lowest notice, nothing under it to slide over
+        anchors.bottomMargin: RdNoticeStack.resumeBottom(rootPlayer.width)
         z: 2
 
         // it hugs its sentence (Figma) and wraps it when the room is narrower
@@ -2473,6 +2507,11 @@ FocusScope {
         target: RdPanels
         property: "upNextCardTop"
         value: upNextCard.shown ? rootPlayer._upNextBottom + upNextCard.height : 0
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "upNextLeft"
+        value: upNextCard.shown ? upNextCard.x : 0
     }
 
     // redesign: right-click menu and Hide UI (W4.10); the video's right click arrives through
