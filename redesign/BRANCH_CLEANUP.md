@@ -172,3 +172,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/fix-ctrlq-quit` | `14b33daa80786832b68c1df32af222fa399bd3bf` | PR #123 merged (Ctrl+Q) |
 | `wip/fix-pointer-hide-resume` | `b1303a0f6a93f89b1f1e125d8577b1234f8b0aeb` | PR #124 merged (pointer after Space) |
 | `wip/round-1.4.0` | `7162f781885f8779cd956aba3a2b5bb7959c0586` | the 1.4.0 combined test build, merged into wip/next-test |
+
+## 2026-11-12, PR #126
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-popup-stack` | `b8ce9883ef3c519caafad18a61c1476c38e61dd6` | PR #126 merged into wip/next-test (notices stack) |

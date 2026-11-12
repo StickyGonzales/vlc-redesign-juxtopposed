@@ -28,6 +28,15 @@ FORBIDDEN_PATHS = [
     r"\.(mp4|mkv|mov|avi)$",                  # video files
 ]
 
+# A private entry also matches inside a longer word or a file name: case-insensitive, and its \b
+# means a letter boundary (underscores, digits, dots and dashes separate words, letters do not), so
+# "sbs_chapters_title.png" or "Title2016" match an entry "\bTitle\b" while an ordinary longer word
+# that only contains it does not. (A name in a screenshot file name was missed on 2026-11-12.)
+LETTER_EDGE = r"(?:(?<![A-Za-z])(?=[A-Za-z])|(?<=[A-Za-z])(?![A-Za-z]))"
+
+def private_rx(pattern):
+    return re.compile(pattern.replace(r"\b", LETTER_EDGE), re.IGNORECASE)
+
 def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8").stdout
 
@@ -37,18 +46,24 @@ def main():
     if not staged:
         files += git("diff", "--name-only", "--diff-filter=AM", "--cached").split()
     files = sorted(set(files))
-    patterns = list(GENERIC)
+    rx = [re.compile(p) for p in GENERIC]
+    private = []
     local = os.path.join(HERE, "privacy.local.txt")
     if os.path.exists(local):
-        patterns += [l.strip() for l in open(local, encoding="utf-8") if l.strip() and not l.startswith("#")]
+        private = [private_rx(l.strip()) for l in open(local, encoding="utf-8")
+                   if l.strip() and not l.startswith("#")]
     else:
         print("note: no privacy.local.txt, only the generic checks run")
-    rx = [re.compile(p) for p in patterns]
+    rx += private
     problems = []
     for f in files:
         for p in FORBIDDEN_PATHS:
             if re.search(p, f):
                 problems.append("forbidden file: " + f)
+        # a private word in a file's own name or folder
+        for r in private:
+            if r.search(f):
+                problems.append("file name matches a private entry: " + f)
         if not os.path.exists(f) or f.endswith(("CREDITS.md", "redesign/tools/privacycheck.py")):
             continue
         try:

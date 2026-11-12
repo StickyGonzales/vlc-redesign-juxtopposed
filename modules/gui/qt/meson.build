@@ -1005,6 +1005,7 @@ qml_modules += {
    ),
    'singletons' : files(
        'player/qml/PlayerControlbarControls.qml',
+       'player/qml/RdNoticeStack.qml',
        'player/qml/RdPanels.qml',
        'player/qml/RdSleepTimer.qml',
    )

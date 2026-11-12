@@ -19,8 +19,9 @@
 // redesign (W8.2, Decision 29): after a profile switch (RdProfiles.applied), tells when some of
 // the profile's settings do not apply at once. No Figma frame (Decision 21): the resume toast's
 // style (Figma "continue": 52 high pill, radius 16, BG/A3, Inter 16 FG/2, a primary button and
-// the dark close button), centered over the bottom of the window, 18 px above the control bar
-// (its real height: one row, or two when the seek row has its own row).
+// the dark close button). It takes its place in the notices' stack (RdNoticeStack,
+// POPUP_STACK_NOTES.md): above the resume toast, under the update notice, centered over the
+// video area, 24 px above the control bar (its real height: one row, or two).
 // - settings that only apply after a restart: "Restart Now" (VLC starts again with them) and
 //   the close button; it stays until one is clicked.
 // - settings that apply from the next file, while one plays: the sentence alone, for 6 s.
@@ -44,14 +45,40 @@ T.Popup {
 
     parent: T.Overlay.overlay
 
-    x: Math.round(((parent ? parent.width : 0) - width) / 2)
-    readonly property real _barHeight: (RdPanels.controlBarHeight > 0) ? RdPanels.controlBarHeight
-                                                                       : VLCStyle.rd_controlBarHeight
+    readonly property real _overlayWidth: parent ? parent.width : 0
+    // the interface's width (the window less its frame margin), the stack's coordinates
+    readonly property real _windowWidth: RdNoticeStack.innerWidth(_overlayWidth)
 
-    y: (parent ? parent.height : 0) - height - _barHeight - VLCStyle.dp(18, VLCStyle.scale)
+    // its place over the notices under it: the only part that slides, when one of them comes or
+    // goes; a resize, fullscreen or an open panel moves it at once with the rest of the stack
+    property real _lift: RdNoticeStack.profileLift()
+    Behavior on _lift {
+        enabled: root.opened
+        NumberAnimation { duration: RdNoticeStack.slideDuration; easing.type: Easing.OutCubic }
+    }
+
+    x: RdNoticeStack.overlayX(_overlayWidth, width)
+    y: RdNoticeStack.overlayY(parent ? parent.height : 0, height, RdNoticeStack.base(_windowWidth) + _lift)
     width: Math.min(VLCStyle.dp(552, VLCStyle.scale), content.implicitWidth + VLCStyle.dp(30, VLCStyle.scale),
-                    (parent ? parent.width : 0) - 2 * VLCStyle.margin_large)
+                    RdNoticeStack.room(_windowWidth))
     height: VLCStyle.dp(52, VLCStyle.scale)
+
+    readonly property bool _shown: visible && opacity > 0
+    Binding {
+        target: RdNoticeStack
+        property: "profileHeight"
+        value: root._shown ? root.height : 0
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "profileWidth"
+        value: root._shown ? root.width : 0
+    }
+    // gone with its view: its place in the stack goes too
+    Component.onDestruction: {
+        RdNoticeStack.profileHeight = 0
+        RdNoticeStack.profileWidth = 0
+    }
 
     padding: 0
     modal: false

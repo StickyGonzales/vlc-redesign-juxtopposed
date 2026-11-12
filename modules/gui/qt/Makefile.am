@@ -1642,6 +1642,7 @@ libqml_module_player_a_QML = \
 
 libqml_module_player_a_Singleton_QML = \
 	player/qml/PlayerControlbarControls.qml \
+	player/qml/RdNoticeStack.qml \
 	player/qml/RdPanels.qml \
 	player/qml/RdSleepTimer.qml
 libqml_module_player_a_SOURCES = $(QML_MODULE_player_SRC)
