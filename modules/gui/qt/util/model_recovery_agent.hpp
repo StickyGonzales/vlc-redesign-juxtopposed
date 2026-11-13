@@ -69,12 +69,20 @@ public:
                 const QFileInfo fileInfo(m_recoveryFileName);
                 if (fileInfo.size() > 0)
                 {
-                    if (DialogsProvider::getInstance()->messageDialog(qtr("Do you want to restore the %1 model from %2?").arg(modelIdentifier.toLower(),
+                    // redesign: the question runs an event loop of its own; a quit meanwhile
+                    // deletes the model and the settings, and going on with them crashed
+                    // (redesign/PERF_AUDIT_NOTES.md section 9)
+                    const QPointer<T> modelAlive(model);
+                    const QPointer<QSettings> settingsAlive(settings);
+                    const int answer = DialogsProvider::getInstance()->messageDialog(qtr("Do you want to restore the %1 model from %2?").arg(modelIdentifier.toLower(),
                                                                                                                               fileInfo.lastModified().toString()),
                                                                       qtr("The application closed abruptly."),
                                                                       (QMessageBox::Yes | QMessageBox::No),
                                                                       QMessageBox::Yes,
-                                                                      QMessageBox::Question) == QMessageBox::Yes)
+                                                                      QMessageBox::Question);
+                    if (!modelAlive || !settingsAlive)
+                        throw std::exception(); // the interface is closing: the recovery file stays for the next start
+                    if (answer == QMessageBox::Yes)
                     {
                         model->append(m_recoveryFileName);
                         m_conditionDismissInitialDirtiness = true;
