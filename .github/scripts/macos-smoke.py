@@ -543,15 +543,28 @@ def finder_open_running():
         s.stop()
 
 
+def finder_trail(log_path, err_path):
+    # where the open request went: darwinvlc's handler (stderr) and the Qt interface (log)
+    lines = []
+    for path in (err_path, log_path):
+        try:
+            with open(path, errors='replace') as f:
+                lines += [l.strip() for l in f if 'macOS:' in l or 'openFiles' in l or 'FileOpen' in l]
+        except OSError:
+            lines.append(f'(no {os.path.basename(path)})')
+    return ' | trail: ' + ' / '.join(lines[:12])
+
+
 def finder_open_launch():
     # Cone started by LaunchServices with a file, as a double-click in Finder; the cli's socket
     # through --args, which the file does not travel with (it comes as the Apple event)
     if os.path.exists(RC_SOCK):
         os.remove(RC_SOCK)
     log_path = os.path.join(OUT, 'cone-finder-launch.log')
+    err_path = os.path.join(OUT, 'cone-finder-launch.stderr.txt')
     # Qt's macOS application logging (the delegate's launch and open-files calls) into Cone's log,
     # to see whether the launch's open event reaches Qt at all (run 17 and 18: it did not play)
-    r = run(['open', '-n', '-a', APP, '--env', 'QT_LOGGING_RULES=qt.qpa.application*=true;qt.qpa.events*=true',
+    r = run(['open', '-n', '-a', APP, '--stderr', err_path, '--env', 'QT_LOGGING_RULES=qt.qpa.application*=true;qt.qpa.events*=true',
              os.path.join(MEDIA, 'test-hevc.mp4'), '--args',
              '--no-qt-privacy-ask', '--no-qt-cone-update-check', '--aout=adummy', '--input-repeat=50',
              '--file-logging', f'--logfile={log_path}', '--log-verbose=2', '--extraintf=cli',
@@ -562,7 +575,10 @@ def finder_open_launch():
         end = time.time() + 30
         while not os.path.exists(RC_SOCK) and time.time() < end:
             time.sleep(0.5)
-        return 'a start from Finder: ' + playing_file('test-hevc.mp4', 20)
+        try:
+            return 'a start from Finder: ' + playing_file('test-hevc.mp4', 20) + finder_trail(log_path, err_path)
+        except CheckFailed as e:
+            raise CheckFailed(str(e) + finder_trail(log_path, err_path)) from None
     finally:
         try:
             rc('quit')

@@ -159,7 +159,11 @@ Each of VLC's macOS video outputs was tried on the same H.264 file, with a scree
   - **Fix:** `Info.plist` now has the purpose strings (`NSDesktopFolderUsageDescription`, Documents, Downloads, removable and network drives), so macOS asks with a reason.
   - **If access was refused once:** System Settings > Privacy & Security > Files and Folders > Cone Player: turn Desktop Folder on.
   - **Each new build asks again:** macOS remembers the permission per signature, and Cone's ad-hoc signature changes with every build.
-- **Smoke:** two checks open a file through LaunchServices (`open -a`, as Finder does): one while Cone runs (passes on both runners, run 17), one starting Cone with the file. The second failed in run 17: at the start the open event came before the event filter existed, so the filter is now installed right after the QApplication and the files wait for the play queue. Both stay warnings until they pass on the runners.
+- **A start from Finder still showed no file (follow-up, branch `wip/macos-finder-launch`).** With the filter installed right after the QApplication (run 18), a file opened while Cone runs played, but a Cone started by the open did not: the start's open event never reached the Qt interface.
+  - **Fix:** Cone's own macOS startup code (`bin/darwinvlc.m`, before any interface or window exists) installs a handler for the "open documents" Apple event, and installs it again when AppKit finishes launching, where AppKit sets up its own handlers. Every such event, at the start and while Cone runs, comes there first. The handler keeps the files until launching has finished, then hands them to the application delegate (Qt's). Qt turns them into the `QFileOpenEvent` the interface's filter keeps until the play queue is ready; the first file plays.
+  - **No core change:** VLC's play queue functions are not exported to the app, so the files take Qt's own path, the one that already worked for a running Cone.
+  - **Log:** each step goes to stderr: `macOS: open-documents event with N file(s) (at launch / while running)`, `macOS: N opened file(s) passed to the interface`; the Qt interface then logs `macOS: open <file> from Finder`.
+- **Smoke:** two checks open a file through LaunchServices (`open -a`, as Finder does): one while Cone runs (passes on both runners since run 17), one starting Cone with the file. The start check catches Cone's stderr (`open --stderr`) and prints every `macOS:` line from it and from Cone's log, so the result shows where the request went. Both stay warnings until they pass on the runners.
 
 ## The shortcuts page of the first start (issue #69)
 - **What the tester saw:** "COMMAND" and "CTRL" written out made the key caps of "Learn the basic keyboard shortcuts" run past the right edge, and a "/" sat on a label.
@@ -192,14 +196,16 @@ Any Mac with macOS 12 or later: the `-macos-arm64.dmg` for Apple Silicon (M1 and
 7. **Anything odd:** a crash (copy the first 40 lines of macOS's report), a freeze, cut-off text, blurry text on a Retina display.
 
 ## Tester list for the issue #69 fixes (about 10 minutes)
-A build from the PR of `wip/macos-fixes` (Actions > build-macos > the run > Artifacts: `cone-macos-arm64`). Each step: what to do, and what you should see.
+A build that has the fixes of `wip/macos-fixes` and `wip/macos-finder-launch` (Actions > build-macos > the run > Artifacts: `cone-macos-arm64` for Apple Silicon, `cone-macos-x86_64` for Intel). Each step: what to do, and what you should see.
 1. **The picture.**
    - **Do:** play a 16:9 video in a window that is taller than the video, then a second video right after.
    - **See:** the whole picture, with black bands above and below; nothing of the desktop or another window shows through, and the second video shows too.
    - **Then:** resize the window and go fullscreen and back; the picture follows.
 2. **Finder, Cone closed.**
-   - **Do:** quit Cone, then double-click a video in Finder, or right-click > Open With > Cone Player.
-   - **See:** Cone starts and plays it. Cone may not be the default player, but it is listed under Open With.
+   - **Do:** quit Cone fully (⌘ Q; no Cone icon left running in the Dock), then double-click a video in Finder, or right-click > Open With > Cone Player.
+   - **See:** Cone starts and plays that video within a few seconds. Cone may not be the default player, but it is listed under Open With.
+   - **Also:** quit again, select three videos in Finder and Open With > Cone Player: all three are in the queue and the first plays. Quit again and drop a video on Cone's Dock icon (Keep in Dock first): it starts and plays.
+   - **If nothing plays:** start Cone from Terminal with `open -a "Cone Player" --stderr ~/cone-open.txt <a video>` and send `~/cone-open.txt` (it shows whether the open request arrived).
 3. **Finder, Cone open.**
    - **Do:** with a video playing, open another one from Finder (Open With > Cone Player, or drop it on Cone's Dock icon).
    - **See:** the new file plays in the same window. Select three files and Open With Cone: all three are in the queue and the first plays.
