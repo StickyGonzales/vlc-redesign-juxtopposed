@@ -173,6 +173,10 @@ class Model
 public:
     // the key of a path: clean, '/' separators, case folded on Windows
     static QString key(const QString& path);
+    // a picture's or download's path as the registry stores it: one spelling whichever way it
+    // was written (Windows gave the same download as C:\...\portable/subtitles/... and as
+    // C:/.../portable/subtitles/...: two entries, STATUS #127 retest)
+    static QString artifactPath(const QString& path);
     // the key of `path`'s folder is under (or is) the key `root`
     static bool under(const QString& pathKey, const QString& rootKey);
 
@@ -205,7 +209,8 @@ public:
     void markConnected(const QSet<QString>& volumes, qint64 now);
 
     void addArtifact(const QString& file, ArtifactKind kind, const QString& media, qint64 now);
-    void removeArtifact(const QString& file) { m_artifacts.remove(file); }
+    void removeArtifact(const QString& file) { m_artifacts.remove(artifactPath(file)); }
+    bool hasArtifact(const QString& file) const { return m_artifacts.contains(artifactPath(file)); }
     // an artifact file renamed (a picture or waveform named after its video's new path)
     void renameArtifact(const QString& from, const QString& to);
     // the registered artifacts of one kind for one video
@@ -233,8 +238,15 @@ public:
     // its pictures and waveforms only (Cone makes them again if the show comes back)
     Plan dropRebuildable(const QString& entryKey);
 
-    // takes the files of a plan out of the registry (the caller deleted them)
+    // takes the files of a plan out of the registry (the caller deletes them)
     void applied(const Plan& plan);
+
+    // files to delete that may not be gone yet: kept in the registry until the delete ran, so a
+    // quit before it (the background queue held it back: STATUS #127 retest) still deletes them
+    void addPendingDeletes(const QStringList& files);
+    void deleted(const QStringList& files);
+    bool isPendingDelete(const QString& file) const { return m_pendingDeletes.contains(artifactPath(file)); }
+    QStringList pendingDeletes() const { return QStringList(m_pendingDeletes.cbegin(), m_pendingDeletes.cend()); }
 
 private:
     bool belongs(const Artifact& artifact, const QString& entryKey, const Entry& entry) const;
@@ -242,6 +254,7 @@ private:
     QHash<QString, Entry> m_entries;
     QHash<QString, qint64> m_volumes;
     QHash<QString, Artifact> m_artifacts;
+    QSet<QString> m_pendingDeletes;
     qint64 m_lastDaily = 0;
 };
 

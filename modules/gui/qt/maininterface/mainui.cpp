@@ -483,13 +483,34 @@ void MainUI::registerQMLTypes()
         // the background queue waits while a file opens and while the user seeks (also by a
         // key: a jump of the time), so playback gets the drive and the processor first
         PlayerController* player = m_intf->p_mainPlayerController;
-        connect(player, &PlayerController::inputChanged, background, [background](bool hasInput) {
+        auto opening = std::make_shared<bool>(false);
+        // the previous file's time when the new one came: its clock may still tick a moment
+        auto previousTime = std::make_shared<qint64>(-1);
+        connect(player, &PlayerController::inputChanged, background, [background, player, opening, previousTime](bool hasInput) {
+            *opening = hasInput;
+            const VLCTime time = player->getTime();
+            *previousTime = time.valid() ? time.toMilliseconds() : -1;
             if (hasInput)
                 background->hold(QStringLiteral("opening a file"), 8000);
         });
-        connect(player, &PlayerController::playingStateChanged, background, [background](PlayerController::PlayingState state) {
+        connect(player, &PlayerController::playingStateChanged, background, [background, opening](PlayerController::PlayingState state) {
             if (state == PlayerController::PLAYING_STATE_PLAYING)
+            {
+                *opening = false;
                 background->release(QStringLiteral("opening a file"));
+            }
+        });
+        // Next from one playing file to another: the state stays "playing", so the new file's
+        // first time ends the hold (it lasted its full 8 s: STATUS #127 retest); a time past the
+        // previous file's is still that file's clock
+        connect(player, &PlayerController::timeChanged, background, [background, player, opening, previousTime]() {
+            const qint64 time = player->getTime().toMilliseconds();
+            if (*opening && player->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING
+                && time > 0 && (*previousTime < 0 || time < *previousTime))
+            {
+                *opening = false;
+                background->release(QStringLiteral("opening a file"));
+            }
         });
         connect(player, &PlayerController::seekRequested, background, [background]() {
             background->hold(QStringLiteral("seeking"), 1500);

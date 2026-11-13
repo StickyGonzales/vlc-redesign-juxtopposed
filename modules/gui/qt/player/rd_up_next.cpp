@@ -224,6 +224,11 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     connect(m_player, &PlayerController::inputChanged, this, &RdUpNext::onInputChanged);
     connect(m_player, &PlayerController::timeChanged, this, &RdUpNext::updateCard);
     connect(m_player, &PlayerController::lengthChanged, this, &RdUpNext::evaluate);
+    // the new file's first time makes a length equal to the previous file's its own
+    connect(m_player, &PlayerController::timeChanged, this, [this]() {
+        if (m_thumbWaitsLength && timeFresh() && lengthKnown())
+            evaluate();
+    });
     connect(m_player, &PlayerController::rateChanged, this, &RdUpNext::updateCard);
     connect(m_player, &PlayerController::playingStateChanged, this, [this]() {
         if (m_player->getPlayingState() == PlayerController::PLAYING_STATE_STOPPED)
@@ -501,6 +506,8 @@ void RdUpNext::onInputChanged(bool hasInput)
         const VLCTime time = m_player->getTime();
         m_staleTimeMs = time.valid() ? time.toMilliseconds() : -1;
         m_timeFresh = false;
+        const VLCDuration length = m_player->getLength();
+        m_staleLengthMs = length.valid() ? length.toMilliseconds() : -1;
     }
 
     const bool fromAutoplay = input && input == m_queuedInput;
@@ -882,13 +889,26 @@ bool RdUpNext::queueIsCones() const
 
 // ------------------------------------------------------------------------------- decision
 
+bool RdUpNext::lengthKnown() const
+{
+    const VLCDuration length = m_player->getLength();
+    if (!length.valid() || length.toMilliseconds() <= 0)
+        return false;
+    // a length other than the previous file's is the new one's; the same is, once the new file's
+    // time came (it comes with its length): a time before the previous file's (its clock may
+    // still tick a moment after the switch)
+    if (length.toMilliseconds() != m_staleLengthMs)
+        return true;
+    const VLCTime time = m_player->getTime();
+    return m_timeFresh && time.valid() && (m_staleTimeMs < 0 || time.toMilliseconds() < m_staleTimeMs);
+}
+
 bool RdUpNext::longEnough() const
 {
     // a short clip or a weak pattern on a short file is not an episode (plan 3.3)
-    if (m_show.minDurationSec <= 0)
+    if (m_show.minDurationSec <= 0 || !lengthKnown())
         return true;
-    const VLCDuration length = m_player->getLength();
-    return !length.valid() || length.toSeconds() >= m_show.minDurationSec;
+    return m_player->getLength().toSeconds() >= m_show.minDurationSec;
 }
 
 void RdUpNext::evaluate()
@@ -926,7 +946,7 @@ void RdUpNext::evaluate()
     if (oldReason != m_blockedReason || oldNext != m_nextIndex)
         emit nextChanged();
     emit stateChanged();
-    if (oldNext != m_nextIndex)
+    if (oldNext != m_nextIndex || (m_thumbWaitsLength && lengthKnown()))
         requestThumbnail();
     updateCard();
 }
@@ -1828,6 +1848,7 @@ void RdUpNext::requestThumbnail()
     }
     // a request dropped: its slot of the background queue is free
     finishThumbnailJob();
+    m_thumbWaitsLength = false;
     if (!m_thumbnail.isEmpty())
     {
         m_thumbnail.clear();
@@ -1848,6 +1869,14 @@ void RdUpNext::requestThumbnail()
         emit thumbnailChanged();
         if (m_storage)
             m_storage->pictureWritten(target, file.absoluteFilePath());
+        return;
+    }
+
+    // the playing file's length decides whether a card can show at all (longEnough): until it is
+    // known, nothing is made (evaluate() asks again once it is)
+    if (m_show.minDurationSec > 0 && !lengthKnown())
+    {
+        m_thumbWaitsLength = true;
         return;
     }
 

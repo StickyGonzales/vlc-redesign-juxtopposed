@@ -136,6 +136,19 @@ QString Model::key(const QString& path)
     return clean;
 }
 
+QString Model::artifactPath(const QString& path)
+{
+    if (path.isEmpty())
+        return path;
+    QString clean = QDir::cleanPath(QDir::fromNativeSeparators(path));
+#ifdef _WIN32
+    // the drive letter's case differs between Qt and VLC's paths: one spelling
+    if (clean.size() >= 2 && clean.at(1) == QLatin1Char(':'))
+        clean[0] = clean.at(0).toUpper();
+#endif
+    return clean;
+}
+
 bool Model::under(const QString& pathKey, const QString& rootKey)
 {
     if (rootKey.isEmpty())
@@ -184,8 +197,22 @@ Model Model::fromJson(const QJsonObject& data)
         artifact.media = object.value(QStringLiteral("media")).toString();
         artifact.used = object.value(QStringLiteral("used")).toInteger();
         artifact.selected = object.value(QStringLiteral("selected")).toBool();
-        model.m_artifacts.insert(it.key(), artifact);
+        // a registry from before one spelling may hold the same file twice: merged into one
+        // entry, which keeps the video it belongs to, the latest use and the selection
+        const QString file = artifactPath(it.key());
+        const auto known = model.m_artifacts.find(file);
+        if (known != model.m_artifacts.end())
+        {
+            if (artifact.media.isEmpty())
+                artifact.media = known->media;
+            artifact.used = std::max(artifact.used, known->used);
+            artifact.selected = artifact.selected || known->selected;
+        }
+        model.m_artifacts.insert(file, artifact);
     }
+    for (const QJsonValue& value : data.value(QStringLiteral("pendingDelete")).toArray())
+        if (!value.toString().isEmpty())
+            model.m_pendingDeletes.insert(artifactPath(value.toString()));
     model.m_lastDaily = data.value(QStringLiteral("lastDaily")).toInteger();
     return model;
 }
@@ -238,6 +265,12 @@ QJsonObject Model::toJson() const
     root.insert(QStringLiteral("entries"), entries);
     root.insert(QStringLiteral("volumes"), volumes);
     root.insert(QStringLiteral("artifacts"), artifacts);
+    if (!m_pendingDeletes.isEmpty())
+    {
+        QStringList pending = pendingDeletes();
+        pending.sort();
+        root.insert(QStringLiteral("pendingDelete"), QJsonArray::fromStringList(pending));
+    }
     if (m_lastDaily > 0)
         root.insert(QStringLiteral("lastDaily"), m_lastDaily);
     return root;
@@ -373,8 +406,10 @@ QVector<Moved> Model::relocate(const Match& match, const Entry& seen, qint64 now
     return moved;
 }
 
-void Model::renameArtifact(const QString& from, const QString& to)
+void Model::renameArtifact(const QString& fromPath, const QString& toPath)
 {
+    const QString from = artifactPath(fromPath);
+    const QString to = artifactPath(toPath);
     const auto found = m_artifacts.find(from);
     if (found == m_artifacts.end() || from == to)
         return;
@@ -404,7 +439,10 @@ void Model::addArtifact(const QString& file, ArtifactKind kind, const QString& m
 {
     if (file.isEmpty())
         return;
-    Artifact& artifact = m_artifacts[file];
+    const QString path = artifactPath(file);
+    // written again (a picture made anew, the same subtitle downloaded again): no longer to delete
+    m_pendingDeletes.remove(path);
+    Artifact& artifact = m_artifacts[path];
     artifact.kind = kind;
     artifact.media = key(media);
     artifact.used = now;
@@ -412,7 +450,7 @@ void Model::addArtifact(const QString& file, ArtifactKind kind, const QString& m
 
 void Model::markSelected(const QString& file, qint64 now)
 {
-    const auto it = m_artifacts.find(file);
+    const auto it = m_artifacts.find(artifactPath(file));
     if (it == m_artifacts.end() || it->kind != ArtifactKind::Download)
         return;
     it->selected = true;
@@ -591,7 +629,20 @@ Plan Model::forgetAll(const QStringList& pictures, const QStringList& downloads)
 void Model::applied(const Plan& plan)
 {
     for (const QString& file : plan.deleteFiles)
-        m_artifacts.remove(file);
+        m_artifacts.remove(artifactPath(file));
+}
+
+void Model::addPendingDeletes(const QStringList& files)
+{
+    for (const QString& file : files)
+        if (!file.isEmpty())
+            m_pendingDeletes.insert(artifactPath(file));
+}
+
+void Model::deleted(const QStringList& files)
+{
+    for (const QString& file : files)
+        m_pendingDeletes.remove(artifactPath(file));
 }
 
 } // namespace rdstorage
