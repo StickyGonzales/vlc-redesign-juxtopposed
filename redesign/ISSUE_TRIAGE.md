@@ -118,3 +118,35 @@ Everything new since the first triage (2026-11-11 15:55 UTC): the new issues #13
 
 **#116** (only if StickyGonzales wants to follow up)
 > Linux beta 5 (1.4.0) is out with the Wayland fix: https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.4.0-beta5. If you get a chance, could you check that the video now plays inside Cone with the controls in fullscreen? Thanks again!
+## Round 2, strict check (2026-11-13, at StickyGonzales's rule)
+
+A point is a **bug** only with evidence of a crash, freeze, data loss or wrong result, or of Cone not matching its reference (Juxtopposed's Figma or video, StickyGonzales's decisions and plan files for Cone extras, plain VLC 4 for VLC behaviour). Everything else is **works as designed** (with the reference) or a **feature idea** (default: not now; "worth considering" only if it helps most users). This replaces the judgements of the round 2 table above where they differ.
+
+**New checks for this pass**
+- **VLC 4 and several audio tracks (#132):** in the vlc profile build (`builds\current\vlc.exe`, the fork's VLC-branded build of 2026-10-16, same engine), a file with two audio tracks: the tracks list offers one choice (radio buttons), and choosing the second unselects the first in the log (`ES track unselected: 'audio/2'`, then `ES track selected (forced): 'audio/3'`). In VLC 4's engine (`src/input/es_out.c`, `EsOutPropsInit`) audio is created `ES_OUT_ES_POLICY_EXCLUSIVE`, while video and subtitles are `ES_OUT_ES_POLICY_AUTO` (several at once when asked). Plain VLC 4 cannot play two audio tracks together.
+- **The fullscreen window buttons (#98):** Juxtopposed's video shows the top bar with minimize, maximize and close only in a window (3:48-3:55, VIDEO_INDEX row 41 P2-08: "window with both bars ... thin window border"); no frame or video moment shows fullscreen with window buttons. The vlc profile build uses Cone's interface, so stock VLC 4's own fullscreen could not be checked on this PC.
+- **VLSub:** VLC's subtitle search extension (`lua\extensions\VLSub.luac`) ships in both the vlc build and Cone #250 (the Lua extensions are VLC's, not a search field in her design).
+
+| Issue | Point | Verdict | Reference and evidence | Ours or VLC | Feature idea: who it helps, VLC or design has it, recommendation |
+|---|---|---|---|---|---|
+| #129 | Album art stretched when the window is resized | **Bug** | Figma "Player - Music" and VIDEO_INDEX 209 (P6-04) / 211 (IB-23): "centered large square cover art with rounded corners". Reproduced on 1.4.0 and wip/next-test: a square 600x600 cover becomes about 120x380 at 1040x570, 215x505 at 1500x600, 490x765 at 1100x900. | Ours | - |
+| #69 | Album art proportions warped | **Bug, the same as #129** | Same reference; their screenshot shows the same squeeze on macOS. | Ours | - |
+| #69 | Opening a file from Finder while Cone is closed does nothing | **Bug (known)** | A wrong result (the file is not played); already in the 1.4.0 known issues. Needs a Mac to retest. | Ours (macOS integration) | - |
+| #69 | "Picture-in-picture" with a long strip | **Works as designed (Figma "Miniplayer")**; a real floating window would be a feature idea | Their screenshot is the mini player exactly as Figma "Miniplayer" (picture, progress strip, title, folder, artist, queue). Picture-in-picture over other apps: skipped by Decision 1. Ask which strip they mean. | Ours | Floating PiP: helps some users, VLC 4 has no PiP, her design marks the PiP icon only; **not now** (Decision 1). |
+| #132 | Play several audio tracks at the same time | **Feature idea** | Plain VLC 4 plays one audio track at a time (checked above). | VLC core (the engine's audio policy) | Helps few users (commentary or language mixing); neither VLC nor the design has it; needs an engine change; **not now**. |
+| #98 | An optional close button in fullscreen, off by default | **Feature idea** | Her design shows the window buttons only in a window (row 41); Ctrl+Q, Alt+F4 and leaving fullscreen work today. | Ours | Helps some users (mouse-only); the design does not have it; stock VLC 4 not checked here; **not now**. |
+| #98 | Filters in the OpenSubtitles search (type, year, season, episode) | **Feature idea** | Her Add Subtitles dialog has the search box and language only (W6.5). | Ours | Helps users with ambiguous titles; the design does not have it; VLC's VLSub extension has its own search (title, season, episode); **not now**. |
+| #98 | Several API keys from separate OpenSubtitles accounts | **Feature idea** | Cone has one key and one account, as designed. | Ours | Helps only users who exceed the daily limit and keep several accounts; neither VLC nor the design has it; rotating accounts may go against OpenSubtitles' terms; **not now**. |
+| #116 | (the maintainer's reply only) | Nothing to judge | - | - | - |
+
+**Bugs:** 2 (album art not square, #129 and #69; Finder cold open on macOS, known). **Worth considering:** none: no feature idea here helps most users.
+
+### Reply drafts (replace the round 2 drafts above where they differ)
+
+**#132**
+> Thanks for the idea! I checked: VLC's engine, which Cone uses for playback, plays one audio track at a time, and choosing another track replaces the first. Mixing several tracks would need changes inside VLC itself, so it isn't planned for Cone for now. I've noted it as a feature idea.
+
+**#98**
+> Thanks for the follow-up, and glad Auto-sync does the job! I've noted the optional fullscreen close button, the search filters and the multiple keys as feature ideas. They aren't planned for now: the fullscreen bar follows Juxtopposed's design, and switching between several OpenSubtitles accounts to get past the daily limit is something their terms may not allow. Ctrl+Q and Alt+F4 close Cone from fullscreen in the meantime.
+
+**#129** and **#69** and **#116:** the round 2 drafts above stand (#129 and #69: a real bug, being fixed for the next release; #69: the mini player question; #116: please confirm beta 5).
