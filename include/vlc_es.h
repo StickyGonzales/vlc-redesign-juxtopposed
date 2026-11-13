@@ -382,6 +382,8 @@ struct video_format_t
         unsigned rpu_present : 1;
         unsigned el_present : 1;
         unsigned bl_present : 1;
+        unsigned bl_signal_compatibility_id : 4;
+        unsigned md_compression : 2;
     } dovi;
     uint32_t i_cubemap_padding; /**< padding in pixels of the cube map faces */
 };
@@ -518,8 +520,11 @@ VLC_API video_transform_t video_format_GetTransform(video_orientation_t src, vid
  */
 VLC_API bool video_format_IsSimilar( const video_format_t *, const video_format_t * );
 
-/** Checks whether the video formats have the same chroma and mask */
-VLC_API bool video_format_IsSameChroma( const video_format_t *, const video_format_t * );
+/** Checks whether the video formats have the same chroma */
+static inline bool video_format_IsSameChroma( const video_format_t *f1, const video_format_t *f2 )
+{
+    return f1->i_chroma == f2->i_chroma;
+}
 
 /**
  * It prints details about the given video_format_t
@@ -549,9 +554,6 @@ struct subs_format_t
      * all gettext recognized shorts can be used */
     char *psz_encoding;
 
-
-    int  i_x_origin; /**< x coordinate of the subtitle. 0 = left */
-    int  i_y_origin; /**< y coordinate of the subtitle. 0 = top */
 
     struct
     {

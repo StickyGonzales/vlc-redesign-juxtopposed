@@ -102,9 +102,6 @@ FocusScope {
 
         target: null
 
-        // Qt version check in disguise, only available starting with 6.5:
-        enabled: !!scaleAxis?.activeValueChanged
-
         // Default in QPlatformTheme::defaultThemeHint is 10
         dragThreshold: ((Application.styleHints?.startDragDistance ?? 10) * 4)
 
@@ -119,13 +116,7 @@ FocusScope {
             }
         }
 
-        Component.onCompleted: {
-            if (interfaceScalePinchHandler?.scaleAxis?.activeValueChanged) {
-                scaleAxis.activeValueChanged.connect(interfaceScalePinchHandler, onScaleAxisActiveValueChanged)
-            }
-        }
-
-        function onScaleAxisActiveValueChanged(delta) {
+        scaleAxis.onActiveValueChanged: (delta) => {
             if (delta < 0.25)
                 return
 
@@ -240,16 +231,19 @@ FocusScope {
 
         active: updateModelIsAvailable && (shouldShow || height > 0.0)
 
-        property int _updateStatusOnDismissal: -1
+        focus: !!item
 
         readonly property bool shouldShow: {
             if (!updateModelIsAvailable)
                 return false
 
+            if (DialogsProvider.updateDialogVisible)
+                return false
+
             if (UpdateModel.explicitCheck) {
                 return (UpdateModel.updateStatus !== UpdateModel.Unchecked)
             } else {
-                if (UpdateModel.updateStatus === _updateStatusOnDismissal)
+                if (UpdateModel.updateStatus === UpdateModel.updateStatusOnAcknowledgment)
                     return false // already dismissed with the same status
 
                 switch (UpdateModel.updateStatus) {
@@ -264,8 +258,11 @@ FocusScope {
         }
 
         function dismiss() {
-            if (updateModelIsAvailable)
-                _updateStatusOnDismissal = UpdateModel.updateStatus
+            // This could be also be an assertion:
+            if (updateModelIsAvailable) {
+                UpdateModel.updateStatusOnAcknowledgment = UpdateModel.updateStatus
+                UpdateModel.explicitCheck = undefined // Resets the property
+            }
 
             height = 0.0
         }
@@ -273,12 +270,6 @@ FocusScope {
         onShouldShowChanged: {
             if (shouldShow)
                 height = Qt.binding(() => { return implicitHeight })
-        }
-
-        onActiveChanged: {
-            if (updateModelIsAvailable && !active) {
-                UpdateModel.explicitCheck = undefined // Resets the property
-            }
         }
 
         height: 0

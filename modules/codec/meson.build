@@ -595,6 +595,10 @@ if host_system == 'darwin'
             'videotoolbox/dpb.h',
             'videotoolbox/pacer.c',
             'videotoolbox/pacer.h',
+            'videotoolbox/vp9_repack.c',
+            'videotoolbox/vp9_repack.h',
+            '../packetizer/vp9_frame.c',
+            '../packetizer/vp9_frame.h'
         ),
         'dependencies' : [
             frameworks['VideoToolbox'],
@@ -906,6 +910,10 @@ if vpx_dep.found()
     endif
     if cc.has_function('vpx_codec_vp9_cx', dependencies: [vpx_dep])
         vpx_c_args += '-DENABLE_VP9_ENCODER'
+    endif
+
+    if get_option('vpx').enabled() and vpx_c_args.length() == 0
+        error('libvpx does not link with any feature.')
     endif
 endif
 

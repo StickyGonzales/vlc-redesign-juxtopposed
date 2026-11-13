@@ -34,7 +34,7 @@
 #import "library/VLCLibraryModel.h"
 #import "library/VLCLibraryRepresentedItem.h"
 
-#import "library/video-library/VLCLibraryVideoGroupDescriptor.h"
+#import "library/VLCLibraryMediaGroupDescriptor.h"
 
 #import "main/VLCMain.h"
 
@@ -44,6 +44,12 @@
 #import "views/VLCTrackingView.h"
 
 NSString * const VLCLibraryTableCellViewIdentifier = @"VLCLibraryTableCellViewIdentifier";
+
+@interface VLCLibraryTableCellView ()
+
+@property (readwrite, strong) IBOutlet NSLayoutConstraint *representedImageAspectRatioConstraint;
+
+@end
 
 @implementation VLCLibraryTableCellView
 
@@ -66,12 +72,48 @@ NSString * const VLCLibraryTableCellViewIdentifier = @"VLCLibraryTableCellViewId
 - (void)prepareForReuse
 {
     [super prepareForReuse];
+    self.detailMode = VLCLibraryTableCellDetailModePrimaryDetail;
+    self.representedImageAspectRatio = VLCLibraryTableCellImageAspectRatioSquare;
     self.representedImageView.image = nil;
     self.primaryTitleTextField.hidden = YES;
     self.secondaryTitleTextField.hidden = YES;
     self.singlePrimaryTitleTextField.hidden = YES;
     self.trackingView.viewToHide = nil;
     self.playInstantlyButton.hidden = YES;
+}
+
+- (void)setRepresentedImageAspectRatio:(VLCLibraryTableCellImageAspectRatio)representedImageAspectRatio
+{
+    if (_representedImageAspectRatio == representedImageAspectRatio) {
+        return;
+    }
+
+    _representedImageAspectRatio = representedImageAspectRatio;
+    if (self.representedImageAspectRatioConstraint == nil) {
+        return;
+    }
+
+    CGFloat multiplier = 1.;
+    switch (representedImageAspectRatio) {
+        case VLCLibraryTableCellImageAspectRatioSquare:
+            multiplier = 1.;
+            break;
+        case VLCLibraryTableCellImageAspectRatioVideo:
+            multiplier = 16. / 9.;
+            break;
+    }
+
+    NSLayoutConstraint * const previousConstraint = self.representedImageAspectRatioConstraint;
+    NSLayoutConstraint * const newConstraint =
+        [self.representedImageView.widthAnchor
+            constraintEqualToAnchor:self.representedImageView.heightAnchor
+                        multiplier:multiplier];
+    newConstraint.priority = previousConstraint.priority;
+    newConstraint.identifier = previousConstraint.identifier;
+
+    previousConstraint.active = NO;
+    newConstraint.active = YES;
+    self.representedImageAspectRatioConstraint = newConstraint;
 }
 
 - (void)setRepresentedItem:(VLCLibraryRepresentedItem *)representedItem
@@ -94,11 +136,12 @@ NSString * const VLCLibraryTableCellViewIdentifier = @"VLCLibraryTableCellViewId
         weakSelf.representedImageView.image = thumbnail;
     }];
 
-    if(actualItem.primaryDetailString.length > 0) {
+    NSString * const primaryDetailString = [self primaryDetailStringForItem:actualItem];
+    if (primaryDetailString.length > 0) {
         self.primaryTitleTextField.hidden = NO;
         self.primaryTitleTextField.stringValue = actualItem.displayString;
         self.secondaryTitleTextField.hidden = NO;
-        self.secondaryTitleTextField.stringValue = actualItem.primaryDetailString;
+        self.secondaryTitleTextField.stringValue = primaryDetailString;
     } else {
         self.singlePrimaryTitleTextField.hidden = NO;
         self.singlePrimaryTitleTextField.stringValue = actualItem.displayString;
@@ -154,6 +197,16 @@ NSString * const VLCLibraryTableCellViewIdentifier = @"VLCLibraryTableCellViewId
     self.representedImageView.image = NSImage.VLCNoArtImage;
 
     _representedVideoLibrarySection = section;
+}
+
+- (NSString *)primaryDetailStringForItem:(id<VLCMediaLibraryItemProtocol>)item
+{
+    switch (self.detailMode) {
+        case VLCLibraryTableCellDetailModePrimaryDetail:
+            return item.primaryDetailString;
+        case VLCLibraryTableCellDetailModeDuration:
+            return item.durationString;
+    }
 }
 
 - (void)playMediaItemInstantly:(id)sender

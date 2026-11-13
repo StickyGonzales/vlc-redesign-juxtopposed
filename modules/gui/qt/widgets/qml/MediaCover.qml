@@ -179,13 +179,13 @@ Item {
             anchors.centerIn: parent
             width: playIconSize
 
-            // `OpacityAnimator` updates the property once it finishes the animation:
             visible: (opacity > 0.0 || root.playCoverShowPlay)
 
             opacity: 0.0
 
             Behavior on opacity {
-                OpacityAnimator {
+                // NOTE: Do not use `OpacityAnimator` here, interrupting the fade stalls the UI (QTBUG-151700).
+                NumberAnimation {
                     duration: VLCStyle.duration_short
 
                     easing.type: Easing.InOutSine

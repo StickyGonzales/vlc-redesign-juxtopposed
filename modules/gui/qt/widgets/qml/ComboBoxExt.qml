@@ -16,7 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
-// upstream dropped QtQuick.Controls (fc71047387) but this file still uses its types
 import QtQuick.Controls.Basic
 import QtQuick.Templates as T
 

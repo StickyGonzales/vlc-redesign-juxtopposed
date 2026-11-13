@@ -17,7 +17,7 @@
  *****************************************************************************/
 
 // redesign (W8.1b, the top bar's sidebar toggle, video 11:37): opens and closes the compact
-// library next to the video (Player.qml, through RdPanels.libraryRequested)
+// library next to the video (PlayerView.qml, through RdPanels.libraryRequested)
 import QtQuick
 
 import VLC.MainInterface

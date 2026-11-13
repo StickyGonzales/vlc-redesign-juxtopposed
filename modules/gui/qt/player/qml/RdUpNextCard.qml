@@ -25,7 +25,7 @@
 // During the credits (UP_NEXT_PLAN.md 5.4) it waits without a countdown: Next episode and Cancel;
 // the countdown only runs in the last seconds, so a post-credits scene is never cut by itself.
 // It never takes the focus by itself (Space still pauses), and a click does not give it either: a
-// focused card holds the control bar up (Player.qml), and a click on the card must not show the
+// focused card holds the control bar up (PlayerView.qml), and a click on the card must not show the
 // bar. Tab reaches its buttons, Escape cancels while it has the focus.
 // The countdown is Netflix-style: in the last seconds the Next episode button fills from left to
 // right as "Playing in N s" counts down, and the next episode starts as it is full.
@@ -41,7 +41,7 @@ import VLC.Util
 FocusScope {
     id: root
 
-    // Variant C's pill (Player.qml: under 900 px of video width)
+    // Variant C's pill (PlayerView.qml: under 900 px of video width)
     property bool compact: false
 
     // what the card shows, held while it fades out: when the next episode starts, the card fades
@@ -143,7 +143,7 @@ FocusScope {
     implicitWidth: compact ? pill.implicitWidth : _cardWidth
     implicitHeight: compact ? pill.implicitHeight : full.implicitHeight
 
-    // the pill's minimum: Player.qml hides the card below it (plan 7.1, the countdown runs on)
+    // the pill's minimum: PlayerView.qml hides the card below it (plan 7.1, the countdown runs on)
     readonly property real minimumWidth: pill.minimumWidth
 
     // 150 ms fade, no movement (plan 7.2); the buttons go with the card

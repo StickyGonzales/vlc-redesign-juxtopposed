@@ -12,7 +12,13 @@ import re
 import subprocess
 import sys
 
-BASE = "a5538c557d276378d5ba0f8f8010a8b87eaa6f78"   # upstream VLC commit the redesign starts from
+# upstream VLC commits merged into the redesign, newest first: the fork point, then each upstream
+# sync (redesign/UPSTREAM_SYNC.md). The newest one the checked-out branch contains is the base, so
+# upstream's own files (patch authors' e-mails, ...) are not reported after a sync
+UPSTREAM_BASES = [
+    "914c465b0ce30121dc15c283269c08a79b0321fe",   # upstream sync 2026-11-13
+    "a5538c557d276378d5ba0f8f8010a8b87eaa6f78",   # the fork point (2026-10-12)
+]
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 GENERIC = [
@@ -40,8 +46,15 @@ def private_rx(pattern):
 def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8").stdout
 
+def upstream_base():
+    for commit in UPSTREAM_BASES:
+        if subprocess.run(["git", "merge-base", "--is-ancestor", commit, "HEAD"],
+                          capture_output=True).returncode == 0:
+            return commit
+    return UPSTREAM_BASES[-1]
 def main():
     staged = "--staged" in sys.argv
+    BASE = upstream_base()
     files = git("diff", "--name-only", "--diff-filter=AM", "--cached" if staged else BASE).split()
     if not staged:
         files += git("diff", "--name-only", "--diff-filter=AM", "--cached").split()

@@ -48,10 +48,11 @@ typedef NS_ENUM(NSUInteger, VLCMediaLibraryParentGroupType) {
     // Additional types over vlc_ml_parent_type below
     VLCMediaLibraryParentGroupTypeAudioLibrary,
     VLCMediaLibraryParentGroupTypeRecentAudios,
-    // Video library-specific entries.
-    // Please define these in the order the are expected to be presented
+    // Home's video groups are contiguous from RecentVideos to VideoLibrary.
     VLCMediaLibraryParentGroupTypeRecentVideos,
     VLCMediaLibraryParentGroupTypeVideoLibrary,
+    VLCMediaLibraryParentGroupTypeRecentlyAddedVideos,
+    VLCMediaLibraryParentGroupTypeRecentlyAddedAudios,
     VLCMediaLibraryParentGroupTypeAllFavorites, // This should be last
 };
 
@@ -288,6 +289,7 @@ typedef NS_ENUM(NSUInteger, VLCMediaLibraryParentGroupType) {
 
 - (void)removeMediaItemsAtPositions:(NSArray<NSNumber *> *)positions;
 - (BOOL)appendMediaItems:(NSArray<VLCMediaLibraryMediaItem *> *)mediaItems;
+- (void)updatePlaybackStateForCachedMediaItem:(VLCMediaLibraryMediaItem *)mediaItem;
 - (BOOL)renameTo:(NSString *)name;
 
 @end
@@ -300,6 +302,7 @@ typedef NS_ENUM(NSUInteger, VLCMediaLibraryParentGroupType) {
 - (nullable instancetype)initWithMediaItem:(struct vlc_ml_media_t *)mediaItem;
 - (nullable instancetype)initWithExternalURL:(nullable NSURL *)url;
 - (nullable instancetype)initWithStreamURL:(nullable NSURL *)url;
+- (void)updatePlaybackStateFromMediaItem:(VLCMediaLibraryMediaItem *)mediaItem;
 
 @property (readonly) vlc_ml_media_type_t mediaType;
 @property (readonly) NSString *readableMediaType;

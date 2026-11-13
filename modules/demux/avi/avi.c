@@ -3087,14 +3087,15 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
     char *psz_description = NULL;
     avi_chunk_indx_t *p_indx = NULL;
 
-    if( !p_sys->b_seekable )
-        goto exit;
-
-    p_indx = AVI_ChunkFind( p_strl, AVIFOURCC_indx, 0, false );
     avi_chunk_t ck;
     AVI_ChunkInit( &ck, p_strl->i_depth + 1 );
     int64_t  i_position;
     unsigned i_size;
+
+    if( !p_sys->b_seekable )
+        goto exit;
+
+    p_indx = AVI_ChunkFind( p_strl, AVIFOURCC_indx, 0, false );
     if( p_indx )
     {
         if( p_indx->i_indextype == AVI_INDEX_OF_INDEXES &&
@@ -3140,7 +3141,7 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
                 break;
             }
         }
-        if( i_size <= 0 )
+        if( i_size == 0 )
             goto exit;
     }
 
@@ -3159,17 +3160,17 @@ static void AVI_ExtractSubtitle( demux_t *p_demux,
 
     /* Parse packet header */
     const uint8_t *p = p_block->p_buffer;
-    if( i_size < 8 || p[2] != 't' || p[3] != 'x' )
+    i_size = p_block->i_buffer;
+    if( i_size < (8+11) || p[2] != 't' || p[3] != 'x' )
         goto exit;
     p += 8;
     i_size -= 8;
 
     /* Parse subtitle chunk header */
-    if( i_size < 11 || memcmp( p, "GAB2", 4 ) ||
-        p[4] != 0x00 || GetWLE( &p[5] ) != 0x2 )
+    if( memcmp( p, "GAB2", 4 ) || p[4] != 0x00 || GetWLE( &p[5] ) != 0x2 )
         goto exit;
     const unsigned i_name = GetDWLE( &p[7] );
-    if( INT64_C(11) + i_name >= i_size )
+    if( i_size - 11 < i_name )
         goto exit;
     if( i_name > 0 )
         psz_description = FromCharset( "UTF-16LE", &p[11], i_name );

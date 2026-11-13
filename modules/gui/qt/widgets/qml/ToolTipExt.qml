@@ -18,6 +18,7 @@
 
 import QtQuick
 import QtQuick.Templates as T
+import QtQuick.Window
 
 import VLC.MainInterface
 import VLC.Style
@@ -83,23 +84,48 @@ T.ToolTip {
 
         text: control.text
         font: control.font
-        wrapMode: Text.WordWrap
-
+        wrapMode: textMetrics.width > maxContentWidth ? Text.WordWrap : Text.NoWrap
         color: theme.fg.primary
 
         property QtWindow _lastWindowForNoRedirectionSurface
 
         Component.onCompleted: {
-            if (MainCtx.createWindowWithoutRedirectionSurface) { // Win32
-                Window.windowChanged.connect(this, () => {
-                    if (Window.window && (Window.window !== MainCtx.intfMainWindow)) { // Only relevant when `popupType` is `Popup.Window`
+            Window.windowChanged.connect(this, () => {
+                if (Window.window && (Window.window !== MainCtx.intfMainWindow)) { // Only relevant when `popupType` is `Popup.Window`
+
+                    // Although Qt uses `Qt.ToolTip` window type, the platform plugins (or the platforms themselves) do not treat it
+                    // implicitly as transparent for input. For that reason, we manually set it here. This fixes flickering when the
+                    // cursor hovers the tool tip because the window being bounded by the screen (which
+                    // is mainly relevant when the interface is maximized).
+                    Window.window.flags |= Qt.WindowTransparentForInput
+
+                    if (MainCtx.createWindowWithoutRedirectionSurface) { // Win32
                         if (Window.window !== contentText._lastWindowForNoRedirectionSurface) {
                             const ret = MainCtx.createWindowWithoutRedirectionSurface(Window.window)
                             console.debug("MainCtx::createWindowWithoutRedirectionSurface(): returned %1 for window %2.".arg(ret).arg(Window.window))
                             contentText._lastWindowForNoRedirectionSurface = Window.window
                         }
                     }
-                })
+                }
+            })
+        }
+
+        readonly property real maxContentWidth: (control.popupType === 1 /* Popup.Window */)
+            ? Screen.desktopAvailableWidth
+            : Window.width
+
+        TextMetrics {
+            id: textMetrics
+
+            font: contentText.font
+            text: {
+                const lines = contentText.text.split("\n")
+                let longestLine = ""
+                for (let i in lines) {
+                    if (lines[i].length > longestLine.length)
+                        longestLine = lines[i]
+                }
+                return longestLine
             }
         }
     }

@@ -49,6 +49,7 @@ check_PROGRAMS = \
 	test_libvlc_media_discoverer \
 	test_libvlc_renderer_discoverer \
 	test_libvlc_slaves \
+	test_src_audio_output_dec \
 	test_src_config_chain \
 	test_src_clock_clock \
 	test_src_clock_start \
@@ -97,6 +98,7 @@ check_PROGRAMS = \
 	test_modules_tls \
 	test_modules_stream_out_transcode \
 	test_modules_mux_webvtt \
+	test_modules_video_filter_blend \
 	test_modules_stream_out_hls_subtitles_segmenter \
 	$(NULL)
 
@@ -211,6 +213,21 @@ test_libvlc_slaves_SOURCES = libvlc/slaves.c
 test_libvlc_slaves_LDADD = $(LIBVLCCORE) $(LIBVLC)
 test_libvlc_meta_SOURCES = libvlc/meta.c
 test_libvlc_meta_LDADD = $(LIBVLCCORE) $(LIBVLC)
+
+test_src_audio_output_dec_SOURCES = src/audio_output/dec.c \
+	../src/audio_output/dec.c \
+	../src/audio_output/output.c \
+	../src/audio_output/common.c \
+	../src/audio_output/filters.c \
+	../src/audio_output/volume.c \
+	../src/audio_output/meter.c \
+	../src/input/replay_gain.c \
+	../src/misc/objects.c \
+	../src/misc/variables.c \
+	../src/clock/clock.c \
+	../src/clock/clock_internal.c
+test_src_audio_output_dec_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src
+test_src_audio_output_dec_LDADD = $(LIBVLCCORE) $(LIBVLC) $(LIBM)
 
 test_src_clock_clock_SOURCES = src/clock/clock.c \
 	../src/clock/clock.c \
@@ -468,6 +485,8 @@ test_modules_stream_out_sdi_LDADD = $(LIBVLCCORE) $(LIBVLC)
 
 test_modules_mux_webvtt_SOURCES = modules/mux/webvtt.c
 test_modules_mux_webvtt_LDADD = $(LIBVLCCORE) $(LIBVLC)
+test_modules_video_filter_blend_SOURCES = modules/video_filter/blend.c
+test_modules_video_filter_blend_LDADD = $(LIBVLCCORE) $(LIBVLC)
 
 test_modules_stream_out_hls_subtitles_segmenter_SOURCES = \
 	modules/stream_out/hls/subtitles_segmenter.c \

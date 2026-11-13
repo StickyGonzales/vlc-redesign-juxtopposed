@@ -375,8 +375,8 @@ T.Pane {
                 }
             }
 
-            fadingEdge.backgroundColor: (root.background && (root.background.color.a >= 1.0)) ? root.background.color
-                                                                                              : Qt.alpha(root.background.color, 0.0)
+            fadingEdge.backgroundColor: (root.background && root.background.visible && (root.background.color.a >= 1.0)) ? root.background.color
+                                                                                                                         : Qt.alpha(root.background.color, 0.0)
 
             function mappedSelectedIndexes() : var {
                 let mappedSelectedIndexes
@@ -517,6 +517,10 @@ T.Pane {
                         listView.fadingEdge.excludeItem = delegate
                     else if (listView.fadingEdge.excludeItem === delegate)
                         listView.fadingEdge.excludeItem = null
+                }
+
+                Component.onCompleted: {
+                    listView.delegateInstantiated(delegate)
                 }
             }
 

@@ -23,7 +23,13 @@
 
 #import "NSView+VLCAdditions.h"
 
+#import <QuartzCore/QuartzCore.h>
+
 #import "NSAppearance+VLCAdditions.h"
+
+#import "views/VLCUIUnits.h"
+
+#include <math.h>
 
 @implementation NSView (VLCAdditions)
 
@@ -55,6 +61,13 @@
 - (BOOL)shouldShowDarkAppearance
 {
     return self.effectiveAppearance.shouldShowDarkAppearance;
+}
+
+- (void)vlc_clipToRoundedCornersWithRadius:(CGFloat)radius
+{
+    self.wantsLayer = YES;
+    self.layer.cornerRadius = radius;
+    self.layer.masksToBounds = YES;
 }
 
 - (void)enableSubviews:(BOOL)enabled
@@ -96,6 +109,38 @@
         [NSLayoutConstraint activateConstraints:constraints];
     }
     return constraints;
+}
+
+- (NSEvent *)trackMouseDown:(NSEvent *)event
+                dragHandler:(void (^)(NSEvent *event, BOOL didDrag))dragHandler
+{
+    NSWindow * const window = self.window;
+    if (window == nil) {
+        return nil;
+    }
+
+    const NSPoint downPoint = event.locationInWindow;
+    BOOL didDrag = NO;
+    while (true) {
+        NSEvent * const trackedEvent =
+            [window nextEventMatchingMask:NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp
+                                untilDate:NSDate.distantFuture
+                                   inMode:NSEventTrackingRunLoopMode
+                                  dequeue:YES];
+        if (trackedEvent == nil) {
+            return nil;
+        }
+        const NSPoint point = trackedEvent.locationInWindow;
+        didDrag |= hypot(point.x - downPoint.x, point.y - downPoint.y) >= VLCUIUnits.mouseDragThreshold;
+        if (trackedEvent.type == NSEventTypeLeftMouseUp) {
+            return didDrag
+                ? nil
+                : trackedEvent;
+        }
+        if (dragHandler != nil) {
+            dragHandler(trackedEvent, didDrag);
+        }
+    }
 }
 
 @end

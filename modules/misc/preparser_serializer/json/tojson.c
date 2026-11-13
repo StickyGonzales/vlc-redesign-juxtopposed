@@ -587,7 +587,11 @@ static void toJSON_video_format(struct serdes_sys *sys,
     json_stringify(number, sys, "level", video->dovi.level);
     json_stringify(number, sys, "rpu_present", video->dovi.rpu_present);
     json_stringify(number, sys, "el_present", video->dovi.el_present);
-    json_stringify_last(number, sys, "bl_present", video->dovi.bl_present);
+    json_stringify(number, sys, "bl_present", video->dovi.bl_present);
+    json_stringify(number, sys, "bl_signal_compatibility_id",
+                   video->dovi.bl_signal_compatibility_id);
+    json_stringify_last(number, sys, "md_compression",
+                        video->dovi.md_compression);
     if (serdes_buf_puts(sys, ", ") < 0) {
         return;
     }
@@ -614,8 +618,6 @@ static void toJSON_subs_format(struct serdes_sys *sys,
         return;
     }
     json_stringify_first(string, sys, "psz_encoding", subs->psz_encoding);
-    json_stringify(number, sys, "i_x_origin", subs->i_x_origin);
-    json_stringify(number, sys, "i_y_origin", subs->i_y_origin);
 
     /* subs->spu */
     json_stringify_utf8string(sys, "spu");

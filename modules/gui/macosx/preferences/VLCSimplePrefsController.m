@@ -26,6 +26,7 @@
 #endif
 
 #import "VLCSimplePrefsController.h"
+#import "VLCMediaLibraryFolderManagementController.h"
 
 #ifdef HAVE_SPARKLE
 #import <Sparkle/Sparkle.h>                        //for o_intf_last_updateLabel
@@ -48,8 +49,6 @@
 #import "os-integration/VLCClickerManager.h"
 #import "preferences/prefs.h"
 #import "library/VLCLibraryController.h"
-#import "library/VLCLibraryModel.h"
-#import "library/VLCLibraryDataTypes.h"
 #import "playqueue/VLCPlayQueueTableCellView.h"
 #import "views/VLCPlaybackEndViewController.h"
 #import "windows/video/VLCMainVideoViewController.h"
@@ -136,29 +135,6 @@ static NSString* VLCInputSettingToolbarIdentifier = @"Input Settings Item Identi
 static NSString* VLCMediaLibrarySettingToolbarIdentifier = @"Media Library Settings Item Identifier";
 static NSString* VLCHotkeysSettingToolbarIdentifier = @"Hotkeys Settings Item Identifier";
 
-@interface VLCMediaLibraryFolderManagementController : NSObject <NSTableViewDelegate, NSTableViewDataSource>
-{
-    VLCLibraryController *_libraryController;
-    VLCLibraryModel *_libraryModel;
-    NSArray<VLCMediaLibraryEntryPoint *> *_cachedFolderList;
-}
-
-@property (readwrite, weak) NSTableView *libraryFolderTableView;
-@property (readwrite, weak) NSTableColumn *nameTableColumn;
-@property (readwrite, weak) NSTableColumn *pathTableColumn;
-@property (readwrite, weak) NSTableColumn *presentTableColumn;
-@property (readwrite, weak) NSTableColumn *bannedTableColumn;
-@property (readwrite, weak) NSButton *removeFolderButton;
-@property (readwrite, weak) NSButton *banFolderButton;
-@property (readwrite, weak) NSButton *reloadFolderButton;
-
-- (IBAction)addFolder:(id)sender;
-- (IBAction)removeFolder:(id)sender;
-- (IBAction)banFolder:(id)sender;
-- (IBAction)reloadFolder:(id)sender;
-
-@end
-
 @interface VLCSimplePrefsController() <NSToolbarDelegate, NSWindowDelegate>
 {
     BOOL _audioSettingChanged;
@@ -204,7 +180,7 @@ static NSString* VLCHotkeysSettingToolbarIdentifier = @"Hotkeys Settings Item Id
                 withKeyPath:@"automaticallyChecksForUpdates"
                     options:nil];
 #else
-    [_intf_updateCheckbox setState:NSOffState];
+    [_intf_updateCheckbox setState:NSControlStateValueOff];
     [_intf_updateCheckbox setEnabled:NO];
 #endif
 
@@ -663,10 +639,10 @@ create_toolbar_item(NSString *itemIdent, NSString *name, NSString *desc, NSStrin
 #endif
 
     BOOL growlEnabled = [self hasModule:@"growl" inConfig:@"control"];
-    [_intf_enableNotificationsCheckbox setState: growlEnabled ? NSOnState : NSOffState];
+    [_intf_enableNotificationsCheckbox setState: growlEnabled ? NSControlStateValueOn : NSControlStateValueOff];
 
     BOOL httpEnabled = [self hasModule:@"http" inConfig:@"extraintf"];
-    [_intf_enableluahttpCheckbox setState: httpEnabled ? NSOnState : NSOffState];
+    [_intf_enableluahttpCheckbox setState: httpEnabled ? NSControlStateValueOn : NSControlStateValueOff];
     _intf_luahttppwdTextField.enabled = httpEnabled;
 
     [self setupField:_intf_luahttppwdTextField forOption: "http-password"];
@@ -677,16 +653,16 @@ create_toolbar_item(NSString *itemIdent, NSString *name, NSString *desc, NSStrin
     [self setupButton:_audio_enableCheckbox forBoolValue: "audio"];
 
     if (config_GetInt("volume-save")) {
-        [_audio_autosavevol_yesButtonCell setState: NSOnState];
-        [_audio_autosavevol_noButtonCell setState: NSOffState];
+        [_audio_autosavevol_yesButtonCell setState: NSControlStateValueOn];
+        [_audio_autosavevol_noButtonCell setState: NSControlStateValueOff];
         [_audio_volTextField setEnabled: NO];
         [_audio_volSlider setEnabled: NO];
 
         [_audio_volSlider setIntValue: 100];
         [_audio_volTextField setIntValue: 100];
     } else {
-        [_audio_autosavevol_yesButtonCell setState: NSOffState];
-        [_audio_autosavevol_noButtonCell setState: NSOnState];
+        [_audio_autosavevol_yesButtonCell setState: NSControlStateValueOff];
+        [_audio_autosavevol_noButtonCell setState: NSControlStateValueOn];
         [_audio_volTextField setEnabled: YES];
         [_audio_volSlider setEnabled: YES];
 
@@ -706,11 +682,11 @@ create_toolbar_item(NSString *itemIdent, NSString *name, NSString *desc, NSStrin
         [self setupField:_audio_lastpwdSecureTextField forOption:"lastfm-password"];
 
         if (config_ExistIntf("audioscrobbler")) {
-            [_audio_lastCheckbox setState: NSOnState];
+            [_audio_lastCheckbox setState: NSControlStateValueOn];
             [_audio_lastuserTextField setEnabled: YES];
             [_audio_lastpwdSecureTextField setEnabled: YES];
         } else {
-            [_audio_lastCheckbox setState: NSOffState];
+            [_audio_lastCheckbox setState: NSControlStateValueOff];
             [_audio_lastuserTextField setEnabled: NO];
             [_audio_lastpwdSecureTextField setEnabled: NO];
         }
@@ -988,9 +964,9 @@ static inline void save_string_list(intf_thread_t * __unused p_intf, id object, 
 
         config_PutInt("macosx-statusicon", [_intf_statusIconCheckbox state]);
 
-        [self changeModule:@"growl" inConfig:@"control" enable:[_intf_enableNotificationsCheckbox state] == NSOnState];
+        [self changeModule:@"growl" inConfig:@"control" enable:[_intf_enableNotificationsCheckbox state] == NSControlStateValueOn];
 
-        [self changeModule:@"http" inConfig:@"extraintf" enable:[_intf_enableluahttpCheckbox state] == NSOnState];
+        [self changeModule:@"http" inConfig:@"extraintf" enable:[_intf_enableluahttpCheckbox state] == NSControlStateValueOn];
         config_PutPsz("http-password", [[_intf_luahttppwdTextField stringValue] UTF8String]);
 
         SaveIntList(_intf_pauseitunesPopup, "macosx-control-itunes");
@@ -1015,7 +991,7 @@ static inline void save_string_list(intf_thread_t * __unused p_intf, id object, 
         /* Last.FM is optional */
         if (module_exists("audioscrobbler")) {
             [_audio_lastCheckbox setEnabled: YES];
-            if ([_audio_lastCheckbox state] == NSOnState)
+            if ([_audio_lastCheckbox state] == NSControlStateValueOn)
                 config_AddIntf("audioscrobbler");
             else
                 config_RemoveIntf("audioscrobbler");
@@ -1152,8 +1128,8 @@ static inline void save_string_list(intf_thread_t * __unused p_intf, id object, 
     [_video_devicePopup setEnabled: !_value];
 
     if (_value) {
-        [_video_videodecoCheckbox setState: NSOnState];
-        [_video_blackScreenCheckbox setState: NSOffState];
+        [_video_videodecoCheckbox setState: NSControlStateValueOn];
+        [_video_blackScreenCheckbox setState: NSControlStateValueOff];
 
         NSString *tooltipText = _NS("This setting cannot be changed because the native fullscreen mode is enabled.");
         [_video_videodecoCheckbox setToolTip:tooltipText];
@@ -1171,7 +1147,7 @@ static inline void save_string_list(intf_thread_t * __unused p_intf, id object, 
 - (IBAction)interfaceSettingChanged:(id)sender
 {
     if (sender == _intf_enableluahttpCheckbox) {
-        _intf_luahttppwdTextField.enabled = [sender state] == NSOnState;
+        _intf_luahttppwdTextField.enabled = [sender state] == NSControlStateValueOn;
     }
 
     _intfSettingChanged = YES;
@@ -1191,7 +1167,7 @@ static inline void save_string_list(intf_thread_t * __unused p_intf, id object, 
         [_audio_volSlider setIntValue: [_audio_volTextField intValue]];
 
     if (sender == _audio_lastCheckbox) {
-        if ([_audio_lastCheckbox state] == NSOnState) {
+        if ([_audio_lastCheckbox state] == NSControlStateValueOn) {
             [_audio_lastpwdSecureTextField setEnabled: YES];
             [_audio_lastuserTextField setEnabled: YES];
         } else {
@@ -1544,137 +1520,5 @@ static inline void save_string_list(intf_thread_t * __unused p_intf, id object, 
     [self showSettingsForCategory:_mediaLibraryView];
 }
 
-
-@end
-
-@implementation VLCMediaLibraryFolderManagementController
-
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        _libraryController = VLCMain.sharedInstance.libraryController;
-        _libraryModel = _libraryController.libraryModel;
-        _cachedFolderList = _libraryModel.listOfMonitoredFolders ?: @[];
-
-        NSNotificationCenter *notificationCenter = NSNotificationCenter.defaultCenter;
-        [notificationCenter addObserver:self
-                               selector:@selector(listOfMonitoredFoldersUpdated:)
-                                   name:VLCLibraryModelListOfMonitoredFoldersUpdated
-                                 object:nil];
-    }
-    return self;
-}
-
-- (void)dealloc
-{
-    [NSNotificationCenter.defaultCenter removeObserver:self];
-}
-
-- (void)listOfMonitoredFoldersUpdated:(NSNotification *)aNotification
-{
-    _cachedFolderList = _libraryModel.listOfMonitoredFolders ?: @[];
-    [self.libraryFolderTableView reloadData];
-    [self updateFolderButtonState];
-}
-
-- (nullable VLCMediaLibraryEntryPoint *)selectedEntryPoint
-{
-    const NSInteger selectedRow = self.libraryFolderTableView.selectedRow;
-    if (selectedRow < 0 || (NSUInteger)selectedRow >= _cachedFolderList.count) {
-        return nil;
-    }
-    return _cachedFolderList[(NSUInteger)selectedRow];
-}
-
-- (void)updateFolderButtonState
-{
-    VLCMediaLibraryEntryPoint * const entryPoint = [self selectedEntryPoint];
-    if (entryPoint == nil) {
-        self.banFolderButton.enabled = self.removeFolderButton.enabled = self.reloadFolderButton.enabled = NO;
-        return;
-    }
-    self.banFolderButton.enabled = self.removeFolderButton.enabled = self.reloadFolderButton.enabled = YES;
-    [self.banFolderButton setTitle:entryPoint.isBanned ? _NS("Unban Folder") : _NS("Ban Folder")];
-}
-
-- (IBAction)addFolder:(id)sender
-{
-    NSOpenPanel *openPanel = [NSOpenPanel openPanel];
-    [openPanel setTitle:_NS("Add Folder")];
-    [openPanel setCanChooseFiles:NO];
-    [openPanel setCanChooseDirectories:YES];
-    [openPanel setAllowsMultipleSelection:YES];
-
-    NSModalResponse returnValue = [openPanel runModal];
-
-    if (returnValue == NSModalResponseOK) {
-        NSArray *URLs = [openPanel URLs];
-        NSUInteger count = [URLs count];
-        for (NSUInteger i = 0; i < count ; i++) {
-            NSURL *url = URLs[i];
-            [_libraryController addFolderWithFileURL:url];
-        }
-    }
-}
-
-- (IBAction)banFolder:(id)sender
-{
-    VLCMediaLibraryEntryPoint * const entryPoint = [self selectedEntryPoint];
-    if (entryPoint == nil) {
-        return;
-    }
-    if (entryPoint.isBanned) {
-        [_libraryController unbanFolderWithFileURL:[NSURL URLWithString:entryPoint.MRL]];
-    } else {
-        [_libraryController banFolderWithFileURL:[NSURL URLWithString:entryPoint.MRL]];
-    }
-}
-
-- (IBAction)removeFolder:(id)sender
-{
-    VLCMediaLibraryEntryPoint * const entryPoint = [self selectedEntryPoint];
-    if (entryPoint == nil) {
-        return;
-    }
-    [_libraryController removeFolderWithFileURL:[NSURL URLWithString:entryPoint.MRL]];
-}
-
-- (IBAction)reloadFolder:(id)sender
-{
-    VLCMediaLibraryEntryPoint * const entryPoint = [self selectedEntryPoint];
-    if (entryPoint == nil) {
-        return;
-    }
-    [_libraryController reloadFolderWithFileURL:[NSURL URLWithString:entryPoint.MRL]];
-}
-
-- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView
-{
-    return _cachedFolderList.count;
-}
-
-- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
-{
-    if (row < 0 || (NSUInteger)row >= _cachedFolderList.count) {
-        return @"";
-    }
-
-    VLCMediaLibraryEntryPoint * const entryPoint = _cachedFolderList[(NSUInteger)row];
-    if (tableColumn == self.nameTableColumn) {
-        return [entryPoint.decodedMRL lastPathComponent];
-    } else if (tableColumn == self.presentTableColumn) {
-        return entryPoint.isPresent ? @"✔" : @"✘";
-    } else if (tableColumn == self.bannedTableColumn) {
-        return entryPoint.isBanned ? @"✔" : @"✘";
-    } else {
-        return entryPoint.decodedMRL;
-    }
-}
-
-- (void)tableViewSelectionDidChange:(NSNotification *)notification
-{
-    [self updateFolderButtonState];
-}
 
 @end

@@ -62,10 +62,8 @@ Widgets.PageExt {
         onHomeButtonClicked: (reason) => root.homeButtonClicked(reason)
     }
 
-    MainViewLoader {
+    contentItem: MainViewLoader {
         id: loader
-
-        anchors.fill: parent
 
         isSearchable: true
 
@@ -151,6 +149,8 @@ Widgets.PageExt {
 
             Widgets.ExpandGridItemView {
                 id: gridView
+
+                focus: true
 
                 basePictureWidth: VLCStyle.gridCover_network_width
                 basePictureHeight: VLCStyle.gridCover_network_height

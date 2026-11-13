@@ -120,23 +120,15 @@ Widgets.PageExt {
         text: qsTr("No network shares found")
     }
 
-    Flickable {
+    contentItem: Flickable {
         id: flickable
-
-        anchors.fill: parent
-
-        anchors.leftMargin: root.leftPadding
-        anchors.rightMargin: root.rightPadding
 
         T.ScrollBar.vertical: Widgets.ScrollBarExt { }
 
         flickableDirection: Flickable.AutoFlickIfNeeded
         boundsBehavior: Flickable.StopAtBounds
 
-        focus: true
-
-        pixelAligned: (MainCtx.qtVersion() >= MainCtx.qtVersionCheck(6, 2, 5)) // QTBUG-103996
-                      && (Screen.pixelDensity >= VLCStyle.highPixelDensityThreshold) // no need for sub-pixel alignment with high pixel density
+        pixelAligned: (Screen.pixelDensity >= VLCStyle.highPixelDensityThreshold) // no need for sub-pixel alignment with high pixel density
 
         contentWidth: column.width
         contentHeight: column.height

@@ -60,21 +60,12 @@ extern "C" char **environ;
 #include <QList>
 #include <QTranslator>
 
-#if __has_include(<rhi/qrhi.h>) // Qt 6.6
-#define RHI_HEADER_AVAILABLE
+
 #include <rhi/qrhi.h>
-#elif __has_include(<QtGui/private/qrhi_p.h>) && \
-      QT_VERSION >= QT_VERSION_CHECK(6, 4, 0) // `QRhi::probe()` is available since Qt 6.4
-#define RHI_HEADER_AVAILABLE
-#include <QtGui/private/qrhi_p.h>
-#include <QtGui/private/qrhigles2_p.h> // for `QRhiGles2InitParams`
-#endif
-#ifdef RHI_HEADER_AVAILABLE
 #include <QOffscreenSurface>
 #include <QThreadPool>
 #include <QThread>
 #include "util/asynctask.hpp"
-#endif
 
 #ifdef _WIN32
 #include <QOperatingSystemVersion>
@@ -111,7 +102,6 @@ extern "C" char **environ;
 #include "maininterface/compositor.hpp"
 #include "util/vlctick.hpp"
 #include "util/shared_input_item.hpp"
-#include "util/model_recovery_agent.hpp"
 #include "util/vlcqtmessagehandler.hpp"
 #include "network/networkmediamodel.hpp"
 #include "network/devicesourceprovider.hpp"
@@ -340,7 +330,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
     "loaded from a text file (SubRip, WebVTT, SSA / ASS)." )
 
 #define ACCENT_COLOR_TEXT N_( "Accent color" )
-#define ACCENT_COLOR_LONGTEXT N_( "Adjusts the accent color, special values are 'default' and 'system' (requires Qt 6.6) ." )
+#define ACCENT_COLOR_LONGTEXT N_( "Adjusts the accent color, special values are 'default' and 'system'." )
 
 #define VIDEO_DOUBLE_CLICK_TEXT N_( "Double click on the video" )
 #define VIDEO_DOUBLE_CLICK_LONGTEXT N_( "What a double click on the video does. " \
@@ -589,7 +579,7 @@ vlc_module_begin ()
     /* redesign: volume range 0 to 200% by default (Decision 7) */
     add_integer_with_range( "qt-max-volume", 200, 60, 300, VOLUME_MAX_TEXT, nullptr)
 
-    /* redesign: the distance from an edge (dp) at which the fullscreen bars show (Player.qml);
+    /* redesign: the distance from an edge (dp) at which the fullscreen bars show (PlayerView.qml);
      * Settings > Interface offers 16 / 40 / 96 */
     add_integer_with_range( "qt-fs-sensitivity", 40, 0, 4000, FULLSCREEN_CONTROL_PIXELS,
             FULLSCREEN_CONTROL_PIXELS_LONGTEXT)
@@ -1320,7 +1310,6 @@ static void *Thread( void *obj )
         }
     };
 
-#ifdef RHI_HEADER_AVAILABLE
     // NOTE: Qt Quick does not have a cross-API RHI fallback procedure (as of Qt 6.7.1).
     //       We have to manually pick a graphics api here, since the default graphics
     //       api (Direct3D 11.2) may not be supported.
@@ -1532,24 +1521,6 @@ static void *Thread( void *obj )
             p_intf->mainSettings->sync();
         }
     }
-#else
-    if (qEnvironmentVariable("QT_QUICK_BACKEND", QStringLiteral("rhi")) == QLatin1String("rhi"))
-    {
-        if (QQuickWindow::graphicsApi() == QSGRendererInterface::OpenGL)
-        {
-            // At least set the default format without RHI probing if RHI headers are not available:
-            if (std::optional<QSurfaceFormat> format = createCompatibleOpenGLFormat())
-            {
-                QSurfaceFormat::setDefaultFormat(*format);
-            }
-            else
-            {
-                qCritical() << "Falling back to software mode...";
-                QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
-            }
-        }
-    }
-#endif
 
     /* the display name ends every window title */
     app.setApplicationDisplayName( qtr( BRAND_NAME ) );
@@ -1574,40 +1545,21 @@ static void *Thread( void *obj )
     p_intf->p_mainPlayerController = new PlayerController(p_intf);
     p_intf->p_mainPlaylistController = new vlc::playlist::PlaylistController(p_intf->p_playlist);
 
-    std::optional playlistModelRecoveryAgent = std::unique_ptr<ModelRecoveryAgent>();
-    QMetaObject::invokeMethod(&app, [&playlistModelRecoveryAgent, settings = QPointer(p_intf->mainSettings), mpc = QPointer(p_intf->p_mainPlaylistController)]() {
-        if (Q_UNLIKELY(!playlistModelRecoveryAgent)) // std::optional is nullopt, reset() was already called
-            return;
-        if (Q_UNLIKELY(!settings || !mpc))
-            return;
-        try {
-            auto agent = std::make_unique<ModelRecoveryAgent>(settings.get(),
-                                                              QStringLiteral("Playlist"),
-                                                              mpc.get());
-            // redesign: a quit while the restore question was open dropped the agent already
-            // (QuitWatchdog::setDiscardOnQuit): nothing was answered, the recovery data stays
-            // for the next start, which asks again
-            if (!playlistModelRecoveryAgent)
-            {
-                agent->keepForNextStart();
-                return;
-            }
-            playlistModelRecoveryAgent = std::move(agent);
-        } catch (...){ }
-    }, Qt::QueuedConnection);
-#ifdef VLC_BRAND_PUBLIC
-    // redesign: a quit drops the queue's crash recovery at once (QuitWatchdog::setDiscardOnQuit):
-    // a quit the watchdog ends must not offer "restore the playlist" at the next start
-    QuitWatchdog::setDiscardOnQuit([&playlistModelRecoveryAgent]() {
-        playlistModelRecoveryAgent.reset();
-    });
-#endif
-
     /* Create the normal interface in non-DP mode */
 #ifdef _WIN32
     p_intf->p_mi = new MainCtxWin32(p_intf);
 #else
     p_intf->p_mi = new MainCtx(p_intf);
+#endif
+
+#ifdef VLC_BRAND_PUBLIC
+    // redesign: a quit drops the queue's crash recovery at once (QuitWatchdog::setDiscardOnQuit):
+    // a quit the watchdog ends must not offer "restore the playlist" at the next start. A quit
+    // while the restore question is open keeps it (ModelRecoveryAgent's destructor)
+    QuitWatchdog::setDiscardOnQuit([mainCtx = QPointer<MainCtx>(p_intf->p_mi)]() {
+        if (mainCtx)
+            mainCtx->discardPlaylistRecovery();
+    });
 #endif
 
     if( !p_intf->b_isDialogProvider )
@@ -1744,6 +1696,7 @@ static void *Thread( void *obj )
 
     /* Last settings */
     app.setQuitOnLastWindowClosed( false );
+    app.setQuitLockEnabled( false );
 
     /* Loads and tries to apply the preferred QStyle */
 #define QTSTYLE_KEY "MainWindow/QtStyle"
@@ -1767,7 +1720,6 @@ static void *Thread( void *obj )
     msg_Dbg( p_intf, "QApp exec() finished" );
 
     QuitWatchdog::setDiscardOnQuit({});
-    playlistModelRecoveryAgent.reset();
     return ThreadCleanup( p_intf, CLEANUP_APP_TERMINATED );
 }
 

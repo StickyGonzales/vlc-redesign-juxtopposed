@@ -100,6 +100,10 @@ Name "${PRODUCT_TITLE}"
 @HAVE_WIN64_FALSE@                   OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-win32.exe
 @HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-win64.exe
 @HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-winarm64.exe
+
+@HAVE_WIN64_FALSE@                   CPU "x86"
+@HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ CPU "amd64"
+@HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  CPU "x86"  ; use x86 until arm64 is supported
 ; redesign: release signing (CODE_SIGNING_POLICY.md): the installer's own version information, with
 ; the product name and version SignPath checks on every signed file (the same as Cone.exe's); the
 ; public profile's version is always X.Y.Z (build-windows.yml), VLC's "4.0.0-dev" is not a number

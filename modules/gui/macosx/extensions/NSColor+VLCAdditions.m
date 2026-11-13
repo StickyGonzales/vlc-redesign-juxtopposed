@@ -58,6 +58,12 @@
     return [NSColor colorWithRed:0. green:0. blue:0. alpha:.2];
 }
 
++ (NSColor *)VLCLibraryCardBackgroundColor
+{
+    return [NSColor.controlBackgroundColor blendedColorWithFraction:0.04
+                                                            ofColor:NSColor.labelColor];
+}
+
 + (NSColor *)VLClibrarySeparatorLightColor
 {
     return [NSColor colorWithRed:0.89 green:0.91 blue:0.93 alpha:1.];
@@ -101,6 +107,46 @@
 + (NSColor *)VLCSubtleBorderColor
 {
     return [NSColor colorNamed:@"VLCSubtleBorderColor"];
+}
+
++ (NSColor *)VLCActionButtonBackgroundColor
+{
+    return [NSColor.VLCAccentColor colorWithAlphaComponent:0.04];
+}
+
++ (NSColor *)VLCActionButtonPressedBackgroundColor
+{
+    return [NSColor.VLCAccentColor colorWithAlphaComponent:0.16];
+}
+
++ (NSColor *)VLCActionButtonPressedBorderColor
+{
+    return [NSColor.VLCAccentColor colorWithAlphaComponent:0.55];
+}
+
++ (NSColor *)VLCDropTargetBackgroundColor
+{
+    return [NSColor.controlBackgroundColor colorWithAlphaComponent:0.5];
+}
+
++ (NSColor *)VLCDropTargetHighlightColor
+{
+    return [NSColor.VLCAccentColor colorWithAlphaComponent:0.08];
+}
+
++ (NSColor *)VLCDropTargetBorderColor
+{
+    return [NSColor.secondaryLabelColor colorWithAlphaComponent:0.5];
+}
+
+- (NSColor *)VLCSubtleTintColor
+{
+    return [self colorWithAlphaComponent:0.15];
+}
+
+- (NSColor *)VLCHighlightedTintColor
+{
+    return [self colorWithAlphaComponent:0.25];
 }
 
 @end

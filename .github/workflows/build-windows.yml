@@ -76,7 +76,7 @@ concurrency:
 
 env:
   # Keep in sync with VLC_WIN64_IMAGE in extras/ci/gitlab-ci.yml
-  VLC_IMAGE: registry.videolan.org/vlc-debian-win64-posix:20260611225331
+  VLC_IMAGE: registry.videolan.org/vlc-debian-win64-posix:20261109074440
   # brand profile: the workflow_dispatch / workflow_call input, "public" for pushes (Decision 50)
   VLC_BRAND: ${{ inputs.brand || 'public' }}
   # ccache used when the build image has none: pinned release and its SHA-256

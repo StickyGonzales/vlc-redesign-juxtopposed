@@ -194,6 +194,27 @@ ATTACHED = {"Navigation": "NavigationAttached", "AccessibleCompat": "AccessibleC
 meson = open(os.path.join(qt, "meson.build"), encoding="utf-8").read()
 blocks = re.findall(r"qml_modules \+= \{(.*?)\n\}", meson[meson.index("qml_modules = []"):
                                                            meson.index("foreach module : qml_modules")], re.S)
+# C++ value types (QML_VALUE_TYPE, e.g. vlcDuration, timedText) cannot be registered from Python:
+# in the copies only, a property or signal parameter of one of them is read as `var`
+value_types = set()
+for root_dir, _, files in os.walk(qt):
+    for f in files:
+        if f.endswith((".hpp", ".h")):
+            with open(os.path.join(root_dir, f), encoding="utf-8", errors="replace") as h:
+                value_types |= set(re.findall(r"\bQML_VALUE_TYPE\s*\(\s*(\w+)\s*\)", h.read()))
+value_type_re = re.compile(r"\b(property\s+)(%s)\b" % "|".join(sorted(value_types))) if value_types else None
+
+def copy_qml(src, dst):
+    with open(src, encoding="utf-8") as fsrc:
+        text = fsrc.read()
+    if value_type_re:
+        text = value_type_re.sub(r"\1var", text)
+        text = re.sub(r"(\bsignal\s+\w+\s*\()([^)]*)\)",
+                      lambda m: m.group(1) + re.sub(r"\b(%s)(\s+\w+)" % "|".join(sorted(value_types)),
+                                                    r"var\2", m.group(2)) + ")", text)
+    with open(dst, "w", encoding="utf-8") as fdst:
+        fdst.write(text)
+
 shutil.rmtree(imports, ignore_errors=True)
 copies = {}
 original = {}
@@ -212,7 +233,7 @@ for b in blocks:
                 # copied unchanged: a file that uses Popup, Control, Label, ... without importing
                 # QtQuick.Controls(.Basic) or QtQuick.Templates fails in VLC too ("X is not a
                 # type", seen on the PC in the toolbar editor), so it must fail here as well
-                shutil.copyfile(src, os.path.join(out, base))
+                copy_qml(src, os.path.join(out, base))
                 copies[os.path.normcase(src)] = os.path.join(out, base)
                 original[os.path.normcase(src)] = src
             qmldirs[name].append(("singleton " if kind == "singletons" else "") + "%s 1.0 %s" % (base[:-4], base))

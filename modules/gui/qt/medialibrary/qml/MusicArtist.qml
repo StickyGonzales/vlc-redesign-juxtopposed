@@ -198,9 +198,6 @@ FocusScope {
                     property string _oldSortCriteria
 
                     function adjustAlbumSections() {
-                        if (!artistBanner) // context is lost, Qt 6.2 bug
-                            return
-
                         if (!(root._currentView instanceof Widgets.TableViewExt))
                             return
 
@@ -617,7 +614,8 @@ FocusScope {
                 }
 
                 Behavior on opacity {
-                    OpacityAnimator {
+                    // NOTE: Do not use `OpacityAnimator` here, interrupting the fade stalls the UI (QTBUG-151700).
+                    NumberAnimation {
                         duration: VLCStyle.duration_short
                     }
                 }

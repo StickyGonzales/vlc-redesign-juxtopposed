@@ -17,7 +17,7 @@
 
 use std::{
     cell::UnsafeCell,
-    ffi::{c_char, c_void, CStr},
+    ffi::{c_char, CStr},
     mem::MaybeUninit,
     ptr::NonNull,
 };
@@ -49,7 +49,7 @@ pub struct Tick(pub i64);
 /// use vlcrs_core::tracer::{Tick, TracerCapability, Trace};
 /// struct Module { last_trace_tick: Cell<Tick>, }
 /// impl TracerCapability for Module {
-///     fn open(obj: &mut Object) -> Option<impl TracerCapability> {
+///     fn open(obj: &mut Object) -> Option<Self> {
 ///         Some(Self{ last_trace_tick: Cell::from(Tick(0)) })
 ///     }
 ///
@@ -79,7 +79,7 @@ pub struct Tick(pub i64);
 /// object so that it becomes Sync and can be used in the multiples threads.
 ///
 pub trait TracerCapability: Sync {
-    fn open(obj: &mut Object) -> Option<impl TracerCapability>
+    fn open(obj: &mut Object) -> Option<Self>
     where
         Self: Sized;
 
@@ -87,46 +87,34 @@ pub trait TracerCapability: Sync {
 }
 
 #[allow(non_camel_case_types)]
-pub type TracerCapabilityActivate =
-    unsafe extern "C" fn(
+pub type TracerCapabilityActivate<T> =
+    extern "C" fn(
         obj: &mut Object,
-        opaque: &mut MaybeUninit<*mut c_void>,
-    ) -> Option<&'static sys::vlc_tracer_operations>;
+        opaque: &mut MaybeUninit<Box<T>>,
+    ) -> Option<&'static sys::vlc_tracer_operations<T>>;
 
-extern "C" fn tracer_trace(
-    opaque: *const c_void,
+extern "C" fn tracer_trace<T: TracerCapability>(
+    tracer: &T,
     tick: sys::vlc_tick,
-    trace: NonNull<sys::vlc_tracer_trace>,
+    trace: &Trace,
 ) {
-    {
-        let tracer: &dyn TracerCapability =
-            unsafe { &**(opaque as *const Box<dyn TracerCapability>) };
-        let trace = Trace(trace);
-        tracer.trace(Tick(tick), &trace);
-    }
+    tracer.trace(Tick(tick), trace);
 }
 
-extern "C" fn tracer_destroy(opaque: *mut c_void) {
-    let tracer: *mut Box<dyn TracerCapability> = opaque as *mut _;
-    let _ = unsafe { Box::from_raw(tracer) };
-}
-
-const TRACER_OPERATIONS: sys::vlc_tracer_operations = sys::vlc_tracer_operations {
-    trace: tracer_trace,
-    destroy: tracer_destroy,
-};
+extern "C" fn tracer_destroy<T>(_tracer: Box<T>) {}
 
 extern "C" fn activate_tracer<T: TracerCapability>(
     obj: &mut Object,
-    opaque: &mut MaybeUninit<*mut c_void>,
-) -> Option<&'static sys::vlc_tracer_operations> {
-    if let Some(instance) = T::open(obj) {
-        let wrapper: Box<dyn TracerCapability> = Box::try_new(instance).ok()?;
-        let sys = Box::into_raw(Box::try_new(wrapper).ok()?);
-        opaque.write(sys as *mut _);
-        return Some(&TRACER_OPERATIONS);
-    }
-    None
+    opaque: &mut MaybeUninit<Box<T>>,
+) -> Option<&'static sys::vlc_tracer_operations<T>> {
+    let instance = T::open(obj)?;
+    opaque.write(Box::try_new(instance).ok()?);
+    Some(const {
+        &sys::vlc_tracer_operations {
+            trace: tracer_trace::<T>,
+            destroy: tracer_destroy::<T>,
+        }
+    })
 }
 
 ///
@@ -146,7 +134,7 @@ extern "C" fn activate_tracer<T: TracerCapability>(
 ///
 /// // Empty implementation
 /// impl TracerCapability for CustomTracer {
-///     fn open(obj: &mut Object) -> Option<impl TracerCapability> {
+///     fn open(obj: &mut Object) -> Option<Self> {
 ///         Some(Self{})
 ///     }
 ///     fn trace(&self, _tick: Tick, _trace: &Trace) {}
@@ -165,9 +153,9 @@ pub struct TracerModuleLoader;
 
 impl<T> ModuleProtocol<T> for TracerModuleLoader
 where
-    T: TracerCapability,
+    T: TracerCapability + 'static,
 {
-    type Activate = TracerCapabilityActivate;
+    type Activate = TracerCapabilityActivate<T>;
     fn activate_function() -> Self::Activate {
         activate_tracer::<T>
     }
@@ -202,15 +190,21 @@ impl Tracer {
     ///
     /// Register the new point at time `tick` with the metadata `entries:.
     ///
-    pub fn trace(&self, tick: Tick, trace: Trace) {
+    pub fn trace(&self, tick: Tick, trace: &Trace) {
         unsafe {
             // SAFETY: TODO
             let tracer = *self.tracer.get();
 
             // SAFETY: the pointer `tracer` is guaranteed to be non-null and
             //         nobody else has reference to it.
-            sys::vlc_tracer_TraceWithTs(tracer, tick.0, trace.0);
+            sys::vlc_tracer_TraceWithTs(tracer, tick.0, trace);
         }
+    }
+}
+
+impl Drop for Tracer {
+    fn drop(&mut self) {
+        unsafe { sys::vlc_tracer_Destroy(*self.tracer.get()); }
     }
 }
 
@@ -230,7 +224,7 @@ macro_rules! trace {
 /// # use vlcrs_core::object::Object;
 /// # struct MyTracer {}
 /// impl TracerCapability for MyTracer {
-///     # fn open(_: &mut Object) -> Option<impl TracerCapability> { Some(MyTracer{}) }
+///     # fn open(_: &mut Object) -> Option<Self> { Some(MyTracer{}) }
 ///     fn trace(&self, _: Tick, trace: &Trace) {
 ///         for entry in trace.entries() {
 ///             println!("{}", entry.key);
@@ -238,9 +232,8 @@ macro_rules! trace {
 ///     }
 /// }
 /// ```
-#[derive(PartialEq, Copy, Clone)]
 #[repr(transparent)]
-pub struct Trace(NonNull<sys::vlc_tracer_trace>);
+pub struct Trace(sys::vlc_tracer_trace);
 
 impl Trace {
     /// Get an iterator over the trace entries.
@@ -254,7 +247,7 @@ impl<'a> IntoIterator for &'a Trace {
     type IntoIter = TraceIterator<'a>;
     fn into_iter(self) -> Self::IntoIter {
         TraceIterator {
-            current_field: unsafe { self.0.read().entries },
+            current_field: self.0.entries,
             _plt: std::marker::PhantomData,
         }
     }
@@ -346,7 +339,7 @@ mod test {
             entries: NonNull::from(&entries[0]),
         };
 
-        let trace = Trace(NonNull::from(&trace));
+        let trace = Trace(trace);
 
         let mut iterator = trace.entries();
 
