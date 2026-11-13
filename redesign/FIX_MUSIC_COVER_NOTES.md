@@ -81,6 +81,12 @@ shown square at all.
   In the QML, the height cap now follows the pane (the lyrics pane is shorter), and screen readers
   hear "Cover" once.
 
+## Green runs
+
+- build-linux #143 (9d54fe6b23): build, packages and smoke pass, including the three music-cover
+  checks (square cover at every size, wide cover cropped, both in fullscreen).
+- build-windows #254 (9d54fe6b23): build, installer and the Windows smoke pass.
+
 ## Found on the way (not changed, for StickyGonzales)
 
 - **F and Escape do not toggle fullscreen while only music plays.** Seen on the Linux build with
