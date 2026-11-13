@@ -45,6 +45,8 @@ Get it from the [latest release](https://github.com/StickyGonzales/vlc-redesign-
 | **Installer** (recommended) | `coneplayer-1.4.0-win64.exe` | Run it and follow the pages. Adds a Start menu entry, "Open with" for your media and an uninstaller in Settings > Apps. |
 | **Portable zip** | `ConePlayer-1.4.0-win64.zip` | Unzip it anywhere and run `Cone.exe`. Nothing is installed, and settings stay in the `portable` folder next to `Cone.exe`. |
 
+[Code signing policy](CODE_SIGNING_POLICY.md): free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org) (applied for; until then the Windows files are unsigned).
+
 ### Linux (beta)
 
 Cone Player for Linux comes from its own [Linux releases](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases?q=linux-v&expanded=true); the newest is [1.4.0 beta 5](https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.4.0-beta5). It needs 64-bit x86 and glibc 2.35 or newer: Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 36 or newer. It installs next to VLC and never replaces it: it has its own name, menu entry and settings (`~/.config/Cone`).
@@ -66,7 +68,7 @@ For testers: a [preview of 1.4.0](https://github.com/StickyGonzales/vlc-redesign
 <details>
 <summary>Windows says "Windows protected your PC"</summary>
 
-The files are not code-signed yet, so Windows SmartScreen may warn the first time you run them. Choose **More info**, then **Run anyway**. Each release lists the SHA-256 of both files, so you can check a download with `Get-FileHash` in PowerShell.
+The files are not code-signed yet (see the [code signing policy](CODE_SIGNING_POLICY.md)), so Windows SmartScreen may warn the first time you run them. Choose **More info**, then **Run anyway**. Each release lists the SHA-256 of both files, so you can check a download with `Get-FileHash` in PowerShell.
 
 </details>
 
@@ -194,6 +196,7 @@ Found a bug? Open an [issue](https://github.com/StickyGonzales/vlc-redesign-juxt
   - *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org/)
   - *Big Buck Bunny*, © copyright 2008, Blender Foundation | [www.bigbuckbunny.org](https://peach.blender.org/)
   - *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org/)
+- **Code signing:** free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org) ([code signing policy](CODE_SIGNING_POLICY.md)).
 - **Built by [StickyGonzales](https://github.com/StickyGonzales)** with [Claude](https://claude.ai/code).
 
 Cone Player is an independent project, not affiliated with or endorsed by VideoLAN or Juxtopposed. VLC, VLC media player and VideoLAN are trademarks of the VideoLAN non-profit. Details in [CREDITS.md](CREDITS.md).
