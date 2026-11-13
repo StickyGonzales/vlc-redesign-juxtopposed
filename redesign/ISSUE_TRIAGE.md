@@ -68,3 +68,53 @@ Read-only on GitHub: no comment, label, close or edit. Nothing fixed.
   - The step builds the Ubuntu 22.04 image from `be9479502b`. A package that stopped installing on Ubuntu 22.04 is the likely cause.
   - Not fixed here.
 - **Cone crashed when the sandbox stopped it.** After SIGTERM under the headless Wayland session, Cone ended with a segmentation fault: once with the Debian-image build, once with beta 4. The next start then offered to restore the playlist. Seen only in the sandbox's kill path; not investigated.
+
+# Round 2 (2026-11-13, PC session)
+
+Everything new since the first triage (2026-11-11 15:55 UTC): the new issues #132 and #129, and new comments on #116, #98 and #69. #68 has nothing new. Read-only on GitHub: no comment, label, close or edit. Nothing fixed.
+
+**How it was checked**
+- All new text read in full; the three new screenshots (one in #129, two in #69) downloaded and looked at (not committed: the reporters' content).
+- **Builds:** released **Cone 1.4.0** (Windows) and **wip/next-test** at `7ef172adfdb` (build-windows run 43432779701, green with smoke; it has #126, #127, #128, #130, #131).
+- **Test media:** a generated MP3 with a square 600x600 cover (`attached_pic`), played in a window like the reporter's (about 1040x570), a wide one (1500x600) and a tall one (1100x900).
+- **References:** Juxtopposed's Figma "Player - Music" and "Miniplayer" frames, VIDEO_INDEX rows 209 (P6-04) and 211 (IB-23), Decision 1, UP_NEXT_PLAN.md.
+
+## The table
+
+| Issue | Point | Classification | Ours or VLC | Evidence and reference | Reproduction (Windows) |
+|---|---|---|---|---|---|
+| #129 (Windows, FLAC and MP3) | Album art stretched when the window is resized; fine maximized | **Bug** | Ours (Cone's music view) | Their screenshot: a square cover squeezed into a tall, narrow rounded card at about 1040x570. Reference: Figma "Player - Music" and VIDEO_INDEX 209 / 211: "centered large square cover art with rounded corners". | **Reproduced on 1.4.0 and on wip/next-test:** at 1040x570 the cover is a narrow pill (about 120x380), at 1500x600 a tall card (about 215x505), at 1100x900 still taller than wide (about 490x765). The cover is never kept square except in some window shapes. |
+| #69 (macOS) | Album art proportions "warped and random, depending on the song" | **Bug, the same as #129** | Ours | Their screenshot: a square cover in a tall card at a 16:10 window. | Same cause as #129 (the Windows reproduction above); the Mac part needs a Mac only to confirm. |
+| #69 | "Picture-in-picture" with a long strip overlapping everything | **Needs more info; likely works as designed** | Ours (the mini player) | Their screenshot shows Cone's mini player at the bottom right of the library: picture, progress strip, title, folder, artist and queue icon, exactly Figma "Miniplayer". A real floating picture-in-picture window over other apps does not exist: skipped by Decision 1. | Not run (the screenshot already shows the design). Ask which part they mean: the progress strip, or the wish for a window over other apps (feature idea). |
+| #69 | Opening a file from Finder while Cone is closed still does not play it | **Bug (known), macOS only** | Ours | Already in the 1.4.0 known issues ("double-clicking a file in Finder while Cone Player is closed opens Cone without playing the file"). | Needs a Mac. |
+| #69 | The earlier bugs are fixed | Not a report (thanks) | - | - | - |
+| #98 (new comment) | An optional close button in fullscreen, off by default | **Feature idea** | Ours | VLC and Juxtopposed's design have none (first triage, point 2). An opt-in setting would not change the default. | - |
+| #98 | Filters in the OpenSubtitles search (type, year, season, episode) | **Feature idea** (asked again) | Ours | Her dialog has the search box and language only (W6.5). | - |
+| #98 | Several API keys from separate OpenSubtitles accounts, to get more downloads a day | **Feature idea, with a caution** | Ours | Each account has its own daily limit, so it would work technically; rotating accounts to get around a service's limit may go against OpenSubtitles' terms. For StickyGonzales to decide. | - |
+| #98 | Subtitle timeline: it was an MKV with built-in subtitles; elapsed time and FastStream answered | Answered, nothing to do | - | Confirms the first triage. | - |
+| #132 | Play several audio tracks at the same time, each toggleable | **Feature idea** | VLC core | VLC plays one audio track at a time (one audio output per player; the core selects audio tracks exclusively). Mixing tracks would be a core change, not a Cone setting. | Not run (VLC behaviour). |
+| #116 (new comment) | The maintainer's reply only (the fix is in 1.4.0, linux-v1.4.0-beta5) | Nothing new from the reporter | - | Could be closed once they confirm beta 5. | - |
+
+## Confirmed bugs, by how many users they hit
+1. **Album art not kept square (#129 Windows, #69 macOS).**
+   - **Status:** reproduced on 1.4.0 and wip/next-test.
+   - **Who it hits:** everyone playing music with a cover in a window that is not maximized.
+   - **For the fix:** the cover must stay square (the Figma frame), the largest square that fits the space above the title, centred, rounded corners as now.
+2. **Finder open while Cone is closed (#69).** Known, in the 1.4.0 known issues. Mac only.
+
+## Drafted replies (not posted)
+
+**#129**
+> Thanks a lot for the report and the screenshot! You're right: the cover should always stay square, like in the design, and in a smaller or wider window Cone squeezes it. I could reproduce it with FLAC and MP3 here. It will be fixed in the next release, and I'll let you know here when it's out. Until then, a maximized window shows it correctly.
+
+**#132**
+> Thanks for the idea! Right now Cone plays one audio track at a time, which comes from VLC's engine underneath: the engine can only pick one audio track for playback. Mixing several would need changes deep in VLC itself, so it isn't something Cone can add as a setting soon. I've noted it as a feature idea though, and I'm keeping an eye on whether VLC adds it.
+
+**#98**
+> Thanks for the follow-up, and glad Auto-sync is doing the job! An optional close button in fullscreen, off by default, is a fair idea since it wouldn't change anything for anyone who doesn't want it. I've noted it, together with the OpenSubtitles search filters. About the extra keys: thanks for explaining, that makes sense. Switching between several accounts to get past the daily limit is something OpenSubtitles might not be happy with, so I'd rather not build that in. I hope that's understandable.
+
+**#69**
+> Thank you for testing again, great to hear the earlier bugs are gone! The cover that looks stretched is a real bug: the cover should stay square and Cone squeezes it in some window sizes. It also happens on Windows, and it's being fixed for the next release. Opening a file from Finder while Cone is closed is a known issue we're still working on. About the picture-in-picture: the small player in the corner is Cone's mini player from the design, and it lives inside Cone's window. Is the strip you mean the progress bar under the picture, or would you like a small window that floats above other apps? That would help me understand.
+
+**#116** (only if StickyGonzales wants to follow up)
+> Linux beta 5 (1.4.0) is out with the Wayland fix: https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v1.4.0-beta5. If you get a chance, could you check that the video now plays inside Cone with the controls in fullscreen? Thanks again!
