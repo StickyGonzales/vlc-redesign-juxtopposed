@@ -13,7 +13,9 @@
 
 `SHA256SUMS.txt` holds both checksums. To check a download in PowerShell, run `Get-FileHash .\{{EXE}} -Algorithm SHA256` and compare the result with the table above.
 
-The files are not code-signed yet, so Windows SmartScreen may warn the first time: choose "More info", then "Run anyway".
+{{SIGNING_NOTE}}
+
+[Code signing policy]({{REPO_URL}}/blob/redesign/CODE_SIGNING_POLICY.md): free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
 ## Cone extras (not part of Juxtopposed's design)
 

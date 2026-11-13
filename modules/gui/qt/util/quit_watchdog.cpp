@@ -26,10 +26,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <ctime>
 #include <mutex>
+#include <string>
 #include <thread>
 
 #include <QSettings>
+#include <QtGlobal>
 
 #include <vlc_common.h>
 #include <vlc_configuration.h>
@@ -60,7 +63,30 @@ constexpr auto kLogGrace = std::chrono::milliseconds(300);
 /* at or past this position the core's own end-of-file handling owns the media's state */
 constexpr double kResumeMaxPosition = 0.9;
 
-std::atomic<bool> s_armed{false};
+/* the timer runs once, whichever path starts it first (any thread) */
+std::atomic<bool> s_timerStarted{false};
+std::atomic<bool> s_instanceReleased{false};
+/* arm()'s save: interface thread only */
+bool s_saved = false;
+
+/* the wall clock, for the log: "18:33:25.123" (the file log has no times of its own, and a quit
+ * that hangs is told apart from a quit key that never arrived by these times) */
+std::string clockText()
+{
+    using namespace std::chrono;
+    const auto now = system_clock::now();
+    const time_t t = system_clock::to_time_t(now);
+    const int ms = static_cast<int>(duration_cast<milliseconds>(now.time_since_epoch()).count() % 1000);
+    struct tm local;
+#ifdef _WIN32
+    localtime_s(&local, &t);
+#else
+    localtime_r(&t, &local);
+#endif
+    char text[32];
+    snprintf(text, sizeof(text), "%02d:%02d:%02d.%03d", local.tm_hour, local.tm_min, local.tm_sec, ms);
+    return text;
+}
 
 /* setDiscardOnQuit(): interface thread only */
 std::function<void()> s_discardOnQuit;
@@ -117,13 +143,14 @@ void saveState(qt_intf_t *p_intf)
  * own thread: the caller ends the process after kLogGrace whatever happens here */
 void logFired(long long seconds)
 {
-    fprintf(stderr, "quit watchdog: quit did not finish within %lld s, ending the process\n",
-            seconds);
+    const std::string at = clockText();
+    fprintf(stderr, "quit watchdog: quit did not finish within %lld s, ending the process at %s\n",
+            seconds, at.c_str());
     std::unique_lock<std::mutex> lock(s_logLock, std::try_to_lock);
     if (lock.owns_lock() && s_logObj != nullptr)
         msg_Err(s_logObj, "quit watchdog: Cone did not finish quitting within %lld s, ending the "
-                        "process (the settings and the resume position were saved when the "
-                        "quit started)", seconds);
+                        "process at %s (the settings and the resume position were saved when the "
+                        "quit started)", seconds, at.c_str());
     /* the file logger's stream is fully buffered on Windows (_IOLBF acts as _IOFBF): flush it
      * before the process ends, from this thread, which may block */
     fflush(nullptr);
@@ -177,8 +204,17 @@ void releaseOneInstance(qt_intf_t *p_intf)
 #endif
 }
 
-void startTimer(std::chrono::seconds timeout)
+void releaseOneInstanceOnce(qt_intf_t *p_intf)
 {
+    if (!s_instanceReleased.exchange(true))
+        releaseOneInstance(p_intf);
+}
+
+/* false when the timer already runs */
+bool startTimer(std::chrono::seconds timeout)
+{
+    if (s_timerStarted.exchange(true))
+        return false;
     std::thread([timeout]() {
         std::this_thread::sleep_for(timeout);
         const long long seconds = static_cast<long long>(timeout.count());
@@ -190,15 +226,13 @@ void startTimer(std::chrono::seconds timeout)
         std::this_thread::sleep_for(kLogGrace);
         endProcess();
     }).detach();
+    return true;
 }
 
 }
 
 void QuitWatchdog::arm(qt_intf_t *p_intf)
 {
-    if (s_armed.exchange(true))
-        return;
-
     PlayerController *player = p_intf->p_mainPlayerController;
     const bool recording = player != nullptr && player->isRecording();
     {
@@ -206,13 +240,30 @@ void QuitWatchdog::arm(qt_intf_t *p_intf)
         s_logObj = VLC_OBJECT(p_intf);
     }
     /* the timer runs before anything else, so a save that blocks cannot keep Cone alive */
-    startTimer(recording ? kQuitTimeoutRecording : kQuitTimeout);
-    releaseOneInstance(p_intf);
-    msg_Dbg(p_intf, "quit watchdog: armed, Cone ends itself if it is still running in %lld s",
-            static_cast<long long>((recording ? kQuitTimeoutRecording : kQuitTimeout).count()));
+    const auto timeout = recording ? kQuitTimeoutRecording : kQuitTimeout;
+    if (startTimer(timeout))
+        msg_Dbg(p_intf, "quit watchdog: armed at %s, Cone ends itself if it is still running in "
+                        "%lld s", clockText().c_str(), static_cast<long long>(timeout.count()));
+    releaseOneInstanceOnce(p_intf);
 
+    /* the save runs once, also when another path started the timer first */
+    if (s_saved)
+        return;
+    s_saved = true;
     saveState(p_intf);
     discardForQuit();
+}
+
+void QuitWatchdog::logRequest(qt_intf_t *p_intf, const char *source)
+{
+    msg_Info(p_intf, "quit: requested by %s at %s", source, clockText().c_str());
+}
+
+bool QuitWatchdog::testHangRequested()
+{
+    /* test only (the smoke check of a quit that never finishes): the quit blocks the interface
+     * thread after the watchdog is armed and the window hidden, so only the watchdog can end it */
+    return qEnvironmentVariableIsSet("CONE_TEST_HANG_QUIT");
 }
 
 void QuitWatchdog::setDiscardOnQuit(std::function<void()> discard)
@@ -236,10 +287,11 @@ void QuitWatchdog::armWithoutSaving(qt_intf_t *p_intf)
         if (s_logObj == nullptr)
             s_logObj = VLC_OBJECT(vlc_object_instance(p_intf));
     }
-    if (s_armed.exchange(true))
-        return;
-    startTimer(kQuitTimeout);
-    releaseOneInstance(p_intf);
+    if (startTimer(kQuitTimeout))
+        msg_Dbg(VLC_OBJECT(vlc_object_instance(p_intf)), "quit watchdog: armed at %s (a quit that "
+                "did not start in the interface), Cone ends itself if it is still running in %lld s",
+                clockText().c_str(), static_cast<long long>(kQuitTimeout.count()));
+    releaseOneInstanceOnce(p_intf);
 }
 
 void QuitWatchdog::interfaceClosing(qt_intf_t *p_intf)

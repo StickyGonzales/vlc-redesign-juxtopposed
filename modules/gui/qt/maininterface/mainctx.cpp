@@ -84,6 +84,8 @@
 
 #ifdef _WIN32
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QThread>
 #include <QTimer>
 #endif
 
@@ -1117,10 +1119,33 @@ constexpr int kCloseStopTimeoutMs = 3000;
 
 void MainCtx::quitLikeClose()
 {
-    onWindowClose(nullptr);
+    requestQuit("the quit key");
 }
 
-void MainCtx::onWindowClose( QWindow* )
+void MainCtx::onWindowClose( QWindow* window )
+{
+    requestQuit(window ? "the window's close button" : "a close request");
+}
+
+/* redesign (StickyGonzales, 2026-11-12): the quit feels instant. The windows go at once and the
+ * sound stops with the stop request; VLC's core shuts down in the background (plain VLC 4 itself
+ * takes about 2 s to quit on Windows, redesign/QUIT_INSTANT_NOTES.md) and the watchdog ends it
+ * within 5 s. A window stays while a dialog needs the user (a modal window is open). */
+void MainCtx::hideWindowsForQuit()
+{
+    if (QGuiApplication::modalWindow() != nullptr)
+    {
+        msg_Dbg(p_intf, "quit: a dialog is open, the windows stay until the quit ends");
+        return;
+    }
+    for (QWindow* window : QGuiApplication::topLevelWindows())
+    {
+        if (window->isVisible())
+            window->hide();
+    }
+}
+
+void MainCtx::requestQuit(const char* source)
 {
     PlaylistController* playlistController = p_intf->p_mainPlaylistController;
     PlayerController* playerController = p_intf->p_mainPlayerController;
@@ -1131,8 +1156,18 @@ void MainCtx::onWindowClose( QWindow* )
         return;
     m_closing = true;
 
-    // redesign: the quit starts here (the stop below can hang in the core): save and arm
+    QuitWatchdog::logRequest(p_intf, source);
+    // redesign: the quit starts here (the stop below can hang in the core): save and arm, then
+    // the windows go (after the save, which keeps the window's geometry and state)
     QuitWatchdog::arm(p_intf);
+    hideWindowsForQuit();
+
+    if (QuitWatchdog::testHangRequested())
+    {
+        msg_Warn(p_intf, "quit: CONE_TEST_HANG_QUIT is set, the quit blocks here (test only)");
+        for (;;)
+            QThread::msleep(1000);
+    }
 
     if (m_videoSurfaceProvider)
         m_videoSurfaceProvider->onWindowClosed();
@@ -1155,6 +1190,9 @@ void MainCtx::onWindowClose( QWindow* )
     }
     else
     {
+        // redesign: the sound stops now, not when the core gets to it in libvlc_Quit
+        if (playlistController)
+            playlistController->stop();
         emit askToQuit(); /* ask THEDP to quit, so we have a unique method */
     }
 }

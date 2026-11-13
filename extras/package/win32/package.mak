@@ -192,6 +192,13 @@ package-win32-exe:
 endif
 
 package-win32-zip: package-win-strip
+	$(MAKE) package-win32-zip-staged
+
+# redesign: release signing (CODE_SIGNING_POLICY.md, .github/scripts/win64-build.sh): the zip and the
+# installer of the package folder exactly as it is, after the signed Cone.exe replaced the built one;
+# package-win32-zip and package-win32-exe stage and strip the folder again first, which would put the
+# unsigned file back (and stripping a signed file breaks its signature)
+package-win32-zip-staged:
 	rm -f -- $(WINVERSION).zip
 if BRAND_PUBLIC
 # the zip's top folder takes the package name: a link to the package folder, which zip follows
@@ -199,6 +206,15 @@ if BRAND_PUBLIC
 	ln -s vlc-$(VERSION) "$(WINPACKAGE)"
 endif
 	zip -r -9 $(WINVERSION).zip $(WINPACKAGE) --exclude \*.nsi \*NSIS\* \*languages\* \*sdk\* \*helpers\* spad\*
+
+if HAVE_MAKENSIS
+package-win32-exe-staged: $(win32_destdir)/NSIS/nsProcess.dll
+	$(MAKENSIS) "$(win32_destdir)/spad.nsi"
+	$(MAKENSIS) "$(win32_destdir)/vlc.win32.nsi"
+else
+package-win32-exe-staged:
+	@echo "makensis require to build NSIS installer not found or too old"; exit 1;
+endif
 
 package-win32-debug-zip: package-win-common
 	rm -f -- $(WINVERSION)-debug.zip
@@ -239,7 +255,7 @@ endif
 
 	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION)-release.7z $(win32_debugdir) "$(win32_destdir)/"
 
-.PHONY: package-win-install package-win-common package-win-strip package-win32-src package-win32-exe package-win32-zip package-win32-debug-zip package-win32-7zip package-win32-debug-7zip package-win32-cleanup package-win32 package-win32-debug
+.PHONY: package-win-install package-win-common package-win-strip package-win32-src package-win32-exe package-win32-zip package-win32-zip-staged package-win32-exe-staged package-win32-debug-zip package-win32-7zip package-win32-debug-7zip package-win32-cleanup package-win32 package-win32-debug
 
 EXTRA_DIST += \
 	extras/package/win32/vlc.exe.manifest \

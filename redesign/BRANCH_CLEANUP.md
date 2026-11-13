@@ -178,3 +178,16 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/fix-popup-stack` | `b8ce9883ef3c519caafad18a61c1476c38e61dd6` | PR #126 merged into wip/next-test (notices stack) |
+
+## 2026-11-12, quit follow-up
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/quit-instant` | `efafe778ca12ba848c18a9aa388ddc525c0b7d9a` | PR #128 merged into wip/next-test |
+| `wip/fix-quit-stalls` | `4825fe8513fa61637c9dadb149ada9719ead70f1` | PR #125 closed (no measurable gain); its repro script kept on wip/next-test |
+
+## 2026-11-13, SignPath code signing prep
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/signpath-signing` | `89730d9786465a54a32b1a89145c732b3e6ccfca` | PR #130 merged into wip/next-test; the policy page and README links also on redesign (f8417da6bb2) |

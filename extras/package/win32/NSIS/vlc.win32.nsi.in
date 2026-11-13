@@ -100,6 +100,21 @@ Name "${PRODUCT_TITLE}"
 @HAVE_WIN64_FALSE@                   OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-win32.exe
 @HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-win64.exe
 @HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\@BRAND_INSTALLER_NAME@-${VERSION}-winarm64.exe
+; redesign: release signing (CODE_SIGNING_POLICY.md): the installer's own version information, with
+; the product name and version SignPath checks on every signed file (the same as Cone.exe's); the
+; public profile's version is always X.Y.Z (build-windows.yml), VLC's "4.0.0-dev" is not a number
+!if "${PRODUCT_PROGID}" != "VLC"
+VIProductVersion "${PRODUCT_VERSION}.0"
+VIFileVersion "${PRODUCT_VERSION}.0"
+; the version strings exactly as Cone.exe writes its ProductVersion ("1,4,0,0", bin/vlc_win32_rc.rc.in)
+!searchreplace PRODUCT_VERSION_RC "${PRODUCT_VERSION}.0" "." ","
+VIAddVersionKey /LANG=1033 "ProductName" "${PRODUCT_NAME}"
+VIAddVersionKey /LANG=1033 "ProductVersion" "${PRODUCT_VERSION_RC}"
+VIAddVersionKey /LANG=1033 "FileVersion" "${PRODUCT_VERSION_RC}"
+VIAddVersionKey /LANG=1033 "FileDescription" "${PRODUCT_NAME} installer"
+VIAddVersionKey /LANG=1033 "CompanyName" "${PRODUCT_PUBLISHER}"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "GPL-2.0-or-later; VLC media player (C) VideoLAN and VLC authors"
+!endif
 InstallDir "$@PROGRAMFILES@\${PRODUCT_INSTALL_DIR}"
 !ifdef NSIS_LZMA_COMPRESS_WHOLE
 SetCompressor lzma
