@@ -25,21 +25,19 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QPointer>
-#include <QThread>
 
 #include <algorithm>
 
 #include <vlc_url.h>
 
-#ifdef _WIN32
-# include <windows.h>
-#endif
 
 #include "qt.hpp"
 #include "player/rd_credits_audio.hpp"
 #include "player/rd_credits_point.hpp"
 #include "player/rd_credits_scanner.hpp"
 #include "player/rd_credits_subtitles.hpp"
+#include "util/rd_background_queue.hpp"
+#include "util/rd_storage.hpp"
 
 namespace {
 
@@ -54,16 +52,6 @@ constexpr int kFullBudgetSeconds = 120;
 constexpr int kQuickBudgetSeconds = 30;
 // the quick check reads this much more at each end of its 2-minute window
 constexpr qint64 kQuickEdgeMs = 2000;
-
-bool batterySaver()
-{
-#ifdef _WIN32
-    SYSTEM_POWER_STATUS status;
-    return GetSystemPowerStatus(&status) && (status.SystemStatusFlag & SYSTEM_STATUS_FLAG_POWER_SAVING_ON);
-#else
-    return false;
-#endif
-}
 
 QString normalized(const QString& path)
 {
@@ -148,11 +136,7 @@ struct RdCreditsScans::Outcome
 RdCreditsScans::RdCreditsScans(vlc_object_t* parent, QObject* parentObject)
     : QObject(parentObject)
     , m_parent(parent)
-    , m_paused(std::make_shared<std::atomic<bool>>(false))
 {
-    m_pool.setMaxThreadCount(1);
-    // a scan never keeps a thread around
-    m_pool.setExpiryTimeout(1000);
 }
 
 RdCreditsScans::~RdCreditsScans()
@@ -255,28 +239,81 @@ QStringList RdCreditsScans::fixedShows() const
     return shows;
 }
 
-void RdCreditsScans::setPaused(bool paused)
-{
-    m_paused->store(paused, std::memory_order_relaxed);
-}
-
 void RdCreditsScans::shutdown()
 {
     m_shutdown = true;
     m_queue.clear();
-    if (m_current)
-        m_current->cancel();
-    // the read stops at its next packet (its I/O is interrupted): this returns at once
-    m_pool.waitForDone();
-    m_current.reset();
+    // the read stops at its next packet (its I/O is interrupted); the background queue joins
+    // its thread when the interface closes
+    if (RdBackgroundQueue* queue = RdBackgroundQueue::instance(); queue && m_jobId)
+        queue->cancel(m_jobId);
 }
 
 void RdCreditsScans::stop()
 {
     ++m_generation;
     m_queue.clear();
-    if (m_current)
-        m_current->cancel();
+    if (RdBackgroundQueue* queue = RdBackgroundQueue::instance(); queue && m_jobId)
+        queue->cancel(m_jobId);
+}
+
+void RdCreditsScans::relocate(const QString& oldShowKey, const QString& newShowKey,
+                              const QHash<QString, QString>& media)
+{
+    if (oldShowKey.isEmpty() || newShowKey.isEmpty() || oldShowKey == newShowKey)
+        return;
+    bool modified = false;
+    const auto show = m_shows.find(oldShowKey);
+    if (show != m_shows.end())
+    {
+        const ShowInfo info = show.value();
+        m_shows.erase(show);
+        m_shows.insert(newShowKey, info);
+        modified = true;
+    }
+    QHash<QString, FileInfo> moved;
+    for (auto it = m_files.begin(); it != m_files.end();)
+    {
+        if (it->showKey != oldShowKey)
+        {
+            ++it;
+            continue;
+        }
+        // an episode found in the new folder keeps its scan; one that is not there goes
+        // (matched by name and size: it is there; its key reads its size and date, on the drive
+        // that was just read)
+        const QString newPath = media.value(normalized(it->path));
+        if (!newPath.isEmpty())
+        {
+            FileInfo info = it.value();
+            info.path = newPath;
+            info.showKey = newShowKey;
+            moved.insert(fileKey(newPath), info);
+        }
+        it = m_files.erase(it);
+        modified = true;
+    }
+    for (auto it = moved.cbegin(); it != moved.cend(); ++it)
+        m_files.insert(it.key(), it.value());
+    if (modified)
+        emit changed();
+}
+
+void RdCreditsScans::forgetShow(const QString& showKey)
+{
+    bool modified = m_shows.remove(showKey) > 0;
+    for (auto it = m_files.begin(); it != m_files.end();)
+    {
+        if (it->showKey == showKey)
+        {
+            it = m_files.erase(it);
+            modified = true;
+        }
+        else
+            ++it;
+    }
+    if (modified)
+        emit changed();
 }
 
 void RdCreditsScans::clear()
@@ -298,7 +335,10 @@ void RdCreditsScans::startNext()
     // nothing runs before the cache is read (a file in it is never scanned again)
     if (m_running || m_shutdown || !m_loaded || m_queue.empty())
         return;
-    if (batterySaver())
+    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
+    if (!queue)
+        return;
+    if (RdStorage::batterySaver())
     {
         // nothing runs on battery saver; what waits is asked again with the next request
         msg_Dbg(m_parent, "up next: credits scans wait (battery saver)");
@@ -324,29 +364,36 @@ void RdCreditsScans::startNext()
     }
 
     const QByteArray mrl = mrlOf(request.path);
-    auto scanner = std::make_shared<RdCreditsScanner>(m_parent, mrl, m_paused);
-    m_current = scanner;
     m_running = true;
 
+    // a job of the background queue: one at a time with the others, low priority, paused while
+    // the user seeks or a more urgent job runs, not in Cone's first minute
     QPointer<RdCreditsScans> self(this);
     const int generation = m_generation;
-    m_pool.start([self, request, key, show, usual, others, scanner, generation]() {
-        // a background scan never takes time from playback
-        QThread::currentThread()->setPriority(QThread::LowestPriority);
-        const Outcome outcome = scan(*scanner, request, show, usual, others);
-        QMetaObject::invokeMethod(self.data(), [self, request, key, outcome, generation]() {
+    vlc_object_t* parent = m_parent;
+    auto outcome = std::make_shared<Outcome>();
+    auto cancelled = std::make_shared<bool>(false);
+    m_jobId = queue->post(QStringLiteral("credits scan"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Low,
+        [parent, mrl, request, show, usual, others, outcome, cancelled](const std::shared_ptr<RdBackgroundQueue::Control>& control) {
+            auto scanner = std::make_shared<RdCreditsScanner>(parent, mrl, control);
+            // a cancel (stop, quit) interrupts the read at once
+            control->setCancelHook([scanner]() { scanner->cancel(); });
+            *outcome = scan(*scanner, request, show, usual, others);
+            *cancelled = scanner->cancelled();
+            control->setCancelHook({});
+        },
+        [self, request, key, outcome, cancelled, generation]() {
             if (!self)
                 return;
             self->m_running = false;
-            self->m_current.reset();
+            self->m_jobId = 0;
             if (self->m_shutdown)
                 return;
-            // a result of before a Forget all or a stop is dropped
-            if (generation == self->m_generation)
-                self->merge(request, key, outcome);
+            // a result of before a Forget all or a stop, or of a cancelled read, is dropped
+            if (generation == self->m_generation && !*cancelled)
+                self->merge(request, key, *outcome);
             self->startNext();
-        }, Qt::QueuedConnection);
-    });
+        }, true);
 }
 
 // on the worker thread: the quick check when the show's music is known and the length is the

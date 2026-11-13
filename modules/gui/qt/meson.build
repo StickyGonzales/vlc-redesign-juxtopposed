@@ -167,6 +167,8 @@ moc_headers = files(
     'util/csdbuttonmodel.hpp',
     'util/csdmenu.hpp',
     'util/rd_update_check.hpp',
+    'util/rd_background_queue.hpp',
+    'util/rd_storage.hpp',
     'util/imageluminanceextractor.hpp',
     'util/keyhelper.hpp',
     'util/listcache.hpp',
@@ -583,6 +585,14 @@ qt_plugin_sources = files(
     'util/csdmenu.hpp',
     'util/rd_update_check.cpp',
     'util/rd_update_check.hpp',
+    'util/rd_background_queue.cpp',
+    'util/rd_background_queue.hpp',
+    'util/rd_storage.cpp',
+    'util/rd_storage.hpp',
+    'util/rd_storage_model.cpp',
+    'util/rd_storage_model.hpp',
+    'util/rd_volume.cpp',
+    'util/rd_volume.hpp',
     'util/imageluminanceextractor.cpp',
     'util/imageluminanceextractor.hpp',
     'util/imagehelper.cpp',
@@ -1749,6 +1759,35 @@ if qt6_dep.found()
                 'player/rd_credits_audio.cpp',
                 'player/rd_credits_audio.hpp'
             ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone's storage cleanup rules, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_storage_model',
+            'sources': files(
+                'tests/test_rd_storage_model.cpp',
+                'util/rd_storage_model.cpp',
+                'util/rd_storage_model.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone's one background queue, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_background_queue',
+            'sources': [files(
+                'tests/test_rd_background_queue.cpp',
+                'util/rd_background_queue.cpp',
+                'util/rd_background_queue.hpp'
+            ), qt6.compile_moc(headers: files('util/rd_background_queue.hpp'),
+                               dependencies: qt6_dep)],
             'suite': ['qt'],
             'include_directories' : qt_include_dir,
             'link_args': qt_link_args,

@@ -39,7 +39,6 @@
 #include <QSet>
 #include <QString>
 #include <QStringList>
-#include <QThreadPool>
 #include <QVector>
 
 #include <atomic>
@@ -81,8 +80,11 @@ public:
     int fixedCount() const;
     QStringList fixedShows() const;
 
-    // set while the seek bar is hovered or dragged: the read in progress waits
-    void setPaused(bool paused);
+    // the storage cleanup (STORAGE_CLEANUP_NOTES.md): a show found at another place takes its
+    // data along (`media`: each matched episode's old key and new path); a show forgotten
+    void relocate(const QString& oldShowKey, const QString& newShowKey, const QHash<QString, QString>& media);
+    void forgetShow(const QString& showKey);
+    QStringList showKeys() const { return m_shows.keys(); }
     // stops at once: the scan in progress is cancelled, the queue dropped, nothing runs again
     void shutdown();
     // the queue goes and the scan in progress stops (Up Next switched off); the cache stays
@@ -157,9 +159,8 @@ private:
     QSet<QString> m_skipped;
     bool m_running = false;
     bool m_shutdown = false;
-    std::shared_ptr<std::atomic<bool>> m_paused;
-    std::shared_ptr<RdCreditsScanner> m_current;
-    QThreadPool m_pool;
+    // the scan running, a job of the background queue (RdBackgroundQueue)
+    quint64 m_jobId = 0;
 };
 
 #endif // RD_CREDITS_SCANS_HPP

@@ -22,7 +22,8 @@
 // of an episode file in its own demuxer and decoders, never through the player: the audio
 // becomes a fingerprint (rd_credits_audio), a few small samples of the picture a second tell how
 // dark it is (black frames), and the packets of an embedded text subtitle track give its lines.
-// Cancelled at once (VLC interrupt), paused while asked (the seek bar is in use), and VLC opens
+// Cancelled at once (VLC interrupt), paused while the background queue asks (the user seeks, a
+// more urgent job: RdBackgroundQueue), and VLC opens
 // files without locking them (Windows: FILE_SHARE_DELETE), so an episode can be moved, renamed
 // or deleted while it is read.
 
@@ -38,6 +39,7 @@
 #include <vlc_interrupt.h>
 
 #include "player/rd_credits_point.hpp"
+#include "util/rd_background_queue.hpp"
 
 class RdCreditsScanner
 {
@@ -72,8 +74,10 @@ public:
         QVector<rdcredits::Line> lines;
     };
 
-    // `paused`: shared by all scans, set while the seek bar is in use
-    RdCreditsScanner(vlc_object_t* parent, const QByteArray& mrl, std::shared_ptr<std::atomic<bool>> paused);
+    // `control`: the background queue's job, whose gate the read passes (it waits there while
+    // the queue is paused); may be null
+    RdCreditsScanner(vlc_object_t* parent, const QByteArray& mrl,
+                     std::shared_ptr<RdBackgroundQueue::Control> control);
     ~RdCreditsScanner();
 
     RdCreditsScanner(const RdCreditsScanner&) = delete;
@@ -92,7 +96,7 @@ private:
 
     vlc_object_t* m_parent;
     QByteArray m_mrl;
-    std::shared_ptr<std::atomic<bool>> m_paused;
+    std::shared_ptr<RdBackgroundQueue::Control> m_control;
     vlc_interrupt_t* m_interrupt;
     std::atomic<bool> m_cancelled { false };
 };

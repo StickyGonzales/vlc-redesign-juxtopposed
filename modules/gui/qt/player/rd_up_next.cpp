@@ -22,7 +22,6 @@
 
 #include "rd_up_next.hpp"
 
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
 #include <QElapsedTimer>
@@ -58,6 +57,8 @@
 #include "player/player_controller.hpp"
 #include "player/rd_credits_point.hpp"
 #include "player/rd_credits_scans.hpp"
+#include "util/rd_background_queue.hpp"
+#include "util/rd_storage.hpp"
 #include "player/rd_credits_subtitles.hpp"
 #include "player/rd_show_tracks.hpp"
 #include "player/rd_effects.hpp"
@@ -206,7 +207,6 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     , m_player(intf->p_mainPlayerController)
     , m_playlist(intf->p_mainPlaylistController)
 {
-    m_scanPool.setMaxThreadCount(1);
     m_storePool.setMaxThreadCount(1);
 
     m_scans = new RdCreditsScans(VLC_OBJECT(intf), this);
@@ -348,7 +348,6 @@ RdUpNext::~RdUpNext()
     m_scans->shutdown();
     if (m_subtitleScan)
         m_subtitleScan->cancel();
-    m_scanPool.waitForDone();
     m_storePool.waitForDone();
     // ends the thumbnailer thread; the callback of a request in flight runs before this
     // returns, and its result (queued to this object) is dropped with it
@@ -600,16 +599,38 @@ void RdUpNext::startDetection()
             options.musicRoots.append(path);
     }
 
+    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
+    if (!queue)
+        return;
     const int generation = m_generation;
     const QString path = m_path;
     QPointer<RdUpNext> self(this);
-    m_scanPool.start([self, generation, path, options]() {
-        const rdepisode::Show show = rdepisode::detect(path, options);
-        QMetaObject::invokeMethod(self.data(), [self, generation, show]() {
-            if (self)
-                self->onDetected(generation, show);
-        }, Qt::QueuedConnection);
-    });
+    // a job of the background queue, urgent and light (one folder listing): the track choice
+    // and the card wait for it. With it, the show's or movie's fingerprint (the sizes of its
+    // files) and volume for the storage cleanup
+    auto show = std::make_shared<rdepisode::Show>();
+    auto seen = std::make_shared<RdStorage::Seen>();
+    queue->post(QStringLiteral("show detection"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Urgent,
+        [path, options, show, seen](const std::shared_ptr<RdBackgroundQueue::Control>&) {
+            *show = rdepisode::detect(path, options);
+            if (show->isShow)
+            {
+                QStringList episodes;
+                for (const rdepisode::Episode& episode : show->episodes)
+                    episodes.append(episode.path);
+                *seen = RdStorage::describeShow(show->root, episodes);
+            }
+            else
+                *seen = RdStorage::describeMovie(path);
+        },
+        [self, generation, show, seen]() {
+            if (!self || generation != self->m_generation)
+                return;
+            // first: a show found at another place brings its answer and track choice along
+            if (self->m_storage)
+                self->m_storage->seen(*seen);
+            self->onDetected(generation, *show);
+        });
 }
 
 void RdUpNext::onDetected(int generation, const rdepisode::Show& show)
@@ -881,6 +902,8 @@ void RdUpNext::evaluate()
     m_blockedReason = enabled ? guardReason() : QString();
 
     const int next = (active && enabled) ? m_show.next() : -1;
+    if (next != oldNext && next < 0 && showActive() && !longEnough())
+        msg_Dbg(m_intf, "up next: not an episode: shorter than %d s", m_show.minDurationSec);
     m_nextIndex = next;
 
     // a weak name pattern gets no autoplay item: the card offers the next episode, nothing plays
@@ -1089,20 +1112,29 @@ void RdUpNext::startSubtitleScan(qint64 lengthMs)
     const int generation = m_generation;
     QPointer<RdUpNext> self(this);
     vlc_object_t* log = VLC_OBJECT(m_intf);
-    m_scanPool.start([self, scan, generation, lengthMs, log]() {
-        const QVector<rdcredits::Line> lines = scan->run();
-        if (scan->cancelled())
-            return;
-        const qint64 end = rdcredits::dialogueEnd(lines, lengthMs);
-        msg_Dbg(log, "up next: subtitles for the credits: %s, %lld lines, end of dialogue %lld ms",
-                qtu(scan->origin()), static_cast<long long>(lines.size()), static_cast<long long>(end));
-        QMetaObject::invokeMethod(self.data(), [self, generation, end]() {
-            if (!self || generation != self->m_generation)
+    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
+    if (!queue)
+        return;
+    // a job of the background queue: the episode's subtitles, read once
+    auto end = std::make_shared<qint64>(-1);
+    // heavy: an embedded text track is read from the episode itself
+    queue->post(QStringLiteral("credits subtitles"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Normal,
+        [scan, lengthMs, log, end](const std::shared_ptr<RdBackgroundQueue::Control>& control) {
+            control->setCancelHook([scan]() { scan->cancel(); });
+            const QVector<rdcredits::Line> lines = scan->run();
+            control->setCancelHook({});
+            if (scan->cancelled())
                 return;
-            self->m_dialogueEndMs = end;
+            *end = rdcredits::dialogueEnd(lines, lengthMs);
+            msg_Dbg(log, "up next: subtitles for the credits: %s, %lld lines, end of dialogue %lld ms",
+                    qtu(scan->origin()), static_cast<long long>(lines.size()), static_cast<long long>(*end));
+        },
+        [self, scan, generation, end]() {
+            if (!self || scan->cancelled() || generation != self->m_generation)
+                return;
+            self->m_dialogueEndMs = *end;
             self->updateCard();
-        }, Qt::QueuedConnection);
-    });
+        });
 }
 
 void RdUpNext::learnCreditsPoint(const QString& newPath)
@@ -1309,7 +1341,12 @@ void RdUpNext::forgetAll()
         m_forgotten = true;
     if (m_answers.isEmpty() && m_learned.isEmpty() && m_trackChoices.isEmpty() && !m_scans->hasData()
         && m_storeLoaded)
+    {
+        // nothing of the shows: the pictures and the downloaded subtitles still go
+        if (m_storage)
+            m_storage->forgetAll();
         return;
+    }
     m_answers.clear();
     m_learned.clear();
     m_trackChoices.clear();
@@ -1325,6 +1362,9 @@ void RdUpNext::forgetAll()
     saveStore();
     emit storeChanged();
     evaluate();
+    // the pictures and the downloaded subtitles go too
+    if (m_storage)
+        m_storage->forgetAll();
 }
 
 int RdUpNext::rememberedCredits() const
@@ -1403,7 +1443,89 @@ void RdUpNext::setSeekBarBusy(bool busy)
 {
     // each seek bar (the player's, the mini player's) says when it starts and stops
     m_seekBarsBusy = std::max(0, m_seekBarsBusy + (busy ? 1 : -1));
-    m_scans->setPaused(m_seekBarsBusy > 0);
+    if (RdBackgroundQueue* queue = RdBackgroundQueue::instance())
+    {
+        if (m_seekBarsBusy > 0)
+            queue->hold(QStringLiteral("seek bar"));
+        else
+            queue->release(QStringLiteral("seek bar"));
+    }
+}
+
+void RdUpNext::setStorage(RdStorage* storage)
+{
+    m_storage = storage;
+    connect(storage, &RdStorage::relocated, this, &RdUpNext::onRelocated);
+    connect(storage, &RdStorage::forgetEntries, this, &RdUpNext::onForgetEntries);
+    if (m_storeLoaded)
+        importLegacyShows();
+}
+
+void RdUpNext::importLegacyShows()
+{
+    // the shows remembered before the fingerprints: known by their folder until they play; an
+    // answer's date counts as its last play
+    if (!m_storage)
+        return;
+    for (auto it = m_answers.cbegin(); it != m_answers.cend(); ++it)
+    {
+        const QDateTime updated = QDateTime::fromString(it->updated, Qt::ISODate);
+        m_storage->importLegacy({ it.key() }, rdstorage::Kind::Show,
+                                updated.isValid() ? updated.toMSecsSinceEpoch() : 0);
+    }
+    QStringList others = m_learned.keys() + m_trackChoices.keys() + m_scans->showKeys();
+    others.removeDuplicates();
+    m_storage->importLegacy(others, rdstorage::Kind::Show, 0);
+}
+
+void RdUpNext::onRelocated(const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media)
+{
+    const QString from = normalizedPath(oldRoot);
+    const QString to = normalizedPath(newRoot);
+    if (from == to)
+        return;
+    bool changed = false;
+    if (m_answers.contains(from))
+    {
+        m_answers.insert(to, m_answers.take(from));
+        changed = true;
+    }
+    if (m_learned.contains(from))
+    {
+        m_learned.insert(to, m_learned.take(from));
+        changed = true;
+    }
+    if (m_trackChoices.contains(from))
+    {
+        m_trackChoices.insert(to, m_trackChoices.take(from));
+        changed = true;
+    }
+    m_scans->relocate(from, to, media);
+    msg_Dbg(m_intf, "up next: %s found again at %s, its answer, credits and tracks follow",
+            qtu(oldRoot), qtu(newRoot));
+    if (changed)
+    {
+        saveStore();
+        emit storeChanged();
+    }
+}
+
+void RdUpNext::onForgetEntries(const QStringList& paths)
+{
+    bool changed = false;
+    for (const QString& path : paths)
+    {
+        const QString key = normalizedPath(path);
+        changed |= m_answers.remove(key) > 0;
+        changed |= m_learned.remove(key) > 0;
+        changed |= m_trackChoices.remove(key) > 0;
+        m_scans->forgetShow(key);
+    }
+    if (changed)
+    {
+        saveStore();
+        emit storeChanged();
+    }
 }
 
 // ------------------------------------------------------------------------- autoplay item
@@ -1704,6 +1826,8 @@ void RdUpNext::requestThumbnail()
         vlc_preparser_req_Release(m_thumbReq);
         m_thumbReq = nullptr;
     }
+    // a request dropped: its slot of the background queue is free
+    finishThumbnailJob();
     if (!m_thumbnail.isEmpty())
     {
         m_thumbnail.clear();
@@ -1716,17 +1840,58 @@ void RdUpNext::requestThumbnail()
     const QString dir = thumbnailDir();
     if (dir.isEmpty() || !QDir().mkpath(dir))
         return;
-    const QByteArray key = QCryptographicHash::hash(
-        (file.absoluteFilePath() + QString::number(file.lastModified().toMSecsSinceEpoch())).toUtf8(),
-        QCryptographicHash::Sha1).toHex();
-    const QString target = dir + QChar('/') + QString::fromLatin1(key) + QStringLiteral(".png");
+    // named after the episode's path and last change (RdStorage moves it with its show)
+    const QString target = RdStorage::pictureFile(file.absoluteFilePath());
     if (QFile::exists(target))
     {
         m_thumbnail = QUrl::fromLocalFile(target);
         emit thumbnailChanged();
+        if (m_storage)
+            m_storage->pictureWritten(target, file.absoluteFilePath());
         return;
     }
 
+    // a job of the background queue: one at a time with the others; it holds its slot until the
+    // picture is made. Light (one frame decoded at low resolution): the card can show in Cone's
+    // first minute (a short episode, a file opened near its end), and a heavy job would wait for
+    // that minute to pass, leaving the card without its picture (PC retest of #127)
+    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
+    if (!queue)
+        return;
+    const int generation = m_thumbGeneration;
+    const QString episode = file.absoluteFilePath();
+    QPointer<RdUpNext> self(this);
+    queue->postAsync(QStringLiteral("up next picture"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal,
+        [self, target, episode, generation](const RdBackgroundQueue::Finish& finish) {
+            if (!self || generation != self->m_thumbGeneration)
+            {
+                // another episode plays now, or Up Next no longer offers this one (the file is
+                // shorter than an episode, the show was turned off)
+                if (self)
+                    msg_Dbg(self->m_intf, "up next: no picture for \"%s\": no longer the next episode",
+                            qtu(QFileInfo(episode).fileName()));
+                finish();
+                return;
+            }
+            self->m_thumbFinish = finish;
+            self->m_thumbEpisode = episode;
+            self->submitThumbnail(target, episode, generation);
+        }, 30000);
+}
+
+void RdUpNext::finishThumbnailJob()
+{
+    if (m_thumbFinish)
+    {
+        const std::function<void()> finish = std::move(m_thumbFinish);
+        m_thumbFinish = nullptr;
+        finish();
+    }
+}
+
+void RdUpNext::submitThumbnail(const QString& target, const QString& episodePath, int generation)
+{
+    const QFileInfo file(episodePath);
     if (!m_preparser)
     {
         struct vlc_preparser_cfg cfg{};
@@ -1737,13 +1902,20 @@ void RdUpNext::requestThumbnail()
         cfg.external_process = false;
         m_preparser = vlc_preparser_New(VLC_OBJECT(vlc_object_instance(m_intf)), &cfg);
         if (!m_preparser)
+        {
+            msg_Warn(m_intf, "up next: no picture: the thumbnailer did not start");
+            finishThumbnailJob();
             return;
+        }
     }
 
     const QByteArray mrl = episodeMrl(file.absoluteFilePath()).toUtf8();
     input_item_t* item = input_item_New(mrl.constData(), nullptr);
     if (!item)
+    {
+        finishThumbnailJob();
         return;
+    }
 
     struct vlc_thumbnailer_arg arg{};
     arg.seek.type = vlc_thumbnailer_arg::seek::VLC_THUMBNAILER_SEEK_POS;
@@ -1788,18 +1960,21 @@ void RdUpNext::requestThumbnail()
         }
     };
 
-    Job* job = new Job{ this, VLC_OBJECT(vlc_object_instance(m_intf)), target, m_thumbGeneration };
+    Job* job = new Job{ this, VLC_OBJECT(vlc_object_instance(m_intf)), target, generation };
     vlc_preparser_req* req = vlc_preparser_req_NewThumbnail(m_preparser, item, &arg, &cbs, job);
     input_item_Release(item);
     if (!req)
     {
         delete job;
+        finishThumbnailJob();
         return;
     }
     if (vlc_preparser_Submit(m_preparser, req) != VLC_SUCCESS)
     {
+        msg_Warn(m_intf, "up next: no picture for \"%s\": the request was refused", qtu(file.fileName()));
         vlc_preparser_req_Release(req);
         delete job;
+        finishThumbnailJob();
         return;
     }
     m_thumbReq = req;
@@ -1814,10 +1989,18 @@ void RdUpNext::onThumbnailDone(int generation, const QString& path)
         vlc_preparser_req_Release(m_thumbReq);
         m_thumbReq = nullptr;
     }
+    finishThumbnailJob();
     if (path.isEmpty())
+    {
+        msg_Warn(m_intf, "up next: no picture for \"%s\": no frame could be read or saved",
+                 qtu(QFileInfo(m_thumbEpisode).fileName()));
         return;
+    }
     m_thumbnail = QUrl::fromLocalFile(path);
     emit thumbnailChanged();
+    // the storage cleanup knows its episode (the cap, a show that moves or goes)
+    if (m_storage)
+        m_storage->pictureWritten(path, m_thumbEpisode);
 }
 
 // ------------------------------------------------------------------------------ answers
@@ -1895,6 +2078,7 @@ void RdUpNext::loadStore(const QJsonObject& data)
             m_trackChoices.insert(it.key(), choice);
     }
     m_storeLoaded = true;
+    importLegacyShows();
     // a show detected before the answers were known is scanned now (if it is on)
     if (m_showKnown)
         requestCreditsScans();

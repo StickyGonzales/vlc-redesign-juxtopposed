@@ -19,6 +19,7 @@
 #ifndef SUBTITLE_STORE_HPP
 #define SUBTITLE_STORE_HPP
 
+#include <QHash>
 #include <QJsonObject>
 #include <QString>
 #include <QStringList>
@@ -74,6 +75,18 @@ public:
 
     Rule ruleFor(const QString& folderKey) const;
     void setRule(const QString& folderKey, const Rule& rule);
+
+    // the storage cleanup (redesign/STORAGE_CLEANUP_NOTES.md); each returns whether it changed
+    // anything. A show or movie found at another place: its videos' links (`media`: each
+    // matched video's old key and new path) and its folders' rules move from `oldRoot` to
+    // `newRoot`
+    bool relocate(const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media);
+    // a show or movie forgotten: the links of its videos and the rules of its folders
+    bool forgetUnder(const QString& root);
+    // deleted downloads taken out of every video's links
+    bool unlink(const QStringList& files);
+    // the downloaded subtitle files each video links to (for the files from before the registry)
+    QHash<QString, QString> downloadOwners(const QString& downloadsDir) const;
 
 private:
     QJsonObject m_data;

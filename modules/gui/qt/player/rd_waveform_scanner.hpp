@@ -21,9 +21,12 @@
 #include <QByteArray>
 
 #include <atomic>
+#include <memory>
 
 #include <vlc_common.h>
 #include <vlc_interrupt.h>
+
+#include "util/rd_background_queue.hpp"
 
 /**
  * redesign: the loudness profile of a file's audio, for the waveform seek bar (P6-06, IB-24).
@@ -77,6 +80,9 @@ public:
 
     QByteArray run();
     void cancel();
+    // the background queue's job, whose gate the scan passes (it waits there while the queue is
+    // paused: the user seeks, a more urgent job); set before run()
+    void setControl(std::shared_ptr<RdBackgroundQueue::Control> control) { m_control = std::move(control); }
     bool cancelled() const { return m_cancelled.load(std::memory_order_relaxed); }
 
     struct Scan;
@@ -87,6 +93,7 @@ private:
     vlc_tick_t m_lengthHint;
     vlc_interrupt_t* m_interrupt;
     std::atomic<bool> m_cancelled { false };
+    std::shared_ptr<RdBackgroundQueue::Control> m_control;
 };
 
 #endif // RD_WAVEFORM_SCANNER_HPP

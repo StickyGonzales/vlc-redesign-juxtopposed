@@ -21,6 +21,7 @@
 #endif
 
 #include "add_subtitles.hpp"
+#include "util/rd_storage.hpp"
 #include "subtitle_web.hpp"
 
 #include "player/player_controller.hpp"
@@ -358,8 +359,51 @@ AddSubtitles::AddSubtitles(qt_intf_t* intf, QObject* parent)
             m_storeLoaded = true;
             if (!saved.isEmpty())
                 writeStore();
+            const QVector<std::function<void()>> waiting = std::move(m_afterStoreLoad);
+            m_afterStoreLoad.clear();
+            for (const auto& action : waiting)
+                action();
+            if (m_storage)
+                m_storage->setDownloadOwners(m_store.downloadOwners(RdStorage::downloadsDir()));
             onPlayingStateChanged();
         }, 0, false);
+}
+
+void AddSubtitles::whenStoreLoaded(std::function<void()> action)
+{
+    if (m_storeLoaded)
+        action();
+    else
+        m_afterStoreLoad.append(std::move(action));
+}
+
+void AddSubtitles::setStorage(RdStorage* storage)
+{
+    m_storage = storage;
+    connect(storage, &RdStorage::relocated, this,
+            [this](const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media) {
+        whenStoreLoaded([this, oldRoot, newRoot, media]() {
+            if (m_store.relocate(oldRoot, newRoot, media))
+                writeStore();
+        });
+    });
+    connect(storage, &RdStorage::forgetEntries, this, [this](const QStringList& paths) {
+        whenStoreLoaded([this, paths]() {
+            bool changed = false;
+            for (const QString& path : paths)
+                changed |= m_store.forgetUnder(path);
+            if (changed)
+                writeStore();
+        });
+    });
+    connect(storage, &RdStorage::unlinkDownloads, this, [this](const QStringList& files) {
+        whenStoreLoaded([this, files]() {
+            if (m_store.unlink(files))
+                writeStore();
+        });
+    });
+    if (m_storeLoaded)
+        storage->setDownloadOwners(m_store.downloadOwners(RdStorage::downloadsDir()));
 }
 
 AddSubtitles::~AddSubtitles()
@@ -1204,6 +1248,9 @@ void AddSubtitles::save()
                 const QString path = paths->value(assignment.second);
                 if (!path.isEmpty() && !added[assignment.first].contains(path))
                     added[assignment.first].append(path);
+                // a download: the storage cleanup knows its video (unused ones go)
+                if (!path.isEmpty() && source == SourceOpenSubtitles && m_storage)
+                    m_storage->downloadWritten(path, SubtitleStore::mediaKey(assignment.first));
             }
             for (auto it = added.cbegin(); it != added.cend(); ++it)
             {
@@ -1399,6 +1446,9 @@ void AddSubtitles::applyTo(const QString& mrl)
             {
                 m_store.setSubtitles(mrl, *result);
                 writeStore();
+                if (network && m_storage)
+                    for (const QString& file : *result)
+                        m_storage->downloadWritten(file, SubtitleStore::mediaKey(mrl));
             }
             attach(mrl, *result, true, network);
         }, network ? 3 : 0, false);

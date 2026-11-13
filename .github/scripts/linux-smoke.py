@@ -738,6 +738,7 @@ def check_up_next(exe, env):
             if not b:
                 shot('upnext-nocard')
                 raise CheckFailed(f'no "Next episode" button on the card at 6:10 of episode {before}')
+            pictures.append((time.time(), before + 1))
             xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
             time.sleep(0.3)
             xdo('click', 1)
@@ -755,7 +756,36 @@ def check_up_next(exe, env):
             if t2 <= t1:
                 raise CheckFailed(f'episode {after} stands still at {t1} s, then {t2} s')
             return f'episode {before} -> {after}, still playing 5 s after the click ({t1} s, then {t2} s)'
+        # (time the card showed, next episode) per attempt of the check above
+        pictures = []
+
+        def card_picture(shown, episode):
+            """the card shows in Cone's first minute: the next episode's picture is made within 8 s
+            (it waited for that minute to pass, so the card had none: PC retest of #127)"""
+            folder = os.path.join(env['XDG_CACHE_HOME'], 'Cone', 'up-next')
+            end = shown + 8
+            while True:
+                made = [l for l in open(s.log, errors='replace')
+                        if 'thumbnailing' in l and f'S01E0{episode}' in l]
+                pngs = glob.glob(os.path.join(folder, '*.png'))
+                if made and pngs:
+                    return f'picture of episode {episode} made ({len(pngs)} in up-next/)'
+                if time.time() >= end:
+                    break
+                time.sleep(0.25)
+            why = [l.strip() for l in open(s.log, errors='replace') if 'up next picture' in l or 'up next: no picture' in l]
+            return f'FAIL: no picture of episode {episode} 8 s after the card showed ({" | ".join(why) or "no picture job"})'
+
         check("upnext: the card's Next episode keeps the next episode playing", body)
+
+        def picture():
+            if not pictures:
+                raise CheckFailed('the card did not show')
+            result = card_picture(*pictures[-1])
+            if result.startswith('FAIL: '):
+                raise CheckFailed(result[6:])
+            return result
+        check("upnext: the card's picture is made in Cone's first minute", picture)
     finally:
         s.stop()
 

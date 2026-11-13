@@ -27,6 +27,7 @@
 #include <QTimer>
 #include <QUrl>
 
+#include <functional>
 #include <memory>
 
 #include "qt.hpp"
@@ -35,6 +36,8 @@
 #include "player/rd_episode_parser.hpp"
 #include "playlist/media.hpp"
 #include "util/shared_input_item.hpp"
+
+class RdStorage;
 
 class MainCtx;
 class PlayerController;
@@ -186,9 +189,13 @@ public:
     // back to Automatic
     Q_INVOKABLE void setCreditsFixed(int secondsBeforeEnd);
     Q_INVOKABLE void resetCredits();
-    // a seek bar is hovered or dragged (true), or no longer (false): the background scans wait
-    // while any is (seek previews stay fast)
+    // a seek bar is hovered or dragged (true), or no longer (false): the background queue
+    // (RdBackgroundQueue) waits while any is (seek previews stay fast)
     Q_INVOKABLE void setSeekBarBusy(bool busy);
+
+    // Cone's own data kept tidy (STORAGE_CLEANUP_NOTES.md): a show found at another place
+    // takes its answer, credits and track choice along; a forgotten one drops them
+    void setStorage(RdStorage* storage);
 
 public slots:
     // the options were written (a settings row, a profile switch)
@@ -289,7 +296,12 @@ private:
 
     void markWatched(const QUrl& url);
     void requestThumbnail();
+    void submitThumbnail(const QString& target, const QString& episodePath, int generation);
+    void finishThumbnailJob();
     void onThumbnailDone(int generation, const QString& path);
+    void onRelocated(const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media);
+    void onForgetEntries(const QStringList& paths);
+    void importLegacyShows();
 
     // the show answers
     QString showKey() const;
@@ -317,7 +329,6 @@ private:
     bool m_showKnown = false;
     int m_nextIndex = -1;
     int m_generation = 0;
-    QThreadPool m_scanPool;
 
     // the autoplay item: the media handed to the queue (held to recognise it)
     SharedInputItem m_queued;
@@ -374,6 +385,7 @@ private:
     RdCreditsScans::Found m_found;
     // the seek bars hovered or dragged now (the scans wait while any is)
     int m_seekBarsBusy = 0;
+    RdStorage* m_storage = nullptr;
     // learning (UP_NEXT_CREDITS_SCAN_NOTES.md section 1), per episode: the credits card showed,
     // Cancel was pressed on it, its Next episode button moved on
     bool m_cardShownEpisode = false;
@@ -444,6 +456,9 @@ private:
     vlc_preparser_t* m_preparser = nullptr;
     vlc_preparser_req* m_thumbReq = nullptr;
     int m_thumbGeneration = 0;
+    // the picture's request holds a slot of the background queue until it is answered
+    std::function<void()> m_thumbFinish;
+    QString m_thumbEpisode;
 };
 
 #endif

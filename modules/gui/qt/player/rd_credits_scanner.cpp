@@ -52,8 +52,6 @@ constexpr int kGridRows = 27;
 constexpr int kDarkLuma = 40;
 // the read stops this far past the end of the stretch (the decoders' last frames are out)
 constexpr qint64 kPastEndMs = 1000;
-// a pause (the seek bar in use) is checked this often
-constexpr int kPauseStepMs = 50;
 // a file with no audio track the scan can decode after this many packets is given up
 constexpr int kNoAudioPackets = 500;
 
@@ -684,10 +682,10 @@ void RdCreditsScanner::Scan::keepLine(const block_t* block)
 }
 
 RdCreditsScanner::RdCreditsScanner(vlc_object_t* parent, const QByteArray& mrl,
-                                   std::shared_ptr<std::atomic<bool>> paused)
+                                   std::shared_ptr<RdBackgroundQueue::Control> control)
     : m_parent(parent)
     , m_mrl(mrl)
-    , m_paused(std::move(paused))
+    , m_control(std::move(control))
     , m_interrupt(vlc_interrupt_create())
 {
 }
@@ -790,11 +788,14 @@ RdCreditsScanner::Result RdCreditsScanner::run(const Planner& planner)
                 bool noAudio = false;
                 while (seeked && !scan.stopped())
                 {
-                    // the seek bar is in use: the read waits, so seek previews stay fast
-                    const vlc_tick_t pausedAt = vlc_tick_now();
-                    while (m_paused && m_paused->load(std::memory_order_relaxed) && !cancelled())
-                        vlc_msleep_i11e(VLC_TICK_FROM_MS(kPauseStepMs));
-                    deadline += vlc_tick_now() - pausedAt;
+                    // the background queue is paused (the user seeks, a more urgent job): the
+                    // read waits, so seek previews stay fast; the time waited is not counted
+                    if (m_control && m_control->paused())
+                    {
+                        const vlc_tick_t pausedAt = vlc_tick_now();
+                        m_control->waitWhilePaused([this]() { return cancelled(); });
+                        deadline += vlc_tick_now() - pausedAt;
+                    }
                     if (cancelled())
                         break;
                     if (vlc_tick_now() > deadline)
