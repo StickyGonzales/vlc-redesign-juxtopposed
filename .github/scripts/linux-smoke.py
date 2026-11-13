@@ -939,6 +939,133 @@ def check_cast_discovery(exe, env):
         s.stop()
 
 
+def saturation(x, y, w, h):
+    """the mean HSL saturation of a screen area (0 grey, 1 pure colour)"""
+    png = os.path.join(OUT, 'cover-probe.png')
+    r = run(['import', '-window', 'root', '-crop', f'{max(w, 1)}x{max(h, 1)}+{x}+{y}', png], timeout=30)
+    if r.returncode != 0:
+        raise CheckFailed(f'screen grab failed: {r.stderr.strip()[:200]}')
+    r = run(['convert', png, '-colorspace', 'HSL', '-channel', 'G', '-separate', '-format', '%[fx:mean]', 'info:'],
+            timeout=30)
+    try:
+        return float(r.stdout)
+    except ValueError:
+        raise CheckFailed(f'could not measure the cover: {r.stderr.strip()[:200]}')
+
+
+def cover_filled(box):
+    """whether the square shows the picture over its whole height: its middle, and thin strips near the
+    top and the bottom (inset from the rounded corners) are colourful (testsrc2's bars). The grey
+    placeholder fails the middle; a wide cover letterboxed (fitted) instead of cropped fails the strips"""
+    x, y, w, h = box
+    middle = saturation(x + w // 4, y + h // 4, w // 2, h // 2)
+    top = saturation(x + w // 4, y + h * 10 // 100, w // 2, max(h // 10, 1))
+    bottom = saturation(x + w // 4, y + h * 80 // 100, w // 2, max(h // 10, 1))
+    return min(middle, top, bottom) > 0.25, f'saturation middle {middle:.2f}, top {top:.2f}, bottom {bottom:.2f}'
+
+
+def check_music_cover(exe, env):
+    """the music player's cover stays square at every window size and with any cover shape (#129,
+    #69: it was squeezed into a tall, narrow card, e.g. 120x380 at 1040x570); Figma "Player - Music",
+    VIDEO_INDEX 209 / 211. The cover's on-screen box is measured through AT-SPI; a wide cover is
+    cropped to the square, not fitted into it"""
+    s = Session(exe, os.path.join(MEDIA, 'song-square.flac'), 'music-cover', env, subs=False)
+    sizes = [(1040, 570), (1500, 600), (1100, 900), (600, 900), (480, 360), (1280, 720)]
+    try:
+        if not check_window(s):
+            return
+
+        def toggle_fullscreen():
+            # the top bar's Fullscreen button (Decision 1): the F key and Escape do nothing while only
+            # music plays (VLC's fullscreen keys act on the video output). The first click on the bar
+            # can be taken by the window to get the focus: clicked again if nothing changed
+            was = is_fullscreen(s)
+            for _ in range(3):
+                s.focus()
+                xdo('mousemove', 600, 2 if was else 30)
+                time.sleep(0.5)
+                b = find('Fullscreen', 5)
+                if not b:
+                    raise CheckFailed('no Fullscreen button in the top bar (' + named('Fullscreen') + ')')
+                xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
+                time.sleep(0.3)
+                xdo('click', 1)
+                end = time.time() + 4
+                while time.time() < end and is_fullscreen(s) == was:
+                    time.sleep(0.25)
+                if is_fullscreen(s) != was:
+                    time.sleep(1.5)
+                    return
+
+        def wait_picture(label):
+            """the artwork is shown (not the placeholder that stands in while it loads)"""
+            end = time.time() + 10
+            while True:
+                box = find('Cover', 2)
+                if box and cover_filled(box)[0]:
+                    return box
+                if time.time() >= end:
+                    shot(f'cover-{label}-missing')
+                    if not box:
+                        raise CheckFailed(f'{label}: no cover on screen ({named("Cover")})')
+                    raise CheckFailed(f'{label}: the cover shows no picture ({cover_filled(box)[1]})')
+                time.sleep(0.5)
+
+        def square_at(song, label, results):
+            box = wait_picture(f'{song}-{label}')
+            shot(f'cover-{song}-{label}')
+            if abs(box[2] - box[3]) > 2:
+                raise CheckFailed(f'{song} cover at {label} is {box[2]}x{box[3]}, not square '
+                                  f'(so far: {"; ".join(results)})')
+            if box[2] < 40:
+                raise CheckFailed(f'{song} cover at {label} is only {box[2]}x{box[3]}')
+            results.append(f'{label}: {box[2]}x{box[3]}')
+
+        def at_sizes(song):
+            results = []
+            for w, h in sizes:
+                xdo('windowsize', s.win, w, h)
+                time.sleep(1.5)
+                square_at(song, f'{w}x{h}', results)
+            xdo('windowsize', s.win, '100%', '100%')
+            time.sleep(1.5)
+            square_at(song, 'screen-sized', results)
+            xdo('windowsize', s.win, 1280, 720)
+            time.sleep(1)
+            return '; '.join(results)
+
+        check('music-cover: a square cover stays square at every window size',
+              lambda: at_sizes('square'))
+
+        def wide():
+            rc('add ' + os.path.join(MEDIA, 'song-wide.flac'))
+            end = time.time() + 10
+            while 'Cover wide' not in rc('status') and 'song-wide' not in rc('status') and time.time() < end:
+                time.sleep(0.5)
+            return at_sizes('wide')
+        check('music-cover: a wide (2:1) cover is cropped to the square', wide)
+
+        def fullscreen():
+            # last: leaving fullscreen is not needed (the session ends here)
+            if not is_fullscreen(s):
+                toggle_fullscreen()
+            if not is_fullscreen(s):
+                raise CheckFailed('the Fullscreen button did not put Cone in fullscreen')
+            results = []
+            square_at('wide', 'fullscreen', results)
+            rc('add ' + os.path.join(MEDIA, 'song-square.flac'))
+            end = time.time() + 10
+            while 'song-square' not in rc('status') and time.time() < end:
+                time.sleep(0.5)
+            time.sleep(1)
+            square_at('square', 'fullscreen', results)
+            return '; '.join(results)
+        check('music-cover: both covers stay square in fullscreen', fullscreen)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
 def check_restore_quit(exe, env):
     try:
         _check_restore_quit(exe, env)
@@ -1375,6 +1502,7 @@ check_next_short(os.path.join(folder, 'cone'), env)
 check_popup_stack(os.path.join(folder, 'cone'), env)
 check_idle_drawing(os.path.join(folder, 'cone'), env)
 check_cast_discovery(os.path.join(folder, 'cone'), env)
+check_music_cover(os.path.join(folder, 'cone'), env)
 check_restore_quit(os.path.join(folder, 'cone'), env)
 
 
