@@ -159,6 +159,15 @@ public:
         QObject::connect(model, &T::itemsUpdated, &m_timer, QOverload<>::of(&QTimer::start));
     }
 
+    // redesign: the interface quit while the restore question was open: nothing was answered, so
+    // the recovery file and its setting stay and the question comes back at the next start; only
+    // Yes or No clears them (redesign/PERF_AUDIT_NOTES.md section 9)
+    void keepForNextStart()
+    {
+        m_timer.stop();
+        m_recoveryFileName.clear();
+    }
+
     ~ModelRecoveryAgent()
     {
         if (!m_recoveryFileName.isEmpty())
