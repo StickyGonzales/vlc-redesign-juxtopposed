@@ -57,6 +57,31 @@ file stays. The loss needs the Windows order (the question returns while the pla
 so the same sequence is also a Windows smoke check (win64-smoke.ps1 `Check-RestoreQuestion`: kill,
 Ctrl+Q while asked, asked again, No through UI Automation, not asked).
 
+### 3b. The playlist backup was never written on Windows while a file played (found by the Windows smoke)
+
+The new Windows check killed Cone after 13, 20 and then 60 s of playback, and each time the
+saved-playlist file was still empty (`restore: saved playlist ... (0 bytes)`), so the next start
+asked nothing: on Windows a crash offered no restore at all. ModelRecoveryAgent (VLC's code) saved
+10 s after the *last* change, and every change restarted the wait; on Windows the playing item
+keeps being updated, so the wait never ended. Now the backup is written at most 10 s after the
+first change (`model_recovery_agent.hpp`), and each save is logged (`playlist recovery: saved to
+...`, or why it was not). Windows smoke: `restore: the playlist is saved for a restore` saved after
+10 s (128 bytes), then all three restore checks pass.
+
+Since killed sessions now leave a saved playlist on Windows too, the Windows smoke forgets it
+before each start (`Clear-RestoreState`), except inside the restore checks; otherwise the question
+stood in front of the next sessions (quit-instant, quit-hang and first-start failed on #250). The
+Linux smoke already did this (`quit_cleanly`, restore-clear).
+
+### Green runs
+
+- build-windows #250 (def3582b94): build, installer and every smoke check but the three above,
+  which failed only because of the left-over question; smoke-windows-manual #17 on #250's files
+  with the fixed script (1b259d9093): all checks pass, including cast discovery (zip and
+  installed) and the restore question.
+- build-linux #140 (1b259d9093): running when this was written
+- unit-tests #7 (0994e0cd04; the storage tests are unchanged since).
+
 ## Windows retest (PC session)
 
 Build: build-windows on wip/retest-followups (the run named in the PR).
