@@ -155,7 +155,7 @@ in the CI image (cone-linux-build:jammy, GCC 11, Qt 6.8.3), packaged like the re
 
 Also new: the unit tests also run with ASan and UBSan in CI (unit-tests.yml).
 
-## 5. For StickyGonzales to decide (not changed)
+## 5. For StickyGonzales to decide (decided 2026-11-13, see section 9)
 
 | | What | Whose | Who it affects, numbers | Options |
 |---|---|---|---|---|
@@ -165,7 +165,7 @@ Also new: the unit tests also run with ASan and UBSan in CI (unit-tests.yml).
 | d | **Quit waits for a stuck job**: the background queue joins its running job on quit, and a credits or waveform read on a slow or vanished drive is not interruptible on Windows; the Settings plugin rescan waits without a limit (settings_catalog.cpp, WaitForSingleObject INFINITE) | Ours | Rare; the 5 s quit watchdog ends it | Part of the PC session's quit-instant task (wip/quit-instant), not changed here |
 | e | Small, low impact (ours): the interface settings are written on the UI thread 500 ms after an accent / theme change (mainctx.cpp scheduleConfigSave; RdEffects already writes on a worker); the library's visit counts (rdlibrarystore.cpp m_visits) keep one key per folder, playlist or artist ever opened, never pruned; after one Stereo "Test" its test player and audio output stay open for the session (audio_device_model.cpp); three separate thumbnailers (seek previews, filter previews, Up Next) each keep an idle thread; Up Next works out its card on every time update, also minimized (cheap) | Ours | Each well under 1 % of anything measured here | Leave, or tidy in a later pass |
 
-## 6. VLC's own reports (not Cone's code, not changed)
+## 6. VLC's own reports (not Cone's code; (1) is carried since 2026-11-13, section 9)
 
 1. **Stack use after scope at every start after the first** (qt.cpp, the asynchronous RHI probe,
    upstream "qt: do asynchronous rhi probing at start in a separate thread"): the lambda posted
@@ -215,8 +215,71 @@ On the build-windows run of this branch (after #127 is merged or together with i
 3. **Network share (fix 3, optional).** A show on a network share played once, the share then
    disconnected, Cone left open past its daily check (or the clock moved a day): the log's
    `storage cleanup` job ends within about 2 s, not 2 s per show.
-4. **Cast discovery cost (decision a).** Idle on the home page for 60 s: CPU and wake-ups of
-   Cone with Settings > Recording > Casting "Discover cast devices" on, then off; note both in
-   PERF.md.
-5. Regression: play, pause, seek with the mouse and the keys, Up Next autoplay to the next
-   episode, quit (under 2 s).
+4. **Cast discovery only with the picker open (section 9 c).** Start Cone, wait 20 s on the home
+   page: the log has no `starting renderer discovery service`. Open the settings sidebar > Video >
+   Render: the log shows `starting renderer discovery service` (Chromecast / UPnP), devices on the
+   network appear in the list within a few seconds; close the list (Escape or a click outside):
+   `renderer discovery stopped`. Settings > Recording > Casting "Discover cast devices" off: opening
+   the list starts nothing. Process Explorer: no microdns / UPnP threads while the list is closed.
+5. **No drawing while hidden (section 9 b).** Process Explorer > Cone > Threads, or Task Manager
+   GPU: play a video, let the bars fade out (pointer still): the GPU engine and Cone's render
+   thread stay idle apart from the video (before: a UI frame twice a second). Pin the controls
+   (Settings > Interface > pin video controls), minimize Cone: no UI frames; restore: the bars
+   show the right time at once. Show the bars after a while hidden: time and seek bar are current
+   at once, no jump afterwards; the same in fullscreen and in the mini player.
+6. **Home page during a library scan (section 9 d).** Add a large music folder (thousands of
+   files) and stay on the home page while it scans: the rows fill in about once a second, the
+   window stays responsive (scroll, hover), CPU of Cone lower than before.
+7. **The graphics check at start (section 9 a).** Start Cone 3 times: it starts normally each
+   time (the cached graphics API is applied; Help > About > the log shows `Asynchronous rhi
+   re-probe completed`).
+8. **Quit while Cone asks to restore the playlist (section 9 e).** Play a file 15 s, end Cone
+   with Task Manager > End task. Start it again: "The application closed abruptly ... restore the
+   playlist?" shows; press Ctrl+Q (or the close button) without answering. Cone ends normally:
+   no "Cone has stopped working" / Windows Error Reporting entry (Event Viewer > Windows Logs >
+   Application, no APPCRASH for Cone.exe). The next start asks again.
+9. **Right-click Render list (section 9 f).** Right-click the video > Playback > Render: the log
+   shows `starting renderer discovery service`; close the menu with Escape: `renderer discovery
+   stopped` at once.
+10. Regression: play, pause, seek with the mouse and the keys, Up Next autoplay to the next
+   episode, the Render list with a real Chromecast if there is one, quit (under 2 s).
+
+## 9. Follow-ups decided by StickyGonzales (2026-11-13)
+
+Decisions on section 5: (a) carry the one-line fix for VLC's RHI probe, (b) no drawing while
+minimized or with the bars hidden, (c) cast discovery only while the picker is open, (d) home
+page reloads at most once a second during a scan. Left: the quit on a stuck read (#128 hides the
+window at once, the watchdog ends it) and the small items.
+
+| | What changed | Measured / test |
+|---|---|---|
+| a | qt.cpp: the lambda queued at start captures `graphicsApiValue` and `enableRhiSoftwareRenderer` by value (VLC's code; report draft redesign/upstream/qt-rhi-probe-stale-read.md) | ASan build: the stack-use-after-scope at every start after the first is gone (the smoke suite under ASan starts Cone a dozen times with no stack-use-after-scope report); before, every session after the first aborted |
+| b | Hidden bars: ControlBar.qml follows the time (`_shownTime`, `_shownRemainingTime`) and SliderBar.qml the position only while visible, and catch up when they show. Minimized: VLC's X11 compositor (compositor_x11_uisurface.cpp) draws nothing while the main window is not exposed, and draws again on Expose | Qt frames while playing with the bars hidden: 2.1/s before, 0.0/s after. Minimized with pinned bars (the time on screen): 2.13/s before, 0.0/s after; visible and pinned 2.1/s (the time does change). Linux smoke "drawing: nothing is drawn while playing with the bars hidden" (at most 4 frames in 10 s) and "drawing: nothing is drawn while minimized, the window draws again after" (pinned bars: frames while shown, at most 2 in 10 s minimized, frames again after restore) |
+| c | renderer_manager.* back to VLC's (the background mode and its worker start removed); the picker (RendererMenu: the sidebar's Render list, the Render button, the menus) searches from aboutToShow to aboutToHide; "Discover cast devices" off now means the picker searches for nothing (before: on = search all session, off = only with the picker open; with this decision "on" behaves like the old "off", so "off" had to mean something else). The log says `renderer discovery stopped` when a search ends | Linux smoke "cast: devices are looked for only while the Render picker is open": nothing 12 s after start, a search when the right-click menu's Playback > Renderer opens, stopped within 5 s of closing the menu (VLC's own countdown would stop it only after 20 s, so the check also covers f below) |
+| d | util/rd_reload_throttle.hpp: a library change still shows after 300 ms, but two reloads of a row are at least 1 s apart (RdLibraryModel, every home page row) | Unit test test_rd_reload_throttle (7 checks): a scan sending a change every 50 ms for 20 s reloads 20 times instead of about 60, at least 1 s apart, the last change shown; a single change after 300 ms. Fails with the old fixed delay (3 failures, watched). Not measured with a real scan (no scripted way to add a library folder here) |
+
+**Found on the way (ASan smoke run of the follow-ups), fixed:**
+
+| | What | Measured / test |
+|---|---|---|
+| e | **Quitting while Cone asks to restore the playlist crashed** (VLC's code, util/model_recovery_agent.hpp). After a session that ended abruptly (a crash, a kill, a power cut), the next start asks "The application closed abruptly. Do you want to restore the playlist ...?". The question runs an event loop of its own inside ModelRecoveryAgent's constructor; a quit meanwhile (Ctrl+Q, the close button, the system shutting down) deleted the playlist controller and the settings, and the constructor then connected to the deleted controller. The recovery file stayed, so the next start asked again. Now the constructor gives up when they are gone and leaves the recovery file for the next start | Linux build #128, quit while the question is open: the process ended by signal 11 (segfault), 1 of 1; with the fix: ends normally (exit 0) in 0.3 s, also under ASan with no report. Linux smoke "restore: quitting while Cone asks to restore the playlist ends normally" (a killed session, a start that asks, a quit) |
+| f | **The right-click menu's Playback > Render list kept searching for 20 s after the menu closed** (Cone's RdCascadeMenu told a submenu when it opened, never when it closed). The submenus that close now get aboutToHide, as a QMenu would | Independent review; covered by section 8 step 4 on Windows |
+
+**Independent review of the follow-ups:** no crash or correctness bug in the C++ or QML. Taken:
+the right-click Render list (f above); the smoke checks' retries (the picture check read its
+first attempt, the cast check counted the first attempt's log lines; the picture check no longer
+delays the card's click). Checked and sound: the picture job as a light job still waits for every
+hold and keeps its 30 s timeout; the RHI lambda reaches only `p_intf` by reference (alive for
+the whole event loop); the renderer manager equals VLC's apart from setDiscoveryEnabled and the
+log line, and applyCastDiscovery runs once the player exists; the hidden bars come back current
+before their first frame, no binding loop, no other SliderBar; the compositor draws again on
+either expose order; the throttle and its test.
+
+**CI:** #127's build-windows #244 failed in the HEVC session: from its fourth check on, the
+interface stopped answering (no key or click handled, no log line from the interface, the quit
+watchdog did not end it), while VLC's core logged "failed to start audio output" in a loop (the
+runner has no sound device). That session plays a plain file, where the only code change of that
+commit (the Up Next picture job) never runs; the same smoke passed on #127's build #238, on
+#131's build-windows #245 and in the HEVC session of every other run. Re-run once on the new
+head (the rule); if it comes back, it goes to the PC session's quit and HEVC investigation (the
+"Quit known issues" row: an HEVC audio-output stall that freezes the interface is VLC core).

@@ -858,8 +858,9 @@ def check_idle_drawing(exe, env):
 
 
 def check_cast_discovery(exe, env):
-    """cast devices are looked for only while the Render picker is open, as in VLC: not at start,
-    from the moment the picker opens, until it closes (StickyGonzales 2026-11-13)"""
+    """cast devices are looked for only while a Render list is open, as in VLC: not at start, from
+    the moment the right-click menu's Playback > Renderer opens, until the menu closes
+    (StickyGonzales 2026-11-13)"""
     s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'cast', env, subs=False)
 
     def lines(text):
@@ -875,24 +876,23 @@ def check_cast_discovery(exe, env):
             time.sleep(12)
             if lines('starting renderer discovery service') > started0:
                 raise CheckFailed('cast devices are looked for before the Render picker was opened')
+            # the right-click menu's Playback > Renderer list (RdCascadeMenu: the submenu opens as a
+            # level of its own and is told when it closes)
             s.focus()
-            s.show_bars()
-            g = find('Playback Settings', 5, role='push button')
-            if not g:
-                raise CheckFailed('the control bar has no "Playback Settings" button')
-            xdo('mousemove', g[0] + g[2] // 2, g[1] + g[3] // 2)
+            xdo('mousemove', 640, 300)
+            time.sleep(0.3)
+            xdo('click', 3)
+            p = find('Playback', 5)
+            if not p:
+                shot('cast-no-menu')
+                raise CheckFailed('the right-click menu has no "Playback" row (' + named('Playback') + ')')
+            xdo('mousemove', p[0] + p[2] // 2, p[1] + p[3] // 2)
             xdo('click', 1)
-            # the tab's AT-SPI role differs between Qt versions: found by its name
-            t = find('Video', 5)
-            if not t:
-                shot('cast-no-video-tab')
-                raise CheckFailed('the settings sidebar has no "Video" tab (' + named('Video') + ')')
-            xdo('mousemove', t[0] + t[2] // 2, t[1] + t[3] // 2)
-            xdo('click', 1)
-            r = find('Render', 5)
+            time.sleep(0.5)
+            r = find('Renderer', 5)
             if not r:
-                shot('cast-no-render')
-                raise CheckFailed('the Video tab has no "Render" picker (' + named('Render') + ')')
+                shot('cast-no-renderer')
+                raise CheckFailed('Playback has no "Renderer" row (' + named('Renderer') + ')')
             xdo('mousemove', r[0] + r[2] // 2, r[1] + r[3] // 2)
             xdo('click', 1)
             end = time.time() + 5
@@ -900,13 +900,16 @@ def check_cast_discovery(exe, env):
                 time.sleep(0.25)
             started = lines('starting renderer discovery service') - started0
             if not started:
-                raise CheckFailed('opening the Render picker started no search for cast devices')
-            xdo('key', 'Escape')
+                raise CheckFailed('opening the Renderer list started no search for cast devices')
+            # the whole menu closes
+            for _ in range(3):
+                xdo('key', 'Escape')
+                time.sleep(0.2)
             end = time.time() + 5
             while time.time() < end and lines('renderer discovery stopped') == stopped0:
                 time.sleep(0.25)
             if lines('renderer discovery stopped') == stopped0:
-                raise CheckFailed('the search for cast devices went on after the Render picker closed')
+                raise CheckFailed('the search for cast devices went on after the menu closed')
             return f'none at start; {started} service(s) started with the picker, stopped when it closed'
         check('cast: devices are looked for only while the Render picker is open', body)
         quit_cleanly(s)
@@ -952,6 +955,26 @@ def check_restore_quit(exe, env):
                 raise CheckFailed(f'Cone ended with {code} when quit while asking to restore the playlist')
             return f'quit while asking: ended normally after {time.time() - t:.1f} s'
         check('restore: quitting while Cone asks to restore the playlist ends normally', body)
+    finally:
+        s.stop()
+    # the recovery file stays for the next start: one more start answers No and quits normally,
+    # so the question does not stand in front of the next checks' windows
+    s = Session(exe, video, 'restore-clear', env, subs=False)
+    try:
+        if check_window(s):
+            end = time.time() + 15
+            asked = []
+            while time.time() < end and not asked:
+                asked = xdo('search', '--name', 'closed abruptly').split()
+                time.sleep(0.5)
+            for w in asked:
+                xdo('windowactivate', w)
+                time.sleep(0.5)
+                xdo('key', 'Escape')
+            time.sleep(1)
+            if xdo('search', '--name', 'closed abruptly').split():
+                log('restore-clear: the restore question is still open')
+            quit_cleanly(s)
     finally:
         s.stop()
 
