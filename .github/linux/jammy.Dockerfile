@@ -80,6 +80,13 @@ RUN cd /tmp \
  && PKG_CONFIG_PATH=/usr/local/share/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig \
     pkg-config --atleast-version="${WAYLAND_PROTOCOLS_VERSION}" wayland-protocols
 
+# Meson from PyPI: VLC's media library recipe (0.14.1, upstream sync 2026-11-13) needs Meson 0.63
+# or later, Ubuntu 22.04 has 0.61.2; pip's copy goes to /usr/local/bin, ahead of /usr/bin
+ARG MESON_VERSION=1.5.2
+RUN pip3 install --no-cache-dir "meson==${MESON_VERSION}" \
+ && meson --version | grep -qx "${MESON_VERSION}" \
+ && rm -rf /root/.cache
+
 # Qt 6.8.3, the version Cone uses on Windows (qmlcheck checks against it too): the essentials
 # (qtbase, qtdeclarative, qtsvg, qtwayland, ICU) and qtshadertools for qsb
 ARG AQT_VERSION=3.2.1

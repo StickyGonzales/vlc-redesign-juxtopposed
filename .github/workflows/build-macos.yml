@@ -85,7 +85,14 @@ jobs:
           CI_ARCH: ${{ matrix.ci }}
         run: |
           SHA=$(extras/ci/get-contrib-sha.sh "$CI_ARCH")
-          UPSTREAM=$(git merge-base HEAD origin/master)
+          # upstream: the newest VideoLAN master commit this branch contains (the fork point, or the
+          # last upstream sync, redesign/UPSTREAM_SYNC.md); the fork's own master as a fallback
+          if git fetch --quiet --no-tags https://github.com/videolan/vlc.git master 2>/dev/null; then
+            UPSTREAM=$(git merge-base HEAD FETCH_HEAD)
+          else
+            UPSTREAM=$(git merge-base HEAD origin/master)
+          fi
+          echo "Upstream base: $UPSTREAM"
           if ! git merge-base --is-ancestor "$SHA" "$UPSTREAM" \
              && [ -z "$(git rev-list -1 HEAD ^"$UPSTREAM" -- contrib extras/tools extras/ci)" ]; then
             SHA=$(git rev-list -1 "$UPSTREAM" -- contrib extras/tools extras/ci extras/package/macosx)
