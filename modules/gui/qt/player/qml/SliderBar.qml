@@ -498,15 +498,30 @@ T.ProgressBar {
         }
     }
 
+    // redesign: the position is followed only while the bar is visible (a hidden bar following
+    // it made Qt draw the window twice a second for nothing, redesign/PERF_AUDIT_NOTES.md); it
+    // catches up when it shows
     Connections {
         target: Player
+        enabled: control.visible
         function onPositionChanged() {
             fsm.playerUpdatePosition(Player.position)
             control._timelineFollow()
         }
+    }
+
+    Connections {
+        target: Player
         function onInputChanged() {
             fsm.inputChanged()
             control._timelineFollows = true
+        }
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            fsm.playerUpdatePosition(Player.position)
+            control._timelineFollow()
         }
     }
 
