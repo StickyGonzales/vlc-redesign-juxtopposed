@@ -184,10 +184,32 @@ def client_windows():
     return {str(int(x, 16)) for x in re.findall(r'0x[0-9a-fA-F]+', out)}
 
 
+# a session the checks end by killing Cone (Session.stop) leaves its playlist saved for a restore,
+# and a quit without an answer keeps it (#134): the next start would ask "The application closed
+# abruptly ... restore the playlist?" in front of its window. Each start forgets it, except inside
+# the restore checks
+KEEP_RESTORE = [False]
+
+
+def clear_restore_state(env):
+    if KEEP_RESTORE[0]:
+        return
+    home = (env or os.environ).get('XDG_CONFIG_HOME') or os.path.join((env or os.environ).get('HOME', ''), '.config')
+    conf = os.path.join(home, 'Cone', 'vlc-qt-interface.conf')
+    try:
+        lines = open(conf, encoding='utf-8').read().splitlines(True)
+    except OSError:
+        return
+    kept = [l for l in lines if not l.startswith('RecoveryFilePath=')]
+    if len(kept) != len(lines):
+        open(conf, 'w', encoding='utf-8').writelines(kept)
+
+
 class Session:
     def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None,
                  extra=()):
         self.tag = tag
+        clear_restore_state(env)
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
@@ -918,6 +940,13 @@ def check_cast_discovery(exe, env):
 
 
 def check_restore_quit(exe, env):
+    try:
+        _check_restore_quit(exe, env)
+    finally:
+        KEEP_RESTORE[0] = False
+
+
+def _check_restore_quit(exe, env):
     """after a session that ended abruptly, the next start asks whether to restore the playlist;
     quitting while it asks crashed (VLC's ModelRecoveryAgent went on with the deleted playlist:
     exit by signal 11, redesign/PERF_AUDIT_NOTES.md section 9); the question then comes back at
@@ -931,6 +960,7 @@ def check_restore_quit(exe, env):
         time.sleep(13)
     finally:
         s.stop()
+    KEEP_RESTORE[0] = True
     s = Session(exe, video, 'restore-quit', env, subs=False)
     try:
         if not check_window(s):
@@ -1005,6 +1035,7 @@ def check_restore_quit(exe, env):
             quit_cleanly(s)
     finally:
         s.stop()
+    KEEP_RESTORE[0] = False
 
 
 def check_up_next(exe, env):

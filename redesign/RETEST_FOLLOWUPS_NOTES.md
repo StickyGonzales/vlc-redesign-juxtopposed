@@ -71,7 +71,9 @@ first change (`model_recovery_agent.hpp`), and each save is logged (`playlist re
 Since killed sessions now leave a saved playlist on Windows too, the Windows smoke forgets it
 before each start (`Clear-RestoreState`), except inside the restore checks; otherwise the question
 stood in front of the next sessions (quit-instant, quit-hang and first-start failed on #250). The
-Linux smoke already did this (`quit_cleanly`, restore-clear).
+Linux smoke needs the same (`clear_restore_state` before each session): a quit without an
+answer now keeps the question, so a killed session's backup stood in front of every later
+session (the cast check failed on build-linux #140).
 
 ### Green runs
 
