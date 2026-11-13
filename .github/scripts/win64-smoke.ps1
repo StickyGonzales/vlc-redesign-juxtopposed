@@ -11,6 +11,10 @@
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
 #   portable zip, notices: a watched file opened with the update notice forced on shows the resume
 #   toast and the update notice stacked, not overlapping; the notice takes the toast's place after it.
+#   restore question (zip): Ctrl+Q while Cone asks to restore the playlist keeps it for the next
+#   start, which asks again; No clears it.
+#   cast discovery (zip and installed): the microdns and upnp plug-ins load and their renderer
+#   probes are in the plug-in cache (vlc-cache-gen on a copy for the zip, the installer's own cache).
 #   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
 #   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
@@ -175,7 +179,7 @@ function Focus-Window($h) {
     }
     if ([RdSmoke]::GetForegroundWindow() -ne $h) { throw 'Cone is not the foreground window, no input sent' }
 }
-# a key with modifiers: virtual-key codes, e.g. Keys 0x11 0x50 = Ctrl+P. With the hardware scan
+# a key with modifiers: virtual-key codes, e.g. Keys @(0x11, 0x50) = Ctrl+P. With the hardware scan
 # code, as a keyboard sends it: Qt's shortcuts (Ctrl+P) ignore a key event without one
 function Keys([byte[]]$vks) {
     foreach ($k in $vks) { [RdSmoke]::keybd_event($k, [byte][RdSmoke]::MapVirtualKey($k, 0), 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
@@ -776,6 +780,143 @@ function Check-PluginsLoad($s) {
     }
 }
 
+# cast discovery (STATUS #131 retest): VLC's two cast discoveries, microdns (mDNS, Chromecast) and
+# upnp, load on Windows and offer their "renderer probe", which the Render list asks for.
+# - Their plug-ins load: Cone started without its interface (-I dummy) and both discoveries asked
+#   for by name; VLC logs '... module matching "microdns": 1 candidates' when the DLL loaded.
+# - Their renderer probes register: vlc-cache-gen (what the installer and Settings > Rescan run)
+#   writes a plug-in cache naming each probe; on a copy of the plug-ins, so the zip keeps no cache
+#   (its other sessions load every plug-in, Check-PluginsLoad). $cache: read that installed cache
+#   instead (the installer ran vlc-cache-gen itself).
+function Check-CastDiscovery([string]$tag, [string]$exe, [string]$cache = '') {
+    Check "$tag`: cast discovery plug-ins load" {
+        $log = Join-Path $Out "cone-$tag-cast.log"
+        Remove-Item $log -ErrorAction SilentlyContinue
+        $a = @('-I', 'dummy', '--no-qt-privacy-ask', '--services-discovery=microdns,upnp',
+               '--file-logging', "--logfile=`"$log`"", '--log-verbose=2', 'vlc://quit')
+        Log "start $exe $($a -join ' ')"
+        $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+        # the end of this run is not what is checked (under wine it stays in the shutdown)
+        if (-not $p.WaitForExit(30000)) { Log "$tag cast run still running after 30 s: ended"; try { $p.Kill() } catch {}; $p.WaitForExit(5000) | Out-Null }
+        if (-not (Test-Path $log)) { throw "no log at $log" }
+        $found = @()
+        foreach ($name in 'microdns', 'upnp') {
+            $line = Select-String -Path $log -SimpleMatch "services_discovery module matching `"$name`"" | Select-Object -First 1
+            if (-not $line) { throw "Cone never looked for $name (log: $log)" }
+            if ($line.Line -notmatch ': 1 candidates') { throw "$name did not load: $($line.Line.Trim())" }
+            $found += $name
+        }
+        "$($found -join ' and ') load (1 candidate each)"
+    } | Out-Null
+    Check "$tag`: cast discovery renderer probes register" {
+        $dat = $cache
+        if (-not $dat) {
+            $gen = Join-Path (Split-Path -Parent $exe) 'vlc-cache-gen.exe'
+            if (-not (Test-Path $gen)) { throw "no $gen" }
+            $copy = Join-Path $Out "plugins-$tag"
+            Remove-Item $copy -Recurse -Force -ErrorAction SilentlyContinue
+            Copy-Item (Join-Path (Split-Path -Parent $exe) 'plugins') $copy -Recurse
+            Remove-Item (Join-Path $copy 'plugins.dat') -ErrorAction SilentlyContinue
+            $p = Start-Process -FilePath $gen -ArgumentList "`"$copy`"" -PassThru -Wait -WindowStyle Hidden
+            Log "vlc-cache-gen ended with exit code $($p.ExitCode)"
+            $dat = Join-Path $copy 'plugins.dat'
+        }
+        if (-not (Test-Path $dat)) { throw "no plug-in cache at $dat" }
+        $text = [Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($dat))
+        $probes = ([regex]::Matches($text, 'renderer probe')).Count
+        $missing = @('microdns_renderer', 'upnp_renderer' | Where-Object { -not $text.Contains($_) })
+        if ($missing.Count) { throw "the plug-in cache has no $($missing -join ', ') ($probes renderer probe entries)" }
+        if ($probes -lt 2) { throw "$probes renderer probe entries in the plug-in cache (expected 2)" }
+        "$probes renderer probe entries (microdns_renderer, upnp_renderer) in $(Split-Path -Leaf (Split-Path -Parent $dat))\plugins.dat"
+    } | Out-Null
+}
+
+# the restore question (redesign/RETEST_FOLLOWUPS_NOTES.md section 3): after a session that ended
+# abruptly, the next start asks "The application closed abruptly ... restore the playlist?". Ctrl+Q
+# while it asks ends Cone and keeps the saved playlist: the next start asks again (after #128 it did
+# not); No clears it, so the start after that does not ask
+function Find-RestoreQuestion([int]$procId, [int]$timeoutMs) {
+    $root = [System.Windows.Automation.AutomationElement]::RootElement
+    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $procId)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        foreach ($w in $root.FindAll([System.Windows.Automation.TreeScope]::Children, $cond)) {
+            try {
+                if ($w.Current.Name -like '*closed abruptly*') { return $w }
+                foreach ($d in $w.FindAll([System.Windows.Automation.TreeScope]::Children, $cond)) {
+                    if ($d.Current.Name -like '*closed abruptly*') { return $d }
+                }
+            } catch {}
+        }
+        Start-Sleep -Milliseconds 250
+    } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
+    return $null
+}
+function Quit-Window($s) {
+    if ($s.proc.HasExited) { return }
+    # the main window found again: Check-Window may have taken the question for it
+    $h = [RdSmoke]::FindMainWindow($s.proc.Id)
+    if ($h -eq [IntPtr]::Zero) { $h = $s.hwnd }
+    [RdSmoke]::PostMessage($h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CLOSE
+    if (-not $s.proc.WaitForExit(10000)) { try { Rc 'quit' | Out-Null } catch {}; $s.proc.WaitForExit(10000) | Out-Null }
+}
+function Check-RestoreQuestion([string]$exe) {
+    $video = Join-Path $Media 'test-h264.mp4'; $subs = Join-Path $Media 'test.srt'
+    $ini = Join-Path (Split-Path -Parent $exe) 'portable\Cone\vlc-qt-interface.ini'
+    try {
+        $s = Start-Cone $exe $video $subs 'restore-killed'
+        try {
+            if (-not (Check-Window $s)) { return }
+            # the playlist is saved for a restore 10 s after it changed
+            Start-Sleep -Seconds 13
+        } finally { Stop-Cone $s }   # ended abruptly
+        $s = Start-Cone $exe $video $subs 'restore-quit'
+        try {
+            if (-not (Check-Window $s)) { return }
+            Check 'restore: Ctrl+Q while Cone asks to restore the playlist ends Cone' {
+                $q = Find-RestoreQuestion $s.proc.Id 15000
+                if (-not $q) { throw 'no "The application closed abruptly" question after a killed session' }
+                Focus-Window ([IntPtr]$q.Current.NativeWindowHandle)
+                Keys @(0x11, 0x51)   # Ctrl+Q
+                if (-not $s.proc.WaitForExit(20000)) { throw 'Cone did not end within 20 s of Ctrl+Q' }
+                "ended (exit code $($s.proc.ExitCode))"
+            } | Out-Null
+        } finally { Stop-Cone $s }
+        $s = Start-Cone $exe $video $subs 'restore-again'
+        try {
+            if (-not (Check-Window $s)) { return }
+            Check 'restore: the question comes back after a quit without an answer' {
+                $q = Find-RestoreQuestion $s.proc.Id 15000
+                if (-not $q) { throw 'no restore question at the start after Ctrl+Q without an answer (the quit dropped the saved playlist)' }
+                $name = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'No')
+                $no = $q.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $name)
+                if (-not $no) { throw 'the question has no "No" button' }
+                $no.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+                Start-Sleep -Seconds 1
+                if (Find-RestoreQuestion $s.proc.Id 500) { throw 'the question did not close on No' }
+                'asked again, answered No'
+            } | Out-Null
+            Quit-Window $s
+        } finally { Stop-Cone $s }
+        $s = Start-Cone $exe $video $subs 'restore-gone'
+        try {
+            if (-not (Check-Window $s)) { return }
+            Check 'restore: answering No clears the saved playlist' {
+                if (Find-RestoreQuestion $s.proc.Id 8000) { throw 'the restore question came back after it was answered No' }
+                'no question within 8 s'
+            } | Out-Null
+            Quit-Window $s
+        } finally { Stop-Cone $s }
+    } finally {
+        # the question never stands in front of the later checks' windows
+        if (Test-Path $ini) {
+            # UTF-8 without a BOM, as Qt writes it (Windows PowerShell's Set-Content would write ANSI)
+            $lines = [string[]]@([IO.File]::ReadAllLines($ini) | Where-Object { $_ -notmatch '^RecoveryFilePath=' })
+            [IO.File]::WriteAllLines($ini, $lines, (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+}
+
 # the quit feels instant (redesign/QUIT_INSTANT_NOTES.md): closed like the window's close button (a
 # WM_CLOSE, no keyboard focus needed), the window is hidden within 0.5 s and the process is gone within
 # the watchdog's 5 s. With CONE_TEST_HANG_QUIT the quit blocks on purpose after the watchdog is armed:
@@ -1154,6 +1295,8 @@ if (-not $zipExe) {
     # before the first-start and open-in-running checks: after those (a Cone raised by a second
     # start, then ended) the runner no longer lets the next Cone take the foreground for a click
     # (build-windows #206)
+    Check-CastDiscovery 'zip' $zipExe.FullName
+    Check-RestoreQuestion $zipExe.FullName
     Check-UpNextNext $zipExe.FullName
     Check-QuitInstant $zipExe.FullName
     Check-PopupStack $zipExe.FullName
@@ -1174,6 +1317,7 @@ $installed = Check 'installer: silent install' {
 }
 if ($installed) {
     Run-Session (Join-Path $installDir 'Cone.exe') 'h264' $false 'installed-h264'
+    Check-CastDiscovery 'installed' (Join-Path $installDir 'Cone.exe') (Join-Path $installDir 'plugins\plugins.dat')
     # the desktop shortcut on a reinstall follows the install as it is (#73,
     # redesign/FIX_UPGRADE_SHORTCUT_NOTES.md): kept when it is there, not brought back once removed
     $lnk = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Cone Player.lnk'

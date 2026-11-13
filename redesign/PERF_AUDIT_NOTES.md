@@ -237,7 +237,9 @@ On the build-windows run of this branch (after #127 is merged or together with i
    with Task Manager > End task. Start it again: "The application closed abruptly ... restore the
    playlist?" shows; press Ctrl+Q (or the close button) without answering. Cone ends normally:
    no "Cone has stopped working" / Windows Error Reporting entry (Event Viewer > Windows Logs >
-   Application, no APPCRASH for Cone.exe). The next start asks again.
+   Application, no APPCRASH for Cone.exe). The next start asks again (after #128 it did not: a
+   quit dropped the recovery data; fixed by redesign/RETEST_FOLLOWUPS_NOTES.md section 3); only
+   Yes or No clears it, so the start after a No does not ask.
 9. **Right-click Render list (section 9 f).** Right-click the video > Playback > Render: the log
    shows `starting renderer discovery service`; close the menu with Escape: `renderer discovery
    stopped` at once.
@@ -262,7 +264,7 @@ window at once, the watchdog ends it) and the small items.
 
 | | What | Measured / test |
 |---|---|---|
-| e | **Quitting while Cone asks to restore the playlist crashed** (VLC's code, util/model_recovery_agent.hpp). After a session that ended abruptly (a crash, a kill, a power cut), the next start asks "The application closed abruptly. Do you want to restore the playlist ...?". The question runs an event loop of its own inside ModelRecoveryAgent's constructor; a quit meanwhile (Ctrl+Q, the close button, the system shutting down) deleted the playlist controller and the settings, and the constructor then connected to the deleted controller. The recovery file stayed, so the next start asked again. Now the constructor gives up when they are gone and leaves the recovery file for the next start | Linux build #128, quit while the question is open: the process ended by signal 11 (segfault), 1 of 1; with the fix: ends normally (exit 0) in 0.3 s, also under ASan with no report. Linux smoke "restore: quitting while Cone asks to restore the playlist ends normally" (a killed session, a start that asks, a quit) |
+| e | **Quitting while Cone asks to restore the playlist crashed** (VLC's code, util/model_recovery_agent.hpp). After a session that ended abruptly (a crash, a kill, a power cut), the next start asks "The application closed abruptly. Do you want to restore the playlist ...?". The question runs an event loop of its own inside ModelRecoveryAgent's constructor; a quit meanwhile (Ctrl+Q, the close button, the system shutting down) deleted the playlist controller and the settings, and the constructor then connected to the deleted controller. The recovery file stayed, so the next start asked again. Now the constructor gives up when they are gone and leaves the recovery file for the next start. After #128 (a quit drops the recovery agent at once) a quit that let the question return dropped the data anyway; since redesign/RETEST_FOLLOWUPS_NOTES.md section 3 a quit without an answer keeps the recovery file and its setting, the next start asks again, and only Yes or No clears them | Linux build #128, quit while the question is open: the process ended by signal 11 (segfault), 1 of 1; with the fix: ends normally (exit 0) in 0.3 s, also under ASan with no report. Linux smoke "restore: quitting while Cone asks to restore the playlist ends normally" (a killed session, a start that asks, a quit) |
 | f | **The right-click menu's Playback > Render list kept searching for 20 s after the menu closed** (Cone's RdCascadeMenu told a submenu when it opened, never when it closed). The submenus that close now get aboutToHide, as a QMenu would | Independent review; covered by section 8 step 4 on Windows |
 
 **Independent review of the follow-ups:** no crash or correctness bug in the C++ or QML. Taken:
