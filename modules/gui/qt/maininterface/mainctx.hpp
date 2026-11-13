@@ -527,9 +527,8 @@ protected:
     // pause is turned off through the libvlc object's "mouse-pause-policy" variable
     int m_videoDoubleClick = 0;
     void applyVideoDoubleClick();
-    // redesign (S2-10): "qt-cast-discovery", applied once the window has shown
+    // redesign (S2-10): "qt-cast-discovery": whether the Render picker looks for cast devices
     bool m_castDiscovery = true;
-    bool m_windowShown = false;
     void applyCastDiscovery();
     // redesign: options MainCtx writes itself (accent, fullscreen sensitivity) reach the
     // configuration file shortly after a change, not only when VLC quits
