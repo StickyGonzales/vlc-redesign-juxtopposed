@@ -49,10 +49,12 @@ SettingsPage {
     readonly property bool _exit: _option("play-and-exit") === true
     readonly property bool _pause: _option("play-and-pause") === true
     // "When an episode ends" (rd_up_next_mode.hpp): 1 play the next episode, 3 show Up Next and
-    // wait for a click, 0 do nothing; a bool from an older Cone reads as 1 / 0
+    // wait for a click, 0 do nothing; as RdUpNext reads it: a bool from an older Cone is 1 / 0, the
+    // pre-1.0 "Always" (2, saved back as 1 at the start) and any other value play on
     readonly property int _autoplayMode: {
         const value = _option("qt-autoplay-next")
-        return value === true ? 1 : value === false ? 0 : Number(value)
+        const mode = value === true ? 1 : value === false ? 0 : Number(value)
+        return mode === 0 || mode === 3 ? mode : 1
     }
     readonly property bool _autoplayOn: _autoplayMode !== 0
     // the countdown and the "still watching" question only exist when episodes play by themselves

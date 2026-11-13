@@ -291,6 +291,9 @@ private:
     void pruneOwnItems();
     // the user is there after all: "Still watching?" goes, the next episode is queued playing
     void leaveStillWatching();
+    // after a change of the mode: a mode in which nothing plays by itself drops the countdown,
+    // the "Still watching?" state and the card
+    void dropAutoplayState();
     void refreshQueued();
     QStringList itemOptions(bool startPaused) const;
 

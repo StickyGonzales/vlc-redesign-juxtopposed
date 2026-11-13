@@ -369,6 +369,13 @@ bool RdUpNext::readSettings()
     constexpr int defaultMode = ModeOff;
 #endif
     const int mode = rdupnext::modeFromOption(var_InheritInteger(m_intf, "qt-autoplay-next"), defaultMode);
+    // a saved value the list does not have (the pre-1.0 "Always", 2) is saved once as what it
+    // means, so Settings shows that choice; only the saved value, never a command-line one (which
+    // would be read back unchanged after every write)
+    const int64_t saved = config_GetInt("qt-autoplay-next");
+    const int savedMode = rdupnext::modeFromOption(saved, defaultMode);
+    if (saved != savedMode && m_effects)
+        m_effects->setOption(QStringLiteral("qt-autoplay-next"), savedMode);
     const int countdown = int(var_InheritInteger(m_intf, "qt-autoplay-countdown"));
     const int lead = int(var_InheritInteger(m_intf, "qt-autoplay-credits-lead"));
     const bool still = var_InheritBool(m_intf, "qt-autoplay-still-watching");
@@ -392,9 +399,28 @@ void RdUpNext::reloadSettings()
     if (!readSettings())
         return;
     if (mode != m_mode)
+    {
+        dropAutoplayState();
         startDetection();
+    }
     else
+    {
         evaluate();
+    }
+}
+
+void RdUpNext::dropAutoplayState()
+{
+    // a mode in which nothing plays by itself has no countdown and no "Still watching?" (Q10): a
+    // card or a count from the mode before goes, detection then shows the card the new mode wants
+    if (rdupnext::autoplays(m_mode, true))
+        return;
+    m_autoStreak = 0;
+    m_stillPending = false;
+    m_stillOnPaused = false;
+    m_stillSeenPaused = false;
+    setCounting(false);
+    setCard(false, CardNext);
 }
 
 // ------------------------------------------------------------------------------ properties
@@ -1316,10 +1342,10 @@ void RdUpNext::turnOffAutoplay()
     if (mode == m_mode)
         return;
     msg_Dbg(m_intf, "up next: autoplay turned off from the card, Up Next waits for a click");
-    setCard(false, CardNext);
     // written like a settings row, then taken at once (RdEffects writes it a moment later)
     m_effects->setOption(QStringLiteral("qt-autoplay-next"), mode);
     m_mode = mode;
+    dropAutoplayState();
     emit settingsChanged();
     // as after a change in Settings (reloadSettings): the autoplay item leaves the queue and the
     // card comes back as the waiting one
