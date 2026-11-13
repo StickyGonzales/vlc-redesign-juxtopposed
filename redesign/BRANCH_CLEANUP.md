@@ -198,3 +198,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 |---|---|---|
 | `wip/storage-cleanup` | `4bbf29470a49e68efc16c8542f73e9c4e2f7894d` | PR #127 merged into wip/next-test (08a05d2aea3) |
 | `wip/perf-audit` | `8885cd206702d37dadf56c207c9c83b688400324` | PR #131 merged into wip/next-test (3780cd92d87) |
+
+## 2026-11-13, Up Next click mode
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/up-next-click-mode` | `01aaf823b49e8f70d347cc185430b53ad3af4637` | PR #135 merged into wip/next-test (14dcb7fbda6) |
