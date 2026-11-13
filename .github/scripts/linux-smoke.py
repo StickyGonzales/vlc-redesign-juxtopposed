@@ -115,6 +115,18 @@ def cone_app():
     return None
 
 
+def named(name):
+    """what carries `name` in the accessibility tree, with its role (for a failure's message)"""
+    found = []
+    for acc in _walk(cone_app()):
+        try:
+            if acc.name == name:
+                found.append(acc.getRoleName())
+        except Exception:  # noqa: BLE001
+            continue
+    return ', '.join(found) or 'nothing named so'
+
+
 def find(name, timeout=0.0, role=None):
     """the first showing element named `name`: (x, y, w, h) on the screen, or None"""
     end = time.time() + timeout
@@ -166,8 +178,15 @@ def rc_number(cmd):
     raise CheckFailed(f'no number from "{cmd}"')
 
 
+def client_windows():
+    """the windows the window manager manages (_NET_CLIENT_LIST), as decimal ids like xdotool's"""
+    out = run(['xprop', '-root', '_NET_CLIENT_LIST']).stdout
+    return {str(int(x, 16)) for x in re.findall(r'0x[0-9a-fA-F]+', out)}
+
+
 class Session:
-    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None):
+    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None,
+                 extra=()):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
@@ -181,7 +200,7 @@ class Session:
              *([] if update_answer else ['--no-qt-cone-update-check']),
              '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
              f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
-             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), video]
+             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), *extra, video]
         log('start ' + ' '.join(a))
         self.proc = subprocess.Popen(a, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
@@ -192,7 +211,13 @@ class Session:
         while time.time() < end:
             if self.proc.poll() is not None:
                 raise CheckFailed(f'Cone exited with {self.proc.returncode} before its window appeared')
-            for w in xdo('search', '--onlyvisible', '--pid', self.proc.pid).split():
+            found = xdo('search', '--onlyvisible', '--pid', self.proc.pid).split()
+            # the window manager's own window for Cone: Qt's inner windows carry the same pid, and
+            # on a slow start (a sanitizer build) the search lists one of them first, which cannot
+            # be activated
+            clients = client_windows()
+            managed = [w for w in found if w in clients]
+            for w in managed:
                 geo = xdo('getwindowgeometry', w)
                 if 'Geometry:' in geo:
                     width = int(geo.split('Geometry:')[1].split('x')[0])
@@ -317,6 +342,45 @@ def check_seek(s):
         shot(f'{s.tag}-seek')
         return f'clicked at 75 % of {length} s, the time is {t} s'
     return check(f'{s.tag}: seek bar responds', body)
+
+
+def check_seek_bar_rest(s):
+    """the background queue waits while the pointer moves over the seek bar, and goes on once it
+    rests there (redesign/PERF_AUDIT_NOTES.md: a resting pointer held it for good)"""
+    def state():
+        lines = [l for l in open(s.log, errors='replace')
+                 if 'background: paused' in l or 'background: resumed' in l]
+        return lines[-1].split('background: ')[1].strip() if lines else ''
+    def body():
+        s.focus()
+        s.show_bars()
+        r = find('Progress', 3, role='slider')
+        if not r:
+            raise CheckFailed('the seek bar ("Progress") is not shown')
+        x, y, w, h = r
+        # an earlier hold (the seek of check_seek, "seeking", 1.5 s) ends first, so "paused" below
+        # is the seek bar's
+        xdo('mousemove', x + w // 2, y - 200)
+        end = time.time() + 8
+        while time.time() < end and state().startswith('paused'):
+            time.sleep(0.25)
+        s.show_bars()
+        for d in range(0, 60, 6):
+            xdo('mousemove', x + int(w * 0.3) + d, y + h // 2)
+            time.sleep(0.05)
+        time.sleep(0.5)
+        moving = state()
+        if not moving.startswith('paused'):
+            raise CheckFailed(f'the queue did not wait while the pointer moved over the seek bar (last: "{moving}")')
+        end = time.time() + 8
+        while time.time() < end and not state().startswith('resumed'):
+            time.sleep(0.25)
+        rest = state()
+        if not rest.startswith('resumed'):
+            raise CheckFailed(f'the pointer rests on the seek bar and the queue still waits after 8 s (last: "{rest}")')
+        xdo('mousemove', x + w // 2, y - 200)
+        return f'moving: "{moving}", resting: "{rest}"'
+    return check(f'{s.tag}: the background queue goes on while the pointer rests on the seek bar', body)
 
 
 def check_settings(s):
@@ -690,6 +754,8 @@ def session(exe, codec, tag, full, env=None):
             check_osd(s)
             check_settings(s)
             check_seek(s)
+            if codec == 'h264':
+                check_seek_bar_rest(s)
             check_menu(s)
             check_speed(s)
             if codec == 'h264':
@@ -713,6 +779,204 @@ def session(exe, codec, tag, full, env=None):
 def episode_of(status):
     m = re.search(r'S01E0(\d)', status)
     return int(m.group(1)) if m else 0
+
+
+def quit_cleanly(s):
+    """a killed Cone makes the next start ask to restore its playlist ("closed abruptly"), and
+    that dialog would stand in front of the next checks' windows"""
+    try:
+        rc('quit')
+        s.proc.wait(15)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def frames_drawn(s):
+    """the frames Qt has drawn so far (QSG_RENDER_TIMING with --qt-verbose: one line each)"""
+    return sum(1 for l in open(s.log, errors='replace') if 'time in renderer' in l)
+
+
+def check_idle_drawing(exe, env):
+    """while a file plays with the bars hidden, and while Cone is minimized, Qt draws nothing:
+    a hidden control bar following the time made it draw two empty frames a second, and the
+    interface was drawn offscreen while minimized (redesign/PERF_AUDIT_NOTES.md)"""
+    denv = dict(env, QSG_RENDER_TIMING='1')
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'drawing', denv, subs=False, extra=['--qt-verbose'])
+    try:
+        if not check_window(s):
+            return
+
+        def hidden():
+            time.sleep(2)
+            xdo('mousemove', 1900, 1060)
+            time.sleep(6)
+            n0 = frames_drawn(s)
+            time.sleep(10)
+            n = frames_drawn(s) - n0
+            if n > 4:
+                raise CheckFailed(f'{n} frames drawn in 10 s of playback with the bars hidden (the bars follow the time while hidden)')
+            return f'{n} frames in 10 s with the bars hidden'
+        check('drawing: nothing is drawn while playing with the bars hidden', hidden)
+
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+    # minimized: with the bars pinned the time is on screen and the window draws, so a still
+    # window while minimized is the compositor waiting (the bars alone no longer draw when hidden)
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'drawing-pinned', denv, subs=False,
+                extra=['--qt-verbose', '--qt-pin-controls'])
+    try:
+        if not check_window(s):
+            return
+
+        def minimized():
+            time.sleep(3)
+            xdo('mousemove', 1900, 1060)
+            n0 = frames_drawn(s)
+            time.sleep(5)
+            shown = frames_drawn(s) - n0
+            if shown < 3:
+                raise CheckFailed(f'only {shown} frames in 5 s with the pinned bars showing the time (the count does not work)')
+            xdo('windowminimize', s.win)
+            time.sleep(3)
+            n0 = frames_drawn(s)
+            time.sleep(10)
+            n = frames_drawn(s) - n0
+            xdo('windowactivate', s.win)
+            time.sleep(3)
+            back = frames_drawn(s) - n0 - n
+            if n > 2:
+                raise CheckFailed(f'{n} frames drawn in 10 s while minimized')
+            if back < 1:
+                raise CheckFailed('nothing drawn after the window came back')
+            return f'{shown} frames in 5 s shown, {n} in 10 s minimized, {back} after it came back'
+        check('drawing: nothing is drawn while minimized, the window draws again after', minimized)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_cast_discovery(exe, env):
+    """cast devices are looked for only while a Render list is open, as in VLC: not at start, from
+    the moment the right-click menu's Playback > Renderer opens, until the menu closes
+    (StickyGonzales 2026-11-13)"""
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'cast', env, subs=False)
+
+    def lines(text):
+        return sum(1 for l in open(s.log, errors='replace') if text in l)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            # counted from here: a retry starts from what the first attempt left in the log
+            started0 = lines('starting renderer discovery service')
+            stopped0 = lines('renderer discovery stopped')
+            time.sleep(12)
+            if lines('starting renderer discovery service') > started0:
+                raise CheckFailed('cast devices are looked for before the Render picker was opened')
+            # the right-click menu's Playback > Renderer list (RdCascadeMenu: the submenu opens as a
+            # level of its own and is told when it closes)
+            s.focus()
+            xdo('mousemove', 640, 300)
+            time.sleep(0.3)
+            xdo('click', 3)
+            p = find('Playback', 5)
+            if not p:
+                shot('cast-no-menu')
+                raise CheckFailed('the right-click menu has no "Playback" row (' + named('Playback') + ')')
+            xdo('mousemove', p[0] + p[2] // 2, p[1] + p[3] // 2)
+            xdo('click', 1)
+            time.sleep(0.5)
+            r = find('Renderer', 5)
+            if not r:
+                shot('cast-no-renderer')
+                raise CheckFailed('Playback has no "Renderer" row (' + named('Renderer') + ')')
+            xdo('mousemove', r[0] + r[2] // 2, r[1] + r[3] // 2)
+            xdo('click', 1)
+            end = time.time() + 5
+            while time.time() < end and lines('starting renderer discovery service') == started0:
+                time.sleep(0.25)
+            started = lines('starting renderer discovery service') - started0
+            if not started:
+                raise CheckFailed('opening the Renderer list started no search for cast devices')
+            # the whole menu closes
+            for _ in range(3):
+                xdo('key', 'Escape')
+                time.sleep(0.2)
+            end = time.time() + 5
+            while time.time() < end and lines('renderer discovery stopped') == stopped0:
+                time.sleep(0.25)
+            if lines('renderer discovery stopped') == stopped0:
+                raise CheckFailed('the search for cast devices went on after the menu closed')
+            return f'none at start; {started} service(s) started with the picker, stopped when it closed'
+        check('cast: devices are looked for only while the Render picker is open', body)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_restore_quit(exe, env):
+    """after a session that ended abruptly, the next start asks whether to restore the playlist;
+    quitting while it asks crashed (VLC's ModelRecoveryAgent went on with the deleted playlist:
+    exit by signal 11, redesign/PERF_AUDIT_NOTES.md section 9). Runs last on this home: the
+    recovery file stays for the next start"""
+    video = os.path.join(MEDIA, 'test-h264.mp4')
+    s = Session(exe, video, 'restore-killed', env, subs=False)
+    try:
+        if not check_window(s):
+            return
+        # the recovery file is written 10 s after the queue changed
+        time.sleep(13)
+    finally:
+        s.stop()
+    s = Session(exe, video, 'restore-quit', env, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            end = time.time() + 15
+            asked = []
+            while time.time() < end and not asked:
+                asked = xdo('search', '--name', 'closed abruptly').split()
+                time.sleep(0.5)
+            if not asked:
+                raise CheckFailed('no "The application closed abruptly" question after a killed session')
+            t = time.time()
+            rc('quit')
+            try:
+                s.proc.wait(20)
+            except subprocess.TimeoutExpired:
+                raise CheckFailed('Cone did not end within 20 s of the quit')
+            code = s.proc.returncode
+            if code != 0:
+                raise CheckFailed(f'Cone ended with {code} when quit while asking to restore the playlist')
+            return f'quit while asking: ended normally after {time.time() - t:.1f} s'
+        check('restore: quitting while Cone asks to restore the playlist ends normally', body)
+    finally:
+        s.stop()
+    # the recovery file stays for the next start: one more start answers No and quits normally,
+    # so the question does not stand in front of the next checks' windows
+    s = Session(exe, video, 'restore-clear', env, subs=False)
+    try:
+        if check_window(s):
+            end = time.time() + 15
+            asked = []
+            while time.time() < end and not asked:
+                asked = xdo('search', '--name', 'closed abruptly').split()
+                time.sleep(0.5)
+            for w in asked:
+                xdo('windowactivate', w)
+                time.sleep(0.5)
+                xdo('key', 'Escape')
+            time.sleep(1)
+            if xdo('search', '--name', 'closed abruptly').split():
+                log('restore-clear: the restore question is still open')
+            quit_cleanly(s)
+    finally:
+        s.stop()
 
 
 def check_up_next(exe, env):
@@ -987,6 +1251,9 @@ session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
 check_popup_stack(os.path.join(folder, 'cone'), env)
+check_idle_drawing(os.path.join(folder, 'cone'), env)
+check_cast_discovery(os.path.join(folder, 'cone'), env)
+check_restore_quit(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():

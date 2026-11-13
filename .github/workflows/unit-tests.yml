@@ -2,7 +2,7 @@ name: unit-tests
 
 # Cone's QtCore-only unit tests (.github/scripts/unit-tests.sh): the storage cleanup rules, the
 # background queue, the episode parser, the show tracks, the credits point and audio, the
-# on-screen message parser. A few minutes on a plain runner, no VLC build.
+# on-screen message parser, also with ASan and UBSan. A few minutes on a plain runner, no VLC build.
 on:
   workflow_dispatch:
   push:
@@ -15,6 +15,7 @@ on:
       - 'modules/gui/qt/player/rd_credits_audio.*'
       - 'modules/gui/qt/player/rd_credits_point.*'
       - 'modules/gui/qt/player/rd_osd_parse.*'
+      - 'modules/gui/qt/util/rd_reload_throttle.*'
       - 'modules/gui/qt/tests/test_rd_*'
       - '.github/scripts/unit-tests.sh'
       - '.github/workflows/unit-tests.yml'
@@ -34,3 +35,7 @@ jobs:
           sudo apt-get install -y -q --no-install-recommends qt6-base-dev qt6-base-dev-tools g++ pkg-config
       - name: Build and run
         run: .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests"
+      # the same tests with AddressSanitizer and UndefinedBehaviorSanitizer: a memory error, a
+      # leak or undefined behaviour fails them (redesign/PERF_AUDIT_NOTES.md)
+      - name: Build and run with sanitizers
+        run: SANITIZE=1 .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests-sanitized"

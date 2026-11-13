@@ -66,8 +66,8 @@ public:
     {
     public:
         bool cancelled() const { return m_cancelled.load(); }
-        // waits while paused; `stop` (checked every 100 ms) ends the wait early, like a
-        // cancellation; false when cancelled
+        // waits while paused, asleep until resumed or cancelled (every way a job is stopped goes
+        // through cancel); `stop` is checked then and before waiting; false when cancelled
         bool waitWhilePaused(const std::function<bool()>& stop = {});
         bool paused() const { return m_paused.load(); }
         // what stops the job's own waits at once (a scanner's interrupt), called on cancel

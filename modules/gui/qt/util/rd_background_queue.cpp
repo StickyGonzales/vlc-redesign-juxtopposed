@@ -60,8 +60,9 @@ bool RdBackgroundQueue::Control::waitWhilePaused(const std::function<bool()>& st
         m_onParked();
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-        while (m_paused.load() && !m_cancelled.load() && !(stop && stop()))
-            m_wake.wait_for(lock, std::chrono::milliseconds(100));
+        // no timeout: resuming and a cancel notify (a 100 ms poll woke parked jobs ten times a
+        // second for as long as the user hovered the seek bar)
+        m_wake.wait(lock, [&] { return !m_paused.load() || m_cancelled.load() || (stop && stop()); });
     }
     m_parked.store(false);
     if (t_counters)

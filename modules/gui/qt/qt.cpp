@@ -355,8 +355,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 
 #define CAST_DISCOVERY_TEXT N_( "Discover cast devices" )
 #define CAST_DISCOVERY_LONGTEXT N_( "Look for Chromecast and other cast devices on the " \
-    "network in the background, so the Render list shows them at once. When off, " \
-    "VLC only looks while that list is open." )
+    "network while the Render list is open. When off, the list offers only this computer." )
 
 #define NIGHT_MODE_RESTORE_TEXT N_( "Compressor settings to restore after night mode" )
 #define NIGHT_MODE_RESTORE_LONGTEXT N_( "The compressor's state and settings before " \
@@ -1440,7 +1439,10 @@ static void *Thread( void *obj )
             //some part of the probing needs to be executed on the GUI thread and some part will be ran in a background thread,
             //so we defer the execution of this once the app is started. We can't start the task directly as qApp isn't set yet
             //and there are scenarios where the main loop will never be run.
-            QMetaObject::invokeMethod(&app, [&](){
+            // redesign: graphicsApiValue and enableRhiSoftwareRenderer by value: this runs from the
+            // event loop, after this block has ended (ASan: stack-use-after-scope at every start
+            // after the first; redesign/upstream/qt-rhi-probe-stale-read.md)
+            QMetaObject::invokeMethod(&app, [&, graphicsApiValue, enableRhiSoftwareRenderer](){
                 // A cached (by then) valid graphics api is found, use it:
                 QQuickWindow::setGraphicsApi(static_cast<QSGRendererInterface::GraphicsApi>(graphicsApiValue.value<int>()));
                 if (p_intf->mainSettings->value(graphicsApiRhiSoftwareKey).value<bool>())

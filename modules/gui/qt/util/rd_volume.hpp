@@ -28,6 +28,7 @@
 // Worker threads only.
 #include "rd_storage_model.hpp"
 
+#include <QSet>
 #include <QString>
 
 namespace rdvolume {
@@ -48,7 +49,9 @@ Info volumeOf(const QString& path, int timeoutMs = 2000);
 // only: never touches the drive ("E:/", "//server/share/", "/media/usb", "/")
 QString mountRootOf(const QString& path);
 
-// the file system, for the cleanup's rules: every answer within `timeoutMs`
+// the file system, for the cleanup's rules: every answer within `timeoutMs`. A drive that did
+// not answer once is not asked again by this object (one daily check): every later path on it
+// counts as not answered at once, instead of another wait and another thread left blocked
 class SystemFileSystem : public rdstorage::FileSystem
 {
 public:
@@ -58,6 +61,7 @@ public:
 
 private:
     int m_timeoutMs;
+    QSet<QString> m_silentRoots;
 };
 
 } // namespace rdvolume

@@ -221,7 +221,10 @@ void CompositorX11UISurface::destroyFbo()
 
 bool CompositorX11UISurface::render()
 {
-    if (!isExposed())
+    // redesign: nothing is drawn while the main window is minimized or hidden either (this
+    // surface stays exposed then, so the interface was rendered offscreen for nobody, twice a
+    // second while playing); it is drawn again when the window comes back (Expose below)
+    if (!isExposed() || !m_renderWindow->isExposed())
         return false;
 
     if (m_context)
@@ -392,6 +395,11 @@ bool CompositorX11UISurface::eventFilter(QObject*, QEvent *event)
     case QEvent::FocusIn:
     case QEvent::FocusOut:
         return QCoreApplication::sendEvent(m_uiWindow, event);
+
+    case QEvent::Expose:
+        if (m_renderWindow->isExposed())
+            requestUpdate();
+        break;
 
     case QEvent::Show:
         m_uiWindow->setPseudoVisible(true);

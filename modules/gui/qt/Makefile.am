@@ -412,6 +412,7 @@ libqt_plugin_la_SOURCES = \
 	util/csdmenu.cpp util/csdmenu.hpp \
 	util/rd_update_check.cpp util/rd_update_check.hpp \
 	util/rd_background_queue.cpp util/rd_background_queue.hpp \
+	util/rd_reload_throttle.hpp \
 	util/rd_storage.cpp util/rd_storage.hpp \
 	util/rd_storage_model.cpp util/rd_storage_model.hpp \
 	util/rd_volume.cpp util/rd_volume.hpp \
@@ -2461,6 +2462,17 @@ test_rd_background_queue_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
 test_rd_background_queue_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_background_queue_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 TESTS += test_rd_background_queue
+
+# test_rd_reload_throttle (the library views refresh at most once a second during a scan)
+check_PROGRAMS += test_rd_reload_throttle
+test_rd_reload_throttle_SOURCES = \
+	tests/test_rd_reload_throttle.cpp \
+	util/rd_reload_throttle.hpp
+test_rd_reload_throttle_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_reload_throttle_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_reload_throttle_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_reload_throttle_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_reload_throttle
 
 # test_rd_osd_parse (Cone's on-screen messages): QtCore only
 

@@ -100,6 +100,8 @@ public:
     Q_INVOKABLE RdMenuModel* submenu(int row);
     // the submenu is about to be shown (VLC's renderer menu starts its discovery then)
     Q_INVOKABLE void aboutToShow();
+    // the submenu closed (the renderer menu stops its discovery)
+    Q_INVOKABLE void aboutToHide();
 
 signals:
     void ctxChanged();

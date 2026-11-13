@@ -255,14 +255,26 @@ T.ProgressBar {
     Component.onDestruction: {
         if (control._previewShown)
             RdSeekThumbnailer?.stop()
-        if (control.scrubbing)
+        if (control._holdsQueue)
             RdUpNext.setSeekBarBusy(false)
     }
 
     // the background queue (STORAGE_CLEANUP_NOTES.md: credits scans, waveforms, pictures, the
-    // storage cleanup) waits while the bar is hovered or dragged, so the seek previews keep the
-    // disk and the decoder to themselves
-    onScrubbingChanged: RdUpNext.setSeekBarBusy(control.scrubbing)
+    // storage cleanup) waits while the bar is dragged or the pointer moves over it, so the seek
+    // previews keep the disk and the decoder to themselves. A pointer resting on the bar (the bars
+    // faded out over it, or pinned) lets the queue go on after 3 s: "hovered" alone held it for
+    // as long as the pointer stayed there (PERF_AUDIT_NOTES.md)
+    readonly property bool _holdsQueue: dragHandler.active || (hoverHandler.hovered && scrubMoveTimer.running)
+    on_HoldsQueueChanged: RdUpNext.setSeekBarBusy(control._holdsQueue)
+    on_ScrubXChanged: {
+        if (hoverHandler.hovered)
+            scrubMoveTimer.restart()
+    }
+
+    Timer {
+        id: scrubMoveTimer
+        interval: 3000
+    }
 
     // frames are made at the card's size in device pixels
     readonly property real _devicePixelRatio: Screen.devicePixelRatio
@@ -486,15 +498,30 @@ T.ProgressBar {
         }
     }
 
+    // redesign: the position is followed only while the bar is visible (a hidden bar following
+    // it made Qt draw the window twice a second for nothing, redesign/PERF_AUDIT_NOTES.md); it
+    // catches up when it shows
     Connections {
         target: Player
+        enabled: control.visible
         function onPositionChanged() {
             fsm.playerUpdatePosition(Player.position)
             control._timelineFollow()
         }
+    }
+
+    Connections {
+        target: Player
         function onInputChanged() {
             fsm.inputChanged()
             control._timelineFollows = true
+        }
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            fsm.playerUpdatePosition(Player.position)
+            control._timelineFollow()
         }
     }
 
@@ -518,6 +545,7 @@ T.ProgressBar {
 
         onHoveredChanged: () => {
             if (hovered) {
+                scrubMoveTimer.restart()
                 if(Player.hasChapters)
                     control._isSeekPointsShown = true
             } else {
