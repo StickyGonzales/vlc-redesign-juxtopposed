@@ -892,8 +892,22 @@ function Check-RestoreQuestion([string]$exe) {
         $s = Start-Cone $exe $video $subs 'restore-killed'
         try {
             if (-not (Check-Window $s)) { return }
-            # the playlist is saved for a restore 10 s after it changed
-            Start-Sleep -Seconds 20
+            # the playlist is saved for a restore 10 s after it last changed (on the runner it can
+            # take longer): killed once the saved file has content, as only then the next start asks
+            Check 'restore: the playlist is saved for a restore' {
+                $sw = [Diagnostics.Stopwatch]::StartNew()
+                while ($sw.Elapsed.TotalSeconds -lt 60) {
+                    $line = if (Test-Path $ini) { Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | Select-Object -First 1 } else { $null }
+                    if ($line) {
+                        $path = $line.Matches[0].Groups[1].Value.Trim('"')
+                        if ((Test-Path -LiteralPath $path) -and (Get-Item -LiteralPath $path).Length -gt 0) {
+                            return "saved after $([math]::Round($sw.Elapsed.TotalSeconds)) s ($((Get-Item -LiteralPath $path).Length) bytes)"
+                        }
+                    }
+                    Start-Sleep -Milliseconds 500
+                }
+                throw 'the playlist was not saved for a restore within 60 s'
+            } | Out-Null
         } finally { Stop-Cone $s }   # ended abruptly
         # what the next start finds: the setting naming the saved playlist, and that file
         $saved = $null
