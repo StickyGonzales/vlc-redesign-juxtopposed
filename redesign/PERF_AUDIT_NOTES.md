@@ -81,7 +81,23 @@ then opened paused: that is Cone's "Ask if I'm still watching after 3 episodes" 
 Settings > Playback, rd_up_next.cpp kStillWatchingAfter = 3), working as intended. The run was
 resumed through the cli (as a viewer pressing Play) and went on.
 
-(The table follows when the run ends.)
+| Time | Playing | RSS | CPU | Threads |
+|---|---|---|---|---|
+| 1 min | E01 | 299 MB | 5.7 % | 44 (start-up) |
+| 15 min | E02 | 315 MB | 5.5 % | 37 |
+| 30 min | E03 | 344 MB | 5.0 % | 37 |
+| 45 min | E04 | 373 MB | 4.5 % | 37 |
+| 60 min | E05, paused by "still watching?" | 405 MB | 0.8 % | 37 |
+| 75 min | E05 (resumed) | 415 MB | 5.1 % | 37 |
+| 90 min | E06 | 432 MB | 4.8 % | 37 |
+| 105 min | E07 | 430 MB | 4.9 % | 37 |
+| 120 min | E08 | 428 MB | 4.7 % | 37 |
+
+Memory rose about 28 MB with each of the first five episodes, then stayed flat for the last
+45 minutes (428 to 432 MB); CPU stayed at about 5 % throughout, the thread count at 37. The
+background queue ran every job and ended each one (8 credits scans, 7 credits subtitle passes,
+7 Up Next pictures, 8 show detections, the daily cleanup, 16 saves). The A/B below shows the
+rise is the same without Cone's show features.
 
 **Memory over video changes, show vs plain files** (A/B, 10 x 2 min, same files, 21 min each):
 
