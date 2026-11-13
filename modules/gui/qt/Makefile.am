@@ -377,6 +377,7 @@ libqt_plugin_la_SOURCES = \
 	player/rd_credits_subtitles.hpp \
 	player/rd_up_next.cpp \
 	player/rd_up_next.hpp \
+	player/rd_up_next_mode.hpp \
 	player/player_controller.cpp player/player_controller.hpp player/player_controller_p.hpp \
 	player/player_controlbar_model.cpp player/player_controlbar_model.hpp \
 	player/control_list_model.cpp player/control_list_model.hpp \
@@ -2462,6 +2463,17 @@ test_rd_background_queue_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
 test_rd_background_queue_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_background_queue_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 TESTS += test_rd_background_queue
+
+# test_rd_up_next_mode (Up Next: When an episode ends, the saved values and which episodes play)
+check_PROGRAMS += test_rd_up_next_mode
+test_rd_up_next_mode_SOURCES = \
+	tests/test_rd_up_next_mode.cpp \
+	player/rd_up_next_mode.hpp
+test_rd_up_next_mode_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_up_next_mode_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_up_next_mode_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_up_next_mode_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_up_next_mode
 
 # test_rd_reload_throttle (the library views refresh at most once a second during a scan)
 check_PROGRAMS += test_rd_reload_throttle

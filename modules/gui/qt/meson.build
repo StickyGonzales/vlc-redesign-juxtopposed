@@ -535,6 +535,7 @@ qt_plugin_sources = files(
     'player/rd_credits_subtitles.hpp',
     'player/rd_up_next.cpp',
     'player/rd_up_next.hpp',
+    'player/rd_up_next_mode.hpp',
     'player/input_models.hpp',
     'player/player_controller.cpp',
     'player/player_controller.hpp',
@@ -1789,6 +1790,19 @@ if qt6_dep.found()
                 'util/rd_background_queue.hpp'
             ), qt6.compile_moc(headers: files('util/rd_background_queue.hpp'),
                                dependencies: qt6_dep)],
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Up Next: When an episode ends, the saved values and which episodes play, no Qt
+        vlc_tests += {
+            'name': 'test_qt_rd_up_next_mode',
+            'sources': files(
+                'tests/test_rd_up_next_mode.cpp',
+                'player/rd_up_next_mode.hpp'
+            ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,
             'link_args': qt_link_args,

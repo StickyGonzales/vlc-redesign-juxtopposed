@@ -34,6 +34,7 @@
 #include "player/rd_credits_point.hpp"
 #include "player/rd_credits_scans.hpp"
 #include "player/rd_episode_parser.hpp"
+#include "player/rd_up_next_mode.hpp"
 #include "playlist/media.hpp"
 #include "util/shared_input_item.hpp"
 
@@ -61,7 +62,8 @@ struct vlc_preparser_req;
  * (shuffle, repeat one, a stop or quit at the end, pause on the last frame, an A-B loop, the
  * command-line flow options) take the autoplay item out and keep the card away.
  *
- * Settings (qt.cpp): qt-autoplay-next ("Play episodes in a row", on / off), qt-autoplay-countdown
+ * Settings (qt.cpp): qt-autoplay-next ("When an episode ends": play the next episode / show Up
+ * Next and wait for a click / do nothing, rd_up_next_mode.hpp), qt-autoplay-countdown
  * (5 / 10 / 15 s), qt-autoplay-credits-lead (the card's fallback point: the last 30 / 60 / 120 s)
  * and qt-autoplay-still-watching. The answer per show (yes / no) and the credits point learned
  * per show are kept per show root folder in rd-shows.json in VLC's user data folder, read and
@@ -74,13 +76,16 @@ struct vlc_preparser_req;
  * learned point agree, or at the set point. There it offers Next episode and Cancel; the
  * countdown only runs in the last `countdown` seconds, as before.
  *
- * Nothing runs while the setting is Off: no scan, no card, no item.
+ * Nothing runs while the setting is "Do nothing": no scan, no card, no item. With "Show Up Next,
+ * I'll click" every show behaves as a plain-numbered one always did: no autoplay item, the card
+ * offers the next episode and waits for a click.
  */
 class RdUpNext : public QObject
 {
     Q_OBJECT
 
-    // the setting "Play episodes in a row": 0 Off, 1 On
+    // the setting "When an episode ends": 0 do nothing, 1 play the next episode, 3 show Up Next and
+    // wait for a click (rd_up_next_mode.hpp)
     Q_PROPERTY(int mode READ mode NOTIFY settingsChanged FINAL)
     Q_PROPERTY(int countdown READ countdown NOTIFY settingsChanged FINAL)
 
@@ -136,7 +141,7 @@ class RdUpNext : public QObject
     Q_PROPERTY(QString creditsSource READ creditsSource NOTIFY creditsChanged FINAL)
 
 public:
-    enum Mode { ModeOff = 0, ModeOn = 1 };
+    enum Mode { ModeOff = rdupnext::ModeOff, ModeOn = rdupnext::ModeOn, ModeClick = rdupnext::ModeClick };
     enum CardMode { CardNext = 0, CardStillWatching = 1 };
     Q_ENUM(CardMode)
 
@@ -179,7 +184,8 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void keepWatching();
     Q_INVOKABLE void stopWatching();
-    // the card's "Turn off autoplay": the setting goes off
+    // the card's "Turn off autoplay": the setting becomes "Show Up Next, I'll click" (the countdown
+    // goes, the card stays and waits)
     Q_INVOKABLE void turnOffAutoplay();
     // the sidebar toggle: the remembered answer for the show playing
     Q_INVOKABLE void setShowEnabled(bool enabled);
@@ -285,6 +291,9 @@ private:
     void pruneOwnItems();
     // the user is there after all: "Still watching?" goes, the next episode is queued playing
     void leaveStillWatching();
+    // after a change of the mode: a mode in which nothing plays by itself drops the countdown,
+    // the "Still watching?" state and the card
+    void dropAutoplayState();
     void refreshQueued();
     QStringList itemOptions(bool startPaused) const;
 
