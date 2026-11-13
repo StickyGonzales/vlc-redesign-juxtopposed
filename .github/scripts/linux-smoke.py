@@ -806,22 +806,39 @@ def check_idle_drawing(exe, env):
             return f'{n} frames in 10 s with the bars hidden'
         check('drawing: nothing is drawn while playing with the bars hidden', hidden)
 
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+    # minimized: with the bars pinned the time is on screen and the window draws, so a still
+    # window while minimized is the compositor waiting (the bars alone no longer draw when hidden)
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'drawing-pinned', denv, subs=False,
+                extra=['--qt-verbose', '--qt-pin-controls'])
+    try:
+        if not check_window(s):
+            return
+
         def minimized():
+            time.sleep(3)
+            xdo('mousemove', 1900, 1060)
+            n0 = frames_drawn(s)
+            time.sleep(5)
+            shown = frames_drawn(s) - n0
+            if shown < 3:
+                raise CheckFailed(f'only {shown} frames in 5 s with the pinned bars showing the time (the count does not work)')
             xdo('windowminimize', s.win)
             time.sleep(3)
             n0 = frames_drawn(s)
             time.sleep(10)
             n = frames_drawn(s) - n0
             xdo('windowactivate', s.win)
-            time.sleep(2)
-            s.show_bars()
-            time.sleep(1.5)
+            time.sleep(3)
             back = frames_drawn(s) - n0 - n
             if n > 2:
                 raise CheckFailed(f'{n} frames drawn in 10 s while minimized')
             if back < 1:
                 raise CheckFailed('nothing drawn after the window came back')
-            return f'{n} frames in 10 s minimized, {back} after it came back'
+            return f'{shown} frames in 5 s shown, {n} in 10 s minimized, {back} after it came back'
         check('drawing: nothing is drawn while minimized, the window draws again after', minimized)
         quit_cleanly(s)
     finally:
