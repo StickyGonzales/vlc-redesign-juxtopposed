@@ -587,6 +587,7 @@ qt_plugin_sources = files(
     'util/rd_update_check.hpp',
     'util/rd_background_queue.cpp',
     'util/rd_background_queue.hpp',
+    'util/rd_reload_throttle.hpp',
     'util/rd_storage.cpp',
     'util/rd_storage.hpp',
     'util/rd_storage_model.cpp',
@@ -1788,6 +1789,19 @@ if qt6_dep.found()
                 'util/rd_background_queue.hpp'
             ), qt6.compile_moc(headers: files('util/rd_background_queue.hpp'),
                                dependencies: qt6_dep)],
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # the library views refresh at most once a second during a scan, no Qt
+        vlc_tests += {
+            'name': 'test_qt_rd_reload_throttle',
+            'sources': files(
+                'tests/test_rd_reload_throttle.cpp',
+                'util/rd_reload_throttle.hpp'
+            ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,
             'link_args': qt_link_args,

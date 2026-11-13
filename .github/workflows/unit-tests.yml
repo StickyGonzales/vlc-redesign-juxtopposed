@@ -15,6 +15,7 @@ on:
       - 'modules/gui/qt/player/rd_credits_audio.*'
       - 'modules/gui/qt/player/rd_credits_point.*'
       - 'modules/gui/qt/player/rd_osd_parse.*'
+      - 'modules/gui/qt/util/rd_reload_throttle.*'
       - 'modules/gui/qt/tests/test_rd_*'
       - '.github/scripts/unit-tests.sh'
       - '.github/workflows/unit-tests.yml'

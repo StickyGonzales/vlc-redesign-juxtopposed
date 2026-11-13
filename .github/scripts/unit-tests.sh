@@ -39,5 +39,6 @@ run test_rd_episode_parser tests/test_rd_episode_parser.cpp player/rd_episode_pa
 run test_rd_credits_audio tests/test_rd_credits_audio.cpp player/rd_credits_audio.cpp
 run test_rd_credits_point tests/test_rd_credits_point.cpp player/rd_credits_point.cpp
 run test_rd_osd_parse tests/test_rd_osd_parse.cpp player/rd_osd_parse.cpp
+run test_rd_reload_throttle tests/test_rd_reload_throttle.cpp
 
 exit $failed
