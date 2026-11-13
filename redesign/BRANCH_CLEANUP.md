@@ -191,3 +191,10 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/signpath-signing` | `89730d9786465a54a32b1a89145c732b3e6ccfca` | PR #130 merged into wip/next-test; the policy page and README links also on redesign (f8417da6bb2) |
+
+## 2026-11-13, storage cleanup and audit
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/storage-cleanup` | `4bbf29470a49e68efc16c8542f73e9c4e2f7894d` | PR #127 merged into wip/next-test (08a05d2aea3) |
+| `wip/perf-audit` | `8885cd206702d37dadf56c207c9c83b688400324` | PR #131 merged into wip/next-test (3780cd92d87) |
