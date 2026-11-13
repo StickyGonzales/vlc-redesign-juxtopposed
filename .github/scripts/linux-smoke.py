@@ -173,7 +173,8 @@ def client_windows():
 
 
 class Session:
-    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None):
+    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None,
+                 extra=()):
         self.tag = tag
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
@@ -187,7 +188,7 @@ class Session:
              *([] if update_answer else ['--no-qt-cone-update-check']),
              '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
              f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
-             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), video]
+             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), *extra, video]
         log('start ' + ' '.join(a))
         self.proc = subprocess.Popen(a, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
@@ -768,6 +769,116 @@ def episode_of(status):
     return int(m.group(1)) if m else 0
 
 
+def quit_cleanly(s):
+    """a killed Cone makes the next start ask to restore its playlist ("closed abruptly"), and
+    that dialog would stand in front of the next checks' windows"""
+    try:
+        rc('quit')
+        s.proc.wait(15)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def frames_drawn(s):
+    """the frames Qt has drawn so far (QSG_RENDER_TIMING with --qt-verbose: one line each)"""
+    return sum(1 for l in open(s.log, errors='replace') if 'time in renderer' in l)
+
+
+def check_idle_drawing(exe, env):
+    """while a file plays with the bars hidden, and while Cone is minimized, Qt draws nothing:
+    a hidden control bar following the time made it draw two empty frames a second, and the
+    interface was drawn offscreen while minimized (redesign/PERF_AUDIT_NOTES.md)"""
+    denv = dict(env, QSG_RENDER_TIMING='1')
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'drawing', denv, subs=False, extra=['--qt-verbose'])
+    try:
+        if not check_window(s):
+            return
+
+        def hidden():
+            time.sleep(2)
+            xdo('mousemove', 1900, 1060)
+            time.sleep(6)
+            n0 = frames_drawn(s)
+            time.sleep(10)
+            n = frames_drawn(s) - n0
+            if n > 4:
+                raise CheckFailed(f'{n} frames drawn in 10 s of playback with the bars hidden (the bars follow the time while hidden)')
+            return f'{n} frames in 10 s with the bars hidden'
+        check('drawing: nothing is drawn while playing with the bars hidden', hidden)
+
+        def minimized():
+            xdo('windowminimize', s.win)
+            time.sleep(3)
+            n0 = frames_drawn(s)
+            time.sleep(10)
+            n = frames_drawn(s) - n0
+            xdo('windowactivate', s.win)
+            time.sleep(2)
+            s.show_bars()
+            time.sleep(1.5)
+            back = frames_drawn(s) - n0 - n
+            if n > 2:
+                raise CheckFailed(f'{n} frames drawn in 10 s while minimized')
+            if back < 1:
+                raise CheckFailed('nothing drawn after the window came back')
+            return f'{n} frames in 10 s minimized, {back} after it came back'
+        check('drawing: nothing is drawn while minimized, the window draws again after', minimized)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_cast_discovery(exe, env):
+    """cast devices are looked for only while the Render picker is open, as in VLC: not at start,
+    from the moment the picker opens, until it closes (StickyGonzales 2026-11-13)"""
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'cast', env, subs=False)
+
+    def lines(text):
+        return sum(1 for l in open(s.log, errors='replace') if text in l)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            time.sleep(12)
+            if lines('starting renderer discovery service'):
+                raise CheckFailed('cast devices are looked for before the Render picker was opened')
+            s.focus()
+            s.show_bars()
+            g = find('Playback Settings', 5, role='push button')
+            if not g:
+                raise CheckFailed('the control bar has no "Playback Settings" button')
+            xdo('mousemove', g[0] + g[2] // 2, g[1] + g[3] // 2)
+            xdo('click', 1)
+            t = find('Video', 5, role='page tab')
+            if not t:
+                raise CheckFailed('the settings sidebar has no "Video" tab')
+            xdo('mousemove', t[0] + t[2] // 2, t[1] + t[3] // 2)
+            xdo('click', 1)
+            r = find('Render', 5, role='combo box')
+            if not r:
+                raise CheckFailed('the Video tab has no "Render" picker')
+            xdo('mousemove', r[0] + r[2] // 2, r[1] + r[3] // 2)
+            xdo('click', 1)
+            end = time.time() + 5
+            while time.time() < end and not lines('starting renderer discovery service'):
+                time.sleep(0.25)
+            started = lines('starting renderer discovery service')
+            if not started:
+                raise CheckFailed('opening the Render picker started no search for cast devices')
+            xdo('key', 'Escape')
+            end = time.time() + 5
+            while time.time() < end and not lines('renderer discovery stopped'):
+                time.sleep(0.25)
+            if not lines('renderer discovery stopped'):
+                raise CheckFailed('the search for cast devices went on after the Render picker closed')
+            return f'none at start; {started} service(s) started with the picker, stopped when it closed'
+        check('cast: devices are looked for only while the Render picker is open', body)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
 def check_up_next(exe, env):
     """Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode,
     which is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
@@ -1036,6 +1147,8 @@ session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
 check_popup_stack(os.path.join(folder, 'cone'), env)
+check_idle_drawing(os.path.join(folder, 'cone'), env)
+check_cast_discovery(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():
