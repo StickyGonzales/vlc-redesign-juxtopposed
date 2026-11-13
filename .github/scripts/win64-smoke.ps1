@@ -368,6 +368,23 @@ function Check-Pointer($s) {
 
 # starts Cone with a video and its subtitles; returns the process, its window and its log file
 # $firstStart: Cone's first start (the onboarding), as on a fresh install
+# a session the checks end by killing Cone (Stop-Cone) leaves its playlist saved for a restore, and
+# the next start would ask "The application closed abruptly ... restore the playlist?" in front of
+# its window: each start forgets that, except in the restore question's own checks
+$script:KeepRestore = $false
+function Clear-RestoreState([string]$exe) {
+    if ($script:KeepRestore) { return }
+    foreach ($ini in @((Join-Path (Split-Path -Parent $exe) 'portable\Cone\vlc-qt-interface.ini'),
+                       (Join-Path $env:APPDATA 'Cone\vlc-qt-interface.ini'))) {
+        if (-not (Test-Path $ini)) { continue }
+        $all = [IO.File]::ReadAllLines($ini)
+        $kept = [string[]]@($all | Where-Object { $_ -notmatch '^RecoveryFilePath=' })
+        if ($kept.Count -ne $all.Count) {
+            # UTF-8 without a BOM, as Qt writes it
+            [IO.File]::WriteAllLines($ini, $kept, (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+}
 function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [bool]$firstStart = $false) {
     $log = Join-Path $Out "cone-$tag.log"
     Remove-Item $log -ErrorAction SilentlyContinue
@@ -377,6 +394,7 @@ function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [
            '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet',
            "--sub-file=`"$subs`"", "`"$video`"")
     Log "start $exe $($a -join ' ')"
+    Clear-RestoreState $exe
     $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
     return @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
 }
@@ -823,7 +841,8 @@ function Check-CastDiscovery([string]$tag, [string]$exe, [string]$cache = '') {
         $a = @('-I', 'dummy', '--no-qt-privacy-ask', '--services-discovery=microdns,upnp',
                '--file-logging', "--logfile=`"$log`"", '--log-verbose=2', 'vlc://quit')
         Log "start $exe $($a -join ' ')"
-        $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+        Clear-RestoreState $exe
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
         # the end of this run is not what is checked (under wine it stays in the shutdown)
         if (-not $p.WaitForExit(30000)) { Log "$tag cast run still running after 30 s: ended"; try { $p.Kill() } catch {}; $p.WaitForExit(5000) | Out-Null }
         if (-not (Test-Path $log)) { throw "no log at $log" }
@@ -909,6 +928,7 @@ function Check-RestoreQuestion([string]$exe) {
                 throw 'the playlist was not saved for a restore within 60 s'
             } | Out-Null
         } finally { Stop-Cone $s }   # ended abruptly
+        $script:KeepRestore = $true
         # what the next start finds: the setting naming the saved playlist, and that file
         $saved = $null
         if (Test-Path $ini) { $saved = Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | Select-Object -First 1 }
@@ -955,6 +975,7 @@ function Check-RestoreQuestion([string]$exe) {
             Quit-Window $s
         } finally { Stop-Cone $s }
     } finally {
+        $script:KeepRestore = $false
         # the question never stands in front of the later checks' windows
         if (Test-Path $ini) {
             # UTF-8 without a BOM, as Qt writes it (Windows PowerShell's Set-Content would write ANSI)
@@ -1020,6 +1041,7 @@ function Check-UpNextNext([string]$exe) {
     $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
            '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$ep1`"")
     Log "start $exe $($a -join ' ')"
+    Clear-RestoreState $exe
     $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
     $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = 'upnext' }
     try {
@@ -1097,7 +1119,8 @@ function Check-PopupStack([string]$exe) {
         $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check', '--file-logging', "--logfile=`"$log`"",
                '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
         Log "start $exe $($a -join ' ')"
-        $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+        Clear-RestoreState $exe
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
         $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = "$tag-watch" }
         if (-not (Check-Window $s)) { return }
         Wait-Rc 20
@@ -1114,6 +1137,7 @@ function Check-PopupStack([string]$exe) {
                '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
         Log "start $exe $($a -join ' ') (CONE_UPDATE_CHECK_TEST_FILE=$answer)"
         $env:CONE_UPDATE_CHECK_TEST_FILE = $answer
+        Clear-RestoreState $exe
         try { $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru }
         finally { Remove-Item Env:CONE_UPDATE_CHECK_TEST_FILE -ErrorAction SilentlyContinue }
         $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
