@@ -303,6 +303,12 @@ void RdMenuModel::aboutToShow()
         emit m_menu->aboutToShow();
 }
 
+void RdMenuModel::aboutToHide()
+{
+    if (m_menu)
+        emit m_menu->aboutToHide();
+}
+
 bool RdMenuModel::eventFilter(QObject* watched, QEvent* event)
 {
     // the menu itself, or a row's submenu (its entries decide whether the row is enabled)
