@@ -893,12 +893,16 @@ function Check-RestoreQuestion([string]$exe) {
         try {
             if (-not (Check-Window $s)) { return }
             # the playlist is saved for a restore 10 s after it changed
-            Start-Sleep -Seconds 13
+            Start-Sleep -Seconds 20
         } finally { Stop-Cone $s }   # ended abruptly
         # what the next start finds: the setting naming the saved playlist, and that file
-        $saved = if (Test-Path $ini) { @(Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | ForEach-Object { $_.Matches[0].Groups[1].Value }) } else { @() }
-        if ($saved.Count) { Log "restore: saved playlist $($saved[0]) (exists: $(Test-Path -LiteralPath $saved[0]))" }
-        else { Log "restore: no RecoveryFilePath in $ini after the killed session" }
+        $saved = $null
+        if (Test-Path $ini) { $saved = Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | Select-Object -First 1 }
+        if ($saved) {
+            $path = $saved.Matches[0].Groups[1].Value.Trim('"')
+            $size = if (Test-Path -LiteralPath $path) { "$((Get-Item -LiteralPath $path).Length) bytes" } else { 'missing' }
+            Log "restore: saved playlist $path ($size)"
+        } else { Log "restore: no RecoveryFilePath in $ini after the killed session" }
         $s = Start-Cone $exe $video $subs 'restore-quit'
         try {
             if (-not (Check-Window $s)) { return }
