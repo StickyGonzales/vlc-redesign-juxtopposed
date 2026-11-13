@@ -857,8 +857,11 @@ def check_cast_discovery(exe, env):
             return
 
         def body():
+            # counted from here: a retry starts from what the first attempt left in the log
+            started0 = lines('starting renderer discovery service')
+            stopped0 = lines('renderer discovery stopped')
             time.sleep(12)
-            if lines('starting renderer discovery service'):
+            if lines('starting renderer discovery service') > started0:
                 raise CheckFailed('cast devices are looked for before the Render picker was opened')
             s.focus()
             s.show_bars()
@@ -878,20 +881,62 @@ def check_cast_discovery(exe, env):
             xdo('mousemove', r[0] + r[2] // 2, r[1] + r[3] // 2)
             xdo('click', 1)
             end = time.time() + 5
-            while time.time() < end and not lines('starting renderer discovery service'):
+            while time.time() < end and lines('starting renderer discovery service') == started0:
                 time.sleep(0.25)
-            started = lines('starting renderer discovery service')
+            started = lines('starting renderer discovery service') - started0
             if not started:
                 raise CheckFailed('opening the Render picker started no search for cast devices')
             xdo('key', 'Escape')
             end = time.time() + 5
-            while time.time() < end and not lines('renderer discovery stopped'):
+            while time.time() < end and lines('renderer discovery stopped') == stopped0:
                 time.sleep(0.25)
-            if not lines('renderer discovery stopped'):
+            if lines('renderer discovery stopped') == stopped0:
                 raise CheckFailed('the search for cast devices went on after the Render picker closed')
             return f'none at start; {started} service(s) started with the picker, stopped when it closed'
         check('cast: devices are looked for only while the Render picker is open', body)
         quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_restore_quit(exe, env):
+    """after a session that ended abruptly, the next start asks whether to restore the playlist;
+    quitting while it asks crashed (VLC's ModelRecoveryAgent went on with the deleted playlist:
+    exit by signal 11, redesign/PERF_AUDIT_NOTES.md section 9). Runs last on this home: the
+    recovery file stays for the next start"""
+    video = os.path.join(MEDIA, 'test-h264.mp4')
+    s = Session(exe, video, 'restore-killed', env, subs=False)
+    try:
+        if not check_window(s):
+            return
+        # the recovery file is written 10 s after the queue changed
+        time.sleep(13)
+    finally:
+        s.stop()
+    s = Session(exe, video, 'restore-quit', env, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            end = time.time() + 15
+            asked = []
+            while time.time() < end and not asked:
+                asked = xdo('search', '--name', 'closed abruptly').split()
+                time.sleep(0.5)
+            if not asked:
+                raise CheckFailed('no "The application closed abruptly" question after a killed session')
+            t = time.time()
+            rc('quit')
+            try:
+                s.proc.wait(20)
+            except subprocess.TimeoutExpired:
+                raise CheckFailed('Cone did not end within 20 s of the quit')
+            code = s.proc.returncode
+            if code != 0:
+                raise CheckFailed(f'Cone ended with {code} when quit while asking to restore the playlist')
+            return f'quit while asking: ended normally after {time.time() - t:.1f} s'
+        check('restore: quitting while Cone asks to restore the playlist ends normally', body)
     finally:
         s.stop()
 
@@ -919,7 +964,7 @@ def check_up_next(exe, env):
             if not b:
                 shot('upnext-nocard')
                 raise CheckFailed(f'no "Next episode" button on the card at 6:10 of episode {before}')
-            pictures.append(card_picture(before + 1))
+            pictures.append((time.time(), before + 1))
             xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
             time.sleep(0.3)
             xdo('click', 1)
@@ -937,19 +982,22 @@ def check_up_next(exe, env):
             if t2 <= t1:
                 raise CheckFailed(f'episode {after} stands still at {t1} s, then {t2} s')
             return f'episode {before} -> {after}, still playing 5 s after the click ({t1} s, then {t2} s)'
+        # (time the card showed, next episode) per attempt of the check above
         pictures = []
 
-        def card_picture(episode):
-            """the card shows in Cone's first minute: the next episode's picture is made by then
+        def card_picture(shown, episode):
+            """the card shows in Cone's first minute: the next episode's picture is made within 8 s
             (it waited for that minute to pass, so the card had none: PC retest of #127)"""
             folder = os.path.join(env['XDG_CACHE_HOME'], 'Cone', 'up-next')
-            end = time.time() + 8
-            while time.time() < end:
+            end = shown + 8
+            while True:
                 made = [l for l in open(s.log, errors='replace')
                         if 'thumbnailing' in l and f'S01E0{episode}' in l]
                 pngs = glob.glob(os.path.join(folder, '*.png'))
                 if made and pngs:
                     return f'picture of episode {episode} made ({len(pngs)} in up-next/)'
+                if time.time() >= end:
+                    break
                 time.sleep(0.25)
             why = [l.strip() for l in open(s.log, errors='replace') if 'up next picture' in l or 'up next: no picture' in l]
             return f'FAIL: no picture of episode {episode} 8 s after the card showed ({" | ".join(why) or "no picture job"})'
@@ -959,9 +1007,10 @@ def check_up_next(exe, env):
         def picture():
             if not pictures:
                 raise CheckFailed('the card did not show')
-            if pictures[0].startswith('FAIL: '):
-                raise CheckFailed(pictures[0][6:])
-            return pictures[0]
+            result = card_picture(*pictures[-1])
+            if result.startswith('FAIL: '):
+                raise CheckFailed(result[6:])
+            return result
         check("upnext: the card's picture is made in Cone's first minute", picture)
     finally:
         s.stop()
@@ -1166,6 +1215,7 @@ check_up_next(os.path.join(folder, 'cone'), env)
 check_popup_stack(os.path.join(folder, 'cone'), env)
 check_idle_drawing(os.path.join(folder, 'cone'), env)
 check_cast_discovery(os.path.join(folder, 'cone'), env)
+check_restore_quit(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():
