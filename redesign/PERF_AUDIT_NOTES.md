@@ -283,3 +283,10 @@ commit (the Up Next picture job) never runs; the same smoke passed on #127's bui
 #131's build-windows #245 and in the HEVC session of every other run. Re-run once on the new
 head (the rule); if it comes back, it goes to the PC session's quit and HEVC investigation (the
 "Quit known issues" row: an HEVC audio-output stall that freezes the interface is VLC core).
+
+**Green runs of the follow-ups:** #131 (wip/perf-audit): build-linux #136 on the head (0779e22b06,
+every smoke check, the new ones included: the card picture, nothing drawn hidden / minimized, the
+cast search, the restore quit), build-windows #247 (56a816f75e: the same code, the later commits
+change only the Linux smoke script and the notes), unit-tests #5 (also with ASan + UBSan, the
+throttle test included). #127 (wip/storage-cleanup): build-linux #133 and build-windows #246 on
+4bbf29470a (the HEVC session passed on that re-run).
