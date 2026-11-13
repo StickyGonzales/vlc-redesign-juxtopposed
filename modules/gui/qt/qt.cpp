@@ -395,10 +395,12 @@ static const char *const psz_process_priority_text[] =
     { N_( "Lowest" ), N_( "Low" ), N_( "Normal" ), N_( "High" ), N_( "Highest" ) };
 
 /* Cone extra (Decision 71, redesign/UP_NEXT_PLAN.md): RdUpNext */
-#define AUTOPLAY_NEXT_TEXT N_( "Play episodes in a row" )
-#define AUTOPLAY_NEXT_LONGTEXT N_( "Plays the next episode of a show folder when one ends " \
-    "(S01E02, 1x02 ...). With plain numbers or Part 2, the Up Next card offers the next episode " \
-    "and waits for a click. Single videos, clips and music are never treated as shows." )
+#define AUTOPLAY_NEXT_TEXT N_( "When an episode ends" )
+#define AUTOPLAY_NEXT_LONGTEXT N_( "What happens at the end of an episode of a show folder " \
+    "(S01E02, 1x02 ...). Play the next episode: the Up Next card counts down, then the next " \
+    "episode plays. Show Up Next, I'll click: the card offers the next episode and waits for " \
+    "your click. Do nothing: no card. With plain numbers or Part 2, the card always waits for a " \
+    "click. Single videos, clips and music are never treated as shows." )
 #define AUTOPLAY_COUNTDOWN_TEXT N_( "Countdown" )
 #define AUTOPLAY_COUNTDOWN_LONGTEXT N_( "How long the Up Next card counts down before the next " \
     "episode starts." )
@@ -410,6 +412,11 @@ static const char *const psz_process_priority_text[] =
 #define AUTOPLAY_STILL_WATCHING_LONGTEXT N_( "After 3 episodes in a row without a key press or " \
     "a click, the next episode waits paused until you answer." )
 
+/* the values are rdupnext::Mode (player/rd_up_next_mode.hpp): 1 and 0 are the old switch's On
+ * and Off, so a saved switch keeps its meaning; click mode is 3, a value the option never had */
+static const int i_autoplay_next_list[] = { 1, 3, 0 };
+static const char *const psz_autoplay_next_text[] =
+    { N_( "Play the next episode" ), N_( "Show Up Next, I'll click" ), N_( "Do nothing" ) };
 static const int i_autoplay_countdown_list[] = { 5, 10, 15 };
 static const char *const psz_autoplay_countdown_text[] =
     { N_( "5 seconds" ), N_( "10 seconds" ), N_( "15 seconds" ) };
@@ -630,15 +637,16 @@ vlc_module_begin ()
     add_bool( "qt-seek-subtitle-timeline", false, SEEK_SUBTITLE_TIMELINE_TEXT,
               SEEK_SUBTITLE_TIMELINE_LONGTEXT )
 
-    /* Cone extra (Decision 71): play episodes in a row; the vlc profile behaves like stock VLC
-     * (off), Cone plays them, with no question at the start (UP_NEXT_PLAN.md 2.3). Before, this
-     * was 0 Off / 1 Ask / 2 Always: a saved 0 stays off, 1 reads as on, and 2 (out of a bool's
-     * range) falls back to the default, on */
+    /* Cone extra (Decision 71): when an episode ends, play the next one (Cone's default), show
+     * Up Next and wait for a click, or do nothing (the vlc profile's default, like stock VLC);
+     * UP_NEXT_PLAN.md 2.3. It was a switch (0 / 1) and, before 1.0, 0 Off / 1 Ask / 2 Always:
+     * rdupnext::modeFromOption reads all of them */
 #ifdef VLC_BRAND_PUBLIC
-    add_bool( "qt-autoplay-next", true, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+    add_integer( "qt-autoplay-next", 1, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
 #else
-    add_bool( "qt-autoplay-next", false, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
+    add_integer( "qt-autoplay-next", 0, AUTOPLAY_NEXT_TEXT, AUTOPLAY_NEXT_LONGTEXT )
 #endif
+        change_integer_list( i_autoplay_next_list, psz_autoplay_next_text )
     add_integer( "qt-autoplay-countdown", 10, AUTOPLAY_COUNTDOWN_TEXT, AUTOPLAY_COUNTDOWN_LONGTEXT )
         change_integer_list( i_autoplay_countdown_list, psz_autoplay_countdown_text )
     add_integer( "qt-autoplay-credits-lead", 60, AUTOPLAY_CREDITS_LEAD_TEXT,

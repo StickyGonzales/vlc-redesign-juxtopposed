@@ -48,7 +48,15 @@ SettingsPage {
     readonly property bool _repeat: _option("repeat") === true
     readonly property bool _exit: _option("play-and-exit") === true
     readonly property bool _pause: _option("play-and-pause") === true
-    readonly property bool _autoplayOn: _option("qt-autoplay-next") === true
+    // "When an episode ends" (rd_up_next_mode.hpp): 1 play the next episode, 3 show Up Next and
+    // wait for a click, 0 do nothing; a bool from an older Cone reads as 1 / 0
+    readonly property int _autoplayMode: {
+        const value = _option("qt-autoplay-next")
+        return value === true ? 1 : value === false ? 0 : Number(value)
+    }
+    readonly property bool _autoplayOn: _autoplayMode !== 0
+    // the countdown and the "still watching" question only exist when episodes play by themselves
+    readonly property bool _autoplayCounts: _autoplayMode !== 3
 
     SettingsSection {
         title: qsTr("Startup")
@@ -176,21 +184,23 @@ SettingsPage {
         }
     }
 
-    // Cone extra (Decision 71, UP_NEXT_PLAN.md 5.1): autoplay of the next episode of a show
-    // folder; the rows under the mode wait at 30 % while it is Off
+    // Cone extra (Decision 71, UP_NEXT_PLAN.md 5.1): what happens when an episode of a show folder
+    // ends (Q10); the rows under it wait at 30 % with Do nothing, and the countdown and the "still
+    // watching" question are hidden with "Show Up Next, I'll click" (every episode waits for a click)
     SettingsSection {
         title: qsTr("Episodes")
 
         SettingsOption {
             option: "qt-autoplay-next"
-            text: qsTr("Play episodes in a row")
-            keywords: "autoplay play episodes in a row next episode binge up next show series"
+            text: qsTr("When an episode ends")
+            keywords: "autoplay play episodes in a row next episode binge up next show series click manual"
         }
 
         SettingsOption {
             option: "qt-autoplay-countdown"
             text: qsTr("Countdown")
             keywords: "autoplay up next countdown"
+            shown: root._autoplayCounts
             available: root._autoplayOn
         }
 
@@ -205,6 +215,7 @@ SettingsPage {
             option: "qt-autoplay-still-watching"
             text: qsTr("Ask if I'm still watching after 3 episodes")
             keywords: "autoplay still watching binge"
+            shown: root._autoplayCounts
             available: root._autoplayOn
         }
 

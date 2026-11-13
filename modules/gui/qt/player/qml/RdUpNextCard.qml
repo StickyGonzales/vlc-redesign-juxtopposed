@@ -405,14 +405,15 @@ FocusScope {
             }
         }
 
-        // "Turn off autoplay": the setting Play episodes in a row goes off (UP_NEXT_PLAN.md 2.3)
+        // "Turn off autoplay": "When an episode ends" becomes "Show Up Next, I'll click" (Q10,
+        // UP_NEXT_PLAN.md 2.3); only on a card that counts down: a waiting card has nothing to turn off
         T.AbstractButton {
             id: turnOffLink
 
             anchors.right: parent.right
             anchors.rightMargin: root._pad
             anchors.verticalCenter: fullButtons.verticalCenter
-            visible: !root._still
+            visible: !root._still && shownState.autoplays
             focusPolicy: Qt.TabFocus
             text: qsTr("Turn off autoplay")
             implicitWidth: linkLabel.implicitWidth
@@ -423,7 +424,7 @@ FocusScope {
             // only its look
             Accessible.role: Accessible.Button
             Accessible.name: text
-            Accessible.description: qsTr("Turns off Play episodes in a row")
+            Accessible.description: qsTr("Up Next waits for your click from now on")
             Accessible.onPressAction: turnOffLink.clicked()
 
             onClicked: RdUpNext.turnOffAutoplay()

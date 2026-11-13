@@ -15,8 +15,8 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 | **What** | When an episode of a show ends, Cone offers the next one with an "Up next" card and a short countdown, like Netflix. |
 | **Why** | Her video, 9:24-9:28 (P5-01, row 150): an episode ends and the next one does not play because the folder was not queued. Her fix (P5-20 to P5-23, 11:24-11:47; drag to the queue W5.9) is manual: the show's folder in the top bar opens the compact library next to the video, and you drag the next episode into the queue. |
 | **How it fits her design** | It complements that design and replaces nothing. The compact library, "Unwatched First" (P5-13, 10:45) and the per-show presets (P4-04 / IA-34, 7:53) stay exactly as they are. The library marks the next episode, the queue shows it, and the folder preset follows it. |
-| **Setting** | Settings > Playback > Episodes > "Play episodes in a row": **On (default) / Off** (decided 2026-11-01, section 2.3). Off = Cone behaves exactly as today. No question at the start of an episode. |
-| **Per show** | A show can be turned off in the sidebar Playback tab (toggle under Sleep Timer) or with the card's "Turn off autoplay" (which turns the setting off). Remembered per show folder. |
+| **Setting** | Settings > Playback > Episodes > "When an episode ends": **Play the next episode (default) / Show Up Next, I'll click / Do nothing** (Q10, StickyGonzales 2026-11-13; was the On / Off switch of 2026-11-01, section 2.3). Do nothing = Cone behaves exactly as stock VLC. No question at the start of an episode. |
+| **Per show** | A show can be turned off in the sidebar Playback tab (toggle under Sleep Timer). The card's "Turn off autoplay" switches the setting to "Show Up Next, I'll click". Remembered per show folder. |
 | **Card** | Variant A (panel card, 400 wide), switching to Variant C's layout when the video area is narrow; decided (Q8). Images `01`/`02`/`05`. |
 | **Core changes** | None expected; everything fits in `modules/gui/qt` (section 6.6). |
 | **Decisions** | All 9 questions decided by StickyGonzales on 2026-10-24 (section 10). Nothing is built or merged before 1.0 (Decision 71). |
@@ -47,12 +47,13 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 
 ## 2. Behaviour
 
-### 2.1 On and Off (decided 2026-11-01, replaces the three modes)
+### 2.1 The three choices (Q10, 2026-11-13; before: On and Off, decided 2026-11-01, which replaced the three old modes)
 
 | Setting | A show nobody turned off | A show turned off (sidebar toggle, or answered No before) |
 |---|---|---|
-| **On** (default in Cone; the vlc profile defaults to Off, Q6) | strong name pattern: autoplay with the countdown; weak pattern: the card waits for a click (section 2.3) | nothing |
-| **Off** | nothing | nothing |
+| **Play the next episode** (`1`, default in Cone; the vlc profile defaults to Do nothing, Q6) | strong name pattern: autoplay with the countdown; weak pattern: the card waits for a click (section 2.3) | nothing |
+| **Show Up Next, I'll click** (`3`) | every name pattern: the card offers the next episode and waits for a click, no autoplay item, no countdown, no "Still watching?" | nothing |
+| **Do nothing** (`0`) | nothing | nothing |
 
 - There is **no question at the start of an episode** any more, like Netflix. Before, "Ask for each show" showed "Looks like a show. Play episodes in a row?"; that prompt is gone (section 2.3).
 - A per-folder "No" wins: the sidebar toggle switched off for a show keeps it off.
@@ -76,7 +77,7 @@ Designs: `redesign/up-next-design/` (index in section 9). Not in her Figma file,
 
 This replaces the "Looks like a show" prompt (decided 2026-10-24, Q2), which asked 10 s into the first episode of each show.
 
-- **No prompt.** Cone never asks at the start of an episode. The setting "Play episodes in a row" (`qt-autoplay-next`) is **On / Off**, default On; "Ask for each show" and "Always" are gone.
+- **No prompt.** Cone never asks at the start of an episode. The setting "When an episode ends" (`qt-autoplay-next`, rd_up_next_mode.hpp) is **1 Play the next episode / 3 Show Up Next, I'll click / 0 Do nothing**, default 1. Saved values carry over: the old switch's On (1) and Off (0) keep their meaning, the pre-1.0 "Always" (2) reads as 1, and click mode uses 3, a value the option never had.
 - **Strong names autoplay.** S01E02, 1x02, "Season 1 Episode 2" and the like (`rdepisode::Strength::Strong`):
   - the next episode is queued as the autoplay item;
   - the card shows when the credits start (section 5.4);
@@ -85,7 +86,7 @@ This replaces the "Looks like a show" prompt (decided 2026-10-24, Q2), which ask
   - no autoplay item is queued;
   - the card shows at the same point with **Next episode** and **Cancel** and "Plays when you choose", never with a countdown;
   - nothing plays unless the user clicks; Next episode queues the episode and plays it.
-- **"Turn off autoplay".** A small link on the card (the full card; the compact pill leaves it out for room) turns "Play episodes in a row" off: the card goes, the autoplay item leaves the queue, and the setting shows Off. It is turned on again in Settings > Playback > Episodes.
+- **"Turn off autoplay".** A small link on a card that counts down (the full card; the compact pill leaves it out for room) switches "When an episode ends" to "Show Up Next, I'll click": the countdown goes, the autoplay item leaves the queue, and the card comes back as the waiting one. A waiting card (click mode, or a weak name) has no link: there is nothing to turn off. "Do nothing" is chosen in Settings > Playback > Episodes.
 - **Existing users keep their choices.**
   - The old integer setting becomes a bool:
     - a saved Off (0) stays off;
@@ -217,7 +218,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
   | Option | Values | Default |
   |---|---|---|
-  | `qt-autoplay-next` | bool "Play episodes in a row" (was 0 Off / 1 Ask / 2 Always, 2.3) | on in the Cone profile, off in the vlc profile (Q6) |
+  | `qt-autoplay-next` | integer "When an episode ends": 1 play the next episode, 3 show Up Next and wait for a click, 0 do nothing (Q10; was a bool, and before 1.0 0 Off / 1 Ask / 2 Always, 2.3) | 1 in the Cone profile, 0 in the vlc profile (Q6) |
   | `qt-autoplay-countdown` | 5 / 10 / 15 | 10 |
   | `qt-autoplay-credits-lead` | 30 / 60 / 120 (seconds before the end, section 5.4) | 60 |
   | `qt-autoplay-still-watching` | bool | true |
@@ -284,7 +285,7 @@ The file name, without its extension, is parsed into **(stem, season, episode[, 
 
 | Row | Control | Values | Notes |
 |---|---|---|---|
-| Play episodes in a row (i) | toggle 68x32 | on / off (2.3) | description under the label: what plays by itself (S01E02, 1x02) and what waits for a click (plain numbers, Part 2) |
+| When an episode ends (i) | dropdown | Play the next episode / Show Up Next, I'll click / Do nothing (2.1, Q10) | Countdown and "Ask if I'm still watching" are hidden with Show Up Next, I'll click; every row under it waits at 30 % with Do nothing |
 | Countdown (i) | dropdown | 5 seconds / 10 seconds / 15 seconds | dimmed (0.3, `rd_disabledRowOpacity`) when Off |
 | Show Up Next (i) | dropdown | Last 30 s / Last 1 min / Last 2 min (default 1 min; the fallback when no chapter or learned point says where the credits start, section 5.4) | dimmed when Off |
 | Ask if I'm still watching after 3 episodes (i) | toggle 68x32 | on / off | dimmed when Off |

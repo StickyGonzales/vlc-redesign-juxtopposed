@@ -40,5 +40,6 @@ run test_rd_credits_audio tests/test_rd_credits_audio.cpp player/rd_credits_audi
 run test_rd_credits_point tests/test_rd_credits_point.cpp player/rd_credits_point.cpp
 run test_rd_osd_parse tests/test_rd_osd_parse.cpp player/rd_osd_parse.cpp
 run test_rd_reload_throttle tests/test_rd_reload_throttle.cpp
+run test_rd_up_next_mode tests/test_rd_up_next_mode.cpp
 
 exit $failed
