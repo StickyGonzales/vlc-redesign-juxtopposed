@@ -106,6 +106,34 @@ public static class RdSmoke {
     return best;
   }
   public static bool Visible(IntPtr h) { return IsWindowVisible(h); }
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  // the process's visible top-level window whose title contains `part` (a Qt dialog's title is its
+  // window text), or zero
+  public static IntPtr FindWindowByTitle(int pid, string part) {
+    IntPtr found = IntPtr.Zero;
+    EnumWindows(delegate(IntPtr h, IntPtr l) {
+      uint p; GetWindowThreadProcessId(h, out p);
+      if (p != (uint)pid || !IsWindowVisible(h)) return true;
+      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, sb.Capacity);
+      if (sb.ToString().IndexOf(part, StringComparison.OrdinalIgnoreCase) < 0) return true;
+      found = h;
+      return false;
+    }, IntPtr.Zero);
+    return found;
+  }
+  // every top-level window of the process: "class 'title' visible", for the log when a check fails
+  public static string ListWindows(int pid) {
+    StringBuilder all = new StringBuilder();
+    EnumWindows(delegate(IntPtr h, IntPtr l) {
+      uint p; GetWindowThreadProcessId(h, out p);
+      if (p != (uint)pid) return true;
+      StringBuilder c = new StringBuilder(256); GetClassName(h, c, c.Capacity);
+      StringBuilder t = new StringBuilder(512); GetWindowText(h, t, t.Capacity);
+      all.Append(c).Append(" '").Append(t).Append("' ").Append(IsWindowVisible(h) ? "visible" : "hidden").Append("; ");
+      return true;
+    }, IntPtr.Zero);
+    return all.ToString();
+  }
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
 }
 "@
@@ -836,21 +864,18 @@ function Check-CastDiscovery([string]$tag, [string]$exe, [string]$cache = '') {
 # while it asks ends Cone and keeps the saved playlist: the next start asks again (after #128 it did
 # not); No clears it, so the start after that does not ask
 function Find-RestoreQuestion([int]$procId, [int]$timeoutMs) {
-    $root = [System.Windows.Automation.AutomationElement]::RootElement
-    $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $procId)
+    # by its window title (Win32), then its UI Automation element (for the No button)
     $sw = [Diagnostics.Stopwatch]::StartNew()
     do {
-        foreach ($w in $root.FindAll([System.Windows.Automation.TreeScope]::Children, $cond)) {
-            try {
-                if ($w.Current.Name -like '*closed abruptly*') { return $w }
-                foreach ($d in $w.FindAll([System.Windows.Automation.TreeScope]::Children, $cond)) {
-                    if ($d.Current.Name -like '*closed abruptly*') { return $d }
-                }
-            } catch {}
-        }
+        $h = [RdSmoke]::FindWindowByTitle($procId, 'closed abruptly')
+        if ($h -ne [IntPtr]::Zero) { return [System.Windows.Automation.AutomationElement]::FromHandle($h) }
         Start-Sleep -Milliseconds 250
     } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
     return $null
+}
+function No-RestoreQuestion($s, [string]$what) {
+    Shot "$($s.tag)-no-question"
+    "$what (Cone's windows: $([RdSmoke]::ListWindows($s.proc.Id)))"
 }
 function Quit-Window($s) {
     if ($s.proc.HasExited) { return }
@@ -870,12 +895,16 @@ function Check-RestoreQuestion([string]$exe) {
             # the playlist is saved for a restore 10 s after it changed
             Start-Sleep -Seconds 13
         } finally { Stop-Cone $s }   # ended abruptly
+        # what the next start finds: the setting naming the saved playlist, and that file
+        $saved = if (Test-Path $ini) { @(Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | ForEach-Object { $_.Matches[0].Groups[1].Value }) } else { @() }
+        if ($saved.Count) { Log "restore: saved playlist $($saved[0]) (exists: $(Test-Path -LiteralPath $saved[0]))" }
+        else { Log "restore: no RecoveryFilePath in $ini after the killed session" }
         $s = Start-Cone $exe $video $subs 'restore-quit'
         try {
             if (-not (Check-Window $s)) { return }
             Check 'restore: Ctrl+Q while Cone asks to restore the playlist ends Cone' {
                 $q = Find-RestoreQuestion $s.proc.Id 15000
-                if (-not $q) { throw 'no "The application closed abruptly" question after a killed session' }
+                if (-not $q) { throw (No-RestoreQuestion $s 'no "The application closed abruptly" question after a killed session') }
                 Focus-Window ([IntPtr]$q.Current.NativeWindowHandle)
                 Keys @(0x11, 0x51)   # Ctrl+Q
                 if (-not $s.proc.WaitForExit(20000)) { throw 'Cone did not end within 20 s of Ctrl+Q' }
@@ -887,7 +916,7 @@ function Check-RestoreQuestion([string]$exe) {
             if (-not (Check-Window $s)) { return }
             Check 'restore: the question comes back after a quit without an answer' {
                 $q = Find-RestoreQuestion $s.proc.Id 15000
-                if (-not $q) { throw 'no restore question at the start after Ctrl+Q without an answer (the quit dropped the saved playlist)' }
+                if (-not $q) { throw (No-RestoreQuestion $s 'no restore question at the start after Ctrl+Q without an answer (the quit dropped the saved playlist)') }
                 $name = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'No')
                 $no = $q.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $name)
                 if (-not $no) { throw 'the question has no "No" button' }
