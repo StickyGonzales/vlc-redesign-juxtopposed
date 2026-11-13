@@ -115,6 +115,18 @@ def cone_app():
     return None
 
 
+def named(name):
+    """what carries `name` in the accessibility tree, with its role (for a failure's message)"""
+    found = []
+    for acc in _walk(cone_app()):
+        try:
+            if acc.name == name:
+                found.append(acc.getRoleName())
+        except Exception:  # noqa: BLE001
+            continue
+    return ', '.join(found) or 'nothing named so'
+
+
 def find(name, timeout=0.0, role=None):
     """the first showing element named `name`: (x, y, w, h) on the screen, or None"""
     end = time.time() + timeout
@@ -870,14 +882,17 @@ def check_cast_discovery(exe, env):
                 raise CheckFailed('the control bar has no "Playback Settings" button')
             xdo('mousemove', g[0] + g[2] // 2, g[1] + g[3] // 2)
             xdo('click', 1)
-            t = find('Video', 5, role='page tab')
+            # the tab's AT-SPI role differs between Qt versions: found by its name
+            t = find('Video', 5)
             if not t:
-                raise CheckFailed('the settings sidebar has no "Video" tab')
+                shot('cast-no-video-tab')
+                raise CheckFailed('the settings sidebar has no "Video" tab (' + named('Video') + ')')
             xdo('mousemove', t[0] + t[2] // 2, t[1] + t[3] // 2)
             xdo('click', 1)
-            r = find('Render', 5, role='combo box')
+            r = find('Render', 5)
             if not r:
-                raise CheckFailed('the Video tab has no "Render" picker')
+                shot('cast-no-render')
+                raise CheckFailed('the Video tab has no "Render" picker (' + named('Render') + ')')
             xdo('mousemove', r[0] + r[2] // 2, r[1] + r[3] // 2)
             xdo('click', 1)
             end = time.time() + 5
