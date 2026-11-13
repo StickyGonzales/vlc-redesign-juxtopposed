@@ -43,3 +43,14 @@ Cone extra (Decision 71). Approved by StickyGonzales on 2026-11-13 from the mock
    Play the next episode mode it finds the row.
 7. **Regression:** weak names (Demo Show Episode 1) still wait for a click with Play the next episode; still watching
    after 3 episodes in Play the next episode mode; quit stays fast.
+
+## 4. PC test (2026-11-13, build-windows 43463372294 on 79bf187d597, green with smoke; build-linux 43463378029 and unit-tests 43463387286 green, test_rd_up_next_mode 17 checks)
+- **Default (Play the next episode):** a fresh profile shows "When an episode ends: Play the next episode" with Countdown, Show Up Next and "Ask if I'm still watching". Strong Show S01E01 at 2:55: the card counts down with "Turn off autoplay"; S01E02 plays by itself.
+- **Show Up Next, I'll click:** Countdown and "still watching" are hidden. The card shows "Plays when you choose", no fill, no link; after the end nothing plays (only S01E01 in the log). Next episode on the card plays S01E02.
+- **Do nothing:** no card, nothing plays; the rows under it are dimmed.
+- **The link:** on the counting card "Turn off autoplay" turns it into the waiting card at once; nothing plays at the end; saved `qt-autoplay-next=3`.
+- **Saved values:** `0` shows Do nothing, `3` click mode, the old `2` reads as Play the next episode and is saved back as the default `1`.
+- **Search:** "countdown" in click mode finds no row (the hidden one stays hidden).
+- **The dropdown:** it lists the three choices with a tick on the current one; choosing Play the next episode brings Countdown back and saves `1`.
+- **Weak names** (Weak Show Episode 1) with Play the next episode: the waiting card, nothing plays, as before.
+- **Independent review:** 3 findings fixed in 79bf187d597 (an old saved 2 is saved back as 1 so the dropdown never shows "2"; a change to a mode without autoplay drops "Still watching?" and the countdown; the page reads unknown values like RdUpNext).
