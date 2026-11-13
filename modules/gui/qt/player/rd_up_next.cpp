@@ -902,6 +902,8 @@ void RdUpNext::evaluate()
     m_blockedReason = enabled ? guardReason() : QString();
 
     const int next = (active && enabled) ? m_show.next() : -1;
+    if (next != oldNext && next < 0 && showActive() && !longEnough())
+        msg_Dbg(m_intf, "up next: not an episode: shorter than %d s", m_show.minDurationSec);
     m_nextIndex = next;
 
     // a weak name pattern gets no autoplay item: the card offers the next episode, nothing plays
@@ -1849,18 +1851,25 @@ void RdUpNext::requestThumbnail()
         return;
     }
 
-    // a job of the background queue (heavy: it decodes a frame): one at a time with the others,
-    // not in Cone's first minute; it holds its slot until the picture is made
+    // a job of the background queue: one at a time with the others; it holds its slot until the
+    // picture is made. Light (one frame decoded at low resolution): the card can show in Cone's
+    // first minute (a short episode, a file opened near its end), and a heavy job would wait for
+    // that minute to pass, leaving the card without its picture (PC retest of #127)
     RdBackgroundQueue* queue = RdBackgroundQueue::instance();
     if (!queue)
         return;
     const int generation = m_thumbGeneration;
     const QString episode = file.absoluteFilePath();
     QPointer<RdUpNext> self(this);
-    queue->postAsync(QStringLiteral("up next picture"), RdBackgroundQueue::Weight::Heavy, RdBackgroundQueue::Normal,
+    queue->postAsync(QStringLiteral("up next picture"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Normal,
         [self, target, episode, generation](const RdBackgroundQueue::Finish& finish) {
             if (!self || generation != self->m_thumbGeneration)
             {
+                // another episode plays now, or Up Next no longer offers this one (the file is
+                // shorter than an episode, the show was turned off)
+                if (self)
+                    msg_Dbg(self->m_intf, "up next: no picture for \"%s\": no longer the next episode",
+                            qtu(QFileInfo(episode).fileName()));
                 finish();
                 return;
             }
@@ -1894,6 +1903,7 @@ void RdUpNext::submitThumbnail(const QString& target, const QString& episodePath
         m_preparser = vlc_preparser_New(VLC_OBJECT(vlc_object_instance(m_intf)), &cfg);
         if (!m_preparser)
         {
+            msg_Warn(m_intf, "up next: no picture: the thumbnailer did not start");
             finishThumbnailJob();
             return;
         }
@@ -1961,6 +1971,7 @@ void RdUpNext::submitThumbnail(const QString& target, const QString& episodePath
     }
     if (vlc_preparser_Submit(m_preparser, req) != VLC_SUCCESS)
     {
+        msg_Warn(m_intf, "up next: no picture for \"%s\": the request was refused", qtu(file.fileName()));
         vlc_preparser_req_Release(req);
         delete job;
         finishThumbnailJob();
@@ -1980,7 +1991,11 @@ void RdUpNext::onThumbnailDone(int generation, const QString& path)
     }
     finishThumbnailJob();
     if (path.isEmpty())
+    {
+        msg_Warn(m_intf, "up next: no picture for \"%s\": no frame could be read or saved",
+                 qtu(QFileInfo(m_thumbEpisode).fileName()));
         return;
+    }
     m_thumbnail = QUrl::fromLocalFile(path);
     emit thumbnailChanged();
     // the storage cleanup knows its episode (the cap, a show that moves or goes)
