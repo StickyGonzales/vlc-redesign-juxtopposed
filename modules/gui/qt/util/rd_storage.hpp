@@ -57,6 +57,8 @@ public:
     static QString picturesDir();
     static QString waveformsDir();
     static QString downloadsDir();
+    // the three of them
+    static QStringList ownDirs();
     // an Up Next picture's file for a video, and a waveform's (named after the video's path,
     // size and last change: a replaced file gets new ones)
     static QString pictureFile(const QString& videoPath);

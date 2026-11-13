@@ -142,6 +142,24 @@ QString localPathOf(const char* uri)
     return result;
 }
 
+// deletes the files that are Cone's own (in one of `allowed`; never anything outside its folders)
+// and returns those done with: deleted, already gone, or not Cone's. One Windows still holds open
+// (a subtitle in use) stays for a later try
+QStringList removeOwnFiles(const QStringList& files, const QStringList& allowed)
+{
+    QStringList done;
+    for (const QString& file : files)
+    {
+        const QString key = Model::key(file);
+        bool ours = false;
+        for (const QString& dir : allowed)
+            ours |= !dir.isEmpty() && key.startsWith(Model::key(dir) + QLatin1Char('/'));
+        if (!ours || QFile::remove(file) || !QFile::exists(file))
+            done.append(file);
+    }
+    return done;
+}
+
 } // namespace
 
 RdStorage::RdStorage(qt_intf_t* intf, PlayerController* player, QObject* parent)
@@ -194,6 +212,13 @@ RdStorage::RdStorage(qt_intf_t* intf, PlayerController* player, QObject* parent)
                     self->m_sessionRoots.append(info.root);
             }
             self->m_loaded = true;
+            // deletes a quit or a crash kept from running last time
+            const QStringList pending = self->m_model.pendingDeletes();
+            if (!pending.isEmpty())
+            {
+                self->log(QStringLiteral("%1 files still to delete from the last session").arg(pending.size()));
+                self->deleteFiles(pending);
+            }
             const QVector<std::function<void()>> waiting = std::move(self->m_beforeLoad);
             self->m_beforeLoad.clear();
             for (const auto& action : waiting)
@@ -210,9 +235,18 @@ RdStorage::~RdStorage()
 {
     if (g_storage == this)
         g_storage = nullptr;
+    // a delete the queue has not run yet (held back while a file opened, then the quit dropped
+    // it): run now, a few of Cone's own files
+    bool pendingDone = false;
+    if (m_loaded && !m_model.pendingDeletes().isEmpty())
+    {
+        const QStringList done = removeOwnFiles(m_model.pendingDeletes(), ownDirs());
+        m_model.deleted(done);
+        pendingDone = !done.isEmpty();
+    }
     // a change not written yet (the timer waits, or its save job was dropped by the queue's
     // stop): written now, a small file
-    if (m_loaded && m_changes != m_savedChanges)
+    if (m_loaded && (m_changes != m_savedChanges || pendingDone))
     {
         const QString path = storePath();
         QDir().mkpath(QFileInfo(path).absolutePath());
@@ -223,6 +257,11 @@ RdStorage::~RdStorage()
             file.commit();
         }
     }
+}
+
+QStringList RdStorage::ownDirs()
+{
+    return { picturesDir(), waveformsDir(), downloadsDir() };
 }
 
 QString RdStorage::picturesDir()
@@ -382,7 +421,7 @@ void RdStorage::pictureWritten(const QString& file, const QString& videoPath)
 void RdStorage::waveformUsed(const QString& file, const QString& videoPath)
 {
     whenLoaded([this, file, videoPath]() {
-        if (m_model.artifacts().contains(file))
+        if (m_model.hasArtifact(file))
             return;
         m_model.addArtifact(file, ArtifactKind::Waveform, videoPath, now());
         scheduleSave();
@@ -400,7 +439,7 @@ void RdStorage::downloadWritten(const QString& file, const QString& videoPath)
     });
 }
 
-void RdStorage::setDownloadOwners(const QHash<QString, QString>& owners)
+void RdStorage::setDownloadOwners(const QHash<QString, QString>& givenOwners)
 {
     RdBackgroundQueue* queue = RdBackgroundQueue::instance();
     if (!queue)
@@ -408,6 +447,10 @@ void RdStorage::setDownloadOwners(const QHash<QString, QString>& owners)
     // the downloads from before the registry: counted as used now, so the 30 days start with
     // this version (a season downloaded long ago is not all deleted on the first check)
     auto found = std::make_shared<QVector<QPair<QString, qint64>>>();
+    // the owners by the registry's spelling of each file (they may come with Windows separators)
+    QHash<QString, QString> owners;
+    for (auto it = givenOwners.cbegin(); it != givenOwners.cend(); ++it)
+        owners.insert(Model::artifactPath(it.key()), it.value());
     QPointer<RdStorage> self(this);
     queue->post(QStringLiteral("storage downloads"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Low,
         [found](const std::shared_ptr<RdBackgroundQueue::Control>&) {
@@ -422,9 +465,11 @@ void RdStorage::setDownloadOwners(const QHash<QString, QString>& owners)
                 bool changed = false;
                 for (const auto& file : *found)
                 {
-                    if (self->m_model.artifacts().contains(file.first))
+                    // a file still waiting to be deleted is not registered again
+                    if (self->m_model.hasArtifact(file.first) || self->m_model.isPendingDelete(file.first))
                         continue;
-                    self->m_model.addArtifact(file.first, ArtifactKind::Download, owners.value(file.first), now());
+                    self->m_model.addArtifact(file.first, ArtifactKind::Download,
+                                                owners.value(Model::artifactPath(file.first)), now());
                     changed = true;
                 }
                 if (changed)
@@ -570,22 +615,27 @@ void RdStorage::apply(const Plan& plan, const QString& why)
 
 void RdStorage::deleteFiles(const QStringList& files)
 {
-    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
-    if (files.isEmpty() || !queue)
+    if (files.isEmpty())
         return;
-    // only Cone's own files: never anything outside its folders
-    const QStringList allowed = { picturesDir(), waveformsDir(), downloadsDir() };
+    // kept in the registry until done: a quit before the job ran deletes them (~RdStorage), a
+    // crash at the next start
+    m_model.addPendingDeletes(files);
+    scheduleSave();
+    RdBackgroundQueue* queue = RdBackgroundQueue::instance();
+    if (!queue)
+        return;
+    const QStringList allowed = ownDirs();
+    auto done = std::make_shared<QStringList>();
+    QPointer<RdStorage> self(this);
     queue->post(QStringLiteral("storage delete"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::Low,
-        [files, allowed](const std::shared_ptr<RdBackgroundQueue::Control>&) {
-            for (const QString& file : files)
-            {
-                const QString key = Model::key(file);
-                bool ours = false;
-                for (const QString& dir : allowed)
-                    ours |= !dir.isEmpty() && key.startsWith(Model::key(dir) + QLatin1Char('/'));
-                if (ours)
-                    QFile::remove(file);
-            }
+        [files, allowed, done](const std::shared_ptr<RdBackgroundQueue::Control>&) {
+            *done = removeOwnFiles(files, allowed);
+        },
+        [self, done]() {
+            if (!self || done->isEmpty())
+                return;
+            self->m_model.deleted(*done);
+            self->scheduleSave();
         });
 }
 

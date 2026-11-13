@@ -184,10 +184,32 @@ def client_windows():
     return {str(int(x, 16)) for x in re.findall(r'0x[0-9a-fA-F]+', out)}
 
 
+# a session the checks end by killing Cone (Session.stop) leaves its playlist saved for a restore,
+# and a quit without an answer keeps it (#134): the next start would ask "The application closed
+# abruptly ... restore the playlist?" in front of its window. Each start forgets it, except inside
+# the restore checks
+KEEP_RESTORE = [False]
+
+
+def clear_restore_state(env):
+    if KEEP_RESTORE[0]:
+        return
+    home = (env or os.environ).get('XDG_CONFIG_HOME') or os.path.join((env or os.environ).get('HOME', ''), '.config')
+    conf = os.path.join(home, 'Cone', 'vlc-qt-interface.conf')
+    try:
+        lines = open(conf, encoding='utf-8').read().splitlines(True)
+    except OSError:
+        return
+    kept = [l for l in lines if not l.startswith('RecoveryFilePath=')]
+    if len(kept) != len(lines):
+        open(conf, 'w', encoding='utf-8').writelines(kept)
+
+
 class Session:
     def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None,
                  extra=()):
         self.tag = tag
+        clear_restore_state(env)
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
@@ -918,10 +940,17 @@ def check_cast_discovery(exe, env):
 
 
 def check_restore_quit(exe, env):
+    try:
+        _check_restore_quit(exe, env)
+    finally:
+        KEEP_RESTORE[0] = False
+
+
+def _check_restore_quit(exe, env):
     """after a session that ended abruptly, the next start asks whether to restore the playlist;
     quitting while it asks crashed (VLC's ModelRecoveryAgent went on with the deleted playlist:
-    exit by signal 11, redesign/PERF_AUDIT_NOTES.md section 9). Runs last on this home: the
-    recovery file stays for the next start"""
+    exit by signal 11, redesign/PERF_AUDIT_NOTES.md section 9); the question then comes back at
+    the next start, and No clears it"""
     video = os.path.join(MEDIA, 'test-h264.mp4')
     s = Session(exe, video, 'restore-killed', env, subs=False)
     try:
@@ -931,6 +960,7 @@ def check_restore_quit(exe, env):
         time.sleep(13)
     finally:
         s.stop()
+    KEEP_RESTORE[0] = True
     s = Session(exe, video, 'restore-quit', env, subs=False)
     try:
         if not check_window(s):
@@ -944,12 +974,16 @@ def check_restore_quit(exe, env):
                 time.sleep(0.5)
             if not asked:
                 raise CheckFailed('no "The application closed abruptly" question after a killed session')
+            # Ctrl+Q, as a user would (Cone's quit: QuitWatchdog::arm, which drops the queue's
+            # recovery agent at once, #128); the cli's quit closes the interface another way
             t = time.time()
-            rc('quit')
+            xdo('windowactivate', asked[0])
+            time.sleep(0.5)
+            xdo('key', 'ctrl+q')
             try:
                 s.proc.wait(20)
             except subprocess.TimeoutExpired:
-                raise CheckFailed('Cone did not end within 20 s of the quit')
+                raise CheckFailed('Cone did not end within 20 s of Ctrl+Q')
             code = s.proc.returncode
             if code != 0:
                 raise CheckFailed(f'Cone ended with {code} when quit while asking to restore the playlist')
@@ -957,26 +991,51 @@ def check_restore_quit(exe, env):
         check('restore: quitting while Cone asks to restore the playlist ends normally', body)
     finally:
         s.stop()
-    # the recovery file stays for the next start: one more start answers No and quits normally,
-    # so the question does not stand in front of the next checks' windows
+    # quitting without an answer keeps the recovery data (STATUS #131 retest): the next start asks
+    # again; answering No there clears it, so the start after that does not ask (and the question
+    # does not stand in front of the next checks' windows)
     s = Session(exe, video, 'restore-clear', env, subs=False)
     try:
         if check_window(s):
-            end = time.time() + 15
-            asked = []
-            while time.time() < end and not asked:
-                asked = xdo('search', '--name', 'closed abruptly').split()
-                time.sleep(0.5)
-            for w in asked:
-                xdo('windowactivate', w)
-                time.sleep(0.5)
-                xdo('key', 'Escape')
-            time.sleep(1)
-            if xdo('search', '--name', 'closed abruptly').split():
-                log('restore-clear: the restore question is still open')
+            def again():
+                end = time.time() + 15
+                asked = []
+                while time.time() < end and not asked:
+                    asked = xdo('search', '--name', 'closed abruptly').split()
+                    time.sleep(0.5)
+                if not asked:
+                    raise CheckFailed('no restore question at the start after a quit without an answer')
+                for w in asked:
+                    xdo('windowactivate', w)
+                    time.sleep(0.5)
+                    xdo('key', 'Escape')   # No (the question's escape button)
+                time.sleep(1)
+                if xdo('search', '--name', 'closed abruptly').split():
+                    raise CheckFailed('the restore question did not close on No')
+                return 'asked again, answered No'
+            check('restore: a quit without an answer keeps the question for the next start', again)
             quit_cleanly(s)
     finally:
         s.stop()
+    s = Session(exe, video, 'restore-gone', env, subs=False)
+    try:
+        if check_window(s):
+            def gone():
+                end = time.time() + 8
+                while time.time() < end:
+                    if xdo('search', '--name', 'closed abruptly').split():
+                        raise CheckFailed('the restore question came back after it was answered No')
+                    time.sleep(0.5)
+                return 'no question within 8 s'
+            check('restore: answering No clears the recovery data', gone)
+            for w in xdo('search', '--name', 'closed abruptly').split():
+                xdo('windowactivate', w)
+                time.sleep(0.5)
+                xdo('key', 'Escape')
+            quit_cleanly(s)
+    finally:
+        s.stop()
+    KEEP_RESTORE[0] = False
 
 
 def check_up_next(exe, env):
@@ -1050,6 +1109,68 @@ def check_up_next(exe, env):
                 raise CheckFailed(result[6:])
             return result
         check("upnext: the card's picture is made in Cone's first minute", picture)
+    finally:
+        s.stop()
+
+
+def check_next_short(exe, env):
+    """Next from a playing episode to one shorter than an episode (STATUS #127 retest): the
+    background queue's "opening a file" hold ends when the new file plays (it lasted its full 8 s,
+    since the playing state never changed), and no Up Next picture is made for the episode after
+    the short one (the card never shows there)"""
+    video = os.path.join(MEDIA, 'Mixed Show', 'Mixed Show S01E01.mp4')
+    s = Session(exe, video, 'next-short', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def count(text):
+            return sum(1 for l in open(s.log, errors='replace') if text in l)
+
+        def hold():
+            time.sleep(4)
+            if episode_of(rc('status')) != 1:
+                raise CheckFailed('episode 1 does not play')
+            resumed = count('background: resumed')
+            t = time.time()
+            rc('next')
+            while time.time() < t + 9 and count('background: resumed') == resumed:
+                time.sleep(0.1)
+            took = time.time() - t
+            if count('background: resumed') == resumed:
+                raise CheckFailed('the background queue did not resume within 9 s of Next')
+            if took > 5:
+                raise CheckFailed(f'the background queue resumed only {took:.1f} s after Next (the 8 s hold ran out)')
+            return f'resumed {took:.1f} s after Next to episode {episode_of(rc("status"))}'
+        check('next-short: the background queue resumes once the next file plays', hold)
+
+        def no_picture():
+            time.sleep(6)
+            if episode_of(rc('status')) != 2:
+                raise CheckFailed('episode 2 does not play')
+            made = [l.strip() for l in open(s.log, errors='replace') if 'thumbnailing' in l and 'S01E03' in l]
+            if made:
+                raise CheckFailed(f'a picture of episode 3 was made after a 60 s episode: {made[0][:120]}')
+            return 'no picture of episode 3 while the 60 s episode 2 plays'
+        check('next-short: no Up Next picture after an episode too short for the card', no_picture)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+    # the short episode opened directly: Up Next decides before the file's length is known
+    video = os.path.join(MEDIA, 'Mixed Show', 'Mixed Show S01E02.mp4')
+    s = Session(exe, video, 'open-short', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def no_picture_open():
+            time.sleep(8)
+            made = [l.strip() for l in open(s.log, errors='replace') if 'thumbnailing' in l and 'S01E03' in l]
+            if made:
+                raise CheckFailed(f'a picture of episode 3 was made for a 60 s episode opened directly: {made[0][:120]}')
+            return 'no picture of episode 3 while the 60 s episode 2 plays'
+        check('open-short: no Up Next picture for an episode too short for the card', no_picture_open)
+        quit_cleanly(s)
     finally:
         s.stop()
 
@@ -1250,6 +1371,7 @@ session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
+check_next_short(os.path.join(folder, 'cone'), env)
 check_popup_stack(os.path.join(folder, 'cone'), env)
 check_idle_drawing(os.path.join(folder, 'cone'), env)
 check_cast_discovery(os.path.join(folder, 'cone'), env)

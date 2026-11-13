@@ -25,6 +25,7 @@
 
 #include "util/rd_storage_model.hpp"
 
+#include <QDir>
 #include <QHash>
 #include <QJsonDocument>
 
@@ -440,6 +441,57 @@ void testJson()
           "json: the download");
 }
 
+// one download written with Windows separators by the download, then found by the start-up
+// scan with Qt's: one entry, linked to its video (STATUS #127 retest: two entries)
+void testOneSpelling()
+{
+    Model model;
+    // Windows: C:\Cone\portable/subtitles//opensubtitles/./e1.srt; elsewhere the doubled slash
+    // and the "." are what differs
+    const QString scanned = QStringLiteral("/Cone/portable/subtitles/opensubtitles/e1.srt");
+    const QString written = QDir::toNativeSeparators(QStringLiteral("/Cone/portable"))
+                          + QStringLiteral("/subtitles//opensubtitles/./e1.srt");
+    model.addArtifact(written, ArtifactKind::Download, QStringLiteral("/s/Show/e1.mkv"), T0);
+    check(model.hasArtifact(scanned), "one spelling: the scan finds the download written with backslashes");
+    check(model.artifacts().size() == 1 && model.artifacts().contains(scanned), "one spelling: one entry, Qt's spelling");
+    model.markSelected(written, T0 + 5);
+    check(model.artifacts().value(scanned).selected, "one spelling: selection by either spelling");
+
+    // a registry saved before: the same file twice, merged on load (the video and the selection kept)
+    QJsonObject artifacts;
+    artifacts.insert(written, QJsonObject{ { QStringLiteral("kind"), QStringLiteral("download") },
+                                           { QStringLiteral("media"), Model::key(QStringLiteral("/s/Show/e1.mkv")) },
+                                           { QStringLiteral("used"), T0 } });
+    artifacts.insert(scanned, QJsonObject{ { QStringLiteral("kind"), QStringLiteral("download") },
+                                           { QStringLiteral("media"), QString() },
+                                           { QStringLiteral("used"), T0 + 9 } });
+    const Model old = Model::fromJson(QJsonObject{ { QStringLiteral("artifacts"), artifacts } });
+    const Artifact merged = old.artifacts().value(scanned);
+    check(old.artifacts().size() == 1, "one spelling: an old registry's two entries become one");
+    check(merged.media == Model::key(QStringLiteral("/s/Show/e1.mkv")) && merged.used == T0 + 9,
+          "one spelling: the merged entry keeps its video and the latest use");
+}
+
+// a delete planned but not run (the quit came first) stays in the registry until done
+void testPendingDeletes()
+{
+    Model model;
+    const QString file = QDir::toNativeSeparators(QStringLiteral("/Cone/portable"))
+                       + QStringLiteral("/subtitles//opensubtitles/e2.srt");
+    model.addPendingDeletes({ file });
+    const Model back = Model::fromJson(QJsonDocument::fromJson(QJsonDocument(model.toJson()).toJson()).object());
+    check(back.pendingDeletes() == QStringList{ Model::artifactPath(file) }, "pending deletes: saved and read back");
+    Model done = back;
+    done.deleted({ QStringLiteral("/Cone/portable/subtitles/opensubtitles/e2.srt") });
+    check(done.pendingDeletes().isEmpty(), "pending deletes: gone once deleted (either spelling)");
+    check(!done.toJson().contains(QStringLiteral("pendingDelete")), "pending deletes: nothing saved when none");
+    // the same file written again before its delete ran: kept
+    Model again = back;
+    again.addArtifact(QStringLiteral("/Cone/portable/subtitles/opensubtitles/e2.srt"), ArtifactKind::Download,
+                      QStringLiteral("/s/Show/e2.mkv"), T0);
+    check(again.pendingDeletes().isEmpty() && !again.isPendingDelete(file), "pending deletes: a file written again is not deleted");
+}
+
 } // namespace
 
 int main()
@@ -456,6 +508,8 @@ int main()
     testCaps();
     testForgetAll();
     testJson();
+    testOneSpelling();
+    testPendingDeletes();
     std::printf("rd_storage_model: %d checks, %d failed\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }

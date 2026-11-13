@@ -248,6 +248,9 @@ private:
     // the current file is an episode Up Next acts on: a show, and not shorter than the show's
     // shortest episode (a short clip is never autoplayed, so it is not asked about either)
     bool longEnough() const;
+    // the player's length is the playing file's (after Next it still gives the previous one's
+    // until the new file's first update: STATUS #127 retest)
+    bool lengthKnown() const;
     QString guardReason() const;
     bool queueIsCones() const;
     void updateCard();
@@ -408,6 +411,7 @@ private:
     // new one sends its first position: that time is not used (it put the card of the next
     // episode up for a moment, the retest of #87). The time the previous episode was at
     qint64 m_staleTimeMs = -1;
+    qint64 m_staleLengthMs = -1;
     bool m_timeFresh = true;
     // where the episode playing was last (the time and length the player reported), for learning
     qint64 m_lastTimeMs = -1;
@@ -465,6 +469,9 @@ private:
     vlc_preparser_t* m_preparser = nullptr;
     vlc_preparser_req* m_thumbReq = nullptr;
     int m_thumbGeneration = 0;
+    // the next episode's picture waits for the playing file's length: a file shorter than an
+    // episode shows no card, so no picture is made for it (STATUS #127 retest)
+    bool m_thumbWaitsLength = false;
     // the picture's request holds a slot of the background queue until it is answered
     std::function<void()> m_thumbFinish;
     QString m_thumbEpisode;

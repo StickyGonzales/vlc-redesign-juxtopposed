@@ -30,4 +30,14 @@ for e in 1 2 3; do
     "$FFMPEG" -v error -y -f lavfi -i testsrc2=size=320x180:rate=15 -f lavfi -i "sine=frequency=$((300 + e * 100)):sample_rate=48000" \
         -t 420 -c:v libx264 -preset veryfast -crf 36 -pix_fmt yuv420p -g 150 -c:a aac -b:a 48k "$SHOW/Smoke Show S01E0$e.mp4"
 done
-ls -la "$OUT" "$SHOW"
+# a show whose first episode is long enough for Up Next and the others are not (shorter than 120 s):
+# after Next to the short one no picture is made for the one after it (linux-smoke.py)
+MIXED="$OUT/Mixed Show"
+mkdir -p "$MIXED"
+for e in 1 2 3; do
+    len=60; [ "$e" = 1 ] && len=200
+    # shellcheck disable=SC2086
+    "$FFMPEG" -v error -y -f lavfi -i testsrc2=size=320x180:rate=15 -f lavfi -i "sine=frequency=$((300 + e * 100)):sample_rate=48000" \
+        -t $len -c:v libx264 -preset veryfast -crf 36 -pix_fmt yuv420p -g 150 -c:a aac -b:a 48k "$MIXED/Mixed Show S01E0$e.mp4"
+done
+ls -la "$OUT" "$SHOW" "$MIXED"

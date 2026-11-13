@@ -30,8 +30,73 @@
 #include <vlc_renderer_discovery.h>
 #include <vlc_player.h>
 #include <vlc_cxx_helpers.hpp>
+#include <vlc_modules.h>
+#include <vlc_configuration.h>
+#include <vlc_fs.h>
+#include <vlc_charset.h>
+
+#include <sys/stat.h>
+
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 static void player_renderer_changed(vlc_player_t *, vlc_renderer_item_t *new_item, void *data);
+
+/* redesign: why the Render list finds no discovery service (STATUS #131 retest: 0 candidates on
+ * one Windows PC while the CI runner and wine load both): how many "renderer probe" modules VLC
+ * has, and for each of VLC's two cast discoveries whether its plug-in is known, its file exists
+ * and, on Windows, what LoadLibraryEx answers (the same call VLC's plug-in loader makes) */
+static void logNoRendererDiscovery(qt_intf_t* p_intf)
+{
+    size_t total = 0, probes = 0;
+    module_t** list = module_list_get(&total);
+    for (size_t i = 0; i < total; i++)
+        if (module_provides(list[i], "renderer probe"))
+            probes++;
+    module_list_free(list);
+    msg_Warn(p_intf, "no renderer discovery service: %zu renderer probe module(s) among %zu modules",
+             probes, total);
+
+    char* plugins = config_GetSysPath(VLC_PKG_LIB_DIR, "plugins");
+    for (const char* name : { "microdns", "upnp" })
+    {
+        const bool known = module_find(name) != nullptr;
+        char* file = nullptr;
+        if (plugins == nullptr
+         || asprintf(&file, "%s" DIR_SEP "services_discovery" DIR_SEP "lib%s_plugin" LIBEXT,
+                     plugins, name) < 0)
+            file = nullptr;
+        struct stat st;
+        const bool exists = file != nullptr && vlc_stat(file, &st) == 0;
+        unsigned long loadError = 0;
+#ifdef _WIN32
+        if (exists && !known)
+        {
+            wchar_t* wfile = ToWide(file);
+            if (wfile != nullptr)
+            {
+                HMODULE handle = LoadLibraryExW(wfile, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+                if (handle == nullptr)
+                    loadError = GetLastError();
+                else
+                    FreeLibrary(handle);
+                free(wfile);
+            }
+        }
+#endif
+        if (loadError != 0)
+            msg_Warn(p_intf, "renderer discovery %s: plug-in %s, file %s: Windows refuses to load "
+                     "it (error %lu)", name, known ? "known" : "not loaded",
+                     file ? file : "?", loadError);
+        else
+            msg_Warn(p_intf, "renderer discovery %s: plug-in %s, file %s %s", name,
+                     known ? "known" : "not loaded", file ? file : "?",
+                     exists ? "present" : "missing");
+        free(file);
+    }
+    free(plugins);
+}
 
 using RendererItemPtr = ::vlc::vlc_shared_data_ptr<vlc_renderer_item_t, &vlc_renderer_item_hold, &vlc_renderer_item_release>;
 using vlc_player_locker = vlc_locker<vlc_player_t, vlc_player_Lock, vlc_player_Unlock>;
@@ -412,6 +477,7 @@ void RendererManager::StartScan()
     char **ppsz_names;
     if( vlc_rd_get_names( d->p_intf, &ppsz_names, &ppsz_longnames ) != VLC_SUCCESS )
     {
+        logNoRendererDiscovery( d->p_intf );
         d->setStatus( RendererManager::RendererStatus::FAILED );
         return;
     }

@@ -1581,9 +1581,18 @@ static void *Thread( void *obj )
         if (Q_UNLIKELY(!settings || !mpc))
             return;
         try {
-            playlistModelRecoveryAgent = std::make_unique<ModelRecoveryAgent>(settings.get(),
-                                                                              QStringLiteral("Playlist"),
-                                                                              mpc.get());
+            auto agent = std::make_unique<ModelRecoveryAgent>(settings.get(),
+                                                              QStringLiteral("Playlist"),
+                                                              mpc.get());
+            // redesign: a quit while the restore question was open dropped the agent already
+            // (QuitWatchdog::setDiscardOnQuit): nothing was answered, the recovery data stays
+            // for the next start, which asks again
+            if (!playlistModelRecoveryAgent)
+            {
+                agent->keepForNextStart();
+                return;
+            }
+            playlistModelRecoveryAgent = std::move(agent);
         } catch (...){ }
     }, Qt::QueuedConnection);
 #ifdef VLC_BRAND_PUBLIC

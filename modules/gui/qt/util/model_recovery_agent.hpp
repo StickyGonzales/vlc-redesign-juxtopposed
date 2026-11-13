@@ -132,11 +132,18 @@ public:
             }
 
             if (model->serialize(tmpFileName.constData()) != VLC_SUCCESS)
+            {
+                qDebug("playlist recovery: the playlist could not be written to %s", tmpFileName.constData());
                 return;
+            }
 
             remove(recoveryFileName.constData());
-            if (!rename(tmpFileName.constData(), recoveryFileName.constData()))
+            if (rename(tmpFileName.constData(), recoveryFileName.constData()))
+                qDebug("playlist recovery: %s could not be renamed to %s", tmpFileName.constData(),
+                       recoveryFileName.constData());
+            else
             {
+                qDebug("playlist recovery: saved to %s", recoveryFileName.constData());
                 assert(m_settings);
                 m_settings->sync();
                 if (!m_settings->contains(m_key))
@@ -152,11 +159,27 @@ public:
             }
         });
 
-        QObject::connect(model, &T::itemsReset, &m_timer, QOverload<>::of(&QTimer::start));
-        QObject::connect(model, &T::itemsAdded, &m_timer, QOverload<>::of(&QTimer::start));
-        QObject::connect(model, &T::itemsMoved, &m_timer, QOverload<>::of(&QTimer::start));
-        QObject::connect(model, &T::itemsRemoved, &m_timer, QOverload<>::of(&QTimer::start));
-        QObject::connect(model, &T::itemsUpdated, &m_timer, QOverload<>::of(&QTimer::start));
+        // redesign: saved at most 10 s after the first change. Restarting the wait on every change
+        // never saved a queue whose items keep being updated (the Windows smoke: the backup was
+        // still empty after 60 s of playback, so a crash offered no restore)
+        const auto changed = [this]() {
+            if (!m_timer.isActive())
+                m_timer.start();
+        };
+        QObject::connect(model, &T::itemsReset, &m_timer, changed);
+        QObject::connect(model, &T::itemsAdded, &m_timer, changed);
+        QObject::connect(model, &T::itemsMoved, &m_timer, changed);
+        QObject::connect(model, &T::itemsRemoved, &m_timer, changed);
+        QObject::connect(model, &T::itemsUpdated, &m_timer, changed);
+    }
+
+    // redesign: the interface quit while the restore question was open: nothing was answered, so
+    // the recovery file and its setting stay and the question comes back at the next start; only
+    // Yes or No clears them (redesign/PERF_AUDIT_NOTES.md section 9)
+    void keepForNextStart()
+    {
+        m_timer.stop();
+        m_recoveryFileName.clear();
     }
 
     ~ModelRecoveryAgent()
