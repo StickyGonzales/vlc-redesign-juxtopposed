@@ -72,8 +72,8 @@ All rules are in `util/rd_storage_model.*`, which is pure QtCore and unit-tested
 - **One job at a time, at the lowest thread priority.**
   - A long job that can pause (a credits scan, a waveform) pauses when a more urgent one comes, such as show detection when a new episode starts.
   - It goes on afterwards. Nothing ever runs beside it.
-- **Nothing heavy in the first minute** after Cone opens. "Heavy" means credits scans, waveforms, pictures and the cleanup.
-  - Light jobs may run early: the update check (one small request), show detection (one folder listing, which the track choice of the first file needs), the storage load.
+- **Nothing heavy in the first minute** after Cone opens. "Heavy" means credits scans, waveforms and the cleanup.
+  - Light jobs may run early: the update check (one small request), show detection (one folder listing, which the track choice of the first file needs), the storage load, and the Up Next picture (one small frame; the card can show in the first minute, see section 10).
 - **Paused** while the seek bar is hovered or dragged, during a seek (also a key's jump in time, at the playback's rate) and while a file opens (until it plays, at most 8 s). A running long job waits at its next packet. Only an urgent light job starts while paused: show detection for the file opening, so its saved tracks are applied before it plays.
 - **Async jobs** (the update check, an Up Next picture) hold the slot against jobs of their priority or lower; a more urgent one (show detection) does not wait for their answer.
 - **On quit:** every job is cancelled at once (the scanners' VLC interrupt), and the queue joins its threads before the interface goes.
@@ -180,7 +180,7 @@ The data files are in `portable\Cone\`: `rd-storage.json`, `rd-shows.json`, `rd-
 1. **The queue.**
    - Start Cone with an episode of a show (a few seasons). In the log:
      - `background: start show detection` then `end` within the first seconds;
-     - no `credits scan`, `waveform` or `up next picture` before 60 s;
+     - no `credits scan` or `waveform` before 60 s; the `up next picture` comes a few seconds after the file plays;
      - after 60 s they come, one at a time: each `start` follows the previous `end`, except `pauses for` / `goes on`.
    - Drag or hover the seek bar during a credits scan: `background: paused (seek bar)`, then `resumed`.
    - Quit during a scan: Cone ends at once, and the log shows `end credits scan (... cancelled)`.
@@ -203,8 +203,28 @@ The data files are in `portable\Cone\`: `rd-storage.json`, `rd-shows.json`, `rd-
    - The 2 never selected are deleted from `subtitles\opensubtitles\`; the selected one stays.
 7. **Forget all:** Settings > Playback > Episodes > Remembered shows > Forget all. `up-next\` and `subtitles\opensubtitles\` are empty afterwards.
 8. **Battery saver:** turn on Windows' battery saver and set `lastDaily` to 0. The log shows `storage: the daily check waits (battery saver)`.
-9. **Regression:**
+9. **Up Next picture (the bug of the first retest, section 10).**
+   - Use the generated 2-season show of the first retest (180 s and 90 s episodes).
+   - Start Cone with S01E01 and seek to 2:10 within the first 10 s: the card shows with the picture of S01E02 at once. The log shows `start up next picture`, `Creating an input for thumbnailing 'S01E02...'` and the PNG is in `up-next\`, all within Cone's first minute.
+   - Start Cone with S02E01 (90 s): no card (shorter than 2 min, not an episode: UP_NEXT_PLAN 3.3). The log says why: `up next: not an episode: shorter than 120 s`, and any picture job for it ends with `up next: no picture for "...": no longer the next episode`.
+   - Repeat 5 different start times on the 180 s episodes: a picture every time.
+10. **Regression:**
    - Up Next card, autoplay, credits point, track memory, waveform seek bar, seek previews.
    - Add Subtitles (file and folder, OpenSubtitles auto-download for the next episode).
    - The update notice (forced with `CONE_UPDATE_CHECK_TEST_FILE`).
    - Quit stays fast.
+
+## 10. The Up Next picture bug (PC retest 2026-11-13)
+
+**Seen:** `start up next picture` followed by `end up next picture (... 0 ms)`, no thumbnailing and no PNG, in 5 of 7 plays (a 2-season show with 180 s and 90 s episodes, start times 5 to 100 s).
+
+**Reproduced on Linux** (build-linux #128, a show of 4 x 180 s and 3 x 90 s episodes, with a temporary log in requestThumbnail):
+- S02E01 (90 s), from the start: `evaluate next 5 -> -1 (long 0)` as soon as the length is known, so the queued request was dropped and the job ended at once, 0 ms (3 of 3 runs). The episode is shorter than the 120 s an episode needs (UP_NEXT_PLAN 3.3), so Up Next offers no next episode and shows no card: no picture is needed, but nothing in the log said why.
+- S01E01 started at 2:10: the card showed at once, but the picture job was a heavy job, so it waited until Cone had been open for a minute; the card stayed without its picture. On short episodes or files opened near their end the episode was often over before the minute passed: the job then found its episode no longer next and ended at 0 ms.
+- Episodes played from the start of a long show were fine (my 2-hour run: 7 of 7 pictures), which is why the first runs did not catch it.
+
+**Fix:**
+- The picture job is light (one 320 px frame): it runs a few seconds after the file plays, not after Cone's first minute, so the card has its picture when it shows.
+- The log says why a picture job ends without a picture: `no longer the next episode`, `not an episode: shorter than 120 s`, the thumbnailer refusing or failing.
+
+**Test:** Linux smoke "upnext: the card's picture is made in Cone's first minute": the Up Next session seeks to the card at 6:10 about 4 s after Cone starts and expects the next episode's picture (thumbnailing in the log and a PNG in `up-next/`) within 8 s. On the old code it waits for the minute and fails.
