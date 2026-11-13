@@ -81,7 +81,7 @@ session (the cast check failed on build-linux #140).
   which failed only because of the left-over question; smoke-windows-manual #17 on #250's files
   with the fixed script (1b259d9093): all checks pass, including cast discovery (zip and
   installed) and the restore question.
-- build-linux #140 (1b259d9093): running when this was written
+- build-linux #141 (396ebaa868): build, packages and smoke pass, including next-short, open-short, cast and the restore checks (#140 failed only on the left-over question, fixed by `clear_restore_state`)
 - unit-tests #7 (0994e0cd04; the storage tests are unchanged since).
 
 ## Windows retest (PC session)
