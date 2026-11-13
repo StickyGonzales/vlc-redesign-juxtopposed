@@ -17,7 +17,7 @@ Not signed with this certificate:
 
 - the libraries and plugins of VLC media player that Cone Player ships (`libvlc.dll`, `libvlccore.dll`, `plugins\`):
   they are VideoLAN's software, built unchanged or nearly unchanged from VLC's own source in this fork;
-- the uninstaller the installer writes on your PC;
+- the uninstaller the installer writes on your PC, and VLC's `spad-setup.exe` helper in the zip;
 - test builds, Linux and macOS builds.
 
 Every signed file carries the product name "Cone Player" and the version of its release. The certificate is
