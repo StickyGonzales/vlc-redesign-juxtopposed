@@ -114,3 +114,53 @@ Build: build-windows on wip/fix-music-cover (the run in the PR). Media: the same
    and fits the pane.
 7. **Regression.** Play, pause, seek, Next and Previous between songs, the mini player in the
    library, quit.
+
+## Windows retest result (PC session, 2026-11-13)
+
+Build-windows #254 on Windows 10 at 125 % scaling. Media: a FLAC and an MP3 with a square 600x600
+cover, an MP3 with a wide 1280x720 cover (red and green bars at its sides, a yellow square in the
+middle) and an MP3 with a square cover and an ID3 USLT lyrics frame. The cover was measured through
+UI Automation (the "Cover" element) and checked in a screenshot at each size. Sizes are physical
+pixels.
+
+| Window | Square covers (FLAC, MP3) | Wide cover | Lyrics pane open |
+|---|---|---|---|
+| 1041x570 | 388x388 | 388x388 | 388x388 (one pane: too narrow for two) |
+| 1500x600 | 408x408 | 408x408 | 408x408, right pane |
+| 1100x900 | 613x613 | 613x613 | 380x380, right pane |
+| 600x450 | 306x306 | 306x306 | 306x306 (one pane) |
+| 750x1125 | 690x690 | 690x690 | 690x690 (one pane, lyrics button) |
+| 2000x625 | 426x426 | 426x426 | 426x426, right pane |
+| maximized (2560x1390) | 947x947 | 947x947 | - |
+| fullscreen (2560x1440) | 982x982 | 982x982 | 963x963, right pane |
+
+- **Square everywhere.** Width and height match at every size, for every song, and the cover never
+  overlaps the bars.
+- **The wide cover is cropped.** The square shows the middle of the picture: the yellow square stays
+  square, no red or green from its sides inside the cover, no dark bands at the top or bottom.
+- **Fullscreen was entered with F11.** In the music view the top bar's Fullscreen button is greyed out
+  and does nothing, and F does nothing (next section).
+- **Not run in this retest:** steps 3 (next song while small), 5 (no cover) and 7 (regression).
+
+## F, Escape and fullscreen with only music (PC session, 2026-11-13)
+
+Same MP3 in Cone (build-windows #254) and in the vlc profile build of wip/next-test (build-windows
+43507870557), window 1280x720, music view:
+
+| Key or control | Cone | vlc profile |
+|---|---|---|
+| F | nothing | nothing |
+| Escape (after F11) | nothing, stays fullscreen | nothing, stays fullscreen |
+| F11 | enters and leaves fullscreen | enters and leaves fullscreen |
+| F while in F11's fullscreen | - | nothing, stays fullscreen |
+| Top bar Fullscreen button | greyed out, does nothing | greyed out |
+
+- **VLC's behaviour, not ours.** F and Escape are VLC's "toggle-fullscreen" and "leave-fullscreen"
+  hotkeys, which act on the video output (modules/control/hotkeys.c, the Vouts handler); with no
+  video there is nothing for them to act on. The Fullscreen control is disabled without a video by
+  `enabled: Player.hasVideoOutput` in FullscreenButton.qml, upstream VLC code from 2021.
+- **Escape cannot leave fullscreen with only music**, in either build. Only F11 (or the window's own
+  fullscreen exit) does. Not changed; if Cone should offer fullscreen in the music view with F,
+  Escape and the button, that is a separate task.
+- **On Linux** the notes above saw the top bar button work; on Windows the player's top bar uses the
+  control above (in the window buttons), which is disabled without a video.

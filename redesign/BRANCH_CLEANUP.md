@@ -210,3 +210,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/retest-followups` | `40553d7f07df4299d81659fa4d6cefb9408dd355` | PR #134 merged into wip/next-test (31232076ea8) |
+
+## 2026-11-13, square music cover
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-music-cover` | `6e1ad8b3055333b62e1e0b1d1fcafffa201d454f` | PR #136 merged into wip/next-test (9dbb6052480) |

@@ -21,5 +21,7 @@ the texts are written up in the 1.4.0 style (by area, with tips) when the releas
 - **A crash can now restore your playlist on Windows.** Cone saves the playlist at most 10 seconds after it changes, also while a video plays, so after a crash the next start offers to restore it. Quitting while that question is open keeps it for the next start; only Yes or No clears it. (PR #134)
 - **Cleanup finishes even when you quit at once.** A downloaded subtitle you never used is deleted even if you quit right after moving on to the next file, each download is recorded once, and a file too short to be an episode gets no Up Next picture. (PR #134)
 
+- **The album cover stays square.** In the music player the cover is a square with rounded corners at every window size, maximized, in fullscreen and next to the lyrics, instead of a tall, narrow card in some windows. A cover that is not square shows its middle as a square, like the song list's thumbnails. (PR #136, issues #129 and #69)
+
 ## Changed
 - **Choose what happens when an episode ends.** Settings > Playback > Episodes > "When an episode ends" replaces "Play episodes in a row": **Play the next episode** (the countdown on the Up Next card, as before), **Show Up Next, I'll click** (the card offers the next episode and waits for your click, no countdown), or **Do nothing**. Your saved choice carries over. The card's "Turn off autoplay" now switches to "Show Up Next, I'll click". (PR #135)
