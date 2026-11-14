@@ -13,6 +13,7 @@
 #                  test-hevc.mp4, test.srt> --out <folder>
 import argparse
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -555,6 +556,26 @@ def finder_trail(log_path, err_path):
     return ' | trail: ' + ' / '.join(lines[:30])
 
 
+def sample_cone(tag):
+    # every thread's stack of a Cone that stopped answering (macOS's sample tool), kept with the
+    # results; the message names the main thread's innermost frames
+    r = run(['pgrep', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+    pids = r.stdout.split()
+    if not pids:
+        return ' | sample: Cone is not running'
+    path = os.path.join(OUT, f'cone-{tag}-sample.txt')
+    run(['sample', pids[0], '3', '-file', path], timeout=60)
+    try:
+        with open(path, errors='replace') as f:
+            text = f.read()
+    except OSError:
+        return ' | sample: none'
+    main = text.split('Thread_', 2)[1] if 'Thread_' in text else ''
+    frames = [l.strip() for l in main.splitlines() if '(in ' in l][-6:]
+    return f' | sample ({os.path.basename(path)}), main thread innermost: ' + ' < '.join(
+        re.sub(r'\s+', ' ', f)[:90] for f in reversed(frames))
+
+
 def finder_open_launch():
     # Cone started by LaunchServices with a file, as a double-click in Finder; the cli's socket
     # through --args, which the file does not travel with (it comes as the Apple event)
@@ -578,7 +599,7 @@ def finder_open_launch():
         try:
             return 'a start from Finder: ' + playing_file('test-hevc.mp4', 20) + finder_trail(log_path, err_path)
         except CheckFailed as e:
-            raise CheckFailed(str(e) + finder_trail(log_path, err_path)) from None
+            raise CheckFailed(str(e) + finder_trail(log_path, err_path) + sample_cone('finder-launch')) from None
     finally:
         try:
             rc('quit')
