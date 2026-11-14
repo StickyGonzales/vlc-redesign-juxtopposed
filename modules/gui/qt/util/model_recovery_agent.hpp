@@ -33,7 +33,7 @@
 
 #include "qt.hpp"
 
-#include "dialogs/dialogs_provider.hpp"
+#include "widgets/native/qvlcframe.hpp"
 
 class ModelRecoveryAgent
 {
@@ -43,6 +43,7 @@ class ModelRecoveryAgent
     QTimer m_timer;
     bool m_conditionDismissInitialDirtiness = false;
     std::unique_ptr<QLockFile> m_lockFile;
+    std::unique_ptr<QMessageBox> m_question;
 
 public:
     // NOTE: settings and model must outlive the instance of this class.
@@ -69,24 +70,23 @@ public:
                 const QFileInfo fileInfo(m_recoveryFileName);
                 if (fileInfo.size() > 0)
                 {
-                    // redesign: the question runs an event loop of its own; a quit meanwhile
-                    // deletes the model and the settings, and going on with them crashed
-                    // (redesign/PERF_AUDIT_NOTES.md section 9)
-                    const QPointer<T> modelAlive(model);
-                    const QPointer<QSettings> settingsAlive(settings);
-                    const int answer = DialogsProvider::getInstance()->messageDialog(qtr("Do you want to restore the %1 model from %2?").arg(modelIdentifier.toLower(),
-                                                                                                                              fileInfo.lastModified().toString()),
-                                                                      qtr("The application closed abruptly."),
-                                                                      (QMessageBox::Yes | QMessageBox::No),
-                                                                      QMessageBox::Yes,
-                                                                      QMessageBox::Question);
-                    if (!modelAlive || !settingsAlive)
-                        throw std::exception(); // the interface is closing: the recovery file stays for the next start
-                    if (answer == QMessageBox::Yes)
-                    {
-                        model->append(m_recoveryFileName);
-                        m_conditionDismissInitialDirtiness = true;
-                    }
+                    m_question = std::make_unique<QMessageBox>();
+                    m_question->setText(qtr("Do you want to restore the %1 model from %2?").arg(modelIdentifier.toLower(), fileInfo.lastModified().toString()));
+                    m_question->setWindowTitle(qtr("The application closed abruptly."));
+                    m_question->setIcon(QMessageBox::Question);
+                    m_question->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    m_question->setDefaultButton(QMessageBox::Yes);
+                    m_question->setWindowModality(Qt::ApplicationModal);
+
+                    QObject::connect(m_question.get(), &QDialog::finished, m_question.get(), [this, model]() {
+                        if (m_question->standardButton(m_question->clickedButton()) == QMessageBox::Yes)
+                        {
+                            model->append(m_recoveryFileName);
+                            m_conditionDismissInitialDirtiness = true;
+                        }
+                        m_question.release()->deleteLater();
+                        startMonitoring(model);
+                    });
                 }
             }
         }
@@ -110,6 +110,46 @@ public:
             settings->sync();
         }
 
+        if (!m_question)
+            startMonitoring(model);
+    }
+
+    void prompt(qt_intf_t *p_intf)
+    {
+        if (!m_question)
+            return;
+        QVLCDialog::setWindowTransientParent(m_question.get(), nullptr, p_intf);
+        m_question->show();
+    }
+
+    ~ModelRecoveryAgent()
+    {
+        // a quit while the restore question is open: nothing was answered, so the recovery file
+        // and its setting stay and the question comes back at the next start (Cone's
+        // redesign/PERF_AUDIT_NOTES.md section 9 found the same with the old blocking question)
+        if (m_question)
+            return;
+
+        if (!m_recoveryFileName.isEmpty())
+        {
+            QFile::remove(m_recoveryFileName);
+        }
+
+        assert(m_settings);
+
+        m_settings->sync();
+
+        if (m_settings->value(m_key) == m_recoveryFileName)
+        {
+            m_settings->remove(m_key);
+            m_settings->sync();
+        }
+    }
+
+private:
+    template<class T>
+    void startMonitoring(T* model)
+    {
         m_timer.setInterval(10000); // 10 seconds
         m_timer.setSingleShot(true);
 
@@ -171,33 +211,6 @@ public:
         QObject::connect(model, &T::itemsMoved, &m_timer, changed);
         QObject::connect(model, &T::itemsRemoved, &m_timer, changed);
         QObject::connect(model, &T::itemsUpdated, &m_timer, changed);
-    }
-
-    // redesign: the interface quit while the restore question was open: nothing was answered, so
-    // the recovery file and its setting stay and the question comes back at the next start; only
-    // Yes or No clears them (redesign/PERF_AUDIT_NOTES.md section 9)
-    void keepForNextStart()
-    {
-        m_timer.stop();
-        m_recoveryFileName.clear();
-    }
-
-    ~ModelRecoveryAgent()
-    {
-        if (!m_recoveryFileName.isEmpty())
-        {
-            QFile::remove(m_recoveryFileName);
-        }
-
-        assert(m_settings);
-
-        m_settings->sync();
-
-        if (m_settings->value(m_key) == m_recoveryFileName)
-        {
-            m_settings->remove(m_key);
-            m_settings->sync();
-        }
     }
 };
 

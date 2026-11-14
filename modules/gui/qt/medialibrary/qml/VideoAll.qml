@@ -66,7 +66,6 @@ MainViewLoader {
     // function(model) -> [strings....]
     // used to get grid labels per model item
     property var gridLabels: getLabel
-    property var listLabels: getLabel
 
     property bool showGroupCountColumn: false
 
@@ -148,6 +147,8 @@ MainViewLoader {
             id: gridView
 
             // Settings
+
+            focus: true
 
             model: root.model
 
@@ -235,8 +236,6 @@ MainViewLoader {
             onRightClick: (_,_,globalMousePos) => {
                 root.contextMenu.popup(selectionModel.selectedIndexes, globalMousePos)
             }
-
-            coverLabels: root.listLabels
 
             showGroupCountColumn: root.showGroupCountColumn
 

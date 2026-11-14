@@ -1,5 +1,5 @@
 # mpg123
-MPG123_VERSION := 1.33.6
+MPG123_VERSION := 1.33.7
 MPG123_URL := $(SF)/mpg123/mpg123/$(MPG123_VERSION)/mpg123-$(MPG123_VERSION).tar.bz2
 
 PKGS += mpg123
@@ -21,6 +21,9 @@ mpg123: mpg123-$(MPG123_VERSION).tar.bz2 .sum-mpg123
 	# fix llvm-mingw ARM/AArch64 build
 	$(APPLY) $(SRC)/mpg123/0001-ports-cmake-Fix-detecting-asm-align-directives-in-cm.patch
 	$(APPLY) $(SRC)/mpg123/0002-ports-cmake-Fix-building-ARM-assembly-for-Windows-fo.patch
+	# use the NEON64 dct36 on aarch64
+	$(APPLY) $(SRC)/mpg123/0003-libmpg123-select-the-NEON64-dct36-on-aarch64.patch
+	$(APPLY) $(SRC)/mpg123/cmake_arm64_more_than_just_apple.patch
 	$(MOVE)
 
 .mpg123: mpg123 toolchain.cmake

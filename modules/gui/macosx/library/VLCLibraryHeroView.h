@@ -24,9 +24,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class VLCCarouselView;
 @class VLCImageView;
 @class VLCLibraryRepresentedItem;
 @protocol VLCMediaLibraryItemProtocol;
+
+typedef NS_ENUM(NSUInteger, VLCLibraryHeroViewSelectionMode) {
+    VLCLibraryHeroViewSelectionModeRandomItem,
+    VLCLibraryHeroViewSelectionModeMostRecentVideo,
+};
 
 @interface VLCLibraryHeroView : NSView
 
@@ -36,7 +42,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (readwrite, weak) IBOutlet NSTextField *detailTextField;
 @property (readwrite, weak) IBOutlet NSButton *playButton;
 
-@property (readwrite, nonatomic) VLCLibraryRepresentedItem *representedItem;
+@property (readwrite, nonatomic, nullable) VLCLibraryRepresentedItem *representedItem;
+@property (readwrite, nonatomic) VLCLibraryHeroViewSelectionMode selectionMode;
+@property (nonatomic, readwrite, weak, nullable) VLCCarouselView *carouselView;
 
 - (IBAction)playRepresentedItem:(id)sender;
 - (void)setOptimalRepresentedItem;

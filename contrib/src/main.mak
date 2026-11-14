@@ -32,7 +32,7 @@ VIDEOLAN_GIT := https://code.videolan.org
 GITHUB := https://github.com
 GOOGLE_CODE := https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com
 GNUGPG := https://www.gnupg.org/ftp/gcrypt
-QT := https://download.qt.io/official_releases/qt/$(QTBASE_VERSION_MAJOR)
+QT := https://download.qt.io/archive/qt/$(QTBASE_VERSION_MAJOR)
 XIPH := https://ftp.osuosl.org/pub/xiph/releases
 XORG := https://www.x.org/releases/individual
 
@@ -592,7 +592,7 @@ MESONFLAGS = $(BUILD_DIR) $< --default-library static --prefix "$(PREFIX)" \
 ifndef WITH_OPTIMIZATION
 MESONFLAGS += --buildtype debug
 else
-MESONFLAGS += --buildtype debugoptimized
+MESONFLAGS += --buildtype debugoptimized -Db_ndebug=true
 endif
 ifdef ENABLE_LTO
 MESONFLAGS += -Db_lto=true

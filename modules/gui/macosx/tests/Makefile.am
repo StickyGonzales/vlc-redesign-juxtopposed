@@ -5,10 +5,11 @@ if ENABLE_MACOSX_XCTESTS
 macosx_gui_xctest_frameworks_dir = $(shell $(XCRUN) --sdk macosx --show-sdk-platform-path)/Developer/Library/Frameworks
 macosx_gui_xctest_bundles = VLCMacOSXTests.xctest
 
-check_PROGRAMS += VLCMacOSXTests
+check_PROGRAMS += VLCMacOSXTests VLCLibraryFixtureSQL
 TESTS += $(macosx_gui_xctest_bundles)
 
 VLCMacOSXTests_SOURCES = \
+	gui/macosx/tests/VLCAppKitMockingTestCase.m \
 	gui/macosx/tests/VLCHexNumberFormatterTest.m \
 	gui/macosx/tests/NSStringHelpersTest.m \
 	gui/macosx/tests/VLCLibraryDataTypesTest.m \
@@ -16,24 +17,78 @@ VLCMacOSXTests_SOURCES = \
 	gui/macosx/tests/VLCInputItemTest.m \
 	gui/macosx/tests/VLCInputItemTestSupport.m \
 	gui/macosx/tests/VLCInputNodeTest.m \
+	gui/macosx/tests/VLCMediaSourceTableViewSortingTest.m \
+	gui/macosx/tests/VLCLibraryModelTest.m \
+	gui/macosx/tests/VLCLibraryModelIntegrationTest.m \
+	gui/macosx/tests/VLCLibraryModelConcurrencyTest.m \
+	gui/macosx/tests/VLCLibraryModelTestSupport.m \
 	gui/macosx/tests/VLCLibraryDataTypesIntegrationTest.m \
 	gui/macosx/tests/VLCLibraryDataTypesIntegrationTestSupport.m \
+	gui/macosx/tests/VLCLibraryHomeBrowseCardTest.m \
+	gui/macosx/tests/VLCLibraryHomeBrowseCarouselTest.m \
+	gui/macosx/tests/VLCLibraryHomeMediaDataSourceTest.m \
+	gui/macosx/tests/VLCLibraryHomeViewStackViewControllerTest.m \
+	gui/macosx/tests/VLCLibraryHomeVideoCarouselLayoutTest.m \
+	gui/macosx/tests/VLCLibraryHomeVideoCarouselTest.m \
+	gui/macosx/tests/VLCLibraryHeroViewTest.m \
+	gui/macosx/tests/VLCLibraryHomeVideoDataSourceTest.m \
+	gui/macosx/tests/VLCLibraryHomeTestSupport.m \
 	gui/macosx/tests/VLCLogMessageTest.m \
+	gui/macosx/tests/VLCMacOSXTestDefaults.m \
 	gui/macosx/tests/VLCPositionFormatterTest.m \
 	gui/macosx/tests/VLCTimeFormatterTest.m \
+	gui/macosx/tests/VLCLibraryHomeViewSectionHeaderViewTest.m \
+	gui/macosx/tests/VLCVisualEffectViewTest.m \
+	gui/macosx/extensions/NSAnimationContext+VLCAdditions.m \
+	gui/macosx/extensions/NSColor+VLCAdditions.m \
+	gui/macosx/extensions/NSTextField+VLCAdditions.m \
 	gui/macosx/extensions/VLCHexNumberFormatter.m \
 	gui/macosx/extensions/VLCPositionFormatter.m \
 	gui/macosx/extensions/NSString+Helpers.m \
+	gui/macosx/extensions/NSAppearance+VLCAdditions.m \
+	gui/macosx/extensions/NSFont+VLCAdditions.m \
+	gui/macosx/extensions/NSView+VLCAdditions.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewSectionHeaderView.m \
+	gui/macosx/library/VLCLibraryCarouselView.m \
+	gui/macosx/library/VLCLibraryHeroView.m \
+	gui/macosx/library/VLCLibraryCollectionViewDelegate.m \
+	gui/macosx/library/VLCLibraryCollectionViewFlowLayout.m \
+	gui/macosx/extensions/NSArray+VLCAdditions.m \
 	gui/macosx/library/VLCLibraryDataTypes.m \
 	gui/macosx/library/VLCInputItem.m \
 	gui/macosx/library/VLCInputNode.m \
+	gui/macosx/library/home-library/VLCLibraryHomeBrowseCarouselView.m \
+	gui/macosx/library/home-library/VLCLibraryHomeBrowseCollectionViewItem.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewBaseCarouselContainerView.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewMediaContainerViewDataSource.m \
+	gui/macosx/library/VLCLibraryMediaGroupDescriptor.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewRecentlyAddedCarouselContainerView.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewStackViewController.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewBrowseCarouselContainerView.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewBrowseCarouselItemCell.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewBrowseCarouselItemView.m \
+	gui/macosx/library/home-library/VLCLibraryHomeViewVideoCarouselContainerView.m \
+	gui/macosx/library/media-source/VLCMediaSourceTableViewSorting.m \
+	gui/macosx/library/VLCLibraryModel.m \
+	gui/macosx/library/VLCLibraryModelChangeDelegate.m \
+	gui/macosx/library/VLCMediaLibraryFolderObserver.m \
 	gui/macosx/windows/logging/VLCLogMessage.m \
-	gui/macosx/views/VLCTimeFormatter.m
+	gui/macosx/views/VLCCarouselView.m \
+	gui/macosx/views/VLCImageView.m \
+	gui/macosx/views/VLCSpacingConstraint.m \
+	gui/macosx/views/VLCStackView.m \
+	gui/macosx/views/VLCSubScrollView.m \
+	gui/macosx/views/VLCTimeFormatter.m \
+	gui/macosx/views/VLCUIUnits.m \
+	gui/macosx/views/VLCVisualEffectView.m
 
 noinst_HEADERS += \
+	gui/macosx/tests/VLCAppKitMockingTestCase.h \
 	gui/macosx/tests/VLCInputItemTestSupport.h \
 	gui/macosx/tests/VLCLibraryDataTypesTestSupport.h \
-	gui/macosx/tests/VLCLibraryDataTypesIntegrationTestSupport.h
+	gui/macosx/tests/VLCLibraryModelTestSupport.h \
+	gui/macosx/tests/VLCLibraryDataTypesIntegrationTestSupport.h \
+	gui/macosx/tests/VLCMacOSXTestDefaults.h
 
 VLCMacOSXTests_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
@@ -58,25 +113,37 @@ VLCMacOSXTests_LDFLAGS = \
 	-Wl,-framework,XCTest \
 	-Wl,-framework,Foundation \
 	-Wl,-framework,Cocoa \
-	-Wl,-framework,IOKit
+	-Wl,-framework,CoreServices \
+	-Wl,-framework,CoreVideo \
+	-Wl,-framework,IOKit \
+	-Wl,-framework,QuartzCore
 
 VLCMacOSXTests_LDADD = \
 	$(top_builddir)/lib/libvlc.la \
-	$(top_builddir)/src/libvlccore.la \
-	-lsqlite3
+	$(top_builddir)/src/libvlccore.la
+
+VLCLibraryFixtureSQL_SOURCES = gui/macosx/tests/VLCLibraryFixtureSQL.m
+VLCLibraryFixtureSQL_OBJCFLAGS = $(AM_OBJCFLAGS) -fobjc-arc -fobjc-exceptions -fmodules
+VLCLibraryFixtureSQL_LDFLAGS = -Wl,-framework,Foundation
+VLCLibraryFixtureSQL_LDADD = -lsqlite3
 
 VLCMacOSXTests_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(OBJCLD) \
 	$(VLCMacOSXTests_OBJCFLAGS) $(OBJCFLAGS) \
 	$(VLCMacOSXTests_LDFLAGS) $(LDFLAGS) -o $@
 
-VLCMacOSXTests.xctest: VLCMacOSXTests$(EXEEXT) $(srcdir)/gui/macosx/tests/VLCMacOSXTests-Info.plist
+VLCMacOSXTests.xctest: VLCMacOSXTests$(EXEEXT) VLCLibraryFixtureSQL$(EXEEXT) $(srcdir)/gui/macosx/tests/VLCMacOSXTests-Info.plist gui/macosx/UI/VLCLibraryHeroView.nib
 	$(AM_V_GEN)rm -rf $@
 	$(AM_V_at)$(MKDIR_P) $@/Contents/MacOS
+	$(AM_V_at)$(MKDIR_P) $@/Contents/Resources
 	$(AM_V_at)$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install \
 		$(INSTALL_PROGRAM) VLCMacOSXTests$(EXEEXT) \
 		$(abs_builddir)/$@/Contents/MacOS/VLCMacOSXTests
+	$(AM_V_at)$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install \
+		$(INSTALL_PROGRAM) VLCLibraryFixtureSQL$(EXEEXT) \
+		$(abs_builddir)/$@/Contents/MacOS/VLCLibraryFixtureSQL
 	$(AM_V_at)$(INSTALL_DATA) $(srcdir)/gui/macosx/tests/VLCMacOSXTests-Info.plist $@/Contents/Info.plist
+	$(AM_V_at)$(INSTALL_DATA) gui/macosx/UI/VLCLibraryHeroView.nib $@/Contents/Resources/VLCLibraryHeroView.nib
 
 EXTRA_DIST += gui/macosx/tests/VLCMacOSXTests-Info.plist
 
@@ -85,6 +152,7 @@ mostlyclean-local-macosx-xctest:
 	rm -rf $(macosx_gui_xctest_bundles)
 
 check-macosx: VLCMacOSXTests.xctest
+	$(MAKE) -C $(top_builddir)/bin ../modules/plugins.dat
 	$(XCTEST_LOG_COMPILER) $<
 
 else

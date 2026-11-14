@@ -72,6 +72,7 @@ static const int PROF_VP9_10[]      = { AVPROFILE(VP9_2), AVPROFILE(UNKNOWN) };
 
 static const int PROF_AV1_MAIN[]    = { AVPROFILE(AV1_MAIN), AVPROFILE(UNKNOWN) };
 static const int PROF_AV1_HIGH[]    = { AVPROFILE(AV1_HIGH), AVPROFILE(AV1_MAIN), AVPROFILE(UNKNOWN) };
+static const int PROF_AV1_PRO[]     = { AVPROFILE(AV1_PROFESSIONAL), AVPROFILE(UNKNOWN) };
 
 #if defined(__MINGW64_VERSION_MAJOR) // mingw-w64 doesn't have all the standard GUIDs
 
@@ -188,10 +189,10 @@ DEFINE_GUID(DXVA_ModeAV1_VLD_12bit_Profile2_420, 0x2d80bed6, 0x9cac, 0x4835, 0x9
 
 #ifndef FF_DXVA_WORKAROUND_GONE
 #define DEF_DXVA_MODE(name, guid, bitdepth, chroma_w, chroma_h, avcodecid, profiles, workaround) \
-    { name, guid, bitdepth, { chroma_w, chroma_h }, avcodecid, profiles, workaround }
+    { name, guid, bitdepth, 3, { chroma_w, chroma_h }, avcodecid, profiles, workaround }
 #else
 #define DEF_DXVA_MODE(name, guid, bitdepth, chroma_w, chroma_h, avcodecid, profiles, workaround) \
-    { name, guid, bitdepth, { chroma_w, chroma_h }, avcodecid, profiles }
+    { name, guid, bitdepth, 3, { chroma_w, chroma_h }, avcodecid, profiles }
 #endif
 
 #define DEF_DXVA_MODE_420_8B(name, guid, avcodecid, profiles) \
@@ -315,8 +316,14 @@ static const directx_va_mode_t DXVA_MODES[] = {
     /* AV1 */
     DEF_DXVA_MODE_420_8B( "AV1 Main profile 8",                                             &DXVA_ModeAV1_VLD_Profile0,             AV_CODEC_ID_AV1, PROF_AV1_MAIN ),
     DEF_DXVA_MODE_420_10B( "AV1 Main profile 10",                                           &DXVA_ModeAV1_VLD_Profile0,             AV_CODEC_ID_AV1, PROF_AV1_MAIN ),
+    DEF_DXVA_MODE( "AV1 High profile 4:4:4 8",                                              &DXVA_ModeAV1_VLD_Profile1,      8, 0, 0, AV_CODEC_ID_AV1, PROF_AV1_HIGH, 0 ),
+    DEF_DXVA_MODE( "AV1 High profile 4:4:4 10",                                             &DXVA_ModeAV1_VLD_Profile1,     10, 0, 0, AV_CODEC_ID_AV1, PROF_AV1_HIGH, 0 ),
     DEF_DXVA_MODE_420_8B( "AV1 High profile 8",                                             &DXVA_ModeAV1_VLD_Profile1,             AV_CODEC_ID_AV1, PROF_AV1_HIGH ),
     DEF_DXVA_MODE_420_10B( "AV1 High profile 10",                                           &DXVA_ModeAV1_VLD_Profile1,             AV_CODEC_ID_AV1, PROF_AV1_HIGH ),
+    DEF_DXVA_MODE( "AV1 Professional profile 4:2:2 8",                                      &DXVA_ModeAV1_VLD_Profile2,      8, 1, 0, AV_CODEC_ID_AV1, PROF_AV1_PRO, 0 ),
+    DEF_DXVA_MODE( "AV1 Professional profile 4:2:2 10",                                     &DXVA_ModeAV1_VLD_Profile2,     10, 1, 0, AV_CODEC_ID_AV1, PROF_AV1_PRO, 0 ),
+    DEF_DXVA_MODE( "AV1 Professional 12-bit profile 4:2:2 8",                               &DXVA_ModeAV1_VLD_12bit_Profile2, 8, 1, 0, AV_CODEC_ID_AV1, PROF_AV1_PRO, 0 ),
+    DEF_DXVA_MODE( "AV1 Professional 12-bit profile 4:2:2 10",                              &DXVA_ModeAV1_VLD_12bit_Profile2, 10, 1, 0, AV_CODEC_ID_AV1, PROF_AV1_PRO, 0 ),
 };
 
 static const directx_va_mode_t *FindVideoServiceConversion(vlc_va_t *, const directx_sys_t *, const es_format_t *, video_format_t *fmt_out,
@@ -498,6 +505,14 @@ static const directx_va_mode_t * FindVideoServiceConversion(vlc_va_t *va, const 
         }
         if ( !is_supported )
             continue;
+
+        if (desc && desc->nb_components &&
+            desc->nb_components != mode->nb_components)
+        {
+            msg_Warn( va, "Unsupported %d components for %s ",
+                    desc->nb_components, mode->name );
+            continue;
+        }
 
         int src_bit_depth = (desc && desc->nb_components) ? desc->comp[0].depth : 8;
         if (src_bit_depth != mode->bit_depth)

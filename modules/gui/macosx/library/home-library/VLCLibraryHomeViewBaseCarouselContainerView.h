@@ -23,27 +23,43 @@
 #import <Cocoa/Cocoa.h>
 
 #import "VLCLibraryHomeViewContainerView.h"
+#import "VLCLibraryHomeViewSectionHeaderView.h"
 
+#import "library/VLCLibraryCarouselView.h"
 #import "library/VLCLibraryCollectionViewDataSource.h"
-#import "views/iCarousel/iCarousel.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface VLCLibraryHomeViewBaseCarouselContainerView : NSView<VLCLibraryHomeViewContainerView, iCarouselDelegate>
+@class VLCSubScrollView;
+@class VLCLibraryCollectionViewDelegate;
+@class VLCLibraryCollectionViewFlowLayout;
+@interface VLCLibraryHomeViewBaseCarouselContainerView : NSView<VLCLibraryHomeViewContainerView>
 
-@property (readonly) NSTextField *titleView;
-@property (readonly) iCarousel *carouselView;
+@property (readonly) VLCLibraryHomeViewSectionHeaderView *headerView;
+@property (readonly) VLCSubScrollView *scrollView;
+@property (readonly) VLCLibraryCarouselView *collectionView;
+@property (readonly) VLCLibraryCollectionViewDelegate *collectionViewDelegate;
+@property (readonly) VLCLibraryCollectionViewFlowLayout *collectionViewLayout;
 @property (readonly) NSButton *leftButton;
 @property (readonly) NSButton *rightButton;
-@property (readonly) NSObject<VLCLibraryCollectionViewDataSource, iCarouselDataSource> *dataSource;
-// We want the carousel view to be packed tight around the actual items and not have excess space.
-// To do this we need to be aware of the carousel view item height so we can resize the view.
-// Changing this property DOES NOT affect the actual sie of the carousel view items, though!
-// This is decided in the carousel view data sources' method:
-// carousel:(iCarousel *)carousel viewForItemAtIndex:(NSInteger)index reusingView:(NSView *)view
+@property (readonly) NSObject<VLCLibraryCollectionViewDataSource> *dataSource;
+@property (readonly, nullable) NSNotificationName displayedCollectionChangedNotification;
 @property (readwrite, nonatomic) CGFloat itemHeight;
+@property (readwrite, nonatomic) NSUInteger numberOfRows;
 
 - (void)setup;
+// Subclasses provide their data source and route the shared header button.
+- (void)setupDataSource;
+- (void)setupHeader;
+- (void)openLibrary:(id)sender;
+
+/**
+ * Creates the collection view configured by the shared carousel setup.
+ * Subclasses can override this to customize item activation and context menus.
+ */
+- (VLCLibraryCarouselView *)newCollectionView;
+- (void)reloadData;
+- (void)displayedCollectionChanged:(nullable NSNotification *)notification;
 
 @end
 

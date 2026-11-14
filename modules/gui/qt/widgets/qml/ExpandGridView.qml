@@ -753,7 +753,7 @@ FocusScope {
         if (activeFocus && currentIndex === item.index && expandIndex === -1)
             item.forceActiveFocus(_currentFocusReason)
         else
-            item.focus = false
+            item.focus = (!activeFocus && currentIndex === item.index && expandIndex === -1)
     }
 
     function _refreshData( iMin, iMax ) {
@@ -803,8 +803,7 @@ FocusScope {
 
         boundsBehavior: Flickable.StopAtBounds
 
-        pixelAligned: (MainCtx.qtVersion() >= MainCtx.qtVersionCheck(6, 2, 5)) // QTBUG-103996
-                      && (Screen.pixelDensity >= VLCStyle.highPixelDensityThreshold) // no need for sub-pixel alignment with high pixel density
+        pixelAligned: (Screen.pixelDensity >= VLCStyle.highPixelDensityThreshold) // no need for sub-pixel alignment with high pixel density
 
         T.ScrollBar.vertical: ScrollBarExt {
             id: flickableScrollBar

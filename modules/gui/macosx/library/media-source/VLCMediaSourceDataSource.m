@@ -25,6 +25,7 @@
 #import "VLCLibraryMediaSourceViewNavigationStack.h"
 #import "VLCMediaSource.h"
 #import "VLCMediaSourceBaseDataSource.h"
+#import "VLCMediaSourceTableViewSorting.h"
 
 #import "extensions/NSPasteboardItem+VLCAdditions.h"
 #import "extensions/NSString+Helpers.h"
@@ -55,6 +56,9 @@ NSString * const VLCMediaSourceDataSourceLoadingEnded = @"VLCMediaSourceDataSour
 @interface VLCMediaSourceDataSource()
 {
     VLCInputItem *_childRootInput;
+    // Table row order; grid items continue to use nodeToDisplay.children.
+    NSArray<VLCInputNode *> *_tableViewNodes;
+    BOOL _ignoringTableViewSelectionChanges;
 }
 
 @property (readwrite) dispatch_source_t observedPathDispatchSource;
@@ -157,6 +161,14 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 
     if (!preparseStarted) {
         [self.nodeToDisplay clearChildrenCache];
+    }
+
+    if (self.parentBaseDataSource.childDataSource != self ||
+        self.tableView.dataSource != self) {
+        return;
+    }
+
+    if (!preparseStarted) {
         [self reloadData];
     }
 
@@ -167,9 +179,27 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
                                                       object:self];
 }
 
+- (nullable NSNumber *)knownChildCountForInputNode:(VLCInputNode *)inputNode
+{
+    if (inputNode.inputItem.inputType != ITEM_TYPE_DIRECTORY) {
+        return nil;
+    }
+
+    NSValue * const identifier = inputItemIdentifier(inputNode.inputItem);
+    if ([self.unavailableInputItemIdentifiers containsObject:identifier]) {
+        return nil;
+    }
+
+    const int numberOfChildren = inputNode.numberOfChildren;
+    if (numberOfChildren > 0 || [self.preparedInputItemIdentifiers containsObject:identifier]) {
+        return @(numberOfChildren);
+    }
+    return self.childCountsByInputItemIdentifier[identifier];
+}
+
 - (void)reloadCountForInputItemIdentifier:(NSValue *)identifier
 {
-    NSArray<VLCInputNode *> * const children = self.nodeToDisplay.children;
+    NSArray<VLCInputNode *> * const children = _tableViewNodes;
     const NSUInteger row = [children indexOfObjectPassingTest:^BOOL(VLCInputNode * const childNode,
                                                                     NSUInteger __unused idx,
                                                                     BOOL * const __unused stop) {
@@ -180,8 +210,20 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
     }
 
     [children[row] clearChildrenCache];
+    if (self.tableView.dataSource != self) {
+        return;
+    }
 
-    const NSInteger countColumn = [self.tableView columnWithIdentifier:@"VLCMediaSourceTableCountColumn"];
+    VLCMediaSourceTableViewSorting * const sorting =
+        [[VLCMediaSourceTableViewSorting alloc] initWithSortDescriptors:self.tableView.sortDescriptors];
+    // A changed count can move rows when Count is the primary sort or a tie breaker.
+    // Reload to apply that ordering and restore selection; otherwise refresh only the count cell.
+    if ([sorting sortsByKey:VLCMediaSourceTableCountSortDescriptorKey]) {
+        [self reloadData];
+        return;
+    }
+
+    const NSInteger countColumn = [self.tableView columnWithIdentifier:VLCMediaSourceTableCountColumnIdentifier];
     if (self.tableView.hidden || countColumn == -1) {
         return;
     }
@@ -202,8 +244,21 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 {
     if (notification.object != self.displayedMediaSource)
         return;
+
+    VLCInputItem * const changedParentInputItem =
+        notification.userInfo[VLCMediaSourceChildrenParentInputItemKey];
+    VLCInputItem * const displayedInputItem = self.nodeToDisplay.inputItem;
+    if (changedParentInputItem != nil &&
+        changedParentInputItem.vlcInputItem != displayedInputItem.vlcInputItem) {
+        return;
+    }
+
     dispatch_async(dispatch_get_main_queue(), ^{
         [self clearDisplayedNodeChildrenCaches];
+        // Navigation history retains inactive data sources that also receive these notifications.
+        if (self.parentBaseDataSource.childDataSource != self) {
+            return;
+        }
         [self reloadData];
     });
 }
@@ -220,7 +275,8 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
     self.nodeObservation = [self.displayedMediaSource observeInputNode:nodeToDisplay
                                                               onChange:^(VLCMediaSourceNodeChange change) {
         const typeof(self) strongSelf = weakSelf;
-        if (strongSelf == nil) {
+        if (strongSelf == nil || strongSelf.parentBaseDataSource.childDataSource != strongSelf ||
+            strongSelf.tableView.dataSource != strongSelf) {
             return;
         }
         switch (change) {
@@ -233,7 +289,12 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
         }
     }];
 
-    [self reloadData];
+    // Initial node configuration precedes attaching the shared views.
+    if (self.tableView == nil) {
+        [self updateTableViewNodes];
+    } else {
+        [self reloadData];
+    }
     NSValue * const identifier = inputItemIdentifier(nodeToDisplay.inputItem);
     NSString * const loadingNotificationName =
         [self.preparingInputItemIdentifiers containsObject:identifier]
@@ -250,6 +311,7 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 
 - (void)setupViews
 {
+    [self updateTableViewNodes];
     [self.tableView setDoubleAction:@selector(tableViewAction:)];
     [self.tableView setTarget:self];
     [self.tableView registerForDraggedTypes:@[NSFilenamesPboardType]];
@@ -348,13 +410,40 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 
 #pragma mark - table view data source and delegation
 
+- (void)updateTableViewNodes
+{
+    VLCMediaSourceTableViewSorting * const sorting =
+        [[VLCMediaSourceTableViewSorting alloc] initWithSortDescriptors:self.tableView.sortDescriptors ?: @[]];
+    _tableViewNodes = [sorting sortedItems:self.nodeToDisplay.children ?: @[]
+                              valueForItem:^id(VLCInputNode *node, NSString *key) {
+        VLCInputItem * const inputItem = node.inputItem;
+        if ([key isEqualToString:VLCMediaSourceTableNameSortDescriptorKey]) {
+            return inputItem.name ?: @"";
+        }
+        if ([key isEqualToString:VLCMediaSourceTableCountSortDescriptorKey]) {
+            return [self knownChildCountForInputNode:node] ?: @(-1);
+        }
+        if ([key isEqualToString:VLCMediaSourceTableKindSortDescriptorKey]) {
+            return inputItem.inputTypeDescription;
+        }
+        NSAssert([key isEqualToString:VLCMediaSourceTableTagsSortDescriptorKey],
+                 @"Unexpected media source sort key: %@", key);
+        return [inputItem.finderTags componentsJoinedByString:@", "] ?: @"";
+    }];
+}
+
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView
 {
     if (_nodeToDisplay) {
-        return _nodeToDisplay.numberOfChildren;
+        return _tableViewNodes.count;
     }
 
     return 0;
+}
+
+- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray<NSSortDescriptor *> *)oldDescriptors
+{
+    [self reloadData];
 }
 
 - (NSView *)tableView:(NSTableView *)tableView
@@ -363,7 +452,7 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 {
     VLCInputNode * const inputNode = [self mediaSourceInputNodeAtRow:row];
 
-    if ([tableColumn.identifier isEqualToString:@"VLCMediaSourceTableNameColumn"]) {
+    if ([tableColumn.identifier isEqualToString:VLCMediaSourceTableNameColumnIdentifier]) {
         VLCLibraryTableCellView * const cellView =
             [tableView makeViewWithIdentifier:VLCLibraryTableCellViewIdentifier owner:self];
         cellView.representedInputItem = inputNode.inputItem;
@@ -373,7 +462,7 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
     }
 
      // Only present count view for folders
-    if ([tableColumn.identifier isEqualToString:@"VLCMediaSourceTableCountColumn"] &&
+    if ([tableColumn.identifier isEqualToString:VLCMediaSourceTableCountColumnIdentifier] &&
         inputNode.inputItem.inputType != ITEM_TYPE_DIRECTORY) {
         return nil;
     }
@@ -387,18 +476,14 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
     }
     NSAssert(cellView, @"Cell view should not be nil");
 
-    if ([tableColumn.identifier isEqualToString:@"VLCMediaSourceTableCountColumn"]) {
+    if ([tableColumn.identifier isEqualToString:VLCMediaSourceTableCountColumnIdentifier]) {
         NSValue * const identifier = inputItemIdentifier(inputNode.inputItem);
-        const int numberOfChildren = inputNode.numberOfChildren;
-        NSNumber * const cachedChildCount = self.childCountsByInputItemIdentifier[identifier];
+        NSNumber * const knownChildCount = [self knownChildCountForInputNode:inputNode];
         if ([self.unavailableInputItemIdentifiers containsObject:identifier]) {
             cellView.textField.stringValue = NSTR("Unavailable");
-        } else if (numberOfChildren > 0 || [self.preparedInputItemIdentifiers containsObject:identifier]) {
+        } else if (knownChildCount != nil) {
             cellView.textField.stringValue =
-                [NSString stringWithFormat:@"%i items", numberOfChildren];
-        } else if (cachedChildCount != nil) {
-            cellView.textField.stringValue =
-                [NSString stringWithFormat:@"%li items", cachedChildCount.integerValue];
+                [NSString stringWithFormat:@"%li items", knownChildCount.integerValue];
         } else {
             cellView.textField.stringValue = NSTR("Loading…");
             if (![self.preparingInputItemIdentifiers containsObject:identifier]) {
@@ -426,57 +511,9 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
                 });
             }
         }
-    } else if ([tableColumn.identifier isEqualToString:@"VLCMediaSourceTableKindColumn"]) {
-        NSString *typeName = NSTR("Unknown");
-        switch (inputNode.inputItem.inputType) {
-            case ITEM_TYPE_UNKNOWN:
-                typeName = NSTR("Unknown");
-                break;
-            case ITEM_TYPE_FILE:
-            {
-                NSString * const filePath = inputNode.inputItem.MRL;
-                NSString * const extension = filePath.pathExtension.lowercaseString;
-                if (extension.length > 0) {
-                    typeName = [NSString stringWithFormat:@"%@ File", extension.capitalizedString];
-
-                    const CFStringRef extCF = (__bridge CFStringRef)extension;
-                    const CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, extCF, NULL);
-                    if (uti) {
-                        CFStringRef descriptionCF = UTTypeCopyDescription(uti);
-                        if (descriptionCF) {
-                            typeName = CFBridgingRelease(descriptionCF);
-                        }
-                        CFRelease(uti);
-                    }
-                } else {
-                    typeName = NSTR("File");
-                }
-                break;
-            }
-            case ITEM_TYPE_DIRECTORY:
-                typeName = NSTR("Directory");
-                break;
-            case ITEM_TYPE_DISC:
-                typeName = NSTR("Disc");
-                break;
-            case ITEM_TYPE_CARD:
-                typeName = NSTR("Card");
-                break;
-            case ITEM_TYPE_STREAM:
-                typeName = NSTR("Stream");
-                break;
-            case ITEM_TYPE_PLAYLIST:
-                typeName = NSTR("Playlist");
-                break;
-            case ITEM_TYPE_NODE:
-                typeName = NSTR("Node");
-                break;
-            case ITEM_TYPE_NUMBER:
-                typeName = NSTR("Undefined");
-                break;
-        }
-        cellView.textField.stringValue = typeName;
-    } else if ([tableColumn.identifier isEqualToString:@"VLCMediaSourceTableTagsColumn"]) {
+    } else if ([tableColumn.identifier isEqualToString:VLCMediaSourceTableKindColumnIdentifier]) {
+        cellView.textField.stringValue = inputNode.inputItem.inputTypeDescription;
+    } else if ([tableColumn.identifier isEqualToString:VLCMediaSourceTableTagsColumnIdentifier]) {
         static NSString * const basicCellViewIdentifier = @"BasicTableCellViewIdentifier";
         NSTableCellView *cellView = [tableView makeViewWithIdentifier:basicCellViewIdentifier
                                                                 owner:self];
@@ -498,6 +535,9 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 
 - (void)tableViewSelectionDidChange:(NSNotification *)notification
 {
+    if (_ignoringTableViewSelectionChanges) {
+        return;
+    }
     NSInteger selectedIndex = self.tableView.selectedRow;
     if (selectedIndex < 0) {
         return;
@@ -557,14 +597,10 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
         return nil;
     }
 
-    VLCInputNode *rootNode = _nodeToDisplay;
-    NSArray *nodeChildren = rootNode.children;
-
-    if (nodeChildren == nil || nodeChildren.count == 0) {
+    if (tableViewRow < 0 || (NSUInteger)tableViewRow >= _tableViewNodes.count) {
         return nil;
     }
-
-    return nodeChildren[tableViewRow];
+    return _tableViewNodes[tableViewRow];
 }
 
 - (VLCInputItem*)mediaSourceInputItemAtRow:(NSInteger)tableViewRow
@@ -609,13 +645,42 @@ static NSValue * _Nullable inputItemIdentifier(VLCInputItem * _Nullable const in
 
 - (void)reloadData
 {
+    if (self.parentBaseDataSource.childDataSource != self ||
+        self.tableView.dataSource != self ||
+        self.collectionView.dataSource != self) {
+        return;
+    }
+    NSParameterAssert(self.tableView.dataSource == self);
+
     if (!_collectionView.hidden) {
         [_collectionView reloadData];
     }
 
-    if(!_tableView.hidden) {
-        [_tableView reloadData];
-    }
+    // Row indexes change when sorting; preserve selection by input-item identity.
+    NSMutableSet<NSValue *> * const selectedInputItemIdentifiers = NSMutableSet.set;
+    [self.tableView.selectedRowIndexes enumerateIndexesUsingBlock:^(NSUInteger row, BOOL * const __unused stop) {
+        if (row >= self->_tableViewNodes.count) {
+            return;
+        }
+
+        NSValue * const identifier = inputItemIdentifier(self->_tableViewNodes[row].inputItem);
+        if (identifier == nil) {
+            return;
+        }
+        [selectedInputItemIdentifiers addObject:identifier];
+    }];
+    [self updateTableViewNodes];
+    _ignoringTableViewSelectionChanges = YES;
+    [self.tableView reloadData];
+    NSMutableIndexSet * const selectedRows = NSMutableIndexSet.indexSet;
+    [_tableViewNodes enumerateObjectsUsingBlock:^(VLCInputNode * const node, NSUInteger row, BOOL * const __unused stop) {
+        if ([selectedInputItemIdentifiers containsObject:inputItemIdentifier(node.inputItem)]) {
+            [selectedRows addIndex:row];
+        }
+    }];
+    // Restoring selection must not trigger folder navigation.
+    [self.tableView selectRowIndexes:selectedRows byExtendingSelection:NO];
+    _ignoringTableViewSelectionChanges = NO;
 
     [NSNotificationCenter.defaultCenter postNotificationName:VLCMediaSourceDataSourceNodeChanged
                                                       object:self];

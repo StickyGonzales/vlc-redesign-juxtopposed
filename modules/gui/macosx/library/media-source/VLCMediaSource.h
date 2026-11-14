@@ -37,6 +37,7 @@ extern NSString *VLCMediaSourceChildrenAdded;
 extern NSString *VLCMediaSourceChildrenRemoved;
 extern NSString *VLCMediaSourcePreparsingStarted;
 extern NSString *VLCMediaSourcePreparsingEnded;
+extern NSString * const VLCMediaSourceChildrenParentInputItemKey;
 extern NSString * const VLCMediaSourcePreparseInputItemKey;
 extern NSString * const VLCMediaSourcePreparseStatusKey;
 
@@ -63,6 +64,7 @@ extern NSString * const VLCMediaSourcePreparseStatusKey;
 @property (nonatomic, readonly) NSString *mediaSourceDescription;
 @property (nonatomic, readonly) VLCInputNode *rootNode;
 @property (nonatomic, readonly) enum services_discovery_category_e category;
+@property (nonatomic, readonly) NSString *categoryDescription;
 @property (readwrite) void (^willStartGeneratingChildNodesForNodeHandler)(input_item_node_t *);
 @property (readwrite) void (^didFinishGeneratingChildNodesForNodeHandler)(input_item_node_t *);
 

@@ -45,8 +45,7 @@ Flickable {
     boundsBehavior: Flickable.StopAtBounds
     clip: !fadingEdge.implicitClipping && (height < implicitHeight)
 
-    // TODO: `vlcTime` type can not be used due to Qt 6.2:
-    signal playerPositionChangeRequested(var time)
+    signal playerPositionChangeRequested(vlcTime time)
 
     function snapToCurrentLyric() {
         const idx = Player.currentLyricIndex
@@ -106,8 +105,7 @@ Flickable {
                 id: lyricDelegate
 
                 required property int index
-                // TODO: `timedText` type can not be used due to Qt 6.2:
-                required property var modelData
+                required property timedText modelData
 
                 readonly property bool isCurrent: index === Player.currentLyricIndex
 
@@ -142,7 +140,8 @@ Flickable {
                 }
                 Behavior on opacity {
                     enabled: lyricsFlickable.animationsEnabled
-                    OpacityAnimator { duration: VLCStyle.duration_long }
+                    // NOTE: Do not use `OpacityAnimator` here, interrupting the fade stalls the UI (QTBUG-151700).
+                    NumberAnimation { duration: VLCStyle.duration_long }
                 }
 
                 TapHandler {

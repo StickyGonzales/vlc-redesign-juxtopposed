@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
+import QtQuick.Window
 import QtQuick.Templates as T
 
 import VLC.MainInterface
@@ -27,8 +28,28 @@ import VLC.Util
 
 T.Control {
     id: root
-    width: Math.round(VLCStyle.dp(320, VLCStyle.scale))
-    height: Math.round(VLCStyle.dp(180, VLCStyle.scale))
+    width: Helpers.alignRound(320, _alignNumber)
+    height: Helpers.alignRound(180, _alignNumber)
+
+    // Default size is always aligned, this only
+    // controls position alignment. Note that
+    // setting this may make dragging less smooth,
+    // depending on how big is the denominator
+    // for the fractional DPR (the bigger, the
+    // worse). See `Helpers::denominatorForFloat()`.
+    property bool pixelAlignedForDPR: !MainCtx.videoSurfaceCanHaveFractionalPosition
+
+    transform: Translate {
+        x: (root.x !== targetX) ? (targetX - root.x) : 0.0
+        y: (root.y !== targetY) ? (targetY - root.y) : 0.0
+
+        readonly property real targetX: root.pixelAlignedForDPR ? Helpers.alignRound(root.x, root._alignNumber)
+                                                                : (MainCtx.videoSurfaceCanHaveFractionalPosition ? root.x
+                                                                                                                 : Math.round(root.x))
+        readonly property real targetY: root.pixelAlignedForDPR ? Helpers.alignRound(root.y, root._alignNumber)
+                                                                : (MainCtx.videoSurfaceCanHaveFractionalPosition ? root.y
+                                                                                                                 : Math.round(root.y))
+    }
 
     objectName: "pip window"
 
@@ -46,6 +67,17 @@ T.Control {
     Accessible.focusable: false
     Accessible.name: qsTr("video content")
 
+    property real _eDPR: MainCtx.effectiveDevicePixelRatio(Window.window) || 1.0
+    readonly property int _alignNumber: pixelAlignedForDPR ? Helpers.denominatorForFloat(_eDPR) : 1
+
+    Connections {
+        target: MainCtx
+
+        function onIntfDevicePixelRatioChanged() {
+            root._eDPR = MainCtx.effectiveDevicePixelRatio(root.Window.window) || 1.0
+        }
+    }
+
     Drag.active: dragHandler.active
 
     Drag.onActiveChanged: {
@@ -57,64 +89,48 @@ T.Control {
         root.anchors.horizontalCenter = undefined
     }
 
-    DoubleClickIgnoringItem {
-        anchors.fill: parent
+    TapHandler {
+        dragThreshold: dragHandler.dragThreshold
 
-        TapHandler {
-            gesturePolicy: TapHandler.WithinBounds
-
-            onDoubleTapped: (eventPoint, button) => {
-                // Docs are lying, there is no `deviceType`: QTBUG-135104
-                if (eventPoint.device.type !== PointerDevice.TouchScreen)
-                    MainCtx.playerView = true
-            }
-
-            onTapped: (eventPoint, button) => {
-                // Docs are lying, there is no `deviceType`: QTBUG-135104
-                if (eventPoint.device.type === PointerDevice.TouchScreen) {
-                    // Breaking the initial binding is intentional here:
-                    root.hideControls = !root.hideControls
-                } else {
-                    MainPlaylistController.togglePlayPause()
-                }
-            }
+        onDoubleTapped: (eventPoint, button) => {
+            // Docs are lying, there is no `deviceType`: QTBUG-135104
+            if (eventPoint.device.type !== PointerDevice.TouchScreen)
+                MainCtx.playerView = true
         }
 
-        DragHandler {
-            id: dragHandler
-
-            target: root
-
-            cursorShape: Qt.DragMoveCursor
-
-            dragThreshold: 0
-
-            grabPermissions: PointerHandler.CanTakeOverFromAnything
-
-            xAxis.minimum: root.dragXMin
-            xAxis.maximum: root.dragXMax
-            yAxis.minimum: root.dragYMin
-            yAxis.maximum: root.dragYMax
-        }
-
-        HoverHandler {
-            id: hoverHandler
-
-            grabPermissions: PointerHandler.CanTakeOverFromAnything
-            cursorShape: Qt.ArrowCursor
-
-            Component.onCompleted: {
-                if (typeof blocking === 'boolean')
-                    blocking = true // Qt 6.3 feature
+        onTapped: (eventPoint, button) => {
+            // Docs are lying, there is no `deviceType`: QTBUG-135104
+            if (eventPoint.device.type === PointerDevice.TouchScreen) {
+                // Breaking the initial binding is intentional here:
+                root.hideControls = !root.hideControls
+            } else {
+                MainPlaylistController.togglePlayPause()
             }
         }
+    }
+
+    DragHandler {
+        id: dragHandler
+
+        target: root
+
+        cursorShape: Qt.DragMoveCursor
+
+        dragThreshold: 0
+
+        grabPermissions: PointerHandler.CanTakeOverFromAnything
+
+        xAxis.minimum: root.dragXMin
+        xAxis.maximum: root.dragXMax
+        yAxis.minimum: root.dragYMin
+        yAxis.maximum: root.dragYMax
     }
 
     background: VideoSurface {
         id: videoSurface
         videoSurfaceProvider: MainCtx.videoSurfaceProvider
 
-        color: (hoverHandler.hovered ||
+        color: (hovered ||
                 playButton?.hovered ||
                 closeButton?.hovered ||
                 fullscreenButton?.hovered) ? "#10000000" : "transparent"
@@ -128,16 +144,10 @@ T.Control {
 
     contentItem: Item {
         visible: !root.hideControls &&
-                 (hoverHandler.hovered ||
+                 (videoSurface.hovered ||
                  playButton.hovered ||
                  closeButton.hovered ||
                  fullscreenButton.hovered)
-
-        // Raise the content item so that the handlers of the control do
-        // not handle events that are to be handled by the handlers/items
-        // of the content item. Raising the content item should be fine
-        // because content item is supposed to be the foreground item.
-        z: 1
 
         Widgets.IconButton {
             id: playButton

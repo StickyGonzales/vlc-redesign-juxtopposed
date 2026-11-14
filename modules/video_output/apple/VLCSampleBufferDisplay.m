@@ -434,6 +434,8 @@ CreateCVPXConverter(vout_display_t *vd, const video_format_t *fmt)
 
     converter->fmt_out.video.i_chroma =
     converter->fmt_out.i_codec = VLC_CODEC_CVPX_BGRA;
+    memset(&converter->fmt_out.video.dovi, 0,
+           sizeof(converter->fmt_out.video.dovi));
 
     converter->p_module = vlc_filter_LoadModule(converter, "video converter", NULL, false);
     if (!converter->p_module)
@@ -652,6 +654,7 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
 @property (nonatomic, copy) NSString *matrix;
 @property (nonatomic, copy) NSString *primaries;
 @property (nonatomic, copy) NSString *transfer;
+@property (nonatomic) BOOL dolbyVision;
 @property (nonatomic) BOOL installedDisplayCriteria;
 @property (nonatomic) AVDisplayCriteria *pendingDisplayCriteria;
 @end
@@ -700,7 +703,7 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
 
 - (void)matchFormatDescription:(CMVideoFormatDescriptionRef)formatDescription
 {
-    if (formatDescription == NULL)
+    if (formatDescription == NULL || self.dolbyVision)
         return;
 
     NSDictionary *extensions = (__bridge NSDictionary *)
@@ -718,7 +721,8 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
                      refreshRate:self.refreshRate
                           matrix:matrix
                        primaries:primaries
-                        transfer:transfer];
+                        transfer:transfer
+                     dolbyVision:NO];
 }
 
 - (void)matchVideoFormat:(const video_format_t *)format
@@ -733,7 +737,7 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
     if (pixelFormat == 0)
         return;
 
-    CFMutableDictionaryRef extensions = cfdict_create(3);
+    CFMutableDictionaryRef extensions = cfdict_create(4);
     if (extensions == NULL)
         return;
 
@@ -751,10 +755,27 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
         CFDictionarySetValue(extensions, kCVImageBufferTransferFunctionKey,
                              transfer);
 
+    if (format->dovi.rpu_present) {
+        CFMutableDictionaryRef atoms = cfdict_create(1);
+        if (atoms == NULL || !cfdict_set_dovi_config(atoms, format)) {
+            if (atoms != NULL)
+                CFRelease(atoms);
+            CFRelease(extensions);
+            return;
+        }
+        CFDictionarySetValue(extensions,
+            kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms,
+            atoms);
+        CFRelease(atoms);
+    }
+
     CMVideoFormatDescriptionRef formatDescription = NULL;
     OSStatus status = CMVideoFormatDescriptionCreate(
-        kCFAllocatorDefault, pixelFormat, format->i_visible_width,
-        format->i_visible_height, extensions, &formatDescription);
+        kCFAllocatorDefault,
+        format->dovi.rpu_present ? kCMVideoCodecType_DolbyVisionHEVC
+                                 : pixelFormat,
+        format->i_visible_width, format->i_visible_height, extensions,
+        &formatDescription);
     CFRelease(extensions);
     if (status != noErr)
         return;
@@ -764,7 +785,8 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
                                  (float)format->i_frame_rate_base
                           matrix:(__bridge NSString *)matrix
                        primaries:(__bridge NSString *)primaries
-                        transfer:(__bridge NSString *)transfer];
+                        transfer:(__bridge NSString *)transfer
+                     dolbyVision:format->dovi.rpu_present];
     CFRelease(formatDescription);
 }
 
@@ -773,12 +795,14 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
                          matrix:(NSString *)matrix
                       primaries:(NSString *)primaries
                        transfer:(NSString *)transfer
+                    dolbyVision:(BOOL)dolbyVision
 {
     if (@available(tvOS 17.0, visionOS 1.0, *)) {
         if (refreshRate == 0.f || formatDescription == NULL)
             return;
 
         if (self.refreshRate == refreshRate &&
+            self.dolbyVision == dolbyVision &&
             [self.matrix isEqualToString:matrix] &&
             [self.primaries isEqualToString:primaries] &&
             [self.transfer isEqualToString:transfer])
@@ -791,6 +815,7 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
             return;
 
         self.refreshRate = refreshRate;
+        self.dolbyVision = dolbyVision;
         self.matrix = matrix;
         self.primaries = primaries;
         self.transfer = transfer;
@@ -863,6 +888,9 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
     + (instancetype)new NS_UNAVAILABLE;
     - (instancetype)initWithVoutDisplay:(vout_display_t *)vd;
     - (void)placeVideo:(vout_display_place_t)newPlace;
+    - (void)attachHDRMetadataFromFormat:(const video_format_t *)format
+                          toPixelBuffer:(CVPixelBufferRef)pixelBuffer
+                          API_AVAILABLE(ios(11.0));
 @end
 
 @implementation VLCSampleBufferDisplay
@@ -1024,6 +1052,52 @@ API_AVAILABLE(tvos(17.0), visionos(1.0))
     self.displayView.frame = [self frameForPlace:&newPlace];
 }
 
+- (void)attachHDRMetadataFromFormat:(const video_format_t *)format
+                      toPixelBuffer:(CVPixelBufferRef)pixelBuffer {
+    if (format->mastering.max_luminance) {
+        struct {
+            uint16_t primaries[6];
+            uint16_t white_point[2];
+            uint32_t max_luminance;
+            uint32_t min_luminance;
+        } __attribute__((packed)) mastering;
+        _Static_assert(sizeof(mastering) == 24,
+            "Mismatch with the mastering display color volume size");
+        for (size_t i = 0; i < ARRAY_SIZE(mastering.primaries); i++)
+            mastering.primaries[i] = hton16(format->mastering.primaries[i]);
+        for (size_t i = 0; i < ARRAY_SIZE(mastering.white_point); i++)
+            mastering.white_point[i] = hton16(format->mastering.white_point[i]);
+        mastering.max_luminance = hton32(format->mastering.max_luminance);
+        mastering.min_luminance = hton32(format->mastering.min_luminance);
+
+        NSData *data = [[NSData alloc] initWithBytes:&mastering
+                                              length:sizeof(mastering)];
+        CVBufferSetAttachment(pixelBuffer,
+                              kCVImageBufferMasteringDisplayColorVolumeKey,
+                              (__bridge CFDataRef)data,
+                              kCVAttachmentMode_ShouldPropagate);
+    }
+
+    if (format->lighting.MaxCLL || format->lighting.MaxFALL) {
+        struct {
+            uint16_t max_cll;
+            uint16_t max_fall;
+        } __attribute__((packed)) lighting = {
+            hton16(format->lighting.MaxCLL),
+            hton16(format->lighting.MaxFALL),
+        };
+        _Static_assert(sizeof(lighting) == 4,
+            "Mismatch with the content light level info size");
+
+        NSData *data = [[NSData alloc] initWithBytes:&lighting
+                                              length:sizeof(lighting)];
+        CVBufferSetAttachment(pixelBuffer,
+                              kCVImageBufferContentLightLevelInfoKey,
+                              (__bridge CFDataRef)data,
+                              kCVAttachmentMode_ShouldPropagate);
+    }
+}
+
 - (void)close {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [self.displayModeMatcher close];
@@ -1078,12 +1152,13 @@ static void RenderPicture(vout_display_t *vd, picture_t *pic, vlc_tick_t date) {
         sys.rotationContext.rotation = kVLCSampleBufferPixelRotation_90CCW;
         break;
     case ORIENT_TRANSPOSED:
-        sys.rotationContext.flip = kVLCSampleBufferPixelFlip_V;
+        sys.rotationContext.flip = kVLCSampleBufferPixelFlip_H;
         sys.rotationContext.rotation = kVLCSampleBufferPixelRotation_90CW;
         break;
     case ORIENT_ANTI_TRANSPOSED:
-        sys.rotationContext.flip = kVLCSampleBufferPixelFlip_H;
+        sys.rotationContext.flip = kVLCSampleBufferPixelFlip_V;
         sys.rotationContext.rotation = kVLCSampleBufferPixelRotation_90CW;
+        break;
     case ORIENT_NORMAL:
     default:
         sys.rotationContext = nil;
@@ -1134,6 +1209,9 @@ static void RenderPicture(vout_display_t *vd, picture_t *pic, vlc_tick_t date) {
         (__bridge CFDictionaryRef)aspectRatio,
         kCVAttachmentMode_ShouldPropagate
     );
+
+    if (@available(iOS 11.0, *))
+        [sys attachHDRMetadataFromFormat:&pic->format toPixelBuffer:pixelBuffer];
 
     CMSampleBufferRef sampleBuffer = NULL;
     CMVideoFormatDescriptionRef formatDesc = NULL;

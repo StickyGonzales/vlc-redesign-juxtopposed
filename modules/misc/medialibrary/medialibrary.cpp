@@ -495,7 +495,8 @@ bool MediaLibrary::Init()
         return false;
     }
 
-    m_ml->setDiscoverNetworkEnabled( true );
+    m_ml->setDiscoverNetworkEnabled(
+        var_InheritBool( VLC_OBJECT( m_vlc_ml ), "ml-network-discovery" ) );
 
     m_initialized = true;
     return true;
@@ -608,6 +609,22 @@ int MediaLibrary::Control( int query, va_list args )
             const auto type = static_cast<medialibrary::HistoryType>( va_arg(args, int) );
             m_ml->clearHistory( type );
             break;
+        }
+        case VLC_ML_CLEAR_HISTORY_BY_MEDIA_TYPE:
+        {
+            medialibrary::IMedia::Type type;
+            switch ( va_arg( args, int ) )
+            {
+                case VLC_ML_MEDIA_TYPE_AUDIO:
+                    type = medialibrary::IMedia::Type::Audio;
+                    break;
+                case VLC_ML_MEDIA_TYPE_VIDEO:
+                    type = medialibrary::IMedia::Type::Video;
+                    break;
+                default:
+                    return VLC_EGENERIC;
+            }
+            return m_ml->clearHistoryByMediaType( type ) ? VLC_SUCCESS : VLC_EGENERIC;
         }
         case VLC_ML_NEW_EXTERNAL_MEDIA:
         {
@@ -1753,6 +1770,10 @@ medialibrary::SortingCriteria MediaLibrary::sortingCriteria(int sort)
             return medialibrary::SortingCriteria::Filename;
         case VLC_ML_SORTING_TRACKNUMBER:
             return medialibrary::SortingCriteria::TrackNumber;
+        case VLC_ML_SORTING_RATING:
+            return medialibrary::SortingCriteria::Rating;
+        case VLC_ML_SORTING_TRACKNUMBER_ALBUM_RELEASE_YEAR:
+            return medialibrary::SortingCriteria::TrackNumberAlbumReleaseYear;
         default:
             vlc_assert_unreachable();
     }
@@ -1911,7 +1932,7 @@ int MediaLibrary::controlMedia( int query, va_list args )
         {
             auto mrl = va_arg( args, const char* );
             auto sizeType = va_arg( args, int );
-            m->setThumbnail( mrl, static_cast<medialibrary::ThumbnailSizeType>( sizeType ) );
+            m->setThumbnail( mrl, static_cast<medialibrary::ThumbnailSizeType>( sizeType ), false );
             return VLC_SUCCESS;
         }
         case VLC_ML_MEDIA_ADD_EXTERNAL_MRL:
@@ -2681,6 +2702,7 @@ static void Close( vlc_object_t* obj )
                               "media from" )
 
 #define ML_VERBOSE _( "Extra verbose media library logs" )
+#define ML_NETWORK_DISCOVERY N_( "Discover network shares" )
 
 vlc_module_begin()
     set_shortname(N_("media library"))
@@ -2689,4 +2711,5 @@ vlc_module_begin()
     set_capability("medialibrary", 100)
     set_callbacks(Open, Close)
     add_bool( "ml-verbose", false, ML_VERBOSE, nullptr )
+    add_bool( "ml-network-discovery", true, ML_NETWORK_DISCOVERY, nullptr )
 vlc_module_end()

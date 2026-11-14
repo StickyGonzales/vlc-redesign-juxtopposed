@@ -27,7 +27,7 @@ import VLC.Widgets as Widgets
 import VLC.Style
 
 T.Button {
-    id: control
+    id: root
 
     // Properties
 
@@ -53,6 +53,10 @@ T.Button {
     // Aliases
     property real iconRotation
 
+    property var onKeyPressedFunc: function (event) {
+        Navigation.defaultKeyAction(event)
+    }
+
     // Settings
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
@@ -69,16 +73,16 @@ T.Button {
 
     Keys.priority: Keys.AfterItem
 
-    Keys.onPressed: (event) => Navigation.defaultKeyAction(event)
+    Keys.onPressed: (event) => { root.onKeyPressedFunc(event) }
 
 
     // Accessible
 
-    Accessible.onPressAction: control.clicked()
+    Accessible.onPressAction: root.clicked()
 
     // Tooltip
 
-    T.ToolTip.visible: (T.ToolTip.text && (!showText || label.implicitWidth > label.width) && (hovered || visualFocus))
+    T.ToolTip.visible: (T.ToolTip.text && (!showText || (root.contentItem?.label && root.contentItem.label.implicitWidth > root.contentItem.label.width)) && (hovered || visualFocus))
 
     T.ToolTip.delay: VLCStyle.delayToolTipAppear
 
@@ -91,20 +95,20 @@ T.Button {
         id: theme
         colorSet: ColorContext.ButtonStandard
 
-        focused: control.visualFocus
-        hovered: control.hovered
-        enabled: control.enabled
-        pressed: control.down
+        focused: root.visualFocus
+        hovered: root.hovered
+        enabled: root.enabled
+        pressed: root.down
     }
 
     background: Widgets.AnimatedBackground {
-        enabled: theme.initialized && !control.extBackgroundAnimation
+        enabled: theme.initialized && !root.extBackgroundAnimation
 
         color: theme.bg.primary
-        border.color: control.visualFocus ? control.colorFocus
-                                          : (theme.border.a > 0.0 ? theme.border : color)
+        border.color: root.visualFocus ? root.colorFocus
+                                       : (theme.border.a > 0.0 ? theme.border : color)
 
-        radius: control.radius
+        radius: root.radius
 
         Rectangle {
             anchors {
@@ -116,73 +120,87 @@ T.Button {
             implicitWidth: (parent.width - VLCStyle.margin_xsmall)
             implicitHeight: VLCStyle.heightBar_xxxsmall
 
-            width: control.contentItem?.implicitWidth ?? implicitWidth
+            width: root.contentItem?.implicitWidth ?? implicitWidth
 
             radius: parent.radius
 
-            visible: (width > 0 && control.checked)
+            visible: (width > 0 && root.checked)
         }
     }
 
+    component DefaultContentIconLabel : Widgets.IconLabel {
+        required property ButtonExt control
+
+        visible: text.length > 0 && control.display !== AbstractButton.TextOnly
+
+        rotation: control.iconRotation
+
+        text: control.iconTxt
+
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+
+        color: control.busy ? "transparent" : control.color
+
+        font.pixelSize: control.iconSize
+
+        // FIXME: use `BusyIndicatorExt` when it is ready (!7180)
+        BusyIndicator {
+            anchors.fill: parent
+
+            padding: 0
+
+            running: control.busy
+
+            palette.text: control.color
+            palette.dark: control.color
+        }
+    }
+
+    component DefaultContentLabel : Label {
+        required property ButtonExt control
+
+        visible: control.showText && control.display !== AbstractButton.IconOnly
+
+        text: control.text
+
+        verticalAlignment: Text.AlignVCenter
+
+        color: control.color
+
+        elide: Text.ElideRight
+
+        font.pixelSize: VLCStyle.fontSize_normal
+        font.weight: Font.DemiBold
+
+        textFormat: Text.PlainText
+
+        //button text is already exposed
+        Accessible.ignored: true
+    }
+
     contentItem: RowLayout {
+        property alias label: label
+
         spacing: 0
 
         Item {
             Layout.fillWidth: true
         }
 
-        Widgets.IconLabel {
+        DefaultContentIconLabel {
             id: iconLabel
 
-            visible: text.length > 0 && control.display !== AbstractButton.TextOnly
-
-            rotation: control.iconRotation
-
-            text: control.iconTxt
-
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-
-            color: control.busy ? "transparent" : control.color
-
-            font.pixelSize: control.iconSize
+            control: root
 
             Layout.fillWidth: !label.visible
             Layout.fillHeight: true
-
-            // FIXME: use `BusyIndicatorExt` when it is ready (!7180)
-            BusyIndicator {
-                anchors.fill: parent
-
-                padding: 0
-
-                running: control.busy
-
-                palette.text: control.color
-                palette.dark: control.color
-            }
         }
 
-        T.Label {
+        DefaultContentLabel {
             id: label
 
-            visible: control.showText && control.display !== AbstractButton.IconOnly
-
-            text: control.text
-
-            verticalAlignment: Text.AlignVCenter
-
-            color: control.color
-
-            elide: Text.ElideRight
-
-            font.pixelSize: VLCStyle.fontSize_normal
-            font.weight: Font.DemiBold
-
-            textFormat: Text.PlainText
-
-            //button text is already exposed
-            Accessible.ignored: true
+            control: root
 
             Layout.fillWidth: true
             Layout.fillHeight: true

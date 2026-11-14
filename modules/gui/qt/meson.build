@@ -12,8 +12,7 @@ qt_cppargs = []
 qt_link_args = [gc_sections_linkargs]
 
 qt6_dep = dependency('qt6',
-    # Note that Qt < 6.2.5 does not provide pc files!
-    version: '>=6.2',
+    version: '>=6.8',
     modules: [
         'Core', 'Gui', 'Widgets', 'Qml',
         'Quick', 'QuickControls2'
@@ -678,7 +677,6 @@ qt_plugin_sources = files(
     'widgets/native/searchlineedit.hpp',
     'widgets/native/viewblockingrectangle.cpp',
     'widgets/native/viewblockingrectangle.hpp',
-    'widgets/native/doubleclickignoringitem.hpp',
 )
 
 if host_system == 'windows'
@@ -839,6 +837,7 @@ qml_modules += {
         'maininterface/qml/MainViewLoader.qml',
         'maininterface/qml/MainDisplay.qml',
         'maininterface/qml/NoMedialibHome.qml',
+        'maininterface/qml/OpenFileSplitButton.qml',
         qml_maininterface_extra_files,
         'maininterface/qml/SideNavigationPane.qml',
         'maininterface/qml/SideNavigationDelegate.qml',
@@ -965,7 +964,7 @@ qml_modules += {
        'player/qml/LyricsFlickable.qml',
        'player/qml/MiniPlayer.qml',
        'player/qml/PIPPlayer.qml',
-       'player/qml/Player.qml',
+       'player/qml/PlayerView.qml',
        'player/qml/PlayerControlLayout.qml',
        'player/qml/PlayerPlaylistVisibilityFSM.qml',
        'player/qml/PlayerToolbarVisibilityFSM.qml',
@@ -1190,6 +1189,7 @@ qml_modules += {
         'widgets/qml/NavigableRow.qml',
         'widgets/qml/PlayCover.qml',
         'widgets/qml/RoundButtonExt.qml',
+        'widgets/qml/SplitButton.qml',
         'widgets/qml/ScaledImage.qml',
         'widgets/qml/TextAutoScroller.qml',
         'widgets/qml/SearchBox.qml',
@@ -1474,23 +1474,21 @@ if qt6_dep.found()
 
         qt_wayland_cargs = ['-DQT_HAS_WAYLAND_PROTOCOLS']
 
-        if qt6_dep.version().version_compare('>= 6.5')
-            qt_wayland_cargs += '-DQT_HAS_WAYLAND_FRACTIONAL_SCALING'
-            qt_wl_viewporter_xml = wayland_protocols_dir / 'stable/viewporter/viewporter.xml'
-            qt_wl_viewporter_hdr = custom_target(
-                'qt-wayland-viewporter-client-header',
-                output: 'viewporter-client-protocol.h',
-                input: qt_wl_viewporter_xml,
-                command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
-            )
-            qt_wl_viewporter_code = custom_target(
-                'qt-wayland-viewporter-code',
-                output: 'viewporter-protocol.c',
-                input: qt_wl_viewporter_xml,
-                command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
-            )
-            qt_wayland_sources += [qt_wl_viewporter_hdr, qt_wl_viewporter_code]
-        endif
+        qt_wayland_cargs += '-DQT_HAS_WAYLAND_FRACTIONAL_SCALING'
+        qt_wl_viewporter_xml = wayland_protocols_dir / 'stable/viewporter/viewporter.xml'
+        qt_wl_viewporter_hdr = custom_target(
+            'qt-wayland-viewporter-client-header',
+            output: 'viewporter-client-protocol.h',
+            input: qt_wl_viewporter_xml,
+            command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+        )
+        qt_wl_viewporter_code = custom_target(
+            'qt-wayland-viewporter-code',
+            output: 'viewporter-protocol.c',
+            input: qt_wl_viewporter_xml,
+            command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+        )
+        qt_wayland_sources += [qt_wl_viewporter_hdr, qt_wl_viewporter_code]
 
         vlc_modules += {
             'name': 'qt_wayland',
@@ -1592,25 +1590,28 @@ if qt6_dep.found()
         'plugin_dir' : 'gui',
     }
 
-    vlc_tests += {
-        'name': 'base_model_test',
-        'sources': files(
-            'tests/test_base_model.cpp',
-            'util/base_model.cpp',
-            'util/base_model.hpp',
-            'util/base_model_p.hpp'),
-        'moc_headers': files(
-            'util/base_model.hpp',
-            'util/listcache.hpp',
-            'util/locallistcacheloader.hpp'),
-        'suite': ['qt'],
-        'link_with': [libvlccore],
-        'link_args': qt_link_args,
-        'dependencies': [qt6_dep, qt_extra_deps],
-    }
-
     qtest_qt6_dep = dependency('qt6', version: '=' + qt6_dep.version(), modules: ['Test'], required: false)
     if qtest_qt6_dep.found()
+        vlc_tests += {
+            'name': 'base_model_test',
+            'sources': files(
+                'tests/test_base_model.cpp',
+                'util/base_model.cpp',
+                'util/base_model.hpp',
+                'util/base_model_p.hpp'),
+            'moc_sources': files(
+                'tests/test_base_model.cpp'
+            ),
+            'moc_headers': files(
+                'util/base_model.hpp',
+                'util/listcache.hpp',
+                'util/locallistcacheloader.hpp'),
+            'suite': ['qt'],
+            'link_with': [libvlccore],
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep, qt_extra_deps, qtest_qt6_dep],
+        }
+
         vlc_tests += {
             'name': 'test_qt_ml_model',
             'sources': files(
@@ -1667,6 +1668,25 @@ if qt6_dep.found()
             'dependencies': [qt6_dep, qt_extra_deps, qtest_qt6_dep]
         }
 
+        vlc_tests += {
+            'name': 'test_qt_csd_button_model',
+            'sources': files(
+                'tests/vlc_stub_modules.cpp',
+                'tests/test_qt_csd_button_model.cpp',
+                'util/csdbuttonmodel.hpp',
+                'util/csdbuttonmodel.cpp'
+            ),
+            'moc_sources': files(
+                'tests/test_qt_csd_button_model.cpp'
+            ),
+            'moc_headers': files(
+                'util/csdbuttonmodel.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_with': [libvlccore, libvlc],
+            'dependencies': [qt6_dep, qt_extra_deps, qtest_qt6_dep]
+        }
 
         vlc_tests += {
             'name': 'test_qt_renderer_manager',

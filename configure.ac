@@ -399,22 +399,26 @@ int foo() { return my_array[0]; }
             aarch64)
                 HAVE_WIN64="1"
                 WINDOWS_ARCH="arm64"
+                MANIFEST_ARCH="arm64"
                 PROGRAMFILES="PROGRAMFILES64"
                 LDFLAGS="${LDFLAGS} -Wl,--high-entropy-va -Wl,--image-base,0x140000000"
             ;;
             amd64|x86_64)
                 HAVE_WIN64="1"
                 WINDOWS_ARCH="x64"
+                MANIFEST_ARCH="amd64"
                 PROGRAMFILES="PROGRAMFILES64"
                 LDFLAGS="${LDFLAGS} -Wl,--high-entropy-va -Wl,--image-base,0x140000000"
                 X86ASMFLAGS="-f win64"
             ;;
             armv7)
                 WINDOWS_ARCH="arm"
+                MANIFEST_ARCH="arm"
                 PROGRAMFILES="PROGRAMFILES"
             ;;
             i?86)
                 WINDOWS_ARCH="x86"
+                MANIFEST_ARCH="x86"
                 PROGRAMFILES="PROGRAMFILES"
                 X86ASMFLAGS="-f win32"
                 X86ASMDEFS="${X86ASMDEFS} -DPREFIX"
@@ -425,6 +429,7 @@ int foo() { return my_array[0]; }
             ;;
         esac
         AC_SUBST([WINDOWS_ARCH])
+        AC_SUBST([MANIFEST_ARCH])
         AC_SUBST([PROGRAMFILES])
 
     fi
@@ -866,7 +871,7 @@ dnl Check for system libs needed
 need_libc=false
 
 dnl Check for usual libc functions
-AC_CHECK_FUNCS([accept4 dup3 fcntl flock fstatat fstatvfs fork getmntent_r getenv getpwuid_r isatty memalign mkostemp mmap open_memstream newlocale pipe2 posix_fadvise qsort_r setlocale uselocale wordexp])
+AC_CHECK_FUNCS([accept4 dup3 fcntl flock fstatat fstatvfs fork getmntent_r getenv getpwuid_r getrandom isatty memalign mkostemp mmap open_memstream newlocale pipe2 posix_fadvise qsort_r setlocale uselocale wordexp])
 AC_REPLACE_FUNCS([aligned_alloc asprintf atof atoll dirfd fdopendir flockfile fsync getdelim getpid gmtime_r lfind lldiv localtime_r memrchr nrand48 poll posix_memalign readv recvmsg rewind sendmsg setenv strcasecmp strcasestr strdup strlcpy strndup strnlen strnstr strsep strtof strtok_r strtoll swab tdestroy tfind timegm timespec_get strverscmp vasprintf writev])
 AC_CHECK_FUNC(fdatasync,,
   [AC_DEFINE(fdatasync, fsync, [Alias fdatasync() to fsync() if missing.])
@@ -3129,18 +3134,26 @@ AS_IF([test "${enable_vpx}" != "no"],[
         VLC_ADD_PLUGIN([vpx])
         VLC_ADD_CPPFLAGS([vpx], [${VPX_CFLAGS}])
         VLC_ADD_LIBS([vpx], [${VPX_LIBS}])
+        vpx_has_feature=no
         AC_CHECK_LIB([vpx],[vpx_codec_vp8_dx], [
             VLC_ADD_CPPFLAGS([vpx], [-DENABLE_VP8_DECODER])
+            vpx_has_feature=yes
         ], [], [${VPX_LIBS}])
         AC_CHECK_LIB([vpx],[vpx_codec_vp9_dx], [
             VLC_ADD_CPPFLAGS([vpx], [-DENABLE_VP9_DECODER])
+            vpx_has_feature=yes
         ], [], [${VPX_LIBS}])
         AC_CHECK_LIB([vpx],[vpx_codec_vp8_cx], [
             VLC_ADD_CPPFLAGS([vpx], [-DENABLE_VP8_ENCODER])
+            vpx_has_feature=yes
         ], [], [${VPX_LIBS}])
         AC_CHECK_LIB([vpx],[vpx_codec_vp9_cx], [
             VLC_ADD_CPPFLAGS([vpx], [-DENABLE_VP9_ENCODER])
+            vpx_has_feature=yes
         ], [], [${VPX_LIBS}])
+        AS_IF([test "${enable_vpx}" = "yes" && test "${vpx_has_feature}" = "no" ],[
+            AC_MSG_ERROR([libvpx does not link with any feature])
+        ])
     ], [
     AS_IF([test "${enable_vpx}" = "yes"],[
         AC_MSG_ERROR([libvpx 1.5.0 or higher was not found])
@@ -4272,7 +4285,6 @@ have_qt_gtk="no"
 have_qt_qtest="no"
 have_qt_quick_test="no"
 have_qt_gui_private="no"
-have_qt65="no"
 have_qt_zstd="no"
 have_fxc="no"
 have_qt_xcb="no"
@@ -4314,7 +4326,7 @@ AS_IF([test "${enable_qt}" != "no"], [
     QT_PATHS="${QMAKE6} -qtconf ${with_qtconf}"
   ])
 
-  QT_MINIMUM_VERSION=6.2
+  QT_MINIMUM_VERSION=6.8
   AC_MSG_CHECKING([Qt is at least ${QT_MINIMUM_VERSION}])
   QT_VERSION_CORE="$(${QT_PATHS}          -query QT_VERSION 2>/dev/null)"
   QT_MINIMUM_MAJ=$(echo ${QT_MINIMUM_VERSION} | cut -d "." -f -1)
@@ -4326,10 +4338,6 @@ AS_IF([test "${enable_qt}" != "no"], [
     have_qt="no"
   ],[
     AC_MSG_RESULT([(${QT_VERSION_CORE}) yes])
-
-  AS_IF([test "${QT_VERSION_MAJ:-0}" -gt "6" || (test "${QT_VERSION_MAJ:-0}" = "6" && test "${QT_VERSION_MIN:-0}" -ge "5")], [
-    have_qt65="yes"
-  ], [])
 
   QT_BIN_DIRECTORY="$(${QT_PATHS}         -query QT_HOST_BINS 2>/dev/null)"
   AC_MSG_NOTICE([using ${QT_PATHS}])
@@ -4576,8 +4584,6 @@ AM_CONDITIONAL([HAVE_QT_QTEST], [test "${have_qt_qtest}" = "yes"])
 AM_CONDITIONAL([HAVE_QT_QUICK_TEST], [test "${have_qt_quick_test}" = "yes"])
 AM_CONDITIONAL([HAVE_QT_GUI_PRIVATE], [test "${have_qt_gui_private}" = "yes"])
 AM_CONDITIONAL([HAVE_FXC], [test "${have_fxc}" = "yes"])
-AM_CONDITIONAL([HAVE_QT67], [test "${QT_VERSION_MAJ:-0}" -gt "6" || (test "${QT_VERSION_MAJ:-0}" = "6" && test "${QT_VERSION_MIN:-0}" -ge "7")])
-AM_CONDITIONAL([HAVE_QT65], [test "${have_qt65}" = "yes"])
 AM_CONDITIONAL([HAVE_QT_ZSTD], [test "${have_qt_zstd}" = "yes"])
 AM_CONDITIONAL([HAVE_QT_XCB], [test "${have_qt_xcb}" = "yes"])
 
@@ -5101,7 +5107,7 @@ dnl Libnotify notification plugin
 dnl
 PKG_ENABLE_MODULES_VLC([NOTIFY], [], [libnotify], [libnotify notification], [auto])
 
-PKG_ENABLE_MODULES_VLC([MEDIALIBRARY], [medialibrary], [medialibrary >= 0.13.0], (medialibrary support), [auto])
+PKG_ENABLE_MODULES_VLC([MEDIALIBRARY], [medialibrary], [medialibrary >= 0.14.0 medialibrary < 0.15.0], (medialibrary support), [auto])
 
 dnl
 dnl  Endianness check
@@ -5437,6 +5443,9 @@ AM_COND_IF([HAVE_WIN32], [
     extras/package/win32/NSIS/spad.nsi
     extras/package/win32/NSIS/vlc.win32.nsi
     extras/package/win32/msi/config.wxi
+    extras/package/win32/libvlc.dll.manifest
+    extras/package/win32/libvlccore.dll.manifest
+    extras/package/win32/vlc.exe.manifest
   ])
 ])
 

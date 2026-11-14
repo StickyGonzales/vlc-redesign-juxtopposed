@@ -685,6 +685,14 @@ static void fromJSON_video_format(struct serdes_sys *sys,
         if (!json_object_to_integer(subobj, "bl_present", &tmp, &err, 0, 1)) {
             video->dovi.bl_present = tmp;
         }
+        if (!json_object_to_integer(subobj, "bl_signal_compatibility_id",
+                                    &tmp, &err, 0, (1 << 4) - 1)) {
+            video->dovi.bl_signal_compatibility_id = tmp;
+        }
+        if (!json_object_to_integer(subobj, "md_compression", &tmp, &err, 0,
+                                    (1 << 2) - 1)) {
+            video->dovi.md_compression = tmp;
+        }
     }
 
     json_object_to_uint(obj, "i_cubemap_padding", &video->i_cubemap_padding,
@@ -706,8 +714,6 @@ static void fromJSON_subs_format(struct serdes_sys *sys,
     bool err = false;
 
     json_object_to_string(obj, "psz_encoding", &sub->psz_encoding, &err);
-    json_object_to_int(obj, "i_x_origin", &sub->i_x_origin, &err);
-    json_object_to_int(obj, "i_y_origin", &sub->i_y_origin, &err);
 
     const struct json_object *subobj = json_get_object(obj, "spu");
     err |= (subobj == NULL);

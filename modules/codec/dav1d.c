@@ -231,12 +231,28 @@ static void ExtractCaptions(decoder_t *dec, const Dav1dPicture *img)
     decoder_sys_t *p_sys = dec->p_sys;
     const struct user_data_s *userdata = (struct user_data_s *) img->m.user_data.data;
     const Dav1dITUTT35 *itu_t35 = img->itut_t35;
-    if(itu_t35 && itu_t35->country_code == 0xb5 &&
-       itu_t35->payload_size > 9 &&
-       !memcmp(itu_t35->payload, "\x00\x0x31GA94\x03", 7))
+
+#if DAV1D_API_VERSION_MAJOR >= 7 || \
+    (DAV1D_API_VERSION_MAJOR == 6 && DAV1D_API_VERSION_MINOR >= 9)
+    const size_t i_t35 = img->n_itut_t35;
+#else
+    const size_t i_t35 = itu_t35 ? 1 : 0;
+#endif
+
+    bool b_captions = false;
+    for(size_t i = 0; i < i_t35; i++)
     {
+        if(itu_t35[i].country_code != 0xb5 ||
+           itu_t35[i].payload_size <= 9 ||
+           memcmp(itu_t35[i].payload, "\x00\x31GA94\x03", 7))
+            continue;
         cc_Extract(&p_sys->cc, CC_PAYLOAD_GA94, true,
-                   &itu_t35->payload[7], itu_t35->payload_size - 7);
+                   &itu_t35[i].payload[7], itu_t35[i].payload_size - 7);
+        b_captions = true;
+    }
+
+    if(b_captions)
+    {
         if(p_sys->cc.b_reorder || p_sys->cc.i_data)
         {
             block_t *p_cc = block_Alloc(p_sys->cc.i_data);
@@ -484,6 +500,7 @@ static int OpenDecoder(vlc_object_t *p_this)
 
     dec->fmt_out.video.i_frame_rate = dec->fmt_in->video.i_frame_rate;
     dec->fmt_out.video.i_frame_rate_base = dec->fmt_in->video.i_frame_rate_base;
+    dec->fmt_out.video.orientation = dec->fmt_in->video.orientation;
 
     bool super_res = false;
     if (!sequence_hdr)
