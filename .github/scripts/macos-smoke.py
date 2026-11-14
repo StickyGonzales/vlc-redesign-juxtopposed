@@ -552,7 +552,7 @@ def finder_trail(log_path, err_path):
                 lines += [l.strip() for l in f if 'macOS:' in l or 'openFiles' in l or 'FileOpen' in l]
         except OSError:
             lines.append(f'(no {os.path.basename(path)})')
-    return ' | trail: ' + ' / '.join(lines[:12])
+    return ' | trail: ' + ' / '.join(lines[:30])
 
 
 def finder_open_launch():
