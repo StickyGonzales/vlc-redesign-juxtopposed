@@ -801,8 +801,16 @@ private:
     {
         if (m_urls.isEmpty())
             return;
-        // a start from Finder: the files wait until the play queue and the main interface exist
-        if (!m_intf->p_mainPlaylistController || !m_intf->p_mi)
+        // a start from Finder: the files wait until the interface is open (its window and video
+        // surface made), as the command line's files do (libvlc_InternalPlay after the open).
+        // Started as soon as MainCtx existed, playback raced the video window: on the Intel runner
+        // the video output stalled at its start (build-macos run 29)
+        bool open;
+        {
+            vlc::threads::mutex_locker locker(lock);
+            open = (open_state == OPEN_STATE_OPENED);
+        }
+        if (!open || !m_intf->p_mainPlaylistController)
         {
             m_batch.start();
             return;
