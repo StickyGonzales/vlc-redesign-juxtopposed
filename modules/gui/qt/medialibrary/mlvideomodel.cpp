@@ -151,7 +151,9 @@ void MLVideoModel::thumbnailUpdated(const QModelIndex& idx, MLItem* mlitem, cons
 {
     auto videoItem = static_cast<MLVideo*>(mlitem);
     videoItem->setSmallCover(status, mrl);
-    emit dataChanged(idx, idx, {VIDEO_THUMBNAIL});
+    // redesign: also the base role: the library's Videos page reads `small_cover`, which kept the
+    // grey placeholder until the page was built again
+    emit dataChanged(idx, idx, {VIDEO_THUMBNAIL, MEDIA_SMALL_COVER});
 }
 
 void MLVideoModel::generateThumbnail(uint64_t id) const
