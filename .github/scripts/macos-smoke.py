@@ -612,6 +612,85 @@ def finder_launch_plain():
 note('finder: a start like a Finder double-click (open -a, no options)', finder_launch_plain())
 
 
+# control (information only): does this runner hand a launch's documents to any app? A minimal
+# Cocoa app whose delegate only logs openFiles, started with open -a and a file, once creating its
+# NSApplication at once and once after 0.5 s (Cone's own start creates it late, in the Qt interface)
+PROBE_SRC = r"""
+#import <Cocoa/Cocoa.h>
+@interface ProbeDelegate : NSObject <NSApplicationDelegate>
+@end
+@implementation ProbeDelegate
+- (void)application:(NSApplication *)app openFiles:(NSArray *)files
+{
+    fprintf(stderr, "probe: openFiles with %lu file(s)\n", (unsigned long)files.count);
+    fflush(stderr);
+}
+- (void)applicationDidFinishLaunching:(NSNotification *)n
+{
+    id isDefault = n.userInfo[NSApplicationLaunchIsDefaultLaunchKey];
+    fprintf(stderr, "probe: launched (%s)\n", [isDefault boolValue] ? "plain" : "to open documents");
+    fflush(stderr);
+}
+@end
+int main(int argc, const char *argv[])
+{
+    @autoreleasepool {
+        if (getenv("PROBE_LATE") || (argc > 0 && strstr(argv[0], "Late")))
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.5, false);
+        NSApplication *app = [NSApplication sharedApplication];
+        ProbeDelegate *delegate = [[ProbeDelegate alloc] init];
+        app.delegate = delegate;
+        [app run];
+    }
+    return 0;
+}
+"""
+
+
+def build_probe(name):
+    import plistlib
+    app = os.path.join(OUT, 'probe', name + '.app')
+    macos = os.path.join(app, 'Contents', 'MacOS')
+    os.makedirs(macos, exist_ok=True)
+    src = os.path.join(OUT, 'probe', 'probe.m')
+    with open(src, 'w') as f:
+        f.write(PROBE_SRC)
+    r = run(['clang', '-fobjc-arc', '-framework', 'Cocoa', src, '-o', os.path.join(macos, name)])
+    if r.returncode:
+        raise CheckFailed('clang: ' + r.stderr.strip()[:300])
+    with open(os.path.join(app, 'Contents', 'Info.plist'), 'wb') as f:
+        plistlib.dump({'CFBundleExecutable': name, 'CFBundleIdentifier': 'io.github.stickygonzales.' + name.lower(),
+                       'CFBundleName': name, 'CFBundlePackageType': 'APPL', 'CFBundleVersion': '1',
+                       'CFBundleDocumentTypes': [{'CFBundleTypeName': 'Video', 'CFBundleTypeRole': 'Viewer',
+                                                  'LSHandlerRank': 'Alternate',
+                                                  'LSItemContentTypes': ['public.movie', 'public.data']}]}, f)
+    run(['codesign', '--force', '--sign', '-', app])
+    return app
+
+
+def probe_launch(name):
+    try:
+        app = build_probe(name)
+    except CheckFailed as e:
+        return str(e)
+    err_path = os.path.join(OUT, 'probe', name + '.stderr.txt')
+    r = run(['open', '-a', app, '--stderr', err_path, os.path.join(MEDIA, 'test-hevc.mp4')])
+    if r.returncode:
+        return f'open -a failed: {r.stderr.strip()}'
+    time.sleep(10)
+    run(['pkill', '-f', os.path.join(app, 'Contents', 'MacOS')])
+    try:
+        with open(err_path, errors='replace') as f:
+            lines = [l.strip() for l in f if l.startswith('probe:')]
+    except OSError:
+        lines = ['(no stderr)']
+    return ' / '.join(lines) or '(nothing printed)'
+
+
+note('finder: control, a minimal Cocoa app started with a file', probe_launch('OpenProbe'))
+note('finder: control, the same app creating NSApplication 0.5 s late', probe_launch('OpenProbeLate'))
+
+
 # information only: why the picture is black on the runner (MACOS_NOTES.md, "The black picture").
 # The same H.264 file with each of VLC's macOS video outputs, and with software decoding, each with
 # a screenshot (vout-<name>.png) and the colour in the middle of the video; VLC's own snapshot of
