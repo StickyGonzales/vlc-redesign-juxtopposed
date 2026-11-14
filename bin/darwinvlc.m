@@ -36,6 +36,7 @@
 
 #import <CoreFoundation/CoreFoundation.h>
 #import <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
 
 #ifdef HAVE_BREAKPAD
 #import <Breakpad/Breakpad.h>
@@ -85,10 +86,59 @@
              andEventID:kAEOpenDocuments];
 }
 
+/* diagnostics of a start from Finder (issue #69): which open methods the application delegate
+ * (Qt's) has, and a log line whenever one is called, before the delegate's own code runs */
+static void logDelegateOpenCalls(void)
+{
+    static bool wrapped = false;
+    id delegate = [NSApp delegate];
+    if (wrapped || delegate == nil)
+        return;
+    wrapped = true;
+    Class cls = [delegate class];
+    fprintf(stderr, "macOS: application delegate %s (openFiles %d, openFile %d, openURLs %d)\n",
+            class_getName(cls),
+            [delegate respondsToSelector:@selector(application:openFiles:)],
+            [delegate respondsToSelector:@selector(application:openFile:)],
+            [delegate respondsToSelector:@selector(application:openURLs:)]);
+
+    Method m = class_getInstanceMethod(cls, @selector(application:openFiles:));
+    if (m)
+    {
+        void (*orig)(id, SEL, NSApplication *, NSArray *) =
+            (void (*)(id, SEL, NSApplication *, NSArray *))method_getImplementation(m);
+        method_setImplementation(m, imp_implementationWithBlock(^(id obj, NSApplication *app, NSArray *files) {
+            fprintf(stderr, "macOS: the delegate's openFiles called with %lu file(s)\n", (unsigned long)files.count);
+            orig(obj, @selector(application:openFiles:), app, files);
+        }));
+    }
+    m = class_getInstanceMethod(cls, @selector(application:openFile:));
+    if (m)
+    {
+        BOOL (*orig)(id, SEL, NSApplication *, NSString *) =
+            (BOOL (*)(id, SEL, NSApplication *, NSString *))method_getImplementation(m);
+        method_setImplementation(m, imp_implementationWithBlock(^BOOL(id obj, NSApplication *app, NSString *file) {
+            fprintf(stderr, "macOS: the delegate's openFile called\n");
+            return orig(obj, @selector(application:openFile:), app, file);
+        }));
+    }
+    m = class_getInstanceMethod(cls, @selector(application:openURLs:));
+    if (m)
+    {
+        void (*orig)(id, SEL, NSApplication *, NSArray *) =
+            (void (*)(id, SEL, NSApplication *, NSArray *))method_getImplementation(m);
+        method_setImplementation(m, imp_implementationWithBlock(^(id obj, NSApplication *app, NSArray *urls) {
+            fprintf(stderr, "macOS: the delegate's openURLs called with %lu URL(s)\n", (unsigned long)urls.count);
+            orig(obj, @selector(application:openURLs:), app, urls);
+        }));
+    }
+}
+
 - (void)willFinishLaunching:(NSNotification *)notification
 {
     (void)notification;
     [self install];
+    logDelegateOpenCalls();
     /* An app started by LaunchServices with documents gets them in its launch event itself,
      * which AppKit does not send through the event handlers (build-macos run 20: the handler was
      * installed, no event came): read it here, where it is the current Apple event */
