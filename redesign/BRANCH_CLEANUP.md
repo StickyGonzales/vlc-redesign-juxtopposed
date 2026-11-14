@@ -216,3 +216,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/fix-music-cover` | `6e1ad8b3055333b62e1e0b1d1fcafffa201d454f` | PR #136 merged into wip/next-test (9dbb6052480) |
+
+## 2026-11-14, macOS Finder start
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/macos-finder-launch` | `6a91b8367aa2ec6049a6f7b04f148715fdefeb38` | PR #137 merged into wip/next-test (42269edc666) |

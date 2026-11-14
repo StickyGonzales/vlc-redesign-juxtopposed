@@ -22,6 +22,11 @@ the texts are written up in the 1.4.0 style (by area, with tips) when the releas
 - **Cleanup finishes even when you quit at once.** A downloaded subtitle you never used is deleted even if you quit right after moving on to the next file, each download is recorded once, and a file too short to be an episode gets no Up Next picture. (PR #134)
 
 - **The album cover stays square.** In the music player the cover is a square with rounded corners at every window size, maximized, in fullscreen and next to the lyrics, instead of a tall, narrow card in some windows. A cover that is not square shows its middle as a square, like the song list's thumbnails. (PR #136, issues #129 and #69)
+- **macOS: double-clicking a file in Finder while Cone Player is closed plays it.** The same for Open With > Cone Player: Cone starts and plays the file in its window. This was the known issue in the 1.4.0 macOS notes; it is fixed, so the release notes no longer list it. (PR #137, issue #69)
 
 ## Changed
 - **Choose what happens when an episode ends.** Settings > Playback > Episodes > "When an episode ends" replaces "Play episodes in a row": **Play the next episode** (the countdown on the Up Next card, as before), **Show Up Next, I'll click** (the card offers the next episode and waits for your click, no countdown), or **Do nothing**. Your saved choice carries over. The card's "Turn off autoplay" now switches to "Show Up Next, I'll click". (PR #135)
+
+## For the 1.5.0 test pass
+
+- **#137, a start with a file (shared startup code).** Windows: a video double-clicked in Explorer while Cone is closed plays; Open with > Cone Player while a video plays opens the new file in the same window; a file dragged onto the window plays; a start from the shortcut with no file opens Home. macOS (real Mac): MACOS_NOTES.md tester list, step 2 (Finder, Cone closed). Checked on build-windows 260 before the merge.
