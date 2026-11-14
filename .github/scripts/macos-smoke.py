@@ -592,6 +592,26 @@ check('finder: a file opened while Cone runs plays there', finder_open_running, 
 check('finder: a start with a file plays it', finder_open_launch, soft=True)
 
 
+def finder_launch_plain():
+    # exactly what Finder does: LaunchServices starts Cone with the file and nothing else (no
+    # options, no new-instance flag); only open's own --stderr keeps what Cone prints. No socket to
+    # ask whether it plays: the trail tells whether the open request reached Cone
+    run(['pkill', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+    time.sleep(2)
+    err_path = os.path.join(OUT, 'cone-finder-plain.stderr.txt')
+    r = run(['open', '-a', APP, '--stderr', err_path, os.path.join(MEDIA, 'test-hevc.mp4')])
+    if r.returncode:
+        return f'open -a failed: {r.stderr.strip()}'
+    time.sleep(20)
+    trail = finder_trail(os.path.join(OUT, 'no-log'), err_path)
+    run(['pkill', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+    time.sleep(2)
+    return trail.replace(' | trail: ', '')
+
+
+note('finder: a start like a Finder double-click (open -a, no options)', finder_launch_plain())
+
+
 # information only: why the picture is black on the runner (MACOS_NOTES.md, "The black picture").
 # The same H.264 file with each of VLC's macOS video outputs, and with software decoding, each with
 # a screenshot (vout-<name>.png) and the colour in the middle of the video; VLC's own snapshot of

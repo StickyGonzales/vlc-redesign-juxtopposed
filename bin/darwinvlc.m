@@ -106,7 +106,11 @@
 
 - (void)didFinishLaunching:(NSNotification *)notification
 {
-    (void)notification;
+    /* whether macOS started Cone plainly or to open documents (diagnostics of a start from Finder) */
+    id isDefault = notification.userInfo[NSApplicationLaunchIsDefaultLaunchKey];
+    fprintf(stderr, "macOS: launch finished (%s)\n",
+            isDefault == nil ? "launch kind unknown"
+            : [isDefault boolValue] ? "a plain launch" : "a launch to open documents");
     launched = true;
     [self deliver];
 }
@@ -428,6 +432,7 @@ int main(int i_argc, const char *ppsz_argv[])
      * before actually starting the loop.
      */
     @autoreleasepool {
+        fprintf(stderr, "macOS: started with %d argument(s)\n", i_argc);
         /* before the interface starts: Finder's file of a start arrives as an Apple event */
         VLCOpenDocumentsHandler *open_handler = [[VLCOpenDocumentsHandler alloc] init];
         [open_handler install];
