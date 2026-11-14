@@ -108,7 +108,7 @@ vlc_win32_rc.rc: $(top_builddir)/config.status vlc_win32_rc.rc.in
 	$(SHELL) ./config.status --file="bin/$@"
 
 vlc_win32_rc.$(OBJEXT): vlc_win32_rc.rc $(top_builddir)/extras/package/win32/vlc.exe.manifest
-	$(WINDRES) --include-dir $(top_srcdir)/share/icons --include-dir $(top_builddir)/extras/package/win32 -i $< -o $@
+	$(WINDRES) --include-dir $(top_srcdir)/share/icons --include-dir $(top_builddir)/extras/package/win32 --include-dir $(top_srcdir)/extras/package/win32 -i $< -o $@
 
 #
 # Plug-ins cache generator

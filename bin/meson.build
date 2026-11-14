@@ -41,6 +41,8 @@ if build_vlc and (host_system != 'darwin' or have_osx) and not have_win_store an
             vlc_rc,
             include_directories: [
                 vlc_src_root / 'share/icons',
+                # redesign: brand layer, the brand icon (brand/public/cone.ico) next to VLC's
+                vlc_src_root / 'extras/package/win32',
             ],
             depend_files: [vlc_manifest],
         )
