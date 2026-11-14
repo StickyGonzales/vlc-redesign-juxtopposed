@@ -79,6 +79,12 @@ says how to tell.
 - **Not covered by the smoke: the Videos page.** It needs a library folder, which a test home
   without the onboarding does not have. It is retest step 4 below.
 
+## Green runs
+
+- build-linux #147 (620a2f780b): build, packages and smoke pass, including "recent: every video in
+  the Recent list gets its thumbnail while the page is open".
+- build-windows #259 (620a2f780b): build, installer and the Windows smoke pass.
+
 ## Windows retest (PC session)
 
 Build: build-windows on wip/library-thumbnails (the run named in the PR).
