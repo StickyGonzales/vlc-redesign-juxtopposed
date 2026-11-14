@@ -769,6 +769,7 @@ public:
         , m_intf(intf)
     {
         msg_Dbg(m_intf, "macOS: listening for files opened from Finder");
+        fprintf(stderr, "macOS: (qt) listening for files opened from Finder\n");
         m_batch.setSingleShot(true);
         m_batch.setInterval(150);
         connect(&m_batch, &QTimer::timeout, this, &MacFileOpenFilter::flush);
@@ -779,6 +780,7 @@ protected:
     {
         if (event->type() != QEvent::FileOpen)
             return QObject::eventFilter(watched, event);
+        fprintf(stderr, "macOS: (qt) file open event\n");
 
         const auto* open = static_cast<QFileOpenEvent*>(event);
         QUrl url = open->url();

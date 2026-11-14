@@ -44,6 +44,32 @@
 
 #include "../lib/libvlc_internal.h"
 
+/* diagnostics of a start from Finder: every line with the milliseconds since main() */
+static CFAbsoluteTime cone_t0;
+#define CONE_LOG(fmt, ...) \
+    fprintf(stderr, "macOS: [%5.0f ms] " fmt, (CFAbsoluteTimeGetCurrent() - cone_t0) * 1000., ##__VA_ARGS__)
+
+/* when the application delegate is set and when AppKit finishes launching, to place the start's
+ * open request on the same timeline (the delegate's open methods are wrapped as soon as it is set) */
+static void logDelegateOpenCalls(id delegate);
+static void wrapAppKitForDiagnostics(void)
+{
+    Method m = class_getInstanceMethod([NSApplication class], @selector(setDelegate:));
+    void (*setDelegate)(id, SEL, id) = (void (*)(id, SEL, id))method_getImplementation(m);
+    method_setImplementation(m, imp_implementationWithBlock(^(id app, id delegate) {
+        CONE_LOG("application delegate set: %s\n", delegate ? class_getName([delegate class]) : "none");
+        setDelegate(app, @selector(setDelegate:), delegate);
+        logDelegateOpenCalls(delegate);
+    }));
+    m = class_getInstanceMethod([NSApplication class], @selector(finishLaunching));
+    void (*finish)(id, SEL) = (void (*)(id, SEL))method_getImplementation(m);
+    method_setImplementation(m, imp_implementationWithBlock(^(id app) {
+        CONE_LOG("finishLaunching begins\n");
+        finish(app, @selector(finishLaunching));
+        CONE_LOG("finishLaunching ends\n");
+    }));
+}
+
 /* Cone (macOS, issue #69): Finder opens a file (double-click, Open With, a file dropped on the
  * Dock icon) with an "open documents" Apple event, never on the command line. A Cone started
  * that way showed no file: the event did not reach the interface. This handler is installed
@@ -88,15 +114,14 @@
 
 /* diagnostics of a start from Finder (issue #69): which open methods the application delegate
  * (Qt's) has, and a log line whenever one is called, before the delegate's own code runs */
-static void logDelegateOpenCalls(void)
+static void logDelegateOpenCalls(id delegate)
 {
     static bool wrapped = false;
-    id delegate = [NSApp delegate];
     if (wrapped || delegate == nil)
         return;
     wrapped = true;
     Class cls = [delegate class];
-    fprintf(stderr, "macOS: application delegate %s (openFiles %d, openFile %d, openURLs %d)\n",
+    CONE_LOG("application delegate %s (openFiles %d, openFile %d, openURLs %d)\n",
             class_getName(cls),
             [delegate respondsToSelector:@selector(application:openFiles:)],
             [delegate respondsToSelector:@selector(application:openFile:)],
@@ -108,7 +133,7 @@ static void logDelegateOpenCalls(void)
         void (*orig)(id, SEL, NSApplication *, NSArray *) =
             (void (*)(id, SEL, NSApplication *, NSArray *))method_getImplementation(m);
         method_setImplementation(m, imp_implementationWithBlock(^(id obj, NSApplication *app, NSArray *files) {
-            fprintf(stderr, "macOS: the delegate's openFiles called with %lu file(s)\n", (unsigned long)files.count);
+            CONE_LOG("the delegate's openFiles called with %lu file(s)\n", (unsigned long)files.count);
             orig(obj, @selector(application:openFiles:), app, files);
         }));
     }
@@ -118,7 +143,7 @@ static void logDelegateOpenCalls(void)
         BOOL (*orig)(id, SEL, NSApplication *, NSString *) =
             (BOOL (*)(id, SEL, NSApplication *, NSString *))method_getImplementation(m);
         method_setImplementation(m, imp_implementationWithBlock(^BOOL(id obj, NSApplication *app, NSString *file) {
-            fprintf(stderr, "macOS: the delegate's openFile called\n");
+            CONE_LOG("the delegate's openFile called\n");
             return orig(obj, @selector(application:openFile:), app, file);
         }));
     }
@@ -128,7 +153,7 @@ static void logDelegateOpenCalls(void)
         void (*orig)(id, SEL, NSApplication *, NSArray *) =
             (void (*)(id, SEL, NSApplication *, NSArray *))method_getImplementation(m);
         method_setImplementation(m, imp_implementationWithBlock(^(id obj, NSApplication *app, NSArray *urls) {
-            fprintf(stderr, "macOS: the delegate's openURLs called with %lu URL(s)\n", (unsigned long)urls.count);
+            CONE_LOG("the delegate's openURLs called with %lu URL(s)\n", (unsigned long)urls.count);
             orig(obj, @selector(application:openURLs:), app, urls);
         }));
     }
@@ -138,18 +163,18 @@ static void logDelegateOpenCalls(void)
 {
     (void)notification;
     [self install];
-    logDelegateOpenCalls();
+    logDelegateOpenCalls([NSApp delegate]);
     /* An app started by LaunchServices with documents gets them in its launch event itself,
      * which AppKit does not send through the event handlers (build-macos run 20: the handler was
      * installed, no event came): read it here, where it is the current Apple event */
     NSAppleEventDescriptor *launch = [[NSAppleEventManager sharedAppleEventManager] currentAppleEvent];
     const FourCharCode cls = launch ? launch.eventClass : 0, eid = launch ? launch.eventID : 0;
     if (launch)
-        fprintf(stderr, "macOS: open-documents handler installed at launch (launch event '%c%c%c%c'/'%c%c%c%c')\n",
+        CONE_LOG("open-documents handler installed at launch (launch event '%c%c%c%c'/'%c%c%c%c')\n",
                 (char)(cls >> 24), (char)(cls >> 16), (char)(cls >> 8), (char)cls,
                 (char)(eid >> 24), (char)(eid >> 16), (char)(eid >> 8), (char)eid);
     else
-        fprintf(stderr, "macOS: open-documents handler installed at launch (no launch event)\n");
+        CONE_LOG("open-documents handler installed at launch (no launch event)\n");
     if (cls == kCoreEventClass && eid == kAEOpenDocuments)
         [self handleOpenDocuments:launch withReplyEvent:nil];
 }
@@ -158,7 +183,7 @@ static void logDelegateOpenCalls(void)
 {
     /* whether macOS started Cone plainly or to open documents (diagnostics of a start from Finder) */
     id isDefault = notification.userInfo[NSApplicationLaunchIsDefaultLaunchKey];
-    fprintf(stderr, "macOS: launch finished (%s)\n",
+    CONE_LOG("launch finished (%s)\n",
             isDefault == nil ? "launch kind unknown"
             : [isDefault boolValue] ? "a plain launch" : "a launch to open documents");
     launched = true;
@@ -181,11 +206,11 @@ static void logDelegateOpenCalls(void)
             [delegate application:NSApp openFile:file];
     else
     {
-        fprintf(stderr, "macOS: no interface takes opened files, %lu ignored\n",
+        CONE_LOG("no interface takes opened files, %lu ignored\n",
                 (unsigned long)files.count);
         return;
     }
-    fprintf(stderr, "macOS: %lu opened file(s) passed to the interface\n",
+    CONE_LOG("%lu opened file(s) passed to the interface\n",
             (unsigned long)files.count);
 }
 
@@ -207,7 +232,7 @@ static void logDelegateOpenCalls(void)
         if (url.isFileURL && url.path.length > 0 && ![pending containsObject:url.path])
             [pending addObject:url.path];
     }
-    fprintf(stderr, "macOS: open-documents event, %lu file(s) waiting (%s)\n",
+    CONE_LOG("open-documents event, %lu file(s) waiting (%s)\n",
             (unsigned long)pending.count, launched ? "while running" : "at launch");
     [self deliver];
 }
@@ -482,7 +507,9 @@ int main(int i_argc, const char *ppsz_argv[])
      * before actually starting the loop.
      */
     @autoreleasepool {
-        fprintf(stderr, "macOS: started with %d argument(s)\n", i_argc);
+        cone_t0 = CFAbsoluteTimeGetCurrent();
+        wrapAppKitForDiagnostics();
+        CONE_LOG("started with %d argument(s)\n", i_argc);
         /* before the interface starts: Finder's file of a start arrives as an Apple event */
         VLCOpenDocumentsHandler *open_handler = [[VLCOpenDocumentsHandler alloc] init];
         [open_handler install];
