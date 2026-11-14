@@ -784,10 +784,13 @@ protected:
         QUrl url = open->url();
         if (!url.isValid() || url.isEmpty())
             url = QUrl::fromLocalFile(open->file());
-        if (url.isValid() && !url.isEmpty())
+        // a file already waiting is not added twice (a start's file can come through Cone's own
+        // handler, bin/darwinvlc.m, and AppKit's delivery to Qt)
+        const QString mrl = url.toString(QUrl::FullyEncoded);
+        if (url.isValid() && !url.isEmpty() && !m_urls.contains(mrl))
         {
             msg_Dbg(m_intf, "macOS: open %s from Finder", qtu(url.toString()));
-            m_urls.append(url.toString(QUrl::FullyEncoded));
+            m_urls.append(mrl);
             m_batch.start();
         }
         return true;
