@@ -769,7 +769,6 @@ public:
         , m_intf(intf)
     {
         msg_Dbg(m_intf, "macOS: listening for files opened from Finder");
-        fprintf(stderr, "macOS: (qt) listening for files opened from Finder\n");
         m_batch.setSingleShot(true);
         m_batch.setInterval(150);
         connect(&m_batch, &QTimer::timeout, this, &MacFileOpenFilter::flush);
@@ -780,7 +779,6 @@ protected:
     {
         if (event->type() != QEvent::FileOpen)
             return QObject::eventFilter(watched, event);
-        fprintf(stderr, "macOS: (qt) file open event\n");
 
         const auto* open = static_cast<QFileOpenEvent*>(event);
         QUrl url = open->url();
@@ -834,9 +832,14 @@ static int OpenInternal( qt_intf_t *p_intf )
         return VLC_EGENERIC;
 #endif
 
-#if (_POSIX_SPAWN >= 0) && (!defined(__APPLE__) || TARGET_OS_OSX)
+#if (_POSIX_SPAWN >= 0) && !defined(__APPLE__)
     /* Check if QApplication works */
-    /* Note: Disabled on iOS/tvOS/visionOS as process spawning is not allowed */
+    /* Note: Disabled on iOS/tvOS/visionOS as process spawning is not allowed.
+     * redesign (macOS, issue #69): also not on macOS. The check program sits in the app bundle
+     * (Contents/MacOS), so its QApplication checks in with LaunchServices as the app itself and
+     * takes the "open documents" request of a start from Finder, then exits with it: the file
+     * never reached Cone (build-macos runs 18 to 31; a minimal Cocoa app gets it). A Mac app that
+     * LaunchServices starts always has the window server, and the bundle ships its own Qt. */
     char *path = config_GetSysPath(VLC_PKG_LIBEXEC_DIR, "vlc-qt-check");
     if (unlikely(path == NULL))
         return VLC_ENOMEM;
