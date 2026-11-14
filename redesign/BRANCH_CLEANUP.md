@@ -222,3 +222,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/macos-finder-launch` | `6a91b8367aa2ec6049a6f7b04f148715fdefeb38` | PR #137 merged into wip/next-test (42269edc666) |
+
+## 2026-11-14, library thumbnails
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/library-thumbnails` | `8d9fa54e267ae1003ccd1dbc4a3ada8032d76223` | PR #139 merged into wip/next-test (04ad0d1150a) |
