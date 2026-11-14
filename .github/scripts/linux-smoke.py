@@ -1066,6 +1066,84 @@ def check_music_cover(exe, env):
         s.stop()
 
 
+def check_recent_thumbnails(exe, work):
+    """the library's Recent list shows every video's thumbnail once it is made, while the page is
+    open (VLC's MLMediaModel had no handler for a generated thumbnail: the card kept its grey
+    placeholder until the page was opened again; redesign/FIX_LIBRARY_THUMBNAILS_NOTES.md). A home
+    of its own (a fresh media library), the videos played one by one first, so each comes to the
+    list without a thumbnail"""
+    home = os.path.join(work, 'recent-home')
+    os.makedirs(home, exist_ok=True)
+    renv = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
+                XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
+    videos = [os.path.join(MEDIA, 'Smoke Show', f'Smoke Show S01E0{e}.mp4') for e in (1, 2, 3)] + \
+             [os.path.join(MEDIA, 'test-h264.mp4'), os.path.join(MEDIA, 'test-hevc.mp4')]
+    for i, video in enumerate(videos):
+        s = Session(exe, video, f'recent-play{i}', renv, repeat=False, subs=False)
+        try:
+            s.window()
+            time.sleep(4)
+            quit_cleanly(s)
+        except CheckFailed as e:
+            # its own failure, named, rather than a puzzling one later
+            RESULTS.append((f'recent: play {os.path.basename(video)} to put it in Recent', 'fail', str(e)))
+            log(f'FAIL  recent: play {os.path.basename(video)}  {e}')
+        finally:
+            s.stop()
+    s = Session(exe, '--no-video-title-show', 'recent', renv, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def open_page(name):
+            # the library sidebar's entry: a page header of the same name comes only once it is open
+            b = find(name, 10)
+            if not b:
+                raise CheckFailed(f'no "{name}" in the library sidebar ({named(name)})')
+            xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
+            xdo('click', 1)
+            time.sleep(1)
+
+        def body():
+            open_page('Recent')
+            names = [os.path.basename(v) for v in videos]
+            geo = xdo('getwindowgeometry', s.win)
+            wsize = geo.split('Geometry:')[1].strip().split('x') if 'Geometry:' in geo else ['1280', '720']
+            ww, wh = int(wsize[0]), int(wsize[1])
+            end = time.time() + 60
+            while True:
+                grey, unlisted, shown = [], [], []
+                for name in names:
+                    # the card: a list item named after the file (its picture is the upper part,
+                    # the title under it)
+                    card = find(name, 2, role='list item')
+                    if not card or card[0] + card[2] > ww or card[1] + card[3] > wh:
+                        unlisted.append(name)
+                        continue
+                    x, y, w, h = card
+                    if saturation(x + w // 4, y + h // 6, w // 2, h // 4) > 0.25:
+                        shown.append(name)
+                    else:
+                        grey.append(name)
+                if not grey and not unlisted:
+                    shot('recent-thumbnails')
+                    return f'{len(shown)} of {len(names)} cards show their thumbnail'
+                if time.time() >= end:
+                    shot('recent-thumbnails-missing')
+                    raise CheckFailed(f'after 60 s on the Recent page: grey {grey or "none"}; '
+                                      f'not listed on screen {unlisted or "none"}')
+                time.sleep(3)
+
+        def retry():
+            # another page and back builds the Recent page again (a thumbnail that failed is asked
+            # for again then)
+            open_page('Home')
+        check('recent: every video in the Recent list gets its thumbnail while the page is open', body, retry)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
 def check_restore_quit(exe, env):
     try:
         _check_restore_quit(exe, env)
@@ -1503,6 +1581,7 @@ check_popup_stack(os.path.join(folder, 'cone'), env)
 check_idle_drawing(os.path.join(folder, 'cone'), env)
 check_cast_discovery(os.path.join(folder, 'cone'), env)
 check_music_cover(os.path.join(folder, 'cone'), env)
+check_recent_thumbnails(os.path.join(folder, 'cone'), WORK)
 check_restore_quit(os.path.join(folder, 'cone'), env)
 
 
