@@ -16,6 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+// redesign: config.h first, as VLC's other sources, so --disable-debug (NDEBUG) reaches the
+// assertions here too. Without it this file kept them in release builds, and on macOS the check
+// that the reused node is a QSGRectangleNode fails for a node that is one (the class has no key
+// function, so its RTTI is emitted in every binary and Apple's runtime compares it by address):
+// Cone ended on a start from Finder on the Intel runner (build-macos run 31)
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "viewblockingrectangle.hpp"
 
 #include <QQuickWindow>

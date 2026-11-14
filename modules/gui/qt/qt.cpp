@@ -784,10 +784,13 @@ protected:
         QUrl url = open->url();
         if (!url.isValid() || url.isEmpty())
             url = QUrl::fromLocalFile(open->file());
-        if (url.isValid() && !url.isEmpty())
+        // a file already waiting is not added twice (a start's file can come through Cone's own
+        // handler, bin/darwinvlc.m, and AppKit's delivery to Qt)
+        const QString mrl = url.toString(QUrl::FullyEncoded);
+        if (url.isValid() && !url.isEmpty() && !m_urls.contains(mrl))
         {
             msg_Dbg(m_intf, "macOS: open %s from Finder", qtu(url.toString()));
-            m_urls.append(url.toString(QUrl::FullyEncoded));
+            m_urls.append(mrl);
             m_batch.start();
         }
         return true;
@@ -798,8 +801,16 @@ private:
     {
         if (m_urls.isEmpty())
             return;
-        // a start from Finder: the files wait until the play queue and the main interface exist
-        if (!m_intf->p_mainPlaylistController || !m_intf->p_mi)
+        // a start from Finder: the files wait until the interface is open (its window and video
+        // surface made), as the command line's files do (libvlc_InternalPlay after the open).
+        // Started as soon as MainCtx existed, playback raced the video window: on the Intel runner
+        // the video output stalled at its start (build-macos run 29)
+        bool open;
+        {
+            vlc::threads::mutex_locker locker(lock);
+            open = (open_state == OPEN_STATE_OPENED);
+        }
+        if (!open || !m_intf->p_mainPlaylistController)
         {
             m_batch.start();
             return;
@@ -829,9 +840,14 @@ static int OpenInternal( qt_intf_t *p_intf )
         return VLC_EGENERIC;
 #endif
 
-#if (_POSIX_SPAWN >= 0) && (!defined(__APPLE__) || TARGET_OS_OSX)
+#if (_POSIX_SPAWN >= 0) && !defined(__APPLE__)
     /* Check if QApplication works */
-    /* Note: Disabled on iOS/tvOS/visionOS as process spawning is not allowed */
+    /* Note: Disabled on iOS/tvOS/visionOS as process spawning is not allowed.
+     * redesign (macOS, issue #69): also not on macOS. The check program sits in the app bundle
+     * (Contents/MacOS), so its QApplication checks in with LaunchServices as the app itself and
+     * takes the "open documents" request of a start from Finder, then exits with it: the file
+     * never reached Cone (build-macos runs 18 to 31; a minimal Cocoa app gets it). A Mac app that
+     * LaunchServices starts always has the window server, and the bundle ships its own Qt. */
     char *path = config_GetSysPath(VLC_PKG_LIBEXEC_DIR, "vlc-qt-check");
     if (unlikely(path == NULL))
         return VLC_ENOMEM;
