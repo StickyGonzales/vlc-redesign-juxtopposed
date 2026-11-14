@@ -512,6 +512,47 @@ session(EXE, 'h264', True)
 session(EXE, 'hevc', False)
 
 
+# 1.5.0 test pass (redesign/TEST_PASS_1.5.0_LINUX_MAC.md): screenshots of the Up Next card and of
+# the music view with a square cover, information only
+def upnext_card_shot():
+    s = Session(EXE, os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E01.mp4'), 'upnext-card')
+    try:
+        s.window()
+        time.sleep(4)
+        s.focus()
+        # 6:10 of 7:00: the card shows in the last minute (linux-smoke.py check_upnext)
+        rc('seek 370')
+        time.sleep(4)
+        shot('upnext-card')
+        status = ' '.join(rc('status').split())[:160]
+        return f'upnext-card.png at 6:10 of 7:00 ({status})'
+    finally:
+        s.stop()
+
+
+def music_view_shot():
+    out = []
+    for song in ('song-square', 'song-wide'):
+        s = Session(EXE, os.path.join(MEDIA, song + '.flac'), 'music-' + song)
+        try:
+            s.window()
+            time.sleep(5)
+            s.focus()
+            shot(f'music-{song}')
+            out.append(f'music-{song}.png')
+        finally:
+            s.stop()
+    return ', '.join(out)
+
+
+for name, body in (('test pass: the Up Next card', upnext_card_shot),
+                   ('test pass: the music view with a square cover', music_view_shot)):
+    try:
+        note(name, body())
+    except Exception as e:  # noqa: BLE001 (information only)
+        note(name, f'not taken: {e}')
+
+
 # macOS file-open events (issue #69): Finder opens a file with an "open documents" Apple event,
 # as `open -a <app> <file>` does through LaunchServices. Warnings while the runner's handling of
 # a Cone started from its executable is unproven; the tester list checks Finder by hand
