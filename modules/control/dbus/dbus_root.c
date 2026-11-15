@@ -251,6 +251,17 @@ DBUS_METHOD( Quit )
 
 DBUS_METHOD( Raise )
 {/* shows vlc's main window */
+    /* redesign: not while quitting (the window is gone for good): a new start opens its own */
+    if( atomic_load( &INTF->p_sys->quitting ) )
+    {
+        DBusMessage *p_err = dbus_message_new_error( p_from, DBUS_CONE_QUITTING_ERROR,
+                                                     "the player is quitting" );
+        if( !p_err )
+            return DBUS_HANDLER_RESULT_NEED_MEMORY;
+        dbus_connection_send( p_conn, p_err, NULL );
+        dbus_message_unref( p_err );
+        return DBUS_HANDLER_RESULT_HANDLED;
+    }
     REPLY_INIT;
     var_TriggerCallback(vlc_object_instance(INTF), "intf-show" );
     REPLY_SEND;

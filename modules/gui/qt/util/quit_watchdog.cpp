@@ -173,13 +173,13 @@ void logFired(long long seconds)
 # endif
 #endif
 
-/* the one-instance handoff (Windows, "Allow only one instance"): a new start finds the running
- * instance by the name of its IPC window (win_msg) and hands its files to it. A quitting
- * instance would lose them (a double-click while the quit waits for the core, up to the
- * watchdog's 5 s): its window loses that name when the quit starts, so a new start finds no
+/* the one-instance handoff ("Allow only one instance", a double-click on a file): on Windows a new
+ * start finds the running instance by the name of its IPC window (win_msg) and hands its files to
+ * it. A quitting instance would lose them (a double-click while the quit waits for the core, up to
+ * the watchdog's 5 s): its window loses that name when the quit starts, so a new start finds no
  * running instance and opens the file itself. The window stays, for win_msg to close it; its
- * thread gets the new name as a message, so a busy thread cannot hold the quit for long; logged
- * at the level of the core's own "one instance mode" lines, which a default log shows */
+ * thread gets the new name as a message, so a busy thread cannot hold the quit for long; logged at
+ * the level of the core's own "one instance mode" lines, which a default log shows */
 void releaseOneInstance(qt_intf_t *p_intf)
 {
 #ifdef _WIN32
@@ -200,7 +200,10 @@ void releaseOneInstance(qt_intf_t *p_intf)
         return;
     }
 #else
-    VLC_UNUSED(p_intf);
+    /* elsewhere (Linux and the BSDs, D-Bus): the running instance owns the bus name a new start
+     * looks for, and it would keep it until its process ends; modules/control/dbus gives it up
+     * (and logs it) when this is triggered, nothing happens without that module */
+    var_TriggerCallback(vlc_object_instance(p_intf), "one-instance-release");
 #endif
 }
 

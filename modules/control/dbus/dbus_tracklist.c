@@ -115,6 +115,19 @@ static DBusHandlerResult InvalidArguments(DBusConnection *p_conn,
 
 DBUS_METHOD( AddTrack )
 {
+    /* redesign: a new start's files while this instance quits (one already queued when the quit
+     * released the one-instance name): refused, the new start opens them itself */
+    if( atomic_load( &INTF->p_sys->quitting ) )
+    {
+        DBusMessage *p_err = dbus_message_new_error( p_from, DBUS_CONE_QUITTING_ERROR,
+                                                     "the player is quitting" );
+        if( !p_err )
+            return DBUS_HANDLER_RESULT_NEED_MEMORY;
+        dbus_connection_send( p_conn, p_err, NULL );
+        dbus_message_unref( p_err );
+        return DBUS_HANDLER_RESULT_HANDLED;
+    }
+
     REPLY_INIT;
 
     DBusError error;

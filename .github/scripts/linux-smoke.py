@@ -205,10 +205,62 @@ def clear_restore_state(env):
         open(conf, 'w', encoding='utf-8').writelines(kept)
 
 
+# every Cone a check started; a start waits until the ones before it have ended
+STARTED = []
+
+
+def bus_name_owned():
+    """a Cone holds the one-instance name on the session bus (it would take the next start's files)"""
+    try:
+        r = run(['dbus-send', '--session', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus',
+                 'org.freedesktop.DBus.NameHasOwner', 'string:org.mpris.MediaPlayer2.cone'], timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        # no dbus-send or no answer: the wait for the processes alone
+        return False
+    return 'boolean true' in r.stdout
+
+
+def wait_quiet(tag):
+    """before a start: the Cones started before have ended and none holds the one-instance name, so a
+    check never starts next to a Cone that is still quitting (it could take the new start's files, or
+    its quit could reach the new one); a Cone still there after 10 s is ended"""
+    end = time.time() + 10
+    waited = False
+    for p in STARTED:
+        while p.poll() is None and time.time() < end:
+            waited = True
+            time.sleep(0.1)
+        if p.poll() is None:
+            log(f'{tag}: a Cone started before (pid {p.pid}) still runs after 10 s, ending it')
+            try:
+                os.killpg(p.pid, 9)
+                p.wait(10)
+            except Exception:  # noqa: BLE001
+                pass
+    STARTED[:] = [p for p in STARTED if p.poll() is None]
+    while bus_name_owned() and time.time() < end:
+        waited = True
+        time.sleep(0.1)
+    if waited:
+        log(f'{tag}: waited for the previous Cone to end before starting')
+
+
+def early_exit_reason(logfile):
+    """why a Cone ended before its window: the quit lines of its own log"""
+    try:
+        lines = [l.strip() for l in open(logfile, errors='replace')
+                 if 'quit: ' in l or 'quit watchdog' in l or 'running VLC instance' in l
+                 or 'to running instance' in l or 'one-instance' in l]
+    except OSError:
+        return 'no log'
+    return ' | '.join(lines[-4:]) or 'no quit line in its log'
+
+
 class Session:
     def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None,
                  extra=()):
         self.tag = tag
+        wait_quiet(tag)
         clear_restore_state(env)
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
@@ -231,13 +283,15 @@ class Session:
         # stdin from /dev/null: no stdin reader at all
         self.proc = subprocess.Popen(a, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
+        STARTED.append(self.proc)
         self.win = None
 
     def window(self):
         end = time.time() + 30
         while time.time() < end:
             if self.proc.poll() is not None:
-                raise CheckFailed(f'Cone exited with {self.proc.returncode} before its window appeared')
+                raise CheckFailed(f'Cone exited with {self.proc.returncode} before its window appeared '
+                                  f'({early_exit_reason(self.log)})')
             found = xdo('search', '--onlyvisible', '--pid', self.proc.pid).split()
             # the window manager's own window for Cone: Qt's inner windows carry the same pid, and
             # on a slow start (a sanitizer build) the search lists one of them first, which cannot
@@ -725,6 +779,88 @@ def check_handoff(s, exe, env):
             raise CheckFailed(f'another process shows the file in a window: {others}')
         return f'the second start ended after {took:.1f} s; the running window plays handoff.mp4'
     return check(f'{s.tag}: a second start opens the file in the running window', body)
+
+
+def check_quit_handoff(exe):
+    """a file double-clicked while Cone quits opens in a new window (redesign/FIX_LINUX_QUIT_HANDOFF_NOTES.md):
+    since the instant quit (#128) the window goes at once while the process can live on up to the
+    watchdog's 5 s, and it kept the one-instance D-Bus name, so the new start handed its file to the
+    quitting Cone and exited: nothing opened. CONE_TEST_HANG_QUIT makes the quit stall on purpose, so
+    the gap is always there; the file is double-clicked 1 s after Ctrl+Q"""
+    tag = 'quit-handoff'
+    env = fresh_env(tag)
+    other = os.path.join(WORK, 'quit-handoff.mp4')
+    if not os.path.exists(other):
+        shutil.copy(os.path.join(MEDIA, 'test-hevc.mp4'), other)
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), tag + '-quitting', dict(env, CONE_TEST_HANG_QUIT='1'),
+                repeat=False, subs=False, extra=['--started-from-file'])
+    b = None
+    blog = os.path.join(OUT, f'cone-{tag}-new.log')
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            nonlocal b
+            time.sleep(2)
+            s.focus()
+            t0 = time.time()
+            xdo('key', 'ctrl+q')
+            while xdo('search', '--onlyvisible', '--pid', s.proc.pid).split() and time.time() - t0 < 2:
+                time.sleep(0.05)
+            time.sleep(max(0.0, 1.0 - (time.time() - t0)))
+            if s.proc.poll() is not None:
+                raise CheckFailed('the quitting Cone ended within 1 s: the stalled quit (CONE_TEST_HANG_QUIT) did not stall')
+            if os.path.exists(blog):
+                os.remove(blog)
+            b = subprocess.Popen([exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+                                  '--aout=adummy', '--file-logging', f'--logfile={blog}', '--log-verbose=2',
+                                  '--started-from-file', other],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env, start_new_session=True)
+            STARTED.append(b)
+            started = time.time() - t0
+            end = time.time() + 30
+            mine = []
+            while time.time() < end and not mine:
+                if b.poll() is not None:
+                    shot(tag)
+                    raise CheckFailed(f'the file double-clicked {started:.1f} s after Ctrl+Q was lost: the new start '
+                                      f'exited with {b.returncode} ({early_exit_reason(blog)})')
+                mine = [w for w in xdo('search', '--onlyvisible', '--name', 'quit-handoff.mp4').split()
+                        if xdo('getwindowpid', w).strip() == str(b.pid)]
+                time.sleep(0.25)
+            if not mine:
+                raise CheckFailed('no window of the new start shows the file within 30 s')
+            # the quitting Cone still ran when the new one showed: the hand-off was really there
+            quitting_then = s.proc.poll() is None
+            try:
+                s.proc.wait(15)
+            except subprocess.TimeoutExpired:
+                raise CheckFailed('the quitting Cone did not end within 15 s')
+            ended = time.time() - t0
+            time.sleep(1)
+            if b.poll() is not None:
+                raise CheckFailed(f'the new window closed when the quitting Cone ended (exit {b.returncode})')
+            released = any('one-instance name released' in l for l in open(s.log, errors='replace'))
+            if not released:
+                raise CheckFailed('the quitting Cone did not log "one-instance name released"')
+            shot(tag)
+            return (f'double-clicked {started:.1f} s after Ctrl+Q: its own window plays quit-handoff.mp4 '
+                    f'({"while the quitting Cone still ran" if quitting_then else "the quitting Cone had ended"}), '
+                    f'still there after the quitting Cone ended ({ended:.1f} s)')
+        check(f'{tag}: a file double-clicked while Cone quits opens in a new window', body)
+    finally:
+        s.stop()
+        if b is not None and b.poll() is None:
+            try:
+                w = xdo('search', '--onlyvisible', '--pid', b.pid).split()
+                if w:
+                    xdo('windowactivate', '--sync', w[0])
+                    time.sleep(0.3)
+                    xdo('key', 'ctrl+q')
+                b.wait(15)
+            except Exception:  # noqa: BLE001
+                os.killpg(b.pid, 9)
 
 
 def check_identity(s, folder):
@@ -1704,6 +1840,7 @@ check_next_short(os.path.join(folder, 'cone'), env)
 check_upnext_watched(os.path.join(folder, 'cone'))
 check_track_stop(os.path.join(folder, 'cone'))
 check_popup_stack(os.path.join(folder, 'cone'), env)
+check_quit_handoff(os.path.join(folder, 'cone'))
 check_idle_drawing(os.path.join(folder, 'cone'), env)
 check_cast_discovery(os.path.join(folder, 'cone'), env)
 check_music_cover(os.path.join(folder, 'cone'), env)
