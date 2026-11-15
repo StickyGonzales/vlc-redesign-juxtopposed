@@ -118,7 +118,12 @@ player's "recent" list does and what the test pass expected.
 
 ## Green runs
 
-(filled in when CI has run)
+All on bb7ce27850 (merged into wip/next-test as PR #141):
+- **build-linux #151:** build, packages and every smoke job pass, including "recent: the Recent
+  list shows the last played video first" (test-hevc, test-h264, S01E03, S01E02, S01E01) on
+  Ubuntu 24.04.
+- **build-windows #264:** build, installer and the Windows smoke pass.
+- **unit-tests #12 and #13:** pass, test_rd_subtitle_picks included.
 
 ## Windows retest (PC session)
 
