@@ -1104,12 +1104,11 @@ void AddSubtitles::toggle(int row)
 {
     if (m_target != TargetFile || row < 0 || row >= m_files.count())
         return;
-    // OpenSubtitles results for this file are one choice (Figma "Folder-3": one result checked):
-    // Save downloads exactly the checked one and shows it; files from the computer add several
-    // (Figma "Folder-2")
-    const bool single = m_source == SourceOpenSubtitles;
+    // a click checks or unchecks the row, for every source: several OpenSubtitles results can be
+    // downloaded at once and tried one by one (StickyGonzales, 1.5.0, as in 1.4.0); the best match
+    // is checked to start with (rebuild)
     QSet<int>& selected = m_selected[m_source];
-    selected = rdsubtitles::picked(selected, m_files.at(row).candidate, single);
+    selected = rdsubtitles::picked(selected, m_files.at(row).candidate);
     for (int i = 0; i < m_files.count(); ++i)
     {
         AddSubtitlesModel::Row value = m_files.at(i);
@@ -1188,9 +1187,17 @@ void AddSubtitles::save()
     QVector<QPair<QString, int>> assignments;
     if (m_target == TargetFile)
     {
+        // in the list's order, best first: the first is the subtitle shown (attach)
+        QVector<int> order;
+        QSet<int> checked;
         for (const AddSubtitlesModel::Row& row : m_files.rows())
+        {
+            order.append(row.candidate);
             if (row.selected)
-                assignments.append({ m_mrl, row.candidate });
+                checked.insert(row.candidate);
+        }
+        for (const int candidate : rdsubtitles::checkedInOrder(order, checked))
+            assignments.append({ m_mrl, candidate });
     }
     else
     {

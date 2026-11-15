@@ -59,15 +59,22 @@ bool holds(const QString& path, const QByteArray& data)
 
 } // namespace
 
-QSet<int> picked(const QSet<int>& selected, int candidate, bool single)
+QSet<int> picked(const QSet<int>& selected, int candidate)
 {
-    if (single)
-        return { candidate };
     QSet<int> result = selected;
     if (result.contains(candidate))
         result.remove(candidate);
     else
         result.insert(candidate);
+    return result;
+}
+
+QVector<int> checkedInOrder(const QVector<int>& order, const QSet<int>& selected)
+{
+    QVector<int> result;
+    for (const int candidate : order)
+        if (selected.contains(candidate))
+            result.append(candidate);
     return result;
 }
 

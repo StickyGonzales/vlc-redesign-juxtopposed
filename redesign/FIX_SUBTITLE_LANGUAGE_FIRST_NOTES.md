@@ -80,6 +80,66 @@ answer (above) and an outdated comment.
 **Not testable in CI: the real OpenSubtitles search.** It needs an account and an API key. It is
 retest step 1.
 
+## Windows retest 1 failed: OpenSubtitles mislabels uploads
+
+**What the PC saw.** Retest on build-windows 268 (f8e2231ac59), step 1: Sintel with English chosen
+still listed "sintel.he" first and pre-ticked it.
+
+**Why.** OpenSubtitles itself files that upload under English: `languages=en` returns it tagged
+"en", and also under Finnish, while the file holds Hebrew text. The ranking used OpenSubtitles' tag,
+so all the English-tagged results tied, and OpenSubtitles' own order put "sintel.he" first.
+
+**Fix (`SubtitleMatcher::namedLanguage`, `rankResults`).** Within the chosen language, a result
+whose file name, or else release name, names another language goes after the others. OpenSubtitles'
+order decides otherwise, and nothing is hidden.
+- **What counts as naming a language.** A whole word after the title: a language name or three
+  letter code anywhere there (".heb", "Hebrew", ".fin", also before release tags as in
+  "Movie.2010.heb.720p"), a two letter code only as the last word (".he", ".fi").
+- **What never counts.** A part of a word ("the", "chef"), or a word of the title ("The Hebrew
+  Hammer", "He Got Game").
+- **Several mislabeled results** keep OpenSubtitles' order among themselves. If every result is
+  mislabeled, OpenSubtitles' top one is still the best match.
+
+## Several OpenSubtitles results again (StickyGonzales's decision for 1.5.0)
+
+**The decision.** It reverses the one-choice part of #141: StickyGonzales downloads several
+subtitles at once and tries them one by one.
+- **The best match** is still ticked to start with.
+- **A click** ticks or unticks a row, for every source. Clicking the only ticked row unticks it, and
+  Save is then disabled, as for files from the computer.
+- **Save** downloads every ticked result.
+- **The subtitle shown** is the best ranked of the ticked ones: they are saved in the list's order
+  (`rdsubtitles::checkedInOrder`), and the first saved is the one selected.
+- **Kept from #141:**
+  - the clean names ("Sintel (2010).eng.srt", the track "Sintel (2010) [English]");
+  - one file per subtitle: the same subtitle downloaded again, or two ticked results with the same
+    content, reuse one file, while a different subtitle with the same name is numbered "(2)";
+  - the downloaded-subtitle cleanup (each download is recorded for its video as before);
+  - an already loaded subtitle picked again is shown.
+
+**RELEASE_NEXT_NOTES.md** now says this instead of "one result is ticked at a time".
+
+## Tests (this round)
+
+**Unit test `test_rd_subtitle_picks`, 69 checks.**
+- **The language word in a name:** .he, .heb, Hebrew, .fi, .fin, before release tags, in an
+  episode name, and from the release name.
+- **Words that must not count:** "the", "chef", "The Hebrew Hammer", "He Got Game", an episode title
+  of plain words.
+- **The Sintel case:** "sintel.he" and a ".fin" file tagged English go below the English files, in
+  OpenSubtitles' order, nothing hidden.
+- **Other mislabels:** a mislabel by release name; an English file filed under Finnish; all results
+  mislabeled.
+- **Several checked:** a click adds, a click on a checked row unchecks it, the ticked results are
+  saved in the list's order (best first).
+
+**It goes red on the current #144 code.** I put #144's ranking back (no push-down), keeping only the
+new name function so the test compiles. 4 checks fail, starting with "mislabeled: the English file,
+not sintel.he: got "0", expected "1"": "sintel.he" is picked, the retest's failure.
+
+**Not testable in CI:** the real OpenSubtitles list, which needs an account and an API key. It is
+retest step 1.
+
 ## Green runs
 
 All on f8e2231ac5:
@@ -96,23 +156,21 @@ All on f8e2231ac5:
 
 Build: build-windows on wip/subtitle-language-first (the run named in the PR).
 
-1. **The reported case.**
+1. **The reported case (retest 1's failure).**
    - Open Sintel, then Add Subtitles, To This File, From OpenSubtitles, with English chosen.
-   - The pre-ticked result is an English one (its language shows in the name or in the downloaded
-     file).
-   - The English results come first in the list, and the Hebrew and other results are still
-     listed below them.
-   - Save: the English subtitle downloads and shows.
-2. **Another language.**
-   - Choose Hebrew (or French) in the language list. The search runs again.
-   - A result in that language is pre-ticked and its results come first.
-3. **No result in the chosen language.**
-   - Choose a language with no Sintel subtitles, if the search still returns others.
-   - The first result OpenSubtitles gives is pre-ticked, and nothing is hidden.
-4. **A show folder.**
-   - To This Folder, From OpenSubtitles, English: every episode's match is an English file of
-     that episode.
-   - Play the next episode: its automatic download is English too.
-5. **From Computer is unchanged.** Files from the computer are ordered and ticked as before.
-6. **Quick language changes.** Change the language twice quickly (English, then French, then back
-   to English): the list ends up with English results, an English one pre-ticked.
+   - The pre-ticked result is an English one, not "sintel.he".
+   - "sintel.he" (and any other file named in another language) is listed below the English files,
+     still in the list.
+   - Save: the English subtitle downloads and shows; its text is English.
+2. **Several at once.**
+   - Tick two more English results (three ticked). Save: all three download.
+   - The subtitle shown is the topmost ticked one.
+   - The subtitle menu lists all three with clean names, such as "Sintel (2010) [English]".
+3. **Untick.** Open the dialog again and click the pre-ticked row: it unticks, and Save is disabled
+   with nothing ticked. Tick one again: Save works.
+4. **No duplicates.** Tick a result you downloaded in step 2 and Save: it shows again, and the
+   portable folder's subtitles\opensubtitles has no second copy of it.
+5. **Another language.** Choose Hebrew (or French): a result in that language is pre-ticked and its
+   results come first.
+6. **From Computer is unchanged.** Several files can be ticked and added, as before.
+7. **Cleanup.** Settings, Storage lists the downloaded subtitles and deletes them.

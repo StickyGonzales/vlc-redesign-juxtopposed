@@ -22,6 +22,7 @@
 #include <QByteArray>
 #include <QSet>
 #include <QString>
+#include <QVector>
 
 #include <functional>
 #include <utility>
@@ -33,10 +34,14 @@
  */
 namespace rdsubtitles {
 
-// the checked rows after a click on `candidate`. `single`: OpenSubtitles results for one file
-// (Figma "Folder-3": one result checked), so a click checks that row alone and a click on the
-// checked row keeps it; otherwise (files from the computer, Figma "Folder-2") a click flips it
-QSet<int> picked(const QSet<int>& selected, int candidate, bool single);
+// the checked rows after a click on `candidate`: it flips that row, for every source, so several
+// results or files can be checked (StickyGonzales, 1.5.0: several OpenSubtitles results tried one
+// by one, as in 1.4.0)
+QSet<int> picked(const QSet<int>& selected, int candidate);
+
+// the checked candidates in the order of the list (`order`, best first): the order they are saved
+// in, so the first, the best ranked one the user checked, is the subtitle shown
+QVector<int> checkedInOrder(const QVector<int>& order, const QSet<int>& selected);
 
 // where a downloaded subtitle is written in `folder`: its own name ("Sintel (2010).eng.srt"),
 // the file already there when it holds the same bytes (the same subtitle downloaded again), else

@@ -74,17 +74,18 @@ void write(const QString& path, const QByteArray& data)
 
 void testPicked()
 {
-    // OpenSubtitles: one choice. The pre-checked best match, then a click on another result:
-    // only that one stays checked (1.5.0 Windows pass: English and Hebrew were both downloaded)
-    check(picked({ 0 }, 2, true) == QSet<int>{ 2 }, "single: another result moves the check");
-    // a click on the checked result keeps it (it unchecked it, and Save downloaded nothing)
-    check(picked({ 0 }, 0, true) == QSet<int>{ 0 }, "single: the checked result stays checked");
-    check(picked({}, 1, true) == QSet<int>{ 1 }, "single: nothing checked, a click checks");
-    check(picked({ 0, 3 }, 1, true) == QSet<int>{ 1 }, "single: never more than one");
+    // a click flips the row, for every source: several OpenSubtitles results again (StickyGonzales,
+    // 1.5.0; #141 had made them one choice)
+    check(picked({ 0 }, 2) == (QSet<int>{ 0, 2 }), "a click adds");
+    check(picked({ 0, 2 }, 0) == QSet<int>{ 2 }, "a click on a checked row unchecks it");
+    check(picked({}, 1) == QSet<int>{ 1 }, "nothing checked, a click checks");
+    check(picked({ 3 }, 3).isEmpty(), "the only checked row can be unchecked");
 
-    // files from the computer: several (Figma Folder-2), a click flips the row
-    check(picked({ 0 }, 2, false) == (QSet<int>{ 0, 2 }), "multi: a click adds");
-    check(picked({ 0, 2 }, 0, false) == QSet<int>{ 2 }, "multi: a click removes");
+    // saved in the list's order, best first: the first, shown, is the best ranked one checked
+    const QVector<int> order { 4, 1, 3, 0, 2 };
+    check(checkedInOrder(order, { 0, 3 }) == (QVector<int>{ 3, 0 }), "checked: in the list's order");
+    check(checkedInOrder(order, { 2, 4 }).first() == 4, "checked: the best ranked one first");
+    check(checkedInOrder(order, {}).isEmpty(), "checked: none");
 }
 
 void testDownloadFile()
