@@ -1,7 +1,8 @@
 # Linux: a file double-clicked while Cone quits was lost
 
 StickyGonzales, 2026-11-15. Branch wip/fix-linux-quit-handoff, separate from #144. It changes a
-non-GUI module (`modules/control/dbus`, Decision 27), so it is built on its own branch.
+non-GUI module (`modules/control/dbus`) and the core (`src/posix/specific.c`, Decision 27), so it is
+built on its own branch.
 
 ## Is it ours?
 
@@ -50,6 +51,20 @@ double-click (`--started-from-file`). Ctrl+Q, then B is double-clicked the same 
   new start opens its own window".
 - **Without the D-Bus module** (or a Cone that did not get the name) the trigger does nothing.
 
+**Two short races closed (found by the independent review).** Both are milliseconds right after
+Ctrl+Q:
+- **A file already on its way.** A file sent just before the release could still be taken into the
+  quitting Cone's play queue. Now, once a quit starts, the quitting Cone answers AddTrack and Raise
+  with an error ("the player is quitting").
+- **A start that checked just before the release.** It could send its file after the name was gone.
+  The call failed, and the start still exited.
+- **What the new start does now** (`src/posix/specific.c`, Cone profile). It exits only when the
+  running Cone took at least one of its files, or, started without files, when the running window
+  came to the front. Otherwise it logs "the running instance did not take the files (it is quitting)
+  - continuing normally..." and opens them in its own window.
+- **The core change.** This is a small change in `src/posix/specific.c`, inside the brand layer's
+  `#ifdef VLC_BRAND_PUBLIC`. The vlc profile is unchanged.
+
 **A VLC bug fixed on the way (upstream code, its own commit).**
 - **The bug.** The D-Bus module's main loop sized its poll array for the D-Bus watches only, but
   slot 0 is its wake-up pipe, so every loop wrote one entry past the array.
@@ -64,6 +79,16 @@ double-click (`--started-from-file`). Ctrl+Q, then B is double-clicked the same 
 - **Stalled quit, B 1 s later:** 4 of 4 opened their own window and kept playing after the quitting
   Cone ended.
 - **Normal quit, B 0.05 s later:** 4 of 4.
+
+**Tested.**
+- **The refusal.** A small stand-in program held the name and refused every call, like a quitting
+  Cone.
+  - A start with a file: AddTrack was refused, and Cone opened its own window with the file.
+  - A start without a file: Raise was refused, and Cone opened its own window.
+  - The old code exits there whatever the answer (`exit(0)`): reasoned from the code, not run.
+- **The normal hand-off still works.** With Cone playing and not quitting, a second start with a
+  file ends after 0.8 s with 0, and the file plays in the first Cone's window: one window, the same
+  process.
 
 ## The build-linux #152 failure was something else
 
