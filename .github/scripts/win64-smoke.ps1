@@ -1078,6 +1078,81 @@ function Check-UpNextNext([string]$exe) {
     }
 }
 
+# Up Next fixes from the 1.5.0 test pass (redesign/FIX_UPNEXT_RESUME_TRACKS_NOTES.md), the
+# counterparts of linux-smoke.py check_upnext_watched / check_track_stop
+function Start-ConeArgs([string]$exe, [string]$tag, [string[]]$extra) {
+    $log = Join-Path $Out "cone-$tag.log"
+    Remove-Item $log -ErrorAction SilentlyContinue
+    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
+           '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet') + $extra
+    Log "start $exe $($a -join ' ')"
+    Clear-RestoreState $exe
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+    return @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
+}
+function Quit-Cli($s) {
+    try { Rc 'quit' | Out-Null } catch {}
+    $s.proc.WaitForExit(15000) | Out-Null
+    Stop-Cone $s
+}
+# an episode watched to its end, played again by Up Next, starts from the beginning: resumed, it
+# began at its last frame, ended at once and autoplay ran on through the show (bug 1)
+function Check-UpNextWatched([string]$exe) {
+    $ep1 = Join-Path $Media 'Smoke Show\Smoke Show S01E01.mp4'
+    $ep2 = Join-Path $Media 'Smoke Show\Smoke Show S01E02.mp4'
+    Check 'upnext-watched: Up Next starts an episode watched to its end from the beginning' {
+        # S01E02 on its own, played to its end and quit cleanly: its position at the end is saved
+        $s = Start-ConeArgs $exe 'upnext-watched-watch' @("`"$ep2`"")
+        try {
+            Wait-Rc 25
+            Start-Sleep -Seconds 2
+            Rc 'seek 414' | Out-Null
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ($sw.Elapsed.TotalSeconds -lt 25 -and (Rc 'status') -match 'S01E02') { Start-Sleep -Milliseconds 500 }
+        } finally { Quit-Cli $s }
+        # S01E01 to its end: Up Next plays S01E02
+        $s = Start-ConeArgs $exe 'upnext-watched' @("`"$ep1`"")
+        try {
+            Wait-Rc 25
+            Start-Sleep -Seconds 2
+            Rc 'seek 414' | Out-Null
+            # S01E02 resumed at its end lasts an instant before S01E03 starts: either one ends the wait
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            $ep = 1
+            while ($sw.Elapsed.TotalSeconds -lt 30 -and $ep -lt 2) { $ep = Episode-Of (Rc 'status'); Start-Sleep -Milliseconds 300 }
+            if ($ep -ge 3) { Shot 'upnext-watched'; throw 'S01E02, watched to its end, was skipped: S01E03 plays already' }
+            if ($ep -ne 2) { throw 'Up Next did not play S01E02 after S01E01' }
+            Start-Sleep -Seconds 4
+            $ep = Episode-Of (Rc 'status')
+            $t = Rc-Number 'get_time'
+            Shot 'upnext-watched'
+            if ($ep -ne 2 -or $t -gt 60) { throw "S01E02, watched to its end, did not start from the beginning: episode $ep at $t s" }
+            "S01E02 (watched to its end) started from the beginning: at $t s 4 s after it began"
+        } finally { Quit-Cli $s }
+    } | Out-Null
+}
+# a stop saves no track choice for the show: only a pick does. A stop emptied the track list and
+# that was saved as "subtitles off" (bug 2)
+function Check-TrackStop([string]$exe) {
+    $ep1 = Join-Path $Media 'Smoke Show\Smoke Show S01E01.mp4'
+    $subs = Join-Path $Media 'test.srt'
+    Check 'track-stop: a stop saves no track choice for the show' {
+        # the external subtitle file is selected (VLC's default); nothing is picked
+        $s = Start-ConeArgs $exe 'track-stop' @("--sub-file=`"$subs`"", "`"$ep1`"")
+        try {
+            Wait-Rc 25
+            Start-Sleep -Seconds 5
+            $sel = @((Rc 'strack') -split "`n" | Where-Object { $_ -match '\*' })
+            Rc 'stop' | Out-Null
+            Start-Sleep -Seconds 3
+        } finally { Quit-Cli $s }
+        $saved = @(Get-Content $s.log -ErrorAction SilentlyContinue | Where-Object { $_ -match 'tracks for the show saved' })
+        if ($sel.Count -eq 0) { throw 'no subtitle track selected at the start (the check needs one)' }
+        if ($saved.Count -gt 0) { throw "a stop saved a track choice nobody picked: $($saved[0].Trim())" }
+        "subtitles $($sel[0].Trim()) at the start, stopped, quit: nothing saved for the show"
+    } | Out-Null
+}
+
 # an element whose name ends with $suffix (the update notice: "<name> <version> is available")
 function Uia-FindSuffix($hwnd, [string]$suffix, [int]$timeoutMs) {
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
@@ -1369,6 +1444,8 @@ if (-not $zipExe) {
     Check-CastDiscovery 'zip' $zipExe.FullName
     Check-RestoreQuestion $zipExe.FullName
     Check-UpNextNext $zipExe.FullName
+    Check-UpNextWatched $zipExe.FullName
+    Check-TrackStop $zipExe.FullName
     Check-QuitInstant $zipExe.FullName
     Check-PopupStack $zipExe.FullName
     Run-FirstStart $zipExe.FullName

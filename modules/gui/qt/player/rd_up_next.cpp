@@ -74,6 +74,8 @@ namespace {
 // the next episode's picture: at this part of the file, this wide
 constexpr double kThumbnailPosition = 0.15;
 constexpr int kThumbnailWidth = 320;
+// a next episode saved at least this far in counts as watched: it starts from the beginning
+constexpr double kWatchedProgress = 0.95;
 // "Still watching?" after this many episodes in a row without the user
 constexpr int kStillWatchingAfter = 3;
 // after Next episode: how long the switch to the next episode is guarded
@@ -168,6 +170,15 @@ QString selectionOf(const QVector<TrackRow>& rows)
             selected.append(row.track.tag + QLatin1Char('|') + row.track.title);
     }
     return selected.join(QLatin1Char('\n'));
+}
+
+// every track of a list, selected or not, as a text to compare: a list that changed is no pick
+QString listOf(const QVector<TrackRow>& rows)
+{
+    QStringList all;
+    for (const TrackRow& row : rows)
+        all.append(row.track.tag + QLatin1Char('|') + row.track.title);
+    return all.join(QLatin1Char('\n'));
 }
 
 QVector<rdtracks::Track> tracksOf(const QVector<TrackRow>& rows)
@@ -294,8 +305,12 @@ RdUpNext::RdUpNext(qt_intf_t* intf, MainCtx* ctx, RdEffects* effects, QObject* p
     m_trackSettleTimer->setInterval(kTrackSettleMs);
     connect(m_trackSettleTimer, &QTimer::timeout, this, [this]() {
         m_tracksSettled = true;
-        m_audioSelection = selectionOf(trackRows(m_player->getAudioTracks()));
-        m_subtitleSelection = selectionOf(trackRows(m_player->getSubtitleTracks()));
+        const QVector<TrackRow> audioRows = trackRows(m_player->getAudioTracks());
+        const QVector<TrackRow> subtitleRows = trackRows(m_player->getSubtitleTracks());
+        m_audioSelection = selectionOf(audioRows);
+        m_subtitleSelection = selectionOf(subtitleRows);
+        m_audioList = listOf(audioRows);
+        m_subtitleList = listOf(subtitleRows);
     });
     m_trackRecordTimer = new QTimer(this);
     m_trackRecordTimer->setSingleShot(true);
@@ -612,6 +627,10 @@ void RdUpNext::startDetection()
     m_showKnown = false;
     m_show = rdepisode::Show();
     m_nextIndex = -1;
+    // the next episode's saved position is read again (it may have been watched since)
+    m_progressMrl.clear();
+    m_nextWatched = false;
+    ++m_progressGeneration;
     // the old next episode's picture goes, and a request still running for it is dropped
     requestThumbnail();
     emit stateChanged();
@@ -804,6 +823,7 @@ void RdUpNext::onTrackSelectionChanged(bool audio)
         m_recordAudio = true;
     else
         m_recordSubtitles = true;
+    m_recordGeneration = m_generation;
     m_trackRecordTimer->start();
 }
 
@@ -816,13 +836,29 @@ void RdUpNext::recordTrackChoice()
     QStringList saved;
     const QVector<TrackRow> audioRows = trackRows(m_player->getAudioTracks());
     const QVector<TrackRow> subtitleRows = trackRows(m_player->getSubtitleTracks());
-    // only a selection that changed is a pick
-    if (m_recordAudio && selectionOf(audioRows) == m_audioSelection)
+    // a pick is the user's: on the file it was seen on, while it plays or is paused. A stop, the
+    // end of the episode, a quit or a file switch empties the track lists, which is no pick: it
+    // saved "subtitles off" for the show (1.5.0 test pass, TEST_PASS_1.5.0_LINUX_MAC.md bug 2)
+    const auto state = m_player->getPlayingState();
+    if (m_recordGeneration != m_generation
+        || (state != PlayerController::PLAYING_STATE_PLAYING && state != PlayerController::PLAYING_STATE_PAUSED))
+    {
         m_recordAudio = false;
-    if (m_recordSubtitles && selectionOf(subtitleRows) == m_subtitleSelection)
+        m_recordSubtitles = false;
+        return;
+    }
+    // only a selection that changed, in a list that did not, is a pick
+    const QString audioList = listOf(audioRows);
+    const QString subtitleList = listOf(subtitleRows);
+    if (m_recordAudio && (audioRows.isEmpty() || audioList != m_audioList || selectionOf(audioRows) == m_audioSelection))
+        m_recordAudio = false;
+    if (m_recordSubtitles && (subtitleRows.isEmpty() || subtitleList != m_subtitleList
+                              || selectionOf(subtitleRows) == m_subtitleSelection))
         m_recordSubtitles = false;
     m_audioSelection = selectionOf(audioRows);
     m_subtitleSelection = selectionOf(subtitleRows);
+    m_audioList = audioList;
+    m_subtitleList = subtitleList;
     if (m_recordAudio)
     {
         const QVector<TrackRow>& rows = audioRows;
@@ -957,6 +993,7 @@ void RdUpNext::evaluate()
     if (next != oldNext && next < 0 && showActive() && !longEnough())
         msg_Dbg(m_intf, "up next: not an episode: shorter than %d s", m_show.minDurationSec);
     m_nextIndex = next;
+    requestNextProgress();
 
     // a weak name pattern gets no autoplay item: the card offers the next episode, nothing plays
     // by itself (UP_NEXT_PLAN.md 2.3)
@@ -1591,9 +1628,16 @@ void RdUpNext::onForgetEntries(const QStringList& paths)
 QStringList RdUpNext::itemOptions(bool startPaused) const
 {
     QStringList options;
-    // the next episode resumes at its saved spot without the prompt; "Never" is kept
+    // the next episode resumes at its saved spot without the prompt; "Never" is kept. One watched to
+    // its end starts from the beginning: resumed, it began at its last frame, ended at once and
+    // autoplay ran on through the show (1.5.0 test pass, TEST_PASS_1.5.0_LINUX_MAC.md bug 1)
     if (var_InheritInteger(m_intf, "restore-playback-pos") != 0)
-        options << QStringLiteral(":restore-playback-pos=2");
+    {
+        const bool watched = m_nextWatched && m_nextIndex >= 0
+            && m_progressMrl == episodeMrl(m_show.episodes.at(m_nextIndex).path);
+        options << (watched ? QStringLiteral(":restore-playback-pos=0")
+                            : QStringLiteral(":restore-playback-pos=2"));
+    }
     // the languages picked in the episode carry over (a show preset can still change them)
     vlc_player_t* player = m_player->getPlayer();
     const QString audio = selectedLanguage(player, AUDIO_ES, nullptr);
@@ -1872,6 +1916,49 @@ void RdUpNext::markWatched(const QUrl& url)
         if (media)
             vlc_ml_media_set_played(ml, media->i_id, true);
     });
+}
+
+void RdUpNext::requestNextProgress()
+{
+    const QString mrl = m_nextIndex >= 0 ? episodeMrl(m_show.episodes.at(m_nextIndex).path) : QString();
+    if (mrl == m_progressMrl)
+        return;
+    m_progressMrl = mrl;
+    m_nextWatched = false;
+    const quint64 generation = ++m_progressGeneration;
+    MediaLib* mediaLib = m_ctx ? m_ctx->getMediaLibrary() : nullptr;
+    if (!mediaLib || mrl.isEmpty())
+        return;
+    struct Ctx
+    {
+        bool found = false;
+        double progress = 0.;
+        qint64 durationMs = 0;
+    };
+    const QByteArray mrl8 = mrl.toUtf8();
+    const qint64 leadMs = m_creditsLeadMs;
+    mediaLib->runOnMLThread<Ctx>(this,
+        [mrl8](vlc_medialibrary_t* ml, Ctx& ctx) {
+            ml_unique_ptr<vlc_ml_media_t> media(vlc_ml_get_media_by_mrl(ml, mrl8.constData()));
+            if (!media)
+                return;
+            ctx.found = true;
+            ctx.progress = media->f_progress;
+            ctx.durationMs = media->i_duration;
+        },
+        [this, generation, leadMs](quint64, Ctx& ctx) {
+            if (generation != m_progressGeneration || !ctx.found || ctx.progress <= 0.)
+                return;
+            // 95 % in, or no more left than where the Up Next card appears (the credits)
+            const bool watched = ctx.progress >= kWatchedProgress
+                || (ctx.durationMs > 0 && (1. - ctx.progress) * double(ctx.durationMs) <= double(leadMs));
+            if (!watched)
+                return;
+            m_nextWatched = true;
+            msg_Dbg(m_intf, "up next: the next episode was watched to its end (%.1f %%): it starts from the "
+                    "beginning", ctx.progress * 100.);
+            refreshQueued();
+        });
 }
 
 // the next episode's picture: one thumbnailer request at 15 %, saved as a PNG in the cache
