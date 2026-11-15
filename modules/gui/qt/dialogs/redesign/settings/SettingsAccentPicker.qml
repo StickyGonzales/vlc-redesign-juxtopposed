@@ -22,7 +22,7 @@
 // interface at once (MainCtx.accentColor, kept in "qt-accent-color").
 // Cone extra (redesign/CUSTOM_ACCENT_NOTES.md): a tenth cell, "Custom", of the same size after
 // them (the strip grows by one cell and gap, 356 wide); its swatch is the custom color (the last
-// one typed while a preset is chosen, at 70 % like them) or a spectrum until there is one, and it
+// one typed while a preset is chosen, at 70 % like them) or a rainbow square until there is one, and it
 // opens the hex editor (RdAccentEditor) under it.
 import QtQuick
 import QtQuick.Templates as T
@@ -210,18 +210,18 @@ Rectangle {
                     radius: VLCStyle.dp(1)
                     color: root.hasCustomColor ? root.customColor : "transparent"
                     opacity: root.customSelected ? 1.0 : 0.7
-                    // no custom color yet: the spectrum says "any color"
-                    gradient: root.hasCustomColor ? null : spectrum
 
-                    Gradient {
-                        id: spectrum
-
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "#E15032" }
-                        GradientStop { position: 0.25; color: "#C49E23" }
-                        GradientStop { position: 0.5; color: "#19A234" }
-                        GradientStop { position: 0.75; color: "#185DD3" }
-                        GradientStop { position: 1.0; color: "#F052B3" }
+                    // no custom color yet: a square color wheel (every hue around the centre) says
+                    // "any color", same square as the nine. An image: Qt Quick's gradients are
+                    // linear only (and the earlier `gradient:` binding that switched to null drew
+                    // nothing at all in Qt 6.8, the cell stayed empty)
+                    Image {
+                        anchors.fill: parent
+                        visible: !root.hasCustomColor
+                        source: "qrc:///rd/accent_wheel.png"
+                        sourceSize: Qt.size(120, 120)
+                        smooth: true
+                        mipmap: true
                     }
                 }
             }

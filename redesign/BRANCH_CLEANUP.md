@@ -240,3 +240,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/fix-upnext-resume-tracks` | `d3da549e9f91893193c44b925d860f6e958ef34a` | PR #140 merged into wip/next-test (d6f5d4cf49b) |
+
+## 2026-11-15, custom accent color wheel
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/custom-accent-rainbow` | `f20a05a97bf102f2cd07edc7b6b5caee36836b57` | PR #142 merged into wip/next-test (b943665e233) |
