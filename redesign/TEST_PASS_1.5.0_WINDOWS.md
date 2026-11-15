@@ -109,3 +109,13 @@ smoke green. Fresh portable profile:
 - **Settings > General:** the color wheel in the Custom cell.
 - **Quit:** Ctrl+Q four times, window gone in 51-71 ms, process ended in 0.40-0.53 s; no crash records.
 - **Pending for 1.5.0:** StickyGonzales wants several OpenSubtitles results again (STATUS row); if that lands, one more final build.
+
+## Final build quick check, round 2 (PC session, 2026-11-16)
+
+build-windows #275 (fdf9ad5741a, wip/next-test with #146 merged; the Windows app is the same as #272, #146 only changed the
+Linux smoke script; #144 round 2 and #145 not merged), build and Windows smoke green. Fresh portable profile:
+- **Playback:** H.264 + AAC, HEVC with two audio tracks (English, Japanese), an MP4 with an external SRT, a FLAC with a
+  cover: each plays.
+- **Square cover:** 613x613. **Recent newest first:** the four files in reverse play order.
+- **Settings > General:** the color wheel in the Custom cell.
+- **Quit:** window gone in 55-64 ms every time; the process ended in 0.31-0.51 s, the HEVC one in 1.46 s; no crash records.
