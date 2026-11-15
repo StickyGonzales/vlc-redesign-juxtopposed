@@ -133,7 +133,18 @@ the view exists). Release builds have no assertion. Logged here as a note for la
 
 ## Green runs
 
-(filled in when CI has run)
+All on 059222da6b:
+- **build-linux #153:** build, packages and every smoke job pass. "quit-handoff: a file double-
+  clicked while Cone quits opens in a new window" passed on both Ubuntu jobs, with the new window
+  showing while the quitting Cone still ran.
+  - **The first attempt** failed one Ubuntu 22.04 check, "restore-quit: main window appears". A
+    Cone just started was quit from outside the interface about 0.2 s after its start, the same as
+    #152's drawing failure on a branch without this change.
+  - **It is logged as an open row in STATUS.md.** The new early-exit text names it: "quit watchdog:
+    armed ... (a quit that did not start in the interface)".
+  - **The job passed on its one re-run.**
+- **build-windows #271:** build, installer and the Windows smoke pass.
+- **unit-tests #16:** pass.
 
 ## Windows retest (PC session)
 
