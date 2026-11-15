@@ -252,3 +252,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/fix-smoke-stdin-quit` | `860d92b7a09741778a6210db65d7c66accde99db` | PR #146 merged into wip/next-test (c1f4d13e130) |
+
+## 2026-11-16, Linux quit hand-off
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-linux-quit-handoff` | `ecc999c4f5acaf1804d6971e14d5e496fed5dd08` | PR #145 merged into wip/next-test (a1edb7de22d) |
