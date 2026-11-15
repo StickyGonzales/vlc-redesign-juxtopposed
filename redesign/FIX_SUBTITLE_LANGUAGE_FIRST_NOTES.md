@@ -183,6 +183,22 @@ All on f8e2231ac5:
 - **build-windows #268:** build, installer and the Windows smoke pass.
 - **unit-tests #14 and #15:** pass, test_rd_subtitle_picks included (47 checks).
 
+## Round 3 (PC session, taken over from web 2, 2026-11-16)
+
+**Retest 2 on build-windows 273 failed twice.**
+- "sintel.he" was still first and pre-ticked with English chosen.
+- Two downloads had names that were not clean: "Track 11 - English" and "sintel_en (2) [en (2)]".
+
+**1. A name without an extension keeps its language.** OpenSubtitles' API gives file names without one ("sintel.he", "sintel_en", "Sintel (2010).eng"; checked against the API with the test key). `SubtitleMatcher::parse` cut anything up to four characters after the last dot, so ".he" went as an extension and no language word was left. Now `SubtitleMatcher::withoutExtension` cuts only a real subtitle, video or audio extension (a list); "sintel.he" keeps ".he" and goes after the English files. The download names (`rdsubtitles::withoutExtension`) use the same function.
+
+**2. Clean track names.**
+- **A numbered copy.** "sintel_en (2).srt": VLC reads the language from the file name and keeps the number with it ("en (2)"), which no lookup knows, so the row showed "[en (2)]"; the name parser also stopped at the ")". The copy number " (2)" .. " (99)" now comes off the name and the language first, and shows once after the name: "sintel (2) [English]" (`withoutCopyNumber`; a year such as "(2010)" stays). A language the lookup does not know falls back to the file name's language word, else the name has no brackets.
+- **"Track 11 - English".** The row of a download Cone had just selected showed VLC's own title: its file name was never found. The track list asked again for the name at most 10 times, but counted every repaint as a try; a selected track repaints many times at once, so the tries ran out before VLC had listed the file on the media. Now one lookup is asked at a time (100 ms apart, up to 30, 3 s), and only those count (`TrackListModel::data`, `m_fileNameLookupPending`).
+
+**Unit test.** The real names: "sintel.he", "Sintel (2010).eng", "sintel_en" (twice) tagged "en" in OpenSubtitles' order (an English file is the best match, "sintel.he" last and still listed); `withoutExtension` keeps ".he" and ".eng"; track names "sintel (2) [English]" for "sintel_en (2).srt" with VLC's "en (2)", "Sintel (2010) [English]", "Sintel (2010) (2) [English]", "sintel [Hebrew]"; a year is no copy number.
+
+**Multi-select** is unchanged from round 2.
+
 ## Windows retest (PC session)
 
 Build: build-windows on wip/subtitle-language-first (the run named in the PR).

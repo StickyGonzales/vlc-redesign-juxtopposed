@@ -39,8 +39,9 @@ namespace {
 constexpr int kSlaveIdLength = 32;
 
 // VLC lists a file added during playback on the media just after it creates the file's track:
-// its name is looked up again this many times, this often, until it is there
-constexpr int kFileNameLookups = 10;
+// its name is looked up again this many times, this often, until it is there (3 s; a
+// subtitle loaded with a large video's first seconds can take longer than 1 s)
+constexpr int kFileNameLookups = 30;
 constexpr int kFileNameLookupDelayMs = 100;
 
 bool isExternalTrack(vlc_es_id_t* id)
@@ -103,8 +104,16 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
                         track.m_fileName = rdsubtitles::withoutDownloadId(track.m_fileName);
                 }
                 // the row shows the file's name (Figma "Frame 67"), not VLC's "Track 2 - [English]"
-                if (track.m_fileName.isEmpty() && track.m_fileNameLookups++ < kFileNameLookups)
+                // one lookup asked at a time: the row repaints many times at once (a selected
+                // track), which used up every lookup before the file was listed (1.5.0
+                // retest: "Track 11 - English" for a download Cone had just selected)
+                if (track.m_fileName.isEmpty() && !track.m_fileNameLookupPending
+                    && track.m_fileNameLookups < kFileNameLookups)
+                {
+                    ++track.m_fileNameLookups;
+                    track.m_fileNameLookupPending = true;
                     lookUpFileNameLater(track.m_id.get());
+                }
             }
             if (!track.m_fileName.isEmpty())
                 return rdsubtitles::externalTrackName(track.m_fileName, track.m_language, languageOf);
@@ -151,6 +160,7 @@ void TrackListModel::lookUpFileNameLater(vlc_es_id_t* id) const
         {
             if (self->m_data[row].m_id.get() == id)
             {
+                self->m_data[row].m_fileNameLookupPending = false;
                 const QModelIndex changed = self->index(row);
                 emit self->dataChanged(changed, changed, { Qt::DisplayRole });
                 return;

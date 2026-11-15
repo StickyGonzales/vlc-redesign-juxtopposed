@@ -47,6 +47,26 @@ const QSet<QString>& releaseTags()
     return tags;
 }
 
+// the extensions withoutExtension() takes off: subtitle, video and audio files. Only these: an
+// OpenSubtitles file name has none ("sintel.he"), and its last word is then a language code
+const QSet<QString>& mediaExtensions()
+{
+    static const QSet<QString> extensions {
+        // subtitles
+        "srt", "ass", "ssa", "sub", "idx", "vtt", "webvtt", "smi", "sami", "txt", "sup", "usf",
+        "ttml", "dfxp", "mpl", "mpl2", "mks", "jss", "rt", "pjs", "psb", "stl", "scc", "sbv", "lrc",
+        "aqt", "cdg", "zip",
+        // video
+        "mkv", "mp4", "m4v", "avi", "mov", "qt", "wmv", "asf", "flv", "f4v", "webm", "ts", "m2ts",
+        "mts", "m2t", "tp", "trp", "mpg", "mpeg", "mpe", "mpv", "m1v", "m2v", "vob", "ogm", "ogv",
+        "divx", "xvid", "3gp", "3g2", "rm", "rmvb", "wtv", "dvr-ms", "mxf", "iso", "evo", "y4m",
+        // audio
+        "mka", "mp3", "flac", "m4a", "aac", "ac3", "eac3", "dts", "ogg", "oga", "opus", "wav",
+        "wma", "ape", "wv", "alac", "aiff", "aif"
+    };
+    return extensions;
+}
+
 // words that tell subtitle variants apart besides the language
 const QSet<QString>& variantWords()
 {
@@ -201,18 +221,27 @@ QString SubtitleMatcher::languageCode(const QString& word, bool allowTwoLetters)
     return {};
 }
 
+QString SubtitleMatcher::withoutExtension(const QString& fileName)
+{
+    const qsizetype dot = fileName.lastIndexOf(QChar('.'));
+    if (dot <= 0 || dot == fileName.size() - 1)
+        return fileName;
+    if (!mediaExtensions().contains(fileName.mid(dot + 1).toLower()))
+        return fileName;
+    return fileName.left(dot);
+}
+
 SubtitleMatcher::Name SubtitleMatcher::parse(const QString& fileName)
 {
     Name name;
 
-    // the extension only ("show.en.srt" keeps "en")
+    // the extension only ("show.en.srt" keeps "en"), and only a real one: OpenSubtitles gives
+    // names without one, "sintel.he" keeps its ".he" (1.5.0 retest of #144)
     QString base = fileName;
     const qsizetype slash = std::max(base.lastIndexOf(QChar('/')), base.lastIndexOf(QChar('\\')));
     if (slash >= 0)
         base = base.mid(slash + 1);
-    const qsizetype dot = base.lastIndexOf(QChar('.'));
-    if (dot > 0 && base.size() - dot <= 5)
-        base.truncate(dot);
+    base = withoutExtension(base);
 
     const QStringList original = words(base);
     const QStringList tokens = tokenize(base);

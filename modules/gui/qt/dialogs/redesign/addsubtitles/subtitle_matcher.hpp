@@ -69,6 +69,11 @@ public:
 
     static Name parse(const QString& fileName);
 
+    // `fileName` without its extension, when that is a subtitle, video or audio one ("Sintel
+    // (2010).eng.srt" -> "Sintel (2010).eng"); any other last word stays: OpenSubtitles' file
+    // names have no extension, "sintel.he" keeps its language code
+    static QString withoutExtension(const QString& fileName);
+
     // the part of score() that comes from the variant: the kept one (preference.variantTokens)
     // +50 a word, a variant word nobody asked for ("forced", "SDH") -5
     static int variantScore(const Name& subtitle, const Preference& preference);

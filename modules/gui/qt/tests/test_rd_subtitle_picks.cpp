@@ -112,6 +112,11 @@ void testTrackName()
 {
     checkEqual(withoutExtension(s("Sintel (2010).eng.srt")), s("Sintel (2010).eng"), "extension");
     checkEqual(withoutExtension(s("Sintel (2010)")), s("Sintel (2010)"), "no extension");
+    // OpenSubtitles' file names have no extension: the last word is a language, not one
+    checkEqual(withoutExtension(s("sintel.he")), s("sintel.he"), "no extension: .he kept");
+    checkEqual(withoutExtension(s("Sintel (2010).eng")), s("Sintel (2010).eng"), "no extension: .eng kept");
+    checkEqual(withoutExtension(s("Movie.2010.ASS")), s("Movie.2010"), "extension: any case");
+    checkEqual(withoutExtension(s("Sintel.mkv")), s("Sintel"), "extension: a video");
 
     // the 1.5.0 track "Sintel (2010 [English]": the language word went with the ")" before it
     const QString base = s("Sintel (2010).eng");
@@ -155,6 +160,29 @@ void testExternalTrackName()
                s("Sintel (2010).eng [Hebrew]"), "track: track language");
     checkEqual(externalTrackName(s("Sintel (2010).srt"), QString(), language),
                s("Sintel (2010)"), "track: no language");
+
+    // the 1.5.0 retest of #144 round 2, the real downloads and the language VLC gave each track:
+    // "sintel_en (2).srt" read as "en (2)" and listed "sintel_en (2) [en (2)]"
+    checkEqual(externalTrackName(s("sintel_en (2).srt"), s("en (2)"), language),
+               s("sintel (2) [English]"), "track: numbered copy, VLC's \"en (2)\"");
+    checkEqual(externalTrackName(s("sintel_en (2).srt"), QString(), language),
+               s("sintel (2) [English]"), "track: numbered copy, no track language");
+    checkEqual(externalTrackName(s("sintel_en.srt"), s("en"), language),
+               s("sintel [English]"), "track: sintel_en");
+    checkEqual(externalTrackName(s("Sintel (2010).eng.srt"), s("eng"), language),
+               s("Sintel (2010) [English]"), "track: Sintel (2010).eng with its language");
+    checkEqual(externalTrackName(s("Sintel (2010).eng (2).srt"), s("eng"), language),
+               s("Sintel (2010) (2) [English]"), "track: numbered after the language word");
+    checkEqual(externalTrackName(s("sintel.he.srt"), s("he"), language),
+               s("sintel [Hebrew]"), "track: sintel.he");
+    // a year is no copy number
+    checkEqual(withoutCopyNumber(s("Sintel (2010)"), nullptr), s("Sintel (2010)"), "copy: a year stays");
+    QString copy;
+    checkEqual(withoutCopyNumber(s("sintel_en (12)"), &copy), s("sintel_en"), "copy: (12)");
+    checkEqual(copy, s("12"), "copy: its number");
+    // an unknown language and no language word: the name with its number, no brackets
+    checkEqual(externalTrackName(s("subtitle (3).srt"), s("xx (3)"), language),
+               s("subtitle (3)"), "track: unknown language, numbered");
 }
 
 void testSaveDownload()
@@ -383,6 +411,23 @@ void testMislabeled()
     };
     checkEqual(orderText(SubtitleMatcher::rankResults(sintel, chinese, s("zh-tw"), traditional)), s("0,1"),
                "mislabeled: .chi with zh-tw chosen");
+
+    // the real list for Sintel with English chosen (the API's file names, no extension, all tagged
+    // "en" by OpenSubtitles, in their order): round 2 still pre-ticked "sintel.he", because ".he"
+    // was taken for an extension
+    const QVector<SubtitleMatcher::Name> realSintel {
+        tagged("sintel.he", "en", "sintel"),
+        tagged("Sintel (2010).eng", "en", "Sintel (2010)"),
+        tagged("sintel_en", "en", "sintel_en"),
+        tagged("sintel_en", "en", "Sintel.2010.Xvid-VODO"),
+    };
+    checkEqual(SubtitleMatcher::namedLanguage(s("sintel.he"), s("sintel")), s("he"), "real: sintel.he names Hebrew");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel (2010).eng"), s("Sintel (2010)")), s("en"),
+               "real: Sintel (2010).eng names English");
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, realSintel, s("en"), english)), s("1"),
+               "real: an English file is the best match, not sintel.he");
+    checkEqual(orderText(SubtitleMatcher::rankResults(sintel, realSintel, s("en"), english)), s("1,2,3,0"),
+               "real: sintel.he after the English files, still listed");
 
     // only mislabeled results: OpenSubtitles' top one is still the best match
     const QVector<SubtitleMatcher::Name> onlyHebrew { tagged("sintel.he.srt", "en"), tagged("sintel.heb.srt", "en") };
