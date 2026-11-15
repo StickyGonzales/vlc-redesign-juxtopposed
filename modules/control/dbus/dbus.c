@@ -264,6 +264,7 @@ static int Open( vlc_object_t *p_this )
         p_sys->owns_name = true;
     }
     atomic_init( &p_sys->release_name, false );
+    atomic_init( &p_sys->quitting, false );
     dbus_connection_flush( p_conn );
 
     p_intf->p_sys = p_sys;
@@ -990,7 +991,9 @@ static void *Run( void *data )
         }
 
         /* redesign: a quit started (one-instance-release): a new start must not hand its files
-         * to this instance, which is going away, but become the instance itself */
+         * to this instance, which is going away, but become the instance itself. The call waits
+         * for the bus (up to libdbus's 25 s when the bus hangs); the quit watchdog ends the
+         * process after 5 s whatever happens here */
         if (atomic_exchange(&p_sys->release_name, false))
         {
             DBusError err;
@@ -1087,6 +1090,7 @@ static int ReleaseNameCallback( vlc_object_t *p_this, char const *psz_var,
     VLC_UNUSED(oldval); VLC_UNUSED(newval);
     intf_thread_t *p_intf = p_data;
 
+    atomic_store( &p_intf->p_sys->quitting, true );
     atomic_store( &p_intf->p_sys->release_name, true );
     wakeup_main_loop( p_intf );
     return VLC_SUCCESS;

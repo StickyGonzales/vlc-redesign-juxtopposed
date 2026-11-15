@@ -100,6 +100,11 @@ static void system_ConfigureDbus(libvlc_int_t *vlc, int argc,
     msg_Warn(vlc, "running VLC instance - exiting...");
 
     const dbus_bool_t play = !var_InheritBool(vlc, "playlist-enqueue");
+#ifdef VLC_BRAND_PUBLIC
+    /* redesign: the files the running instance took; one that is quitting refuses them (or is
+     * gone already), and this start then opens them itself instead of exiting with nothing */
+    int delivered = 0;
+#endif
 
     for (int i = 0; i < argc; i++)
     {
@@ -151,11 +156,23 @@ static void system_ConfigureDbus(libvlc_int_t *vlc, int argc,
             continue;
         }
         dbus_message_unref(reply);
+#ifdef VLC_BRAND_PUBLIC
+        delivered++;
+#endif
     }
 
 #ifdef VLC_BRAND_PUBLIC
+    if (argc > 0 && delivered == 0)
+    {
+        msg_Warn(vlc, "the running instance did not take the files (it is quitting) - "
+                      "continuing normally...");
+        dbus_connection_unref(conn);
+        return;
+    }
+
     /* redesign (brand layer): the running window comes to the front, with the files just handed
      * over or without any (the menu entry while Cone already runs, which otherwise did nothing) */
+    bool raised = false;
     DBusMessage *raise = dbus_message_new_method_call(MPRIS_BUS_NAME,
         MPRIS_OBJECT_PATH, "org.mpris.MediaPlayer2", "Raise");
     if (likely(raise != NULL))
@@ -169,7 +186,18 @@ static void system_ConfigureDbus(libvlc_int_t *vlc, int argc,
             dbus_error_free(&err);
         }
         else
+        {
             dbus_message_unref(reply);
+            raised = true;
+        }
+    }
+    /* started without files while the running instance quits: open a window of its own */
+    if (argc == 0 && !raised)
+    {
+        msg_Warn(vlc, "the running instance could not show its window (it is quitting) - "
+                      "continuing normally...");
+        dbus_connection_unref(conn);
+        return;
     }
 #endif
 

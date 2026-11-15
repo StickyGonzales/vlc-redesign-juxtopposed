@@ -211,8 +211,12 @@ STARTED = []
 
 def bus_name_owned():
     """a Cone holds the one-instance name on the session bus (it would take the next start's files)"""
-    r = run(['dbus-send', '--session', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus',
-             'org.freedesktop.DBus.NameHasOwner', 'string:org.mpris.MediaPlayer2.cone'], timeout=10)
+    try:
+        r = run(['dbus-send', '--session', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus',
+                 'org.freedesktop.DBus.NameHasOwner', 'string:org.mpris.MediaPlayer2.cone'], timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        # no dbus-send or no answer: the wait for the processes alone
+        return False
     return 'boolean true' in r.stdout
 
 
@@ -249,7 +253,7 @@ def early_exit_reason(logfile):
                  or 'to running instance' in l or 'one-instance' in l]
     except OSError:
         return 'no log'
-    return ' | '.join(lines[:4]) or 'no quit line in its log'
+    return ' | '.join(lines[-4:]) or 'no quit line in its log'
 
 
 class Session:
@@ -822,6 +826,8 @@ def check_quit_handoff(exe):
                 time.sleep(0.25)
             if not mine:
                 raise CheckFailed('no window of the new start shows the file within 30 s')
+            # the quitting Cone still ran when the new one showed: the hand-off was really there
+            quitting_then = s.proc.poll() is None
             try:
                 s.proc.wait(15)
             except subprocess.TimeoutExpired:
@@ -834,8 +840,9 @@ def check_quit_handoff(exe):
             if not released:
                 raise CheckFailed('the quitting Cone did not log "one-instance name released"')
             shot(tag)
-            return (f'double-clicked {started:.1f} s after Ctrl+Q: its own window plays quit-handoff.mp4, still '
-                    f'there after the quitting Cone ended ({ended:.1f} s)')
+            return (f'double-clicked {started:.1f} s after Ctrl+Q: its own window plays quit-handoff.mp4 '
+                    f'({"while the quitting Cone still ran" if quitting_then else "the quitting Cone had ended"}), '
+                    f'still there after the quitting Cone ended ({ended:.1f} s)')
         check(f'{tag}: a file double-clicked while Cone quits opens in a new window', body)
     finally:
         s.stop()

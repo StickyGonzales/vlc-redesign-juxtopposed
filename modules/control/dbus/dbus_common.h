@@ -117,7 +117,14 @@ struct intf_sys_t
      * be given up (one-instance-release) */
     bool            owns_name;
     atomic_bool     release_name;
+    /* redesign: a quit started: files and Raise sent by a new start are refused (the new start
+     * then opens them itself, src/posix/specific.c) */
+    atomic_bool     quitting;
 };
+
+/* redesign: the reply to a new start's AddTrack or Raise while this instance quits */
+#define DBUS_CONE_QUITTING_ERROR "org.mpris.MediaPlayer2.cone.Quitting"
+
 
 enum
 {
