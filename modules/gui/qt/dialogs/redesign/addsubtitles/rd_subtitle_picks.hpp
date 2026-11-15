@@ -23,6 +23,9 @@
 #include <QSet>
 #include <QString>
 
+#include <functional>
+#include <utility>
+
 /**
  * redesign (1.5.0 fixes, redesign/FIX_1_5_0_NOTES.md): the small rules of the Add Subtitles
  * dialog and of the external track names, QtCore only and pure apart from the file checks of
@@ -40,6 +43,12 @@ QSet<int> picked(const QSet<int>& selected, int candidate, bool single);
 // the first free "Sintel (2010).eng (2).srt"; empty when no name is free
 QString downloadFile(const QString& folder, const QString& name, const QByteArray& data);
 
+// writes a downloaded subtitle at downloadFile()'s place and returns its path, empty on failure.
+// Choosing the name and writing are one step for every download worker (two subtitles of the
+// same name downloaded at once get two files); a file that already holds the bytes is not
+// written again (VLC may have it open)
+QString saveDownload(const QString& folder, const QString& name, const QByteArray& data);
+
 // a file name without its extension (".srt", ".ass": at most four characters after the dot)
 QString withoutExtension(const QString& fileName);
 
@@ -49,8 +58,18 @@ QString withoutExtension(const QString& fileName);
 QString withoutLastWord(const QString& base, qsizetype wordStart, const QString& fallback);
 
 // the name of an OpenSubtitles download Cone saved before 1.5.0 ("67399-Sintel (2010).eng.srt",
-// the OpenSubtitles file id first) without that id; other names as they are
+// the OpenSubtitles file id first, at least four digits) without that id; other names as they are
 QString withoutDownloadId(const QString& fileName);
+
+// the English name and two letter code of a language code or name ({ given text, "" } when unknown)
+using LanguageLookup = std::function<std::pair<QString, QString>(const QString&)>;
+
+// an external file's track as the video shows it (6:22-6:24, Decision 11): "The_Wand_S01E04
+// [English]", the file name without its extension and the language in brackets: the track's own,
+// else the one at the end of the file name ("_EN", ".eng"), which then leaves the name with the
+// separators before it ("Sintel (2010).eng.srt": "Sintel (2010) [English]")
+QString externalTrackName(const QString& fileName, const QString& trackLanguage,
+                          const LanguageLookup& languageOf);
 
 } // namespace rdsubtitles
 

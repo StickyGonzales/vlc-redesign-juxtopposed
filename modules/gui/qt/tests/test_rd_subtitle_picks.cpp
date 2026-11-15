@@ -30,6 +30,7 @@
 #include <QTemporaryDir>
 
 #include <cstdio>
+#include <utility>
 
 using namespace rdsubtitles;
 
@@ -122,7 +123,51 @@ void testTrackName()
     checkEqual(withoutDownloadId(s("67399-Sintel (2010).eng.srt")), s("Sintel (2010).eng.srt"), "old id");
     checkEqual(withoutDownloadId(s("Sintel (2010).eng.srt")), s("Sintel (2010).eng.srt"), "no id");
     checkEqual(withoutDownloadId(s("2001 A Space Odyssey.srt")), s("2001 A Space Odyssey.srt"), "digits, no dash");
-    checkEqual(withoutDownloadId(s("12-")), s("12-"), "nothing after the id");
+    checkEqual(withoutDownloadId(s("12345-")), s("12345-"), "nothing after the id");
+    checkEqual(withoutDownloadId(s("24-S01E01.eng.srt")), s("24-S01E01.eng.srt"), "short number kept");
+}
+
+// VLC's ISO 639 table, for the codes these checks use
+std::pair<QString, QString> language(const QString& code)
+{
+    const QString lower = code.toLower();
+    if (lower == QLatin1String("eng") || lower == QLatin1String("en") || lower == QLatin1String("english"))
+        return { s("English"), s("en") };
+    if (lower == QLatin1String("heb") || lower == QLatin1String("he"))
+        return { s("Hebrew"), s("he") };
+    return { code, QString() };
+}
+
+void testExternalTrackName()
+{
+    // the 1.5.0 Windows pass: "67399-Sintel (2010 [English]" for "67399-Sintel (2010).eng.srt"
+    checkEqual(externalTrackName(s("Sintel (2010).eng.srt"), QString(), language),
+               s("Sintel (2010) [English]"), "track: bracket kept");
+    checkEqual(externalTrackName(withoutDownloadId(s("67399-Sintel (2010).eng.srt")), QString(), language),
+               s("Sintel (2010) [English]"), "track: old download");
+    // the video's example (6:22-6:24)
+    checkEqual(externalTrackName(s("The_Wand_S01E04_EN.srt"), QString(), language),
+               s("The_Wand_S01E04 [English]"), "track: video example");
+    // the track's own language wins; the file name keeps a word that is another language
+    checkEqual(externalTrackName(s("Sintel (2010).eng.srt"), s("heb"), language),
+               s("Sintel (2010).eng [Hebrew]"), "track: track language");
+    checkEqual(externalTrackName(s("Sintel (2010).srt"), QString(), language),
+               s("Sintel (2010)"), "track: no language");
+}
+
+void testSaveDownload()
+{
+    QTemporaryDir dir;
+    check(dir.isValid(), "temporary folder");
+    const QString folder = dir.path();
+    const QString name = s("Sintel (2010).eng.srt");
+    const QString first = saveDownload(folder, name, "one");
+    checkEqual(first, folder + s("/Sintel (2010).eng.srt"), "saved under its own name");
+    QFile file(first);
+    check(file.open(QIODevice::ReadOnly) && file.readAll() == "one", "saved bytes");
+    checkEqual(saveDownload(folder, name, "one"), first, "saved again: the same file");
+    checkEqual(saveDownload(folder, name, "two"), folder + s("/Sintel (2010).eng (2).srt"), "another: numbered");
+    checkEqual(saveDownload(QString(), name, "one"), QString(), "no folder: nothing saved");
 }
 
 } // namespace
@@ -132,6 +177,8 @@ int main()
     testPicked();
     testDownloadFile();
     testTrackName();
+    testExternalTrackName();
+    testSaveDownload();
     std::fprintf(stderr, "test_rd_subtitle_picks: %d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }

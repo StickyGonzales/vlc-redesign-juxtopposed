@@ -1237,8 +1237,8 @@ void AddSubtitles::save()
                     name = candidates.at(it.key()).name;
                 // the subtitle's own name ("Sintel (2010).eng.srt"), numbered only when another
                 // subtitle already has it
-                const QString file = rdsubtitles::downloadFile(folder, safeFileName(name), data);
-                if (file.isEmpty() || !writeFile(file, data))
+                const QString file = rdsubtitles::saveDownload(folder, safeFileName(name), data);
+                if (file.isEmpty())
                 {
                     *error = qtr("The subtitle file cannot be saved.");
                     break;
@@ -1445,9 +1445,11 @@ void AddSubtitles::applyTo(const QString& mrl)
             QString fileName;
             const QByteArray data = OpenSubtitles::download(obj, account, results.at(best).fileId, &fileName, nullptr);
             const QString folder = downloadFolder("opensubtitles");
-            const QString file = rdsubtitles::downloadFile(
+            if (data.isEmpty())
+                return;
+            const QString file = rdsubtitles::saveDownload(
                 folder, safeFileName(fileName.isEmpty() ? results.at(best).fileName : fileName), data);
-            if (!data.isEmpty() && !file.isEmpty() && writeFile(file, data))
+            if (!file.isEmpty())
                 result->append(file);
         },
         [this, result, mrl, saved, network]() {
@@ -1476,31 +1478,37 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
     if (!item || SubtitleStore::mediaKey(qfu(item->psz_uri)) != SubtitleStore::mediaKey(mrl))
         return;
 
-    // the subtitles VLC already loaded (found next to the video, added before)
-    QSet<QString> loaded;
+    // the subtitles VLC already loaded (found next to the video, added before), with the URI VLC
+    // has for each: their tracks' ids come from it
+    QHash<QString, QString> loaded;
     vlc_mutex_lock(&item->lock);
     for (int i = 0; i < item->i_slaves; ++i)
-        loaded.insert(SubtitleStore::mediaKey(qfu(item->pp_slaves[i]->psz_uri)));
+        loaded.insert(SubtitleStore::mediaKey(qfu(item->pp_slaves[i]->psz_uri)), qfu(item->pp_slaves[i]->psz_uri));
     vlc_mutex_unlock(&item->lock);
 
     bool first = select;
     QString selectUri;
+    bool selectAdded = false;
     for (const QString& subtitle : subtitles)
     {
         const QString uri = QUrl(subtitle).scheme().size() > 1 ? subtitle : mrlOf(subtitle);
         if (uri.isEmpty())
             continue;
-        if (loaded.contains(SubtitleStore::mediaKey(uri)))
+        const auto known = loaded.constFind(SubtitleStore::mediaKey(uri));
+        if (known != loaded.cend())
         {
             // already loaded: the same subtitle picked again in the dialog is still the one to show
             if (first && picked)
-                selectUri = uri;
+                selectUri = known.value();
             first = first && !picked;
             continue;
         }
         vlc_player_AddAssociatedMedia(player, SPU_ES, qtu(uri), first, false, false);
         if (first)
+        {
             selectUri = uri;
+            selectAdded = true;
+        }
         first = false;
     }
 
@@ -1511,7 +1519,8 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
         selectSubtitleWhenListed(this, player,
                                  QCryptographicHash::hash(selectUri.toUtf8(), QCryptographicHash::Md5).toHex(),
                                  kSelectLookups);
-        if (downloaded && m_autoSyncDownloads)
+        // a subtitle loaded before was synced then
+        if (downloaded && selectAdded && m_autoSyncDownloads)
             emit downloadAttached(selectUri.toUtf8());
     }
 }

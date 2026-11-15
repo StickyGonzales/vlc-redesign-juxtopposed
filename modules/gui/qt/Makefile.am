@@ -2411,7 +2411,9 @@ TESTS += test_rd_episode_parser
 test_rd_subtitle_picks_SOURCES = \
 	tests/test_rd_subtitle_picks.cpp \
 	dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp \
-	dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp \
+	dialogs/redesign/addsubtitles/subtitle_matcher.cpp \
+	dialogs/redesign/addsubtitles/subtitle_matcher.hpp
 
 test_rd_subtitle_picks_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
 test_rd_subtitle_picks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)

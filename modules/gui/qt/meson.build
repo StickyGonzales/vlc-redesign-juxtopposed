@@ -1830,7 +1830,9 @@ if qt6_dep.found()
             'sources': files(
                 'tests/test_rd_subtitle_picks.cpp',
                 'dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp',
-                'dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp'
+                'dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp',
+                'dialogs/redesign/addsubtitles/subtitle_matcher.cpp',
+                'dialogs/redesign/addsubtitles/subtitle_matcher.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,

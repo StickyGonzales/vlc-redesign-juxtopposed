@@ -21,9 +21,14 @@
 #endif
 
 #include "rd_subtitle_picks.hpp"
+#include "subtitle_matcher.hpp"
 
 #include <QFile>
 #include <QFileInfo>
+#include <QMutex>
+#include <QMutexLocker>
+
+#include <tuple>
 
 namespace rdsubtitles {
 
@@ -31,6 +36,13 @@ namespace {
 
 // how many "(n)" names downloadFile() tries before it gives up
 constexpr int kMaxNumberedNames = 99;
+
+// the OpenSubtitles file ids Cone put in front of its downloads before 1.5.0 have this many digits
+// or more (a name such as "24-S01E01.eng.srt" keeps its number)
+constexpr qsizetype kMinDownloadIdDigits = 4;
+
+// saveDownload() for every download worker at once
+QMutex downloadMutex;
 
 bool isSeparator(QChar c)
 {
@@ -78,6 +90,23 @@ QString downloadFile(const QString& folder, const QString& name, const QByteArra
     return {};
 }
 
+QString saveDownload(const QString& folder, const QString& name, const QByteArray& data)
+{
+    QMutexLocker locker(&downloadMutex);
+    const QString path = downloadFile(folder, name, data);
+    if (path.isEmpty())
+        return {};
+    if (QFileInfo::exists(path))
+        return path; // downloadFile() only returns an existing file that holds the same bytes
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate) || file.write(data) != data.size())
+    {
+        file.remove();
+        return {};
+    }
+    return path;
+}
+
 QString withoutExtension(const QString& fileName)
 {
     const qsizetype dot = fileName.lastIndexOf(QChar('.'));
@@ -99,9 +128,35 @@ QString withoutDownloadId(const QString& fileName)
     qsizetype digits = 0;
     while (digits < fileName.size() && fileName.at(digits).isDigit() && fileName.at(digits).unicode() < 128)
         ++digits;
-    if (digits == 0 || digits >= fileName.size() - 1 || fileName.at(digits) != QChar('-'))
+    if (digits < kMinDownloadIdDigits || digits >= fileName.size() - 1 || fileName.at(digits) != QChar('-'))
         return fileName;
     return fileName.mid(digits + 1);
+}
+
+QString externalTrackName(const QString& fileName, const QString& trackLanguage,
+                          const LanguageLookup& languageOf)
+{
+    QString base = withoutExtension(fileName);
+
+    qsizetype wordStart = base.size();
+    while (wordStart > 0 && base.at(wordStart - 1).isLetterOrNumber())
+        --wordStart;
+    const QString nameCode = wordStart > 0
+            ? SubtitleMatcher::languageCode(base.mid(wordStart), true) : QString();
+
+    QString language;
+    QString code;
+    if (!trackLanguage.isEmpty())
+        std::tie(language, code) = languageOf(trackLanguage);
+    else if (!nameCode.isEmpty())
+        std::tie(language, code) = languageOf(nameCode);
+
+    if (language.isEmpty())
+        return base;
+    // only the separators before the language word go: "Sintel (2010).eng" keeps its ")"
+    if (!nameCode.isEmpty() && nameCode == code)
+        base = withoutLastWord(base, wordStart, fileName);
+    return QStringLiteral("%1 [%2]").arg(base, language);
 }
 
 } // namespace rdsubtitles
