@@ -260,6 +260,97 @@ void testLanguageFirst()
                "episode: the English result of this episode");
 }
 
+// an OpenSubtitles result as the dialog parses it (parseResult): OpenSubtitles' language tag, and
+// the language the file or release name names
+SubtitleMatcher::Name tagged(const char* fileName, const char* language, const char* release = "")
+{
+    SubtitleMatcher::Name name = SubtitleMatcher::parse(s(fileName));
+    name.nameLanguage = SubtitleMatcher::namedLanguage(s(fileName), s(release));
+    name.language = s(language);
+    return name;
+}
+
+void testNamedLanguage()
+{
+    // a language word in the name: two letter codes, three letter codes, names
+    checkEqual(SubtitleMatcher::namedLanguage(s("sintel.he.srt"), QString()), s("he"), "named: .he");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.2010.heb.srt"), QString()), s("he"), "named: .heb");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel (2010) Hebrew.srt"), QString()), s("he"), "named: Hebrew");
+    checkEqual(SubtitleMatcher::namedLanguage(s("sintel.fi.srt"), QString()), s("fi"), "named: .fi");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.2010.fin.srt"), QString()), s("fi"), "named: .fin");
+    checkEqual(SubtitleMatcher::namedLanguage(s("The.Wand.S01E04.heb.srt"), QString()), s("he"), "named: episode .heb");
+    // only whole words where a language goes: not inside a word, not a title word
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.2010.srt"), QString()), QString(), "named: none");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Chef.2014.720p.srt"), QString()), QString(), "named: not in chef");
+    checkEqual(SubtitleMatcher::namedLanguage(s("The.Chef.Show.S01E01.srt"), QString()), QString(), "named: not in the");
+    checkEqual(SubtitleMatcher::namedLanguage(s("The.Hebrew.Hammer.2003.srt"), QString()), QString(),
+               "named: not a title word (The Hebrew Hammer)");
+    checkEqual(SubtitleMatcher::namedLanguage(s("He.Got.Game.1998.srt"), QString()), QString(),
+               "named: not a title word (He Got Game)");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.2010.heb.720p.BluRay.srt"), QString()), s("he"),
+               "named: before the release tags");
+    checkEqual(SubtitleMatcher::namedLanguage(s("The.Wand.S01E04.The.End.srt"), QString()), QString(),
+               "named: not an episode title of plain words");
+    // no language in the file name: the release name
+    checkEqual(SubtitleMatcher::namedLanguage(s("subtitle.srt"), s("Sintel.2010.Hebrew")), s("he"), "named: release");
+    checkEqual(SubtitleMatcher::namedLanguage(s("sintel.en.srt"), s("Sintel.2010.Hebrew")), s("en"),
+               "named: the file name first");
+}
+
+void testMislabeled()
+{
+    const SubtitleMatcher::Name sintel = SubtitleMatcher::parse(s("Sintel (2010).mkv"));
+    SubtitleMatcher::Preference english;
+    english.language = s("en");
+
+    // the 1.5.0 retest of #144: English chosen, OpenSubtitles files "sintel.he" (Hebrew text) and a
+    // Finnish upload under English and lists the Hebrew one first: they go after the English ones,
+    // in OpenSubtitles' order, and stay listed
+    const QVector<SubtitleMatcher::Name> sintelResults {
+        tagged("sintel.he.srt", "en"),
+        tagged("Sintel.2010.720p.BluRay.x264.srt", "en"),
+        tagged("Sintel.2010.fin.srt", "en"),
+        tagged("Sintel.2010.srt", "en"),
+        tagged("Sintel.2010.fr.srt", "fr"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, sintelResults, s("en"), english)), s("1"),
+               "mislabeled: the English file, not sintel.he");
+    checkEqual(orderText(SubtitleMatcher::rankResults(sintel, sintelResults, s("en"), english)), s("1,3,0,2,4"),
+               "mislabeled: order, nothing hidden");
+
+    // the release name names the language
+    const QVector<SubtitleMatcher::Name> byRelease {
+        tagged("Sintel.2010.srt", "en", "Sintel.2010.Hebrew.WEB"),
+        tagged("Sintel.2010.srt", "en", "Sintel.2010.1080p.WEB"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, byRelease, s("en"), english)), s("1"),
+               "mislabeled: by the release name");
+
+    // another chosen language: an English file filed under Finnish
+    SubtitleMatcher::Preference finnish;
+    finnish.language = s("fi");
+    const QVector<SubtitleMatcher::Name> finnishResults {
+        tagged("Sintel.2010.eng.srt", "fi"),
+        tagged("Sintel.2010.srt", "fi"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, finnishResults, s("fi"), finnish)), s("1"),
+               "mislabeled: an English file filed under Finnish");
+
+    // a name in the chosen language, or a title word that is a language, is not pushed down
+    const SubtitleMatcher::Name hammer = SubtitleMatcher::parse(s("The Hebrew Hammer (2003).mkv"));
+    const QVector<SubtitleMatcher::Name> hammerResults {
+        tagged("The.Hebrew.Hammer.2003.srt", "en"),
+        tagged("The.Hebrew.Hammer.2003.eng.srt", "en"),
+    };
+    checkEqual(orderText(SubtitleMatcher::rankResults(hammer, hammerResults, s("en"), english)), s("0,1"),
+               "mislabeled: a title word is no other language");
+
+    // only mislabeled results: OpenSubtitles' top one is still the best match
+    const QVector<SubtitleMatcher::Name> onlyHebrew { tagged("sintel.he.srt", "en"), tagged("sintel.heb.srt", "en") };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, onlyHebrew, s("en"), english)), s("0"),
+               "mislabeled: all of them, the top one");
+}
+
 } // namespace
 
 int main()
@@ -270,6 +361,8 @@ int main()
     testExternalTrackName();
     testSaveDownload();
     testLanguageFirst();
+    testNamedLanguage();
+    testMislabeled();
     std::fprintf(stderr, "test_rd_subtitle_picks: %d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }

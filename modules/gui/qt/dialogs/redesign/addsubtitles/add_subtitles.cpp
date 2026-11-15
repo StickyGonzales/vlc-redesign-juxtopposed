@@ -236,6 +236,9 @@ SubtitleMatcher::Name parseResult(const OpenSubtitles::Result& result)
         name.episode = result.episode;
         name.season = result.season;
     }
+    // OpenSubtitles' language tag ranks the results; the name's own language word catches an
+    // upload filed under the wrong one (rankResults)
+    name.nameLanguage = SubtitleMatcher::namedLanguage(result.fileName, result.release);
     if (!result.language.isEmpty())
         name.language = result.language;
     return name;

@@ -457,9 +457,58 @@ QVector<int> SubtitleMatcher::rankResults(const Name& video, const QVector<Name>
     const auto byVariant = [&results, &preference](int a, int b) {
         return variantScore(results.at(a), preference) > variantScore(results.at(b), preference);
     };
-    std::stable_sort(inLanguage.begin(), inLanguage.end(), byVariant);
+    // in the chosen language, a result whose name names another language goes after the others:
+    // OpenSubtitles files some uploads under the wrong language (the 1.5.0 retest: "sintel.he",
+    // Hebrew text, listed as English)
+    const auto namedElsewhere = [&results, &language](int i) {
+        const QString& named = results.at(i).nameLanguage;
+        return !language.isEmpty() && !named.isEmpty() && !sameLanguage(named, language);
+    };
+    std::stable_sort(inLanguage.begin(), inLanguage.end(), [&](int a, int b) {
+        const bool elsewhereA = namedElsewhere(a);
+        const bool elsewhereB = namedElsewhere(b);
+        if (elsewhereA != elsewhereB)
+            return elsewhereB;
+        return byVariant(a, b);
+    });
     std::stable_sort(otherLanguages.begin(), otherLanguages.end(), byVariant);
     return inLanguage + otherLanguages + others;
+}
+
+namespace {
+
+// the language word among the words after the title: a language name or three letter code
+// anywhere ("Movie.2010.heb.720p"), a two letter code only as the last word ("sintel.he", where
+// "he" alone would too often be a word)
+QString languageAfterTitle(const SubtitleMatcher::Name& name)
+{
+    const QStringList words = name.normalized.split(QChar(' '), Qt::SkipEmptyParts);
+    qsizetype start = 0;
+    for (const QString& title : name.titleTokens)
+    {
+        if (start < words.size() && words.at(start) == title)
+            ++start;
+        else
+            break;
+    }
+    for (qsizetype i = start; i < words.size(); ++i)
+    {
+        const QString code = SubtitleMatcher::languageCode(words.at(i), i == words.size() - 1);
+        if (!code.isEmpty())
+            return code;
+    }
+    return {};
+}
+
+} // namespace
+
+QString SubtitleMatcher::namedLanguage(const QString& fileName, const QString& release)
+{
+    const QString fromFile = languageAfterTitle(parse(fileName));
+    if (!fromFile.isEmpty() || release.trimmed().isEmpty())
+        return fromFile;
+    // a release name has no extension: parse() would take its last word for one
+    return languageAfterTitle(parse(release.trimmed() + QStringLiteral(".srt")));
 }
 
 int SubtitleMatcher::bestResult(const Name& video, const QVector<Name>& results, const QString& language,

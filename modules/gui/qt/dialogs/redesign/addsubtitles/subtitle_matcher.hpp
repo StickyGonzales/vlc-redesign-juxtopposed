@@ -51,6 +51,9 @@ public:
         QStringList variantTokens;
         // two letter language code found in the variant ("en"), empty when none
         QString language;
+        // OpenSubtitles results: the language their file or release name itself names (namedLanguage());
+        // `language` holds OpenSubtitles' own tag, which can be wrong ("sintel.he" filed as English)
+        QString nameLanguage;
         int season = -1;
         int episode = -1;
 
@@ -79,11 +82,18 @@ public:
     // OpenSubtitles results for `video`, best first, as indexes into `results` (in OpenSubtitles'
     // order, their ranking): the ones that belong to the video (score() >= 0) in `language` first,
     // then the ones that belong in other languages, each group in OpenSubtitles' order after the
-    // variant kept for the show (variantScore(), equal scores keep their order); then the
+    // variant kept for the show (variantScore(), equal scores keep their order); within the chosen
+    // language, the results whose name names another language (Name::nameLanguage: an upload
+    // OpenSubtitles files under the wrong language) come last; then the
     // ones that do not belong. A language tag counts as `language` when it is the same, or when
     // only one of them names a region ("pt" and "pt-br"); empty `language`: every result counts
     static QVector<int> rankResults(const Name& video, const QVector<Name>& results, const QString& language,
                                     const Preference& preference = {});
+
+    // the language a file name names, else its release name ("sintel.he.srt", "Sintel.2010.Hebrew"):
+    // a whole word in the place a language goes (after the title, the year or the episode), never
+    // part of a word or of the title ("the", "chef", "The Hebrew Hammer"); empty when none
+    static QString namedLanguage(const QString& fileName, const QString& release);
 
     // the first of rankResults() when it belongs to the video, -1 when none does: a result in
     // `language`, else OpenSubtitles' top result
