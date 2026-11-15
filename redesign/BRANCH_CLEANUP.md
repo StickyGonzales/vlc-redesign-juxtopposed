@@ -234,3 +234,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/fixes-1.5.0` | `bb7ce278505642edfc51451b8051f65351be438c` | PR #141 merged into wip/next-test (17376c86e05) |
+
+## 2026-11-15, Up Next resume and track fixes
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-upnext-resume-tracks` | `d3da549e9f91893193c44b925d860f6e958ef34a` | PR #140 merged into wip/next-test (d6f5d4cf49b) |

@@ -27,6 +27,8 @@ the texts are written up in the 1.4.0 style (by area, with tips) when the releas
 - **Recent shows the latest first.** The Recent page and Open Recent now start with the video you played last, instead of the oldest. (PR #141)
 - **OpenSubtitles downloads exactly what you pick.** One result is ticked at a time: the best match to start with, and clicking another moves the tick. Save downloads only that subtitle and shows it, also when you pick one you downloaded before. (PR #141)
 - **Clean names for downloaded subtitles.** A download keeps its own name, such as "Sintel (2010).eng.srt", and the subtitle list shows "Sintel (2010) [English]", without the OpenSubtitles number in front and with its brackets. (PR #141)
+- **Up Next no longer skips episodes you finished.** An episode you watched to the end before starts from the beginning when autoplay reaches it; one you stopped partway still continues where you left it. (PR #140)
+- **Stopping an episode keeps the show's subtitles.** Stopping, quitting or opening another file no longer saves "subtitles off" for the show; only a subtitle or audio track you pick yourself carries over to the next episodes. (PR #140)
 
 ## Changed
 - **Choose what happens when an episode ends.** Settings > Playback > Episodes > "When an episode ends" replaces "Play episodes in a row": **Play the next episode** (the countdown on the Up Next card, as before), **Show Up Next, I'll click** (the card offers the next episode and waits for your click, no countdown), or **Do nothing**. Your saved choice carries over. The card's "Turn off autoplay" now switches to "Show Up Next, I'll click". (PR #135)
