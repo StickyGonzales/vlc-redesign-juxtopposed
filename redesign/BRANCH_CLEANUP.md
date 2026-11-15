@@ -228,3 +228,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/library-thumbnails` | `8d9fa54e267ae1003ccd1dbc4a3ada8032d76223` | PR #139 merged into wip/next-test (04ad0d1150a) |
+
+## 2026-11-15, 1.5.0 fixes (Recent, OpenSubtitles, subtitle names)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fixes-1.5.0` | `bb7ce278505642edfc51451b8051f65351be438c` | PR #141 merged into wip/next-test (17376c86e05) |
