@@ -82,7 +82,15 @@ retest step 1.
 
 ## Green runs
 
-(filled in when CI has run)
+All on f8e2231ac5:
+- **build-linux #152:** build, packages and every smoke job pass.
+  - The first attempt failed one Ubuntu 24.04 smoke check, "drawing: main window appears". Cone
+    was started 0.4 s after the previous check's Cone was told to quit, and handed the file to
+    that still-closing Cone (exit 0 in half a second, both tries).
+  - The same check passed on Ubuntu 22.04 in that attempt, and the whole job passed on its one
+    re-run. This change does not touch Cone's start.
+- **build-windows #268:** build, installer and the Windows smoke pass.
+- **unit-tests #14 and #15:** pass, test_rd_subtitle_picks included (47 checks).
 
 ## Windows retest (PC session)
 
