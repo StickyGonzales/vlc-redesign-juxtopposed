@@ -307,6 +307,9 @@ private:
     void onStopped();
 
     void markWatched(const QUrl& url);
+    // the next episode's saved position (media library), read in the background when the next
+    // episode is known: one watched to its end starts from the beginning, not at its last frame
+    void requestNextProgress();
     void requestThumbnail();
     void submitThumbnail(const QString& target, const QString& episodePath, int generation);
     void finishThumbnailJob();
@@ -332,6 +335,10 @@ private:
     int m_mode = ModeOff;
     int m_countdown = 10;
     qint64 m_creditsLeadMs = 60 * 1000;
+    // the next episode whose saved position was read (its MRL), and whether it was watched to its end
+    QString m_progressMrl;
+    bool m_nextWatched = false;
+    quint64 m_progressGeneration = 0;
     bool m_stillWatching = true;
 
     // the media playing and its show
@@ -453,6 +460,12 @@ private:
     // no selection is not a pick
     QString m_audioSelection;
     QString m_subtitleSelection;
+    // every track of each list once settled: a change of the list itself (a stop, the end, a quit
+    // or a file switch clears it; a subtitle file adds one) is not a pick (1.5.0 test pass bug 2)
+    QString m_audioList;
+    QString m_subtitleList;
+    // the input (m_generation) a selection change was seen on: the pick belongs to that file
+    int m_recordGeneration = -1;
 
 
     // remembered answers, keyed by the show root folder

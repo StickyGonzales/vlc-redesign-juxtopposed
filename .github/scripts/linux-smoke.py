@@ -1506,6 +1506,105 @@ def check_popup_stack(exe, env):
         s.stop()
 
 
+def fresh_env(tag):
+    """a new, empty Cone profile (settings, media library, Up Next store) for one check"""
+    home = os.path.join(WORK, 'home-' + tag + '-' + str(int(time.time() * 1000)))
+    os.makedirs(home)
+    return dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
+                XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
+
+
+def check_upnext_watched(exe):
+    """an episode watched to its end, played again by Up Next, starts from the beginning: resumed, it
+    began at its last frame, ended at once and autoplay ran on through the show (1.5.0 test pass,
+    redesign/TEST_PASS_1.5.0_LINUX_MAC.md bug 1; redesign/FIX_UPNEXT_RESUME_TRACKS_NOTES.md)"""
+    tag = 'upnext-watched'
+    show = os.path.join(MEDIA, 'Smoke Show')
+
+    def body():
+        env = fresh_env(tag)
+        # S01E02 on its own, played to its end and quit cleanly: its position at the end is saved
+        s = Session(exe, os.path.join(show, 'Smoke Show S01E02.mp4'), tag + '-watch', env, repeat=False, subs=False)
+        try:
+            if not check_window(s):
+                raise CheckFailed('no window for S01E02')
+            time.sleep(2)
+            rc('seek 414')
+            end = time.time() + 25
+            while time.time() < end and rc_time() is not None:
+                time.sleep(0.5)
+            rc('quit')
+            s.proc.wait(15)
+        finally:
+            s.stop()
+        # S01E01 to its end: Up Next plays S01E02
+        s = Session(exe, os.path.join(show, 'Smoke Show S01E01.mp4'), tag, env, repeat=False, subs=False)
+        try:
+            if not check_window(s):
+                raise CheckFailed('no window for S01E01')
+            time.sleep(2)
+            rc('seek 414')
+            # S01E02 resumed at its end lasts an instant before S01E03 starts: either one ends the wait
+            end = time.time() + 30
+            st = ''
+            while time.time() < end and 'S01E02' not in st and 'S01E03' not in st:
+                st = rc('status')
+                time.sleep(0.3)
+            if 'S01E03' in st:
+                shot(tag)
+                raise CheckFailed('S01E02, watched to its end, was skipped: S01E03 plays already')
+            if 'S01E02' not in st:
+                raise CheckFailed('Up Next did not play S01E02 after S01E01')
+            time.sleep(4)
+            t = rc_time()
+            st = rc('status')
+            shot(tag)
+            if 'S01E03' in st or t is None or t > 60:
+                raise CheckFailed(f'S01E02, watched to its end, did not start from the beginning: '
+                                  f'{"S01E03 plays already" if "S01E03" in st else f"at {t} s"}')
+            return f'S01E02 (watched to its end) started from the beginning: at {t} s 4 s after it began'
+        finally:
+            try:
+                rc('quit')
+                s.proc.wait(15)
+            except Exception:  # noqa: BLE001
+                pass
+            s.stop()
+    check(f'{tag}: Up Next starts an episode watched to its end from the beginning', body)
+
+
+def check_track_stop(exe):
+    """a stop saves no track choice for the show: only a pick does. A stop emptied the track list and
+    that was saved as "subtitles off", so the next episodes started without subtitles (1.5.0 test
+    pass bug 2)"""
+    tag = 'track-stop'
+    video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E01.mp4')
+
+    def body():
+        env = fresh_env(tag)
+        # the external subtitle file is selected (VLC's default); nothing is picked
+        s = Session(exe, video, tag, env, repeat=False, subs=True)
+        try:
+            if not check_window(s):
+                raise CheckFailed('no window')
+            time.sleep(5)
+            selected = [l.strip() for l in rc('strack').splitlines() if '*' in l]
+            rc('stop')
+            time.sleep(3)
+            rc('quit')
+            s.proc.wait(15)
+        finally:
+            s.stop()
+        with open(s.log, errors='replace') as f:
+            saved = [l.strip() for l in f if 'tracks for the show saved' in l]
+        if not selected:
+            raise CheckFailed('no subtitle track selected at the start (the check needs one)')
+        if saved:
+            raise CheckFailed(f'a stop saved a track choice nobody picked: {saved[0]}')
+        return f'subtitles {selected[0]} at the start, stopped, quit: nothing saved for the show'
+    check(f'{tag}: a stop saves no track choice for the show', body)
+
+
 def rc_time():
     """the playback time in seconds, None while nothing plays (the cli gives no number)"""
     try:
@@ -1597,6 +1696,8 @@ session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
 check_next_short(os.path.join(folder, 'cone'), env)
+check_upnext_watched(os.path.join(folder, 'cone'))
+check_track_stop(os.path.join(folder, 'cone'))
 check_popup_stack(os.path.join(folder, 'cone'), env)
 check_idle_drawing(os.path.join(folder, 'cone'), env)
 check_cast_discovery(os.path.join(folder, 'cone'), env)
