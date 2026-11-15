@@ -411,6 +411,52 @@ int SubtitleMatcher::bestMatch(const Name& video, const QVector<Name>& subtitles
     return best;
 }
 
+namespace {
+
+// "en" and "en", "pt" and "pt-br": the same language; "pt-br" and "pt-pt" or "zh-cn" and "zh-tw":
+// not (another spelling or script)
+bool sameLanguage(const QString& a, const QString& b)
+{
+    const QString x = a.toLower();
+    const QString y = b.toLower();
+    if (x.isEmpty() || y.isEmpty())
+        return false;
+    if (x == y)
+        return true;
+    const QString xBase = x.section(QChar('-'), 0, 0);
+    const QString yBase = y.section(QChar('-'), 0, 0);
+    return xBase == yBase && (xBase == x || yBase == y);
+}
+
+} // namespace
+
+QVector<int> SubtitleMatcher::rankResults(const Name& video, const QVector<Name>& results, const QString& language,
+                                          const Preference& preference)
+{
+    QVector<int> inLanguage;
+    QVector<int> otherLanguages;
+    QVector<int> others;
+    for (int i = 0; i < results.size(); ++i)
+    {
+        if (score(video, results.at(i), preference) < 0)
+            others.append(i);
+        else if (language.isEmpty() || sameLanguage(results.at(i).language, language))
+            inLanguage.append(i);
+        else
+            otherLanguages.append(i);
+    }
+    return inLanguage + otherLanguages + others;
+}
+
+int SubtitleMatcher::bestResult(const Name& video, const QVector<Name>& results, const QString& language,
+                                const Preference& preference)
+{
+    const QVector<int> order = rankResults(video, results, language, preference);
+    if (order.isEmpty() || score(video, results.at(order.first()), preference) < 0)
+        return -1;
+    return order.first();
+}
+
 QStringList SubtitleMatcher::variantOf(const Name& video, const Name& subtitle)
 {
     const QStringList videoWords = tokenize(video.normalized);

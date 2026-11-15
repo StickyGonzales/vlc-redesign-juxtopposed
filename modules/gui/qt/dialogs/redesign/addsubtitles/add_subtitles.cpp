@@ -946,6 +946,34 @@ SubtitleMatcher::Preference AddSubtitles::preference() const
     return preference;
 }
 
+QVector<QPair<int, int>> AddSubtitles::rankedCandidates(const SubtitleMatcher::Name& video,
+                                                        const QVector<Candidate>& candidates,
+                                                        const SubtitleMatcher::Preference& pref) const
+{
+    // { score, candidate } best first; a score below 0: not this video's
+    QVector<QPair<int, int>> order;
+    order.reserve(candidates.size());
+    if (m_source == SourceOpenSubtitles)
+    {
+        // OpenSubtitles results: the chosen language first, then OpenSubtitles' own ranking (the
+        // order of their results); a Hebrew file named exactly like the film came before English
+        // ones with longer names (1.5.0 Windows retest)
+        QVector<SubtitleMatcher::Name> names;
+        names.reserve(candidates.size());
+        for (const Candidate& candidate : candidates)
+            names.append(candidate.parsed);
+        for (const int i : SubtitleMatcher::rankResults(video, names, m_language, pref))
+            order.append({ SubtitleMatcher::score(video, names.at(i), pref), i });
+        return order;
+    }
+    for (int i = 0; i < candidates.size(); ++i)
+        order.append({ SubtitleMatcher::score(video, candidates.at(i).parsed, pref), i });
+    std::stable_sort(order.begin(), order.end(), [](const QPair<int, int>& a, const QPair<int, int>& b) {
+        return a.first > b.first;
+    });
+    return order;
+}
+
 // ------------------------------------------------------------------------------------ rows
 
 void AddSubtitles::rebuild()
@@ -958,13 +986,7 @@ void AddSubtitles::rebuild()
         // the files of this episode first, best first (Figma "Folder-2": the episode's
         // languages); then every other subtitle of the source
         const SubtitleMatcher::Name video = SubtitleMatcher::parse(nameOf(m_mrl));
-        QVector<QPair<int, int>> order;
-        order.reserve(candidates.size());
-        for (int i = 0; i < candidates.size(); ++i)
-            order.append({ SubtitleMatcher::score(video, candidates.at(i).parsed, pref), i });
-        std::stable_sort(order.begin(), order.end(), [](const QPair<int, int>& a, const QPair<int, int>& b) {
-            return a.first > b.first;
-        });
+        const QVector<QPair<int, int>> order = rankedCandidates(video, candidates, pref);
 
         // the first time a source has files: the best match is checked
         if (!m_selected.contains(m_source) && !order.isEmpty())
@@ -994,7 +1016,8 @@ void AddSubtitles::rebuild()
         auto rows = std::make_shared<QVector<AddSubtitlesModel::Row>>();
         const int serial = ++m_rebuildSerial;
         const int source = m_source;
-        run([rows, videos, candidates, pref](vlc_object_t*) {
+        const QString language = m_language;
+        run([rows, videos, candidates, pref, source, language](vlc_object_t*) {
                 QVector<SubtitleMatcher::Name> names;
                 names.reserve(candidates.size());
                 for (const Candidate& candidate : candidates)
@@ -1005,7 +1028,10 @@ void AddSubtitles::rebuild()
                     AddSubtitlesModel::Row row;
                     row.videoName = video.name;
                     row.videoMrl = video.mrl;
-                    row.candidate = SubtitleMatcher::bestMatch(video.parsed, names, pref);
+                    // OpenSubtitles: a result in the chosen language first (rankResults)
+                    row.candidate = source == SourceOpenSubtitles
+                        ? SubtitleMatcher::bestResult(video.parsed, names, language, pref)
+                        : SubtitleMatcher::bestMatch(video.parsed, names, pref);
                     if (row.candidate >= 0)
                         row.name = candidates.at(row.candidate).name;
                     rows->append(row);
@@ -1102,12 +1128,7 @@ QVariantList AddSubtitles::choices(int row) const
     // the subtitles of this episode first, then all the others in name order
     const SubtitleMatcher::Preference pref = preference();
     const QVector<Candidate>& candidates = pool();
-    QVector<QPair<int, int>> order;
-    for (int i = 0; i < candidates.size(); ++i)
-        order.append({ SubtitleMatcher::score(video->parsed, candidates.at(i).parsed, pref), i });
-    std::stable_sort(order.begin(), order.end(), [](const QPair<int, int>& a, const QPair<int, int>& b) {
-        return a.first > b.first;
-    });
+    const QVector<QPair<int, int>> order = rankedCandidates(video->parsed, candidates, pref);
     const int current = m_matches.at(row).candidate;
     for (const QPair<int, int>& entry : order)
         list.append(QVariantMap { { QStringLiteral("candidate"), entry.second },
@@ -1439,7 +1460,8 @@ void AddSubtitles::applyTo(const QString& mrl)
             QVector<SubtitleMatcher::Name> names;
             for (const OpenSubtitles::Result& r : results)
                 names.append(parseResult(r));
-            const int best = SubtitleMatcher::bestMatch(video, names, pref);
+            // a result in the folder's language first (the search asked for it, results can mix)
+            const int best = SubtitleMatcher::bestResult(video, names, rule.language, pref);
             if (best < 0)
                 return;
             QString fileName;

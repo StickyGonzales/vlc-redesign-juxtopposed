@@ -72,6 +72,19 @@ public:
     // the index in `subtitles` of the best match for `video`, -1 when none
     static int bestMatch(const Name& video, const QVector<Name>& subtitles, const Preference& preference = {});
 
+    // OpenSubtitles results for `video`, best first, as indexes into `results` (in OpenSubtitles'
+    // order, their ranking): the ones that belong to the video (score() >= 0) in `language` first,
+    // then the ones that belong in other languages, each group in OpenSubtitles' order; then the
+    // ones that do not belong. A language tag counts as `language` when it is the same, or when
+    // only one of them names a region ("pt" and "pt-br"); empty `language`: every result counts
+    static QVector<int> rankResults(const Name& video, const QVector<Name>& results, const QString& language,
+                                    const Preference& preference = {});
+
+    // the first of rankResults() when it belongs to the video, -1 when none does: a result in
+    // `language`, else OpenSubtitles' top result
+    static int bestResult(const Name& video, const QVector<Name>& results, const QString& language,
+                          const Preference& preference = {});
+
     // the words of a chosen subtitle that are not in its video's name and say which variant it
     // is (language, forced ...): kept as the preference for the next episodes
     static QStringList variantOf(const Name& video, const Name& subtitle);

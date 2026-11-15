@@ -227,6 +227,10 @@ private:
     void updateMessage();
     const QVector<Candidate>& pool() const;
     SubtitleMatcher::Preference preference() const;
+    // the candidates for `video`, best first, as { score, index }: OpenSubtitles results in the
+    // chosen language first, then in OpenSubtitles' order; other sources by score
+    QVector<QPair<int, int>> rankedCandidates(const SubtitleMatcher::Name& video, const QVector<Candidate>& candidates,
+                                              const SubtitleMatcher::Preference& pref) const;
     QString defaultSearchText() const;
     void saveAccount();
     void writeStore();

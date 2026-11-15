@@ -24,6 +24,7 @@
 #endif
 
 #include "dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp"
+#include "dialogs/redesign/addsubtitles/subtitle_matcher.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -170,6 +171,79 @@ void testSaveDownload()
     checkEqual(saveDownload(QString(), name, "one"), QString(), "no folder: nothing saved");
 }
 
+// an OpenSubtitles result as the dialog parses it: its file name, and the language OpenSubtitles gives
+SubtitleMatcher::Name result(const char* fileName, const char* language)
+{
+    SubtitleMatcher::Name name = SubtitleMatcher::parse(s(fileName));
+    name.language = s(language);
+    return name;
+}
+
+QString orderText(const QVector<int>& order)
+{
+    QStringList parts;
+    for (const int i : order)
+        parts.append(QString::number(i));
+    return parts.join(QLatin1Char(','));
+}
+
+void testLanguageFirst()
+{
+    const SubtitleMatcher::Name sintel = SubtitleMatcher::parse(s("Sintel (2010).mkv"));
+    SubtitleMatcher::Preference english;
+    english.language = s("en");
+
+    // the 1.5.0 Windows retest: English chosen, OpenSubtitles' list mixed. The Hebrew file is named
+    // exactly like the film, the English ones carry more words, so the name score put Hebrew first
+    const QVector<SubtitleMatcher::Name> mixed {
+        result("Sintel (2010).srt", "he"),
+        result("Sintel.Open.Movie.2010.720p.srt", "en"),
+        result("Sintel.Open.Movie.2010.1080p.srt", "en"),
+        result("Big Buck Bunny (2008).srt", "en"),
+        result("Sintel.2010.fr.srt", "fr"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, mixed, s("en"), english)), s("1"),
+               "language first: the first English result, not the Hebrew one");
+    // English in OpenSubtitles' order, then the other languages in their order, then another film
+    checkEqual(orderText(SubtitleMatcher::rankResults(sintel, mixed, s("en"), english)), s("1,2,0,4,3"),
+               "language first: order");
+
+    // no result in the chosen language: OpenSubtitles' top result, every result still listed
+    const QVector<SubtitleMatcher::Name> none {
+        result("Sintel.Open.Movie.2010.srt", "fr"),
+        result("Sintel (2010).srt", "he"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, none, s("en"), english)), s("0"),
+               "no result in the language: their top result");
+    checkEqual(orderText(SubtitleMatcher::rankResults(sintel, none, s("en"), english)), s("0,1"),
+               "no result in the language: none hidden");
+
+    // only other films: nothing is picked
+    const QVector<SubtitleMatcher::Name> otherFilm { result("Big Buck Bunny (2008).srt", "en") };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, otherFilm, s("en"), english)), s("-1"),
+               "another film is never the best match");
+
+    // regions: "pt" chosen takes "pt-br"; "pt-br" chosen does not take "pt-pt"
+    const QVector<SubtitleMatcher::Name> portuguese {
+        result("Sintel (2010).srt", "pt-pt"),
+        result("Sintel.Open.Movie.2010.srt", "pt-br"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, portuguese, s("pt-br"), english)), s("1"),
+               "pt-br chosen: the pt-br result");
+    checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, portuguese, s("pt"), english)), s("0"),
+               "pt chosen: either region, OpenSubtitles' order");
+
+    // an episode: the results of another episode never come first
+    const SubtitleMatcher::Name episode = SubtitleMatcher::parse(s("The Wand S01E04.mkv"));
+    const QVector<SubtitleMatcher::Name> episodes {
+        result("The Wand S01E05.srt", "en"),
+        result("The Wand S01E04.srt", "he"),
+        result("The.Wand.S01E04.WEB.srt", "en"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(episode, episodes, s("en"), english)), s("2"),
+               "episode: the English result of this episode");
+}
+
 } // namespace
 
 int main()
@@ -179,6 +253,7 @@ int main()
     testTrackName();
     testExternalTrackName();
     testSaveDownload();
+    testLanguageFirst();
     std::fprintf(stderr, "test_rd_subtitle_picks: %d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }
