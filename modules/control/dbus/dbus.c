@@ -124,6 +124,8 @@ static void remove_watch    ( DBusWatch *p_watch, void *p_data );
 static void watch_toggled   ( DBusWatch *p_watch, void *p_data );
 
 static void wakeup_main_loop( void *p_data );
+static int ReleaseNameCallback( vlc_object_t *, char const *,
+                                vlc_value_t, vlc_value_t, void * );
 
 static void ProcessEvents  ( intf_thread_t    *p_intf,
                              callback_info_t **p_events,
@@ -259,7 +261,9 @@ static int Open( vlc_object_t *p_this )
     {
         msg_Dbg( p_intf, "listening on dbus as: %s", DBUS_MPRIS_BUS_NAME );
         var_SetString(vlc, "dbus-mpris-name", DBUS_MPRIS_BUS_NAME);
+        p_sys->owns_name = true;
     }
+    atomic_init( &p_sys->release_name, false );
     dbus_connection_flush( p_conn );
 
     p_intf->p_sys = p_sys;
@@ -350,6 +354,13 @@ static int Open( vlc_object_t *p_this )
     if( vlc_clone( &p_sys->thread, Run, p_intf ) )
         goto late_failure;
 
+    /* redesign: a quit gives the one-instance name up at once (ReleaseNameCallback) */
+    if( p_sys->owns_name )
+    {
+        var_Create( vlc, "one-instance-release", VLC_VAR_VOID );
+        var_AddCallback( vlc, "one-instance-release", ReleaseNameCallback, p_intf );
+    }
+
     return VLC_SUCCESS;
 
 late_failure:
@@ -390,6 +401,13 @@ static void Close   ( vlc_object_t *p_this )
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
     intf_sys_t      *p_sys      = p_intf->p_sys;
     vlc_playlist_t  *playlist = p_sys->playlist;
+
+    if( p_sys->owns_name )
+    {
+        vlc_object_t *vlc = VLC_OBJECT(vlc_object_instance(p_intf));
+        var_DelCallback( vlc, "one-instance-release", ReleaseNameCallback, p_intf );
+        var_Destroy( vlc, "one-instance-release" );
+    }
 
     vlc_cancel( p_sys->thread );
     vlc_join( p_sys->thread, NULL );
@@ -971,6 +989,24 @@ static void *Run( void *data )
             }
         }
 
+        /* redesign: a quit started (one-instance-release): a new start must not hand its files
+         * to this instance, which is going away, but become the instance itself */
+        if (atomic_exchange(&p_sys->release_name, false))
+        {
+            DBusError err;
+            dbus_error_init(&err);
+            if (dbus_bus_release_name(p_sys->p_conn, DBUS_MPRIS_BUS_NAME, &err)
+                    == DBUS_RELEASE_NAME_REPLY_RELEASED)
+                msg_Info(p_intf, "one-instance name released (quitting), a new start "
+                                 "opens its own window");
+            else
+            {
+                msg_Err(p_intf, "could not release the one-instance name: %s",
+                        dbus_error_is_set(&err) ? err.message : "not the owner");
+                dbus_error_free(&err);
+            }
+        }
+
         /* We need to lock the mutex while building lists of events,
          * timeouts and watches to process but we can't keep the lock while
          * processing them, or else we risk a deadlock:
@@ -1039,6 +1075,21 @@ static void *Run( void *data )
 error:
     vlc_restorecancel(canc);
     return NULL;
+}
+
+/* redesign: the quit watchdog triggers "one-instance-release" when a quit starts (Cone's window
+ * goes at once, the process can live on up to the watchdog's 5 s); the main loop gives the name
+ * up, so the triggering thread never waits for the bus */
+static int ReleaseNameCallback( vlc_object_t *p_this, char const *psz_var,
+                                vlc_value_t oldval, vlc_value_t newval, void *p_data )
+{
+    VLC_UNUSED(p_this); VLC_UNUSED(psz_var);
+    VLC_UNUSED(oldval); VLC_UNUSED(newval);
+    intf_thread_t *p_intf = p_data;
+
+    atomic_store( &p_intf->p_sys->release_name, true );
+    wakeup_main_loop( p_intf );
+    return VLC_SUCCESS;
 }
 
 static void   wakeup_main_loop( void *p_data )
