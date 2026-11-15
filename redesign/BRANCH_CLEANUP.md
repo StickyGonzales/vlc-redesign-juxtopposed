@@ -246,3 +246,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/custom-accent-rainbow` | `f20a05a97bf102f2cd07edc7b6b5caee36836b57` | PR #142 merged into wip/next-test (b943665e233) |
+
+## 2026-11-15, Linux smoke stdin quit
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-smoke-stdin-quit` | `860d92b7a09741778a6210db65d7c66accde99db` | PR #146 merged into wip/next-test (c1f4d13e130) |
