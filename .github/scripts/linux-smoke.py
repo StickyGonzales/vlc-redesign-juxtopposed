@@ -222,9 +222,14 @@ class Session:
              *([] if update_answer else ['--no-qt-cone-update-check']),
              '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
              f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
-             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), *extra, video]
+             *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), *extra, video]
         log('start ' + ' '.join(a))
-        self.proc = subprocess.Popen(a, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        # the checks use the cli's socket only. With --rc-fake-tty (or a terminal on stdin) the cli
+        # also reads stdin and quits VLC when it ends; the smoke's stdin ends at once, and that quit
+        # ended Cone 0.2 s after its start whenever the cli got there after bin/vlc.c had set its
+        # exit handler (build-linux #152, #153; macos-smoke.py found it first). No fake tty and
+        # stdin from /dev/null: no stdin reader at all
+        self.proc = subprocess.Popen(a, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
         self.win = None
 
@@ -1812,6 +1817,22 @@ if not args.skip_deb and check('deb: install next to VLC', deb_install):
             raise CheckFailed('/usr/bin/vlc is gone')
         return 'removed; /opt/cone-player and its files gone, VLC still installed'
     check('deb: remove', deb_remove)
+
+def no_start_quit():
+    """no Cone of this run was told to quit before its Qt interface started (the cli's stdin quit,
+    build-linux #152 and #153: a quit there ends Cone at its start, at random)"""
+    early = []
+    for path in sorted(glob.glob(os.path.join(OUT, 'cone-*.log'))):
+        for line in open(path, errors='replace'):
+            if 'using interface module "qt"' in line:
+                break
+            if 'main debug: exiting' in line:
+                early.append(os.path.basename(path))
+                break
+    if early:
+        raise CheckFailed(f'{len(early)} Cone(s) told to quit before their interface started: {", ".join(early[:5])}')
+    return f'{len(glob.glob(os.path.join(OUT, "cone-*.log")))} Cone logs, none quit at the start'
+check('no Cone of this run is quit before its interface starts', no_start_quit)
 
 # ------------------------------------------------------------------ summary
 fails = [r for r in RESULTS if r[1] == 'fail']
