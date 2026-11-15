@@ -22,7 +22,7 @@
 // interface at once (MainCtx.accentColor, kept in "qt-accent-color").
 // Cone extra (redesign/CUSTOM_ACCENT_NOTES.md): a tenth cell, "Custom", of the same size after
 // them (the strip grows by one cell and gap, 356 wide); its swatch is the custom color (the last
-// one typed while a preset is chosen, at 70 % like them) or a spectrum until there is one, and it
+// one typed while a preset is chosen, at 70 % like them) or a rainbow square until there is one, and it
 // opens the hex editor (RdAccentEditor) under it.
 import QtQuick
 import QtQuick.Templates as T
@@ -210,18 +210,25 @@ Rectangle {
                     radius: VLCStyle.dp(1)
                     color: root.hasCustomColor ? root.customColor : "transparent"
                     opacity: root.customSelected ? 1.0 : 0.7
-                    // no custom color yet: the spectrum says "any color"
-                    gradient: root.hasCustomColor ? null : spectrum
 
-                    Gradient {
-                        id: spectrum
+                    // no custom color yet: a rainbow square (every hue, as a color wheel) says "any
+                    // color". Its own square with its own gradient: a `gradient:` binding that
+                    // switches to null drew nothing at all in Qt 6.8 (the cell stayed empty)
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        visible: !root.hasCustomColor
 
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "#E15032" }
-                        GradientStop { position: 0.25; color: "#C49E23" }
-                        GradientStop { position: 0.5; color: "#19A234" }
-                        GradientStop { position: 0.75; color: "#185DD3" }
-                        GradientStop { position: 1.0; color: "#F052B3" }
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "#FF0000" }
+                            GradientStop { position: 0.17; color: "#FFFF00" }
+                            GradientStop { position: 0.33; color: "#00FF00" }
+                            GradientStop { position: 0.5; color: "#00FFFF" }
+                            GradientStop { position: 0.67; color: "#0000FF" }
+                            GradientStop { position: 0.83; color: "#FF00FF" }
+                            GradientStop { position: 1.0; color: "#FF0000" }
+                        }
                     }
                 }
             }

@@ -615,17 +615,25 @@ T.Popup {
                     height: width
                     radius: width / 2
                     color: swatch.swatchColor
-                    gradient: swatch.spectrum ? spectrumGradient : null
 
-                    Gradient {
-                        id: spectrumGradient
+                    // before a custom color exists: a rainbow (every hue, as a color wheel), in the
+                    // swatch's own shape. Its own item with its own gradient: a `gradient:` binding
+                    // that switches to null drew nothing at all in Qt 6.8
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        visible: swatch.spectrum
 
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "#E15032" }
-                        GradientStop { position: 0.25; color: "#C49E23" }
-                        GradientStop { position: 0.5; color: "#19A234" }
-                        GradientStop { position: 0.75; color: "#185DD3" }
-                        GradientStop { position: 1.0; color: "#F052B3" }
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "#FF0000" }
+                            GradientStop { position: 0.17; color: "#FFFF00" }
+                            GradientStop { position: 0.33; color: "#00FF00" }
+                            GradientStop { position: 0.5; color: "#00FFFF" }
+                            GradientStop { position: 0.67; color: "#0000FF" }
+                            GradientStop { position: 0.83; color: "#FF00FF" }
+                            GradientStop { position: 1.0; color: "#FF0000" }
+                        }
                     }
                 }
             }

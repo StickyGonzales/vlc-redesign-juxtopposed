@@ -6,7 +6,7 @@ Branch `wip/custom-accent`, made from `origin/wip/next-test`. Draft pull request
 
 | Part | Behavior |
 |---|---|
-| **Custom swatch** | After the nine colors, in Settings > General > Appearance > Accent color and on the onboarding's theme screen. Before any custom color exists it shows a spectrum made of her preset colors (red, mustard, green, blue, pink). After that it shows the last custom color, at 70 % like the other colors not chosen, or at full strength with the selected cell fill when it is the accent. |
+| **Custom swatch** | After the nine colors, in Settings > General > Appearance > Accent color and on the onboarding's theme screen. Before any custom color exists it shows a rainbow (every hue, red to red, like a color wheel) in the swatch's own shape: a square in Settings, a circle on the onboarding screen. After that it shows the last custom color, at 70 % like the other colors not chosen, or at full strength with the selected cell fill when it is the accent. |
 | **Editor** | A click on Custom (Enter or Space with the keyboard) opens a small panel: "Custom color", a 32 px preview square and a hex field `#RRGGBB` (the `#` is optional; only hex digits can be typed, 7 characters at most). It opens with the current accent's code selected. |
 | **Live preview** | Every complete 6-digit code recolors the whole app at once, like a click on a preset. An incomplete code changes nothing. |
 | **Keep / undo** | Enter, a click outside or opening another dialog keeps the color. **Escape undoes the typing**: the accent the editor opened with comes back exactly (also "default" and "system"), and so does the swatch's last custom color. A click on Custom chooses the last custom color first (like a click on a preset), so Escape then goes back to that color. |
@@ -51,7 +51,7 @@ Branch `wip/custom-accent`, made from `origin/wip/next-test`. Draft pull request
 
 | Check | Result |
 |---|---|
-| Settings strip vs Figma "Settings - global" (same scale) | the nine colors, cell sizes and gaps match; Custom is one more cell with the spectrum |
+| Settings strip vs Figma "Settings - global" (same scale) | the nine colors, cell sizes and gaps match; Custom is one more cell with the rainbow |
 | Click Custom | the editor opens under it with `#D37918` selected |
 | Type `#3A7BD` | nothing changes |
 | Type the 6th digit (`#3A7BD5`) | the whole app turns blue at once: Theme segment, toggles, Custom cell chosen, seek bar and playhead behind the dialog |
@@ -62,7 +62,7 @@ Branch `wip/custom-accent`, made from `origin/wip/next-test`. Draft pull request
 | `#202020` in Dark | the "Hard to see on this theme" line shows; `#F0A0F0`: it goes away |
 | Light theme, `#F0A0F0` / `#3A2A80` | the chosen Theme segment has dark text on the pink and light text on the purple |
 | Quit and start again | the custom color is still the accent, the Custom cell chosen, the Light theme kept |
-| Onboarding (first run, `--qt-privacy-ask`) | ten swatches, the spectrum last, clear of Back; Custom opens the editor above it; `#7A5CFA` recolors the theme ring, the player picture and Next live; Escape goes back to orange without leaving the wizard, and the spectrum comes back |
+| Onboarding (first run, `--qt-privacy-ask`) | ten swatches, the rainbow last, clear of Back; Custom opens the editor above it; `#7A5CFA` recolors the theme ring, the player picture and Next live; Escape goes back to orange without leaving the wizard, and the rainbow comes back |
 
 Not checked here: profiles through the profile menu (the option is copied like every other one, `rd_profile_settings.cpp`; covered by the retest), Windows' own rendering (retest).
 
@@ -70,7 +70,7 @@ Not checked here: profiles through the profile menu (the option is copied like e
 
 Use this branch's build-windows zip (test-builds draft, `wip-custom-accent--win64-public.zip`, or the run's artifact).
 
-1. **Settings strip.** Ctrl+P > General. The Accent color strip has ten cells; the last shows a spectrum. Compare with Figma "Settings - global": the nine colors, sizes and gaps unchanged, Custom one more cell of the same size.
+1. **Settings strip.** Ctrl+P > General. The Accent color strip has ten cells; the last shows a rainbow square. Compare with Figma "Settings - global": the nine colors, sizes and gaps unchanged, Custom one more cell of the same size.
 2. **Editor and live preview.** Click Custom: a small panel under it, "Custom color", a preview and the field with the current code selected. Type `#3A7BD5` one character at a time: nothing changes until the 6th digit, then the whole app turns blue at once (dialog toggles, the seek bar behind it, icons, the logo).
 3. **Enter keeps.** Press Enter: the panel closes, the Custom cell is chosen and shows the blue. Close Settings and play a file, then pause: the seek bar, the play button and the icons are blue; the play button's icon stays dark (on this blue dark reads better than light, 4.3:1 against 3.5:1).
 4. **Escape undoes.** Choose Orange, then click Custom: the app turns to the blue from step 3 (the last custom color). Type `#20C080` (green), then press Escape: the app goes back to that blue and the Settings dialog stays open.
@@ -80,5 +80,12 @@ Use this branch's build-windows zip (test-builds draft, `wip-custom-accent--win6
 8. **Keyboard.** Tab to the strip, arrows to Gray, Right: Custom (chosen when it has a color), Enter opens the editor, Escape closes it, and the focus is back on the Custom cell.
 9. **Profiles.** Set a custom color, then the profile menu: + New "Blue test" (copies the settings). Switch to the default profile and back: the custom color comes back with the profile.
 10. **Restart.** Quit and start again: the custom color is still the accent, and the Custom cell is chosen.
-11. **Onboarding.** Start once with `--qt-privacy-ask` in a portable copy. On the theme screen ten swatches, the last a spectrum, 20 px clear of Back. Click it: the editor opens above it; typing recolors the preview and the whole wizard live; Escape undoes without closing the wizard; Enter keeps; Next goes on.
+11. **Onboarding.** Start once with `--qt-privacy-ask` in a portable copy. On the theme screen ten swatches, the last a rainbow circle, 20 px clear of Back. Click it: the editor opens above it; typing recolors the preview and the whole wizard live; Escape undoes without closing the wizard; Enter keeps; Next goes on.
 12. **Video check.** Against her video 17:44-17:49 and 19:49: the presets row looks the same apart from the extra swatch.
+
+## 2026-11-15: the Custom swatch was empty until a custom color was set
+
+- **Seen in the 1.5.0 Windows test pass and by StickyGonzales:** in Settings > General the tenth cell was an empty dark cell for anyone who had never typed a custom color. The onboarding's Custom swatch used the same code.
+- **Cause:** the swatch switched its own `gradient:` between a child `Gradient` and `null` with a binding. Rendered offscreen with Qt 6.8.3 (the version Cone ships, through PySide6), that binding draws nothing, while the same gradient assigned directly draws.
+- **Fix:** the rainbow is its own rectangle over the swatch, with its own gradient, shown only while there is no custom color (`SettingsAccentPicker.qml`, `Onboarding.qml`). StickyGonzales asked for a rainbow like a color wheel that keeps the square shape of the other colors: every hue from red to red, horizontally, square in Settings (radius 1 like the nine) and round on the onboarding screen (its swatches are circles). Not chosen it is at 70 % (50 % on the onboarding screen) like the other colors.
+- **Windows retest:** a fresh profile, Ctrl+P > General: the tenth cell shows the rainbow square. Click it, type `#7A5CFA`, Enter: the cell shows that color. Choose orange again: the cell keeps the custom color at 70 %. Onboarding (`--qt-privacy-ask` in a fresh portable copy): the last swatch is a rainbow circle.
