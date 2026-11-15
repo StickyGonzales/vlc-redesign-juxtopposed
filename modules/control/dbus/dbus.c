@@ -940,7 +940,8 @@ static void *Run( void *data )
         vlc_mutex_lock( &p_sys->lock );
 
         size_t i_watches = vlc_array_count( &p_sys->watches );
-        struct pollfd fds[i_watches];
+        /* the wake-up pipe first (GetPollFds), then the watches */
+        struct pollfd fds[i_watches + 1];
         memset(fds, 0, sizeof fds);
 
         int i_fds = GetPollFds( p_intf, fds );
