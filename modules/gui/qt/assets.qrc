@@ -103,6 +103,7 @@
     </qresource>
     <qresource prefix="/rd">
         <file alias="accent_wheel.png">pixmaps/redesign/accent_wheel.png</file>
+        <file alias="accent_wheel_round.png">pixmaps/redesign/accent_wheel_round.png</file>
         <file alias="accessibility.svg">pixmaps/redesign/accessibility.svg</file>
         <file alias="add.svg">pixmaps/redesign/add.svg</file>
         <file alias="album.svg">pixmaps/redesign/album.svg</file>

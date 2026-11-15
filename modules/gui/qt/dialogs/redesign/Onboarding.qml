@@ -616,17 +616,16 @@ T.Popup {
                     radius: width / 2
                     color: swatch.swatchColor
 
-                    // before a custom color exists: a square color wheel (every hue around the
-                    // centre), the same image as in Settings (StickyGonzales: square, as there).
-                    // An image: Qt Quick's gradients are linear only (and the earlier `gradient:`
-                    // binding that switched to null drew nothing at all in Qt 6.8)
+                    // before a custom color exists: the color wheel (every hue around the centre),
+                    // congruent with the swatches beside it (StickyGonzales): round and the same
+                    // 40 px here, as the Settings one is square like the colors there. An image:
+                    // Qt Quick's gradients are linear only (and the earlier `gradient:` binding
+                    // that switched to null drew nothing at all in Qt 6.8)
                     Image {
-                        anchors.centerIn: parent
-                        width: VLCStyle.dp(34, VLCStyle.scale)
-                        height: width
+                        anchors.fill: parent
                         visible: swatch.spectrum
-                        source: "qrc:///rd/accent_wheel.png"
-                        sourceSize: Qt.size(120, 120)
+                        source: "qrc:///rd/accent_wheel_round.png"
+                        sourceSize: Qt.size(160, 160)
                         smooth: true
                         mipmap: true
                     }
