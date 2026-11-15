@@ -35,6 +35,7 @@ run() {
 run test_rd_storage_model tests/test_rd_storage_model.cpp util/rd_storage_model.cpp
 run test_rd_background_queue tests/test_rd_background_queue.cpp util/rd_background_queue.cpp "$OUT/moc_rd_background_queue.cpp"
 run test_rd_show_tracks tests/test_rd_show_tracks.cpp player/rd_show_tracks.cpp
+run test_rd_subtitle_picks tests/test_rd_subtitle_picks.cpp dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp dialogs/redesign/addsubtitles/subtitle_matcher.cpp
 run test_rd_episode_parser tests/test_rd_episode_parser.cpp player/rd_episode_parser.cpp dialogs/redesign/addsubtitles/subtitle_matcher.cpp
 run test_rd_credits_audio tests/test_rd_credits_audio.cpp player/rd_credits_audio.cpp
 run test_rd_credits_point tests/test_rd_credits_point.cpp player/rd_credits_point.cpp

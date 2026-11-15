@@ -1139,6 +1139,26 @@ def check_recent_thumbnails(exe, work):
             # for again then)
             open_page('Home')
         check('recent: every video in the Recent list gets its thumbnail while the page is open', body, retry)
+
+        def order():
+            # the cards in reading order (rows top to bottom, each left to right): the last played
+            # first (Recent listed the oldest first: the media library's history was asked for
+            # ascending; redesign/FIX_1_5_0_NOTES.md)
+            open_page('Recent')
+            cards = []
+            for video in videos:
+                card = find(os.path.basename(video), 2, role='list item')
+                if not card:
+                    raise CheckFailed(f'no Recent card for {os.path.basename(video)}')
+                cards.append((card[1] // max(card[3] // 2, 1), card[0], os.path.basename(video)))
+            shown = [name for _, _, name in sorted(cards)]
+            expected = [os.path.basename(v) for v in reversed(videos)]
+            if shown != expected:
+                shot('recent-order-wrong')
+                raise CheckFailed(f'Recent order {shown}, expected the last played first {expected}')
+            shot('recent-order')
+            return ', '.join(shown)
+        check('recent: the Recent list shows the last played video first', order)
         quit_cleanly(s)
     finally:
         s.stop()

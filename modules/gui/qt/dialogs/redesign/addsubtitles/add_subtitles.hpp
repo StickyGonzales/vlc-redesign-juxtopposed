@@ -237,8 +237,10 @@ private:
     void onInputChanged(bool hasInput);
     void onPlayingStateChanged();
     void applyTo(const QString& mrl);
-    // `downloaded`: the files were just downloaded from OpenSubtitles
-    void attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded = false);
+    // `downloaded`: the files were just downloaded from OpenSubtitles; `picked`: just picked in the
+    // dialog, so the first is shown even when VLC has it loaded already
+    void attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded = false,
+                bool picked = false);
 
     qt_intf_t* m_intf;
     QThreadPool m_pool;
