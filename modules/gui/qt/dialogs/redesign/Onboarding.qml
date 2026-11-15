@@ -616,24 +616,19 @@ T.Popup {
                     radius: width / 2
                     color: swatch.swatchColor
 
-                    // before a custom color exists: a rainbow (every hue, as a color wheel), in the
-                    // swatch's own shape. Its own item with its own gradient: a `gradient:` binding
-                    // that switches to null drew nothing at all in Qt 6.8
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: parent.radius
+                    // before a custom color exists: a square color wheel (every hue around the
+                    // centre), the same image as in Settings (StickyGonzales: square, as there).
+                    // An image: Qt Quick's gradients are linear only (and the earlier `gradient:`
+                    // binding that switched to null drew nothing at all in Qt 6.8)
+                    Image {
+                        anchors.centerIn: parent
+                        width: VLCStyle.dp(34, VLCStyle.scale)
+                        height: width
                         visible: swatch.spectrum
-
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "#FF0000" }
-                            GradientStop { position: 0.17; color: "#FFFF00" }
-                            GradientStop { position: 0.33; color: "#00FF00" }
-                            GradientStop { position: 0.5; color: "#00FFFF" }
-                            GradientStop { position: 0.67; color: "#0000FF" }
-                            GradientStop { position: 0.83; color: "#FF00FF" }
-                            GradientStop { position: 1.0; color: "#FF0000" }
-                        }
+                        source: "qrc:///rd/accent_wheel.png"
+                        sourceSize: Qt.size(120, 120)
+                        smooth: true
+                        mipmap: true
                     }
                 }
             }

@@ -211,24 +211,17 @@ Rectangle {
                     color: root.hasCustomColor ? root.customColor : "transparent"
                     opacity: root.customSelected ? 1.0 : 0.7
 
-                    // no custom color yet: a rainbow square (every hue, as a color wheel) says "any
-                    // color". Its own square with its own gradient: a `gradient:` binding that
-                    // switches to null drew nothing at all in Qt 6.8 (the cell stayed empty)
-                    Rectangle {
+                    // no custom color yet: a square color wheel (every hue around the centre) says
+                    // "any color", same square as the nine. An image: Qt Quick's gradients are
+                    // linear only (and the earlier `gradient:` binding that switched to null drew
+                    // nothing at all in Qt 6.8, the cell stayed empty)
+                    Image {
                         anchors.fill: parent
-                        radius: parent.radius
                         visible: !root.hasCustomColor
-
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "#FF0000" }
-                            GradientStop { position: 0.17; color: "#FFFF00" }
-                            GradientStop { position: 0.33; color: "#00FF00" }
-                            GradientStop { position: 0.5; color: "#00FFFF" }
-                            GradientStop { position: 0.67; color: "#0000FF" }
-                            GradientStop { position: 0.83; color: "#FF00FF" }
-                            GradientStop { position: 1.0; color: "#FF0000" }
-                        }
+                        source: "qrc:///rd/accent_wheel.png"
+                        sourceSize: Qt.size(120, 120)
+                        smooth: true
+                        mipmap: true
                     }
                 }
             }

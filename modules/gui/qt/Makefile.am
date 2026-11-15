@@ -936,6 +936,7 @@ libqt_plugin_la_RES = \
 	pixmaps/fonts/LICENSE-Inter.txt \
 	pixmaps/fonts/DMMono-Regular.ttf \
 	pixmaps/fonts/LICENSE-DMMono.txt \
+	pixmaps/redesign/accent_wheel.png \
 	pixmaps/redesign/accessibility.svg \
 	pixmaps/redesign/add.svg \
 	pixmaps/redesign/album.svg \
