@@ -832,11 +832,17 @@ void AddSubtitles::search()
     auto error = std::make_shared<QString>();
     const OpenSubtitles::Account account = m_account;
     const QString language = m_language;
+    // a newer search (another language, other words) replaces this one: an older answer that
+    // comes last is dropped, so the results shown are always ranked with the language they were
+    // searched in
+    const int serial = ++m_searchSerial;
     rebuild();
     run([=](vlc_object_t* obj) {
             *results = OpenSubtitles::search(obj, account, text, language, season, episode, pages, error.get());
         },
-        [this, results, error]() {
+        [this, results, error, serial]() {
+            if (serial != m_searchSerial)
+                return;
             m_online.clear();
             for (const OpenSubtitles::Result& result : *results)
                 m_online.append({ result.fileName, QString(), result.fileId, parseResult(result) });
@@ -1125,7 +1131,8 @@ QVariantList AddSubtitles::choices(int row) const
     if (video == videos.cend())
         return list;
 
-    // the subtitles of this episode first, then all the others in name order
+    // the subtitles of this episode first, best first (OpenSubtitles: the chosen language first,
+    // then their order), then the others
     const SubtitleMatcher::Preference pref = preference();
     const QVector<Candidate>& candidates = pool();
     const QVector<QPair<int, int>> order = rankedCandidates(video->parsed, candidates, pref);

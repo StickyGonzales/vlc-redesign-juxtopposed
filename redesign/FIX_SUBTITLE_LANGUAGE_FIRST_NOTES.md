@@ -22,6 +22,14 @@ Branch wip/subtitle-language-first.
 1. **Results in the chosen language**, in OpenSubtitles' own order (their ranking).
 2. **Results in other languages**, in OpenSubtitles' order. With none in the chosen language,
    OpenSubtitles' top result is the best match.
+
+   **One exception inside each language group: the variant kept for a show still counts.** A show
+   episode's "forced" or "SDH" file, or the plain one, picked by hand for an earlier episode, is
+   kept for the next ones (as before this fix). Variants nobody asked for come after the plain
+   file. Otherwise the next episode would pre-tick, and the folder rule auto-download, whatever
+   variant OpenSubtitles lists first. Equal cases keep OpenSubtitles' order. Films have no
+   variants (those words count as part of the title), so for a film this is purely OpenSubtitles'
+   order.
 3. **Results that are not this video's** (another episode, another title), last and never
    pre-ticked, as before.
 
@@ -40,6 +48,10 @@ Branch wip/subtitle-language-first.
 
 **Computer files and links** are ranked as before.
 
+**A late search answer is dropped.** Changing the language starts a new search. If the previous
+search answered after it, its results replaced the new ones and were ranked against the new
+language. Now only the latest search's answer is shown (found by the independent review).
+
 ## Tests
 
 **Unit test `test_rd_subtitle_picks`** (unit-tests.yml, with the sanitizers, 45 checks). The new
@@ -53,10 +65,17 @@ part, `testLanguageFirst`, covers:
 - **Another film** is never the best match.
 - **Regions.** "pt-br" chosen picks the pt-br result; "pt" chosen takes either.
 - **An episode.** The other episode's result never comes first.
+- **The kept variant.** With no variant kept, the plain English file comes before the SDH file
+  OpenSubtitles lists first. With "sdh" kept, the SDH file is picked.
 
 **It goes red on the old code.** I put the old ranking (name score only) into the two functions.
-The test then fails 5 checks, starting with "language first: the first English result, not the
-Hebrew one: got "0", expected "1"": the Hebrew result is picked, the reported bug.
+The test then fails 5 of 47 checks, starting with "language first: the first English result, not
+the Hebrew one: got "0", expected "1"": the Hebrew result is picked, the reported bug. Without the
+variant ordering, "the plain English file without a kept variant" fails.
+
+**Independent review.** The language comparison, the four OpenSubtitles paths, thread safety and
+the other sources were clean. Fixed from its findings: the kept variant (above), the late search
+answer (above) and an outdated comment.
 
 **Not testable in CI: the real OpenSubtitles search.** It needs an account and an API key. It is
 retest step 1.
@@ -87,3 +106,5 @@ Build: build-windows on wip/subtitle-language-first (the run named in the PR).
      that episode.
    - Play the next episode: its automatic download is English too.
 5. **From Computer is unchanged.** Files from the computer are ordered and ticked as before.
+6. **Quick language changes.** Change the language twice quickly (English, then French, then back
+   to English): the list ends up with English results, an English one pre-ticked.

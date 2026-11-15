@@ -333,6 +333,19 @@ SubtitleMatcher::Name SubtitleMatcher::parse(const QString& fileName)
     return name;
 }
 
+int SubtitleMatcher::variantScore(const Name& subtitle, const Preference& preference)
+{
+    int result = 0;
+    for (const QString& word : preference.variantTokens)
+        if (subtitle.variantTokens.contains(word))
+            result += 50;
+    // variants the user did not ask for come after the plain file
+    for (const QString& word : subtitle.variantTokens)
+        if (variantWords().contains(word) && !preference.variantTokens.contains(word))
+            result -= 5;
+    return result;
+}
+
 int SubtitleMatcher::score(const Name& video, const Name& subtitle, const Preference& preference)
 {
     int result = 0;
@@ -378,15 +391,9 @@ int SubtitleMatcher::score(const Name& video, const Name& subtitle, const Prefer
         }
     }
 
-    for (const QString& word : preference.variantTokens)
-        if (subtitle.variantTokens.contains(word))
-            result += 50;
+    result += variantScore(subtitle, preference);
     if (!preference.language.isEmpty() && !subtitle.language.isEmpty())
         result += subtitle.language == preference.language ? 40 : -10;
-    // variants the user did not ask for come after the plain file
-    for (const QString& word : subtitle.variantTokens)
-        if (variantWords().contains(word) && !preference.variantTokens.contains(word))
-            result -= 5;
 
     return std::max(result, 0);
 }
@@ -445,6 +452,13 @@ QVector<int> SubtitleMatcher::rankResults(const Name& video, const QVector<Name>
         else
             otherLanguages.append(i);
     }
+    // within a language, the variant kept for the show (a plain file, "forced", "SDH": chosen by
+    // hand for an earlier episode) still wins; OpenSubtitles' order decides the rest
+    const auto byVariant = [&results, &preference](int a, int b) {
+        return variantScore(results.at(a), preference) > variantScore(results.at(b), preference);
+    };
+    std::stable_sort(inLanguage.begin(), inLanguage.end(), byVariant);
+    std::stable_sort(otherLanguages.begin(), otherLanguages.end(), byVariant);
     return inLanguage + otherLanguages + others;
 }
 

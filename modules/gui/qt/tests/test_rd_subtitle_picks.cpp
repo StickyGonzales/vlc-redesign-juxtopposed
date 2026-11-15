@@ -233,6 +233,22 @@ void testLanguageFirst()
     checkEqual(QString::number(SubtitleMatcher::bestResult(sintel, portuguese, s("pt"), english)), s("0"),
                "pt chosen: either region, OpenSubtitles' order");
 
+    // the variant kept for the show (an episode's "forced", "SDH") still counts within a language:
+    // none kept, the plain file before the SDH one OpenSubtitles lists first; "sdh" kept (picked by
+    // hand for an earlier episode), the SDH one
+    const SubtitleMatcher::Name wand = SubtitleMatcher::parse(s("The Wand S01E04.mkv"));
+    const QVector<SubtitleMatcher::Name> variants {
+        result("The Wand S01E04.srt", "he"),
+        result("The Wand S01E04 SDH.srt", "en"),
+        result("The Wand S01E04.srt", "en"),
+    };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(wand, variants, s("en"), english)), s("2"),
+               "variant: the plain English file without a kept variant");
+    SubtitleMatcher::Preference sdh = english;
+    sdh.variantTokens = QStringList { s("sdh") };
+    checkEqual(QString::number(SubtitleMatcher::bestResult(wand, variants, s("en"), sdh)), s("1"),
+               "variant: the kept SDH variant");
+
     // an episode: the results of another episode never come first
     const SubtitleMatcher::Name episode = SubtitleMatcher::parse(s("The Wand S01E04.mkv"));
     const QVector<SubtitleMatcher::Name> episodes {

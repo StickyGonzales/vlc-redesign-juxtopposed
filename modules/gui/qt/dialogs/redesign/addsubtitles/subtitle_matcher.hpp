@@ -66,6 +66,10 @@ public:
 
     static Name parse(const QString& fileName);
 
+    // the part of score() that comes from the variant: the kept one (preference.variantTokens)
+    // +50 a word, a variant word nobody asked for ("forced", "SDH") -5
+    static int variantScore(const Name& subtitle, const Preference& preference);
+
     // how well `subtitle` fits `video`: -1 when it does not belong to it, higher is better
     static int score(const Name& video, const Name& subtitle, const Preference& preference = {});
 
@@ -74,7 +78,8 @@ public:
 
     // OpenSubtitles results for `video`, best first, as indexes into `results` (in OpenSubtitles'
     // order, their ranking): the ones that belong to the video (score() >= 0) in `language` first,
-    // then the ones that belong in other languages, each group in OpenSubtitles' order; then the
+    // then the ones that belong in other languages, each group in OpenSubtitles' order after the
+    // variant kept for the show (variantScore(), equal scores keep their order); then the
     // ones that do not belong. A language tag counts as `language` when it is the same, or when
     // only one of them names a region ("pt" and "pt-br"); empty `language`: every result counts
     static QVector<int> rankResults(const Name& video, const QVector<Name>& results, const QString& language,

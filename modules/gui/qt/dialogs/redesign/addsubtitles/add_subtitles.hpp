@@ -255,6 +255,8 @@ private:
     int m_generation = 0;
     // the folder rows of an older rebuild are dropped
     int m_rebuildSerial = 0;
+    // the latest OpenSubtitles search: an older answer that comes after it is dropped
+    int m_searchSerial = 0;
     int m_busyCount = 0;
     bool m_saving = false;
     bool m_autoSyncDownloads = false;
