@@ -91,8 +91,10 @@ public:
                                     const Preference& preference = {});
 
     // the language a file name names, else its release name ("sintel.he.srt", "Sintel.2010.Hebrew"):
-    // a whole word in the place a language goes (after the title, the year or the episode), never
-    // part of a word or of the title ("the", "chef", "The Hebrew Hammer"); empty when none
+    // a whole word, not the first one and not a variant word ("HI"), as the last meaningful word or
+    // right before a release tag, a year or the episode; a word inside the title or an episode
+    // title does not count ("The Hebrew Hammer"), nor part of a word ("the", "chef"). Empty when
+    // none. Heuristic: an episode titled with a language code ("Fin") still reads as that language
     static QString namedLanguage(const QString& fileName, const QString& release);
 
     // the first of rankResults() when it belongs to the video, -1 when none does: a result in

@@ -292,6 +292,22 @@ void testNamedLanguage()
                "named: before the release tags");
     checkEqual(SubtitleMatcher::namedLanguage(s("The.Wand.S01E04.The.End.srt"), QString()), QString(),
                "named: not an episode title of plain words");
+    // a variant word is no language: "HI" is hearing impaired, not Hindi
+    checkEqual(SubtitleMatcher::namedLanguage(s("Movie.2010.720p.BluRay.x264.HI.srt"), QString()), QString(),
+               "named: HI is no language");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.2010.en.hi.srt"), QString()), s("en"), "named: .en before HI");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.2010.SDH.srt"), QString()), QString(), "named: SDH is no language");
+    // episode titles are no language
+    checkEqual(SubtitleMatcher::namedLanguage(s("Seinfeld.S01E02.The.Chinese.Restaurant.srt"), QString()), QString(),
+               "named: an episode title (The Chinese Restaurant)");
+    // without a year: before the release tags or the episode
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.Hebrew.720p.BluRay.srt"), QString()), s("he"),
+               "named: no year, before the tags");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Sintel.HEB.WEB.srt"), QString()), s("he"), "named: no year, HEB");
+    checkEqual(SubtitleMatcher::namedLanguage(s("Show.Hebrew.S01E04.srt"), QString()), s("he"),
+               "named: before the episode");
+    // a one-word title is no language
+    checkEqual(SubtitleMatcher::namedLanguage(s("It.srt"), QString()), QString(), "named: a one-word title (It)");
     // no language in the file name: the release name
     checkEqual(SubtitleMatcher::namedLanguage(s("subtitle.srt"), s("Sintel.2010.Hebrew")), s("he"), "named: release");
     checkEqual(SubtitleMatcher::namedLanguage(s("sintel.en.srt"), s("Sintel.2010.Hebrew")), s("en"),
@@ -345,6 +361,28 @@ void testMislabeled()
     };
     checkEqual(orderText(SubtitleMatcher::rankResults(hammer, hammerResults, s("en"), english)), s("0,1"),
                "mislabeled: a title word is no other language");
+
+    // an English HI upload is no Hindi one: with "hi" kept for the show it comes first (as a
+    // language word it would go below the plain file)
+    const SubtitleMatcher::Name wandEpisode = SubtitleMatcher::parse(s("The Wand S01E04.mkv"));
+    SubtitleMatcher::Preference keptHi = english;
+    keptHi.variantTokens = QStringList { s("hi") };
+    const QVector<SubtitleMatcher::Name> hearing {
+        tagged("The.Wand.S01E04.HI.srt", "en"),
+        tagged("The.Wand.S01E04.srt", "en"),
+    };
+    checkEqual(orderText(SubtitleMatcher::rankResults(wandEpisode, hearing, s("en"), keptHi)), s("0,1"),
+               "mislabeled: HI is not pushed down as a language");
+
+    // Traditional Chinese chosen: a ".chi" upload is Chinese too, not pushed down
+    SubtitleMatcher::Preference traditional;
+    traditional.language = s("zh-tw");
+    const QVector<SubtitleMatcher::Name> chinese {
+        tagged("Sintel.2010.chi.srt", "zh-tw"),
+        tagged("Sintel.2010.srt", "zh-tw"),
+    };
+    checkEqual(orderText(SubtitleMatcher::rankResults(sintel, chinese, s("zh-tw"), traditional)), s("0,1"),
+               "mislabeled: .chi with zh-tw chosen");
 
     // only mislabeled results: OpenSubtitles' top one is still the best match
     const QVector<SubtitleMatcher::Name> onlyHebrew { tagged("sintel.he.srt", "en"), tagged("sintel.heb.srt", "en") };

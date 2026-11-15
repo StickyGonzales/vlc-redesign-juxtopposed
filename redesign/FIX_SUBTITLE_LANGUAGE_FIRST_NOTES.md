@@ -119,13 +119,37 @@ subtitles at once and tries them one by one.
 
 **RELEASE_NEXT_NOTES.md** now says this instead of "one result is ticked at a time".
 
+**Quota.** Each ticked result is one OpenSubtitles download and counts against the account's daily
+quota. If the quota runs out partway, the results are downloaded in the list's order, so the better
+ranked ones are the ones kept. Saving again downloads them again, reusing the files on disk, and
+counts again.
+
+## Independent review (this round), fixed
+
+- **"HI" read as Hindi.** "HI" (hearing impaired) and the other variant words (SDH, forced) are never
+  a language word now, so ".en.hi" reads as English.
+- **Episode titles and title words.** A language word counts only where a language goes: not the
+  first word, and either the last meaningful word or right before a release tag, a year or the
+  episode. So "The.Chinese.Restaurant" as an episode title does not count, while
+  "Sintel.Hebrew.720p" and "Show.Hebrew.S01E04" (no year) now do.
+  - **Known limit.** An episode titled with a language code as its last word ("Fin", "Ben") still
+    reads as that language; it only moves down among the chosen language's results.
+- **Traditional Chinese.** The push-down compares base languages, so with zh-tw chosen a ".chi"
+  upload (zh-cn) is not pushed down.
+- **Download order.** Downloads now follow the list's order instead of a hash's, so a failure
+  partway keeps the better ranked results and the subtitle shown is still the best ranked one that
+  arrived.
+- **Notes.** The one-choice wording of FIX_1_5_0_NOTES.md is marked as superseded.
+
 ## Tests (this round)
 
-**Unit test `test_rd_subtitle_picks`, 69 checks.**
+**Unit test `test_rd_subtitle_picks`, 79 checks.**
 - **The language word in a name:** .he, .heb, Hebrew, .fi, .fin, before release tags, in an
   episode name, and from the release name.
 - **Words that must not count:** "the", "chef", "The Hebrew Hammer", "He Got Game", an episode title
-  of plain words.
+  of plain words, "The Chinese Restaurant", "HI" and "SDH", a one-word title ("It").
+- **Without a year:** "Sintel.Hebrew.720p", "Sintel.HEB.WEB", "Show.Hebrew.S01E04".
+- **Traditional Chinese chosen:** a ".chi" upload is not pushed down.
 - **The Sintel case:** "sintel.he" and a ".fin" file tagged English go below the English files, in
   OpenSubtitles' order, nothing hidden.
 - **Other mislabels:** a mislabel by release name; an English file filed under Finnish; all results

@@ -1234,16 +1234,21 @@ void AddSubtitles::save()
             }
     }
 
-    // OpenSubtitles results are downloaded first
-    QHash<int, qint64> downloads;
+    // OpenSubtitles results are downloaded first, in the list's order (best first): when one fails
+    // (the quota, the network) the ones before it, the better ranked, are kept
+    QVector<QPair<int, qint64>> downloads;
+    QSet<int> downloaded;
     for (const auto& assignment : assignments)
-        if (candidates.at(assignment.second).fileId > 0)
-            downloads.insert(assignment.second, candidates.at(assignment.second).fileId);
+        if (candidates.at(assignment.second).fileId > 0 && !downloaded.contains(assignment.second))
+        {
+            downloads.append({ assignment.second, candidates.at(assignment.second).fileId });
+            downloaded.insert(assignment.second);
+        }
 
     auto paths = std::make_shared<QHash<int, QString>>();
     auto error = std::make_shared<QString>();
     for (const auto& assignment : assignments)
-        if (!downloads.contains(assignment.second))
+        if (!downloaded.contains(assignment.second))
             paths->insert(assignment.second, candidates.at(assignment.second).path);
 
     m_saving = true;
@@ -1260,11 +1265,11 @@ void AddSubtitles::save()
 
     run([downloads, candidates, paths, error, account](vlc_object_t* obj) {
             const QString folder = downloadFolder("opensubtitles");
-            for (auto it = downloads.cbegin(); it != downloads.cend(); ++it)
+            for (const QPair<int, qint64>& download : downloads)
             {
                 QString name;
                 QString failure;
-                const QByteArray data = OpenSubtitles::download(obj, account, it.value(), &name, &failure);
+                const QByteArray data = OpenSubtitles::download(obj, account, download.second, &name, &failure);
                 if (data.isEmpty())
                 {
                     *error = failure.isEmpty() ? qtr("A subtitle could not be downloaded.") : failure;
@@ -1272,7 +1277,7 @@ void AddSubtitles::save()
                     break;
                 }
                 if (name.isEmpty())
-                    name = candidates.at(it.key()).name;
+                    name = candidates.at(download.first).name;
                 // the subtitle's own name ("Sintel (2010).eng.srt"), numbered only when another
                 // subtitle already has it
                 const QString file = rdsubtitles::saveDownload(folder, safeFileName(name), data);
@@ -1281,7 +1286,7 @@ void AddSubtitles::save()
                     *error = qtr("The subtitle file cannot be saved.");
                     break;
                 }
-                paths->insert(it.key(), file);
+                paths->insert(download.first, file);
             }
         },
         [this, assignments, paths, error, target, source, variant, searchText, language, computerFolder, folderKey]() {
