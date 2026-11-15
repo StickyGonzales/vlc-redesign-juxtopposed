@@ -29,6 +29,7 @@ the texts are written up in the 1.4.0 style (by area, with tips) when the releas
 - **Clean names for downloaded subtitles.** A download keeps its own name, such as "Sintel (2010).eng.srt", and the subtitle list shows "Sintel (2010) [English]", without the OpenSubtitles number in front and with its brackets. (PR #141)
 - **Up Next no longer skips episodes you finished.** An episode you watched to the end before starts from the beginning when autoplay reaches it; one you stopped partway still continues where you left it. (PR #140)
 - **Stopping an episode keeps the show's subtitles.** Stopping, quitting or opening another file no longer saves "subtitles off" for the show; only a subtitle or audio track you pick yourself carries over to the next episodes. (PR #140)
+- **The custom accent color shows a color wheel until you pick one.** In Settings > General > Accent color and on the first-start theme screen, the Custom swatch was empty until you had typed a custom color. It now shows a color wheel, in the same shape as the colors beside it. (PR #142)
 
 ## Changed
 - **Choose what happens when an episode ends.** Settings > Playback > Episodes > "When an episode ends" replaces "Play episodes in a row": **Play the next episode** (the countdown on the Up Next card, as before), **Show Up Next, I'll click** (the card offers the next episode and waits for your click, no countdown), or **Do nothing**. Your saved choice carries over. The card's "Turn off autoplay" now switches to "Show Up Next, I'll click". (PR #135)
