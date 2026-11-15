@@ -166,6 +166,13 @@ retest step 1.
 
 ## Green runs
 
+Round 2 (the mislabel push-down, several results, the review fixes), all on 0c81f99fb7:
+- **build-linux #154:** build, packages and every smoke job pass.
+- **build-windows #273:** build, installer and the Windows smoke pass.
+- **unit-tests #17 and #18:** pass, test_rd_subtitle_picks at 79 checks.
+
+Round 1:
+
 All on f8e2231ac5:
 - **build-linux #152:** build, packages and every smoke job pass.
   - The first attempt failed one Ubuntu 24.04 smoke check, "drawing: main window appears". Cone
