@@ -97,3 +97,15 @@ stock VLC 4 from Phase 1 (run 38315049322).
   the script now wiggles the pointer first.
 - ffmpeg cannot write a USLT lyrics frame (it writes a TXXX tag named "USLT"); the lyrics test files were
   made with a small script instead (#136 retest).
+
+## Final build quick check (PC session, 2026-11-15)
+
+build-windows #272 (6bca1377774, wip/next-test with #140, #141 and #142 merged; #144 and #145 not merged), build and Windows
+smoke green. Fresh portable profile:
+- **Playback:** H.264 + AAC, HEVC with two audio tracks (English, Japanese listed), an MP4 with an external SRT (listed and
+  selectable), a FLAC with a cover: each plays (time 0:09 -> 0:11 after 2 s).
+- **Square cover:** the FLAC's cover is 613x613.
+- **Recent newest first:** the four files in reverse play order.
+- **Settings > General:** the color wheel in the Custom cell.
+- **Quit:** Ctrl+Q four times, window gone in 51-71 ms, process ended in 0.40-0.53 s; no crash records.
+- **Pending for 1.5.0:** StickyGonzales wants several OpenSubtitles results again (STATUS row); if that lands, one more final build.
