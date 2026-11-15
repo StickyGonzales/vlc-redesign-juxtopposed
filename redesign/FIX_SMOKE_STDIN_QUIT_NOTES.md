@@ -45,7 +45,11 @@ run, no Cone log may have `main debug: exiting` before `using interface module "
 
 ## Green runs
 
-(filled in when CI has run)
+All on a5c6b226eb:
+- **build-linux #155:** build, packages and every smoke job pass on the first attempt. The new guard
+  passed on Ubuntu 22.04: "no Cone of this run is quit before its interface starts: 27 Cone logs,
+  none quit at the start".
+- **build-windows #274:** build, installer and the Windows smoke pass (unchanged script).
 
 ## Windows retest
 
