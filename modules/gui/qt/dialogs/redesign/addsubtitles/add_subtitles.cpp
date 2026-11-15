@@ -23,6 +23,7 @@
 #include "add_subtitles.hpp"
 #include "util/rd_storage.hpp"
 #include "subtitle_web.hpp"
+#include "rd_subtitle_picks.hpp"
 
 #include "player/player_controller.hpp"
 
@@ -1068,14 +1069,21 @@ void AddSubtitles::toggle(int row)
 {
     if (m_target != TargetFile || row < 0 || row >= m_files.count())
         return;
-    AddSubtitlesModel::Row value = m_files.at(row);
-    value.selected = !value.selected;
+    // OpenSubtitles results for this file are one choice (Figma "Folder-3": one result checked):
+    // Save downloads exactly the checked one and shows it; files from the computer add several
+    // (Figma "Folder-2")
+    const bool single = m_source == SourceOpenSubtitles;
     QSet<int>& selected = m_selected[m_source];
-    if (value.selected)
-        selected.insert(value.candidate);
-    else
-        selected.remove(value.candidate);
-    m_files.setRow(row, value);
+    selected = rdsubtitles::picked(selected, m_files.at(row).candidate, single);
+    for (int i = 0; i < m_files.count(); ++i)
+    {
+        AddSubtitlesModel::Row value = m_files.at(i);
+        const bool checked = selected.contains(value.candidate);
+        if (value.selected == checked)
+            continue;
+        value.selected = checked;
+        m_files.setRow(i, value);
+    }
     emit canSaveChanged();
 }
 
@@ -1227,8 +1235,10 @@ void AddSubtitles::save()
                 }
                 if (name.isEmpty())
                     name = candidates.at(it.key()).name;
-                const QString file = folder + QChar('/') + QString::number(it.value()) + QChar('-') + safeFileName(name);
-                if (folder.isEmpty() || !writeFile(file, data))
+                // the subtitle's own name ("Sintel (2010).eng.srt"), numbered only when another
+                // subtitle already has it
+                const QString file = rdsubtitles::downloadFile(folder, safeFileName(name), data);
+                if (file.isEmpty() || !writeFile(file, data))
                 {
                     *error = qtr("The subtitle file cannot be saved.");
                     break;
@@ -1254,10 +1264,12 @@ void AddSubtitles::save()
             }
             for (auto it = added.cbegin(); it != added.cend(); ++it)
             {
-                QStringList subtitles = target == TargetFile ? m_store.subtitlesFor(it.key()) : QStringList();
-                for (const QString& path : it.value())
-                    if (!subtitles.contains(path))
-                        subtitles.append(path);
+                // the ones just picked first: the first is the one shown when the video plays again
+                QStringList subtitles = it.value();
+                if (target == TargetFile)
+                    for (const QString& path : m_store.subtitlesFor(it.key()))
+                        if (!subtitles.contains(path))
+                            subtitles.append(path);
                 m_store.setSubtitles(it.key(), subtitles);
             }
 
@@ -1287,7 +1299,7 @@ void AddSubtitles::save()
             }
             for (auto it = added.cbegin(); it != added.cend(); ++it)
                 if (!playing.isEmpty() && SubtitleStore::mediaKey(it.key()) == playing)
-                    attach(it.key(), it.value(), true, source == SourceOpenSubtitles);
+                    attach(it.key(), it.value(), true, source == SourceOpenSubtitles, true);
 
             if (!error->isEmpty())
             {
@@ -1433,9 +1445,9 @@ void AddSubtitles::applyTo(const QString& mrl)
             QString fileName;
             const QByteArray data = OpenSubtitles::download(obj, account, results.at(best).fileId, &fileName, nullptr);
             const QString folder = downloadFolder("opensubtitles");
-            const QString file = folder + QChar('/') + QString::number(results.at(best).fileId) + QChar('-')
-                                 + safeFileName(fileName.isEmpty() ? results.at(best).fileName : fileName);
-            if (!data.isEmpty() && !folder.isEmpty() && writeFile(file, data))
+            const QString file = rdsubtitles::downloadFile(
+                folder, safeFileName(fileName.isEmpty() ? results.at(best).fileName : fileName), data);
+            if (!data.isEmpty() && !file.isEmpty() && writeFile(file, data))
                 result->append(file);
         },
         [this, result, mrl, saved, network]() {
@@ -1454,7 +1466,8 @@ void AddSubtitles::applyTo(const QString& mrl)
         }, network ? 3 : 0, false);
 }
 
-void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded)
+void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded,
+                          bool picked)
 {
     vlc_player_t* player = m_intf->p_mainPlayerController->getPlayer();
     vlc_player_locker lock{ player };
@@ -1475,8 +1488,16 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
     for (const QString& subtitle : subtitles)
     {
         const QString uri = QUrl(subtitle).scheme().size() > 1 ? subtitle : mrlOf(subtitle);
-        if (uri.isEmpty() || loaded.contains(SubtitleStore::mediaKey(uri)))
+        if (uri.isEmpty())
             continue;
+        if (loaded.contains(SubtitleStore::mediaKey(uri)))
+        {
+            // already loaded: the same subtitle picked again in the dialog is still the one to show
+            if (first && picked)
+                selectUri = uri;
+            first = first && !picked;
+            continue;
+        }
         vlc_player_AddAssociatedMedia(player, SPU_ES, qtu(uri), first, false, false);
         if (first)
             selectUri = uri;

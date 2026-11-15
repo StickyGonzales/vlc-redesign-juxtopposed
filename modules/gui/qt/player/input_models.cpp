@@ -30,6 +30,7 @@
 #include <vlc_input_item.h>
 #include <vlc_iso_lang.h>
 
+#include "dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp"
 #include "dialogs/redesign/addsubtitles/subtitle_matcher.hpp"
 
 namespace {
@@ -66,10 +67,7 @@ std::pair<QString, QString> languageOf(const QString& language)
 // name ("_EN"), which then leaves the name
 QString externalTrackName(const QString& fileName, const QString& trackLanguage)
 {
-    QString base = fileName;
-    const qsizetype dot = base.lastIndexOf(QChar('.'));
-    if (dot > 0 && base.size() - dot <= 5)
-        base.truncate(dot);
+    QString base = rdsubtitles::withoutExtension(fileName);
 
     qsizetype wordStart = base.size();
     while (wordStart > 0 && base.at(wordStart - 1).isLetterOrNumber())
@@ -86,14 +84,9 @@ QString externalTrackName(const QString& fileName, const QString& trackLanguage)
 
     if (language.isEmpty())
         return base;
+    // only the separators before the language word go: "Sintel (2010).eng" keeps its ")"
     if (!nameCode.isEmpty() && nameCode == code)
-    {
-        base.truncate(wordStart);
-        while (!base.isEmpty() && !base.back().isLetterOrNumber())
-            base.chop(1);
-        if (base.isEmpty())
-            base = fileName;
-    }
+        base = rdsubtitles::withoutLastWord(base, wordStart, fileName);
     return QStringLiteral("%1 [%2]").arg(base, language);
 }
 
@@ -133,7 +126,13 @@ QVariant TrackListModel::data(const QModelIndex &index, int role) const
             {
                 const QByteArray uri = externalUri(track.m_id.get());
                 if (!uri.isEmpty())
-                    track.m_fileName = QUrl(QString::fromUtf8(uri)).fileName();
+                {
+                    const QUrl url(QString::fromUtf8(uri));
+                    track.m_fileName = url.fileName();
+                    // an OpenSubtitles download saved before 1.5.0 starts with its file id
+                    if (url.path().contains(QLatin1String("/subtitles/opensubtitles/")))
+                        track.m_fileName = rdsubtitles::withoutDownloadId(track.m_fileName);
+                }
                 // the row shows the file's name (Figma "Frame 67"), not VLC's "Track 2 - [English]"
                 if (track.m_fileName.isEmpty() && track.m_fileNameLookups++ < kFileNameLookups)
                     lookUpFileNameLater(track.m_id.get());

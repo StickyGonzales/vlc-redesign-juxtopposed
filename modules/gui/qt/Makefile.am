@@ -153,6 +153,8 @@ libqt_plugin_la_SOURCES = \
 	dialogs/preferences/simple_preferences.hpp \
 	dialogs/redesign/addsubtitles/subtitle_matcher.cpp \
 	dialogs/redesign/addsubtitles/subtitle_matcher.hpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp \
 	dialogs/redesign/addsubtitles/subtitle_web.cpp \
 	dialogs/redesign/addsubtitles/subtitle_web.hpp \
 	dialogs/redesign/addsubtitles/opensubtitles.cpp \
@@ -2403,6 +2405,20 @@ test_rd_episode_parser_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_episode_parser_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_rd_episode_parser
 TESTS += test_rd_episode_parser
+
+# test_rd_subtitle_picks (redesign): the Add Subtitles choice, file and track names, QtCore only
+
+test_rd_subtitle_picks_SOURCES = \
+	tests/test_rd_subtitle_picks.cpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp
+
+test_rd_subtitle_picks_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_subtitle_picks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_subtitle_picks_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_subtitle_picks_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_subtitle_picks
+TESTS += test_rd_subtitle_picks
 
 # test_rd_credits_point (Cone extra, Up Next): QtCore only
 

@@ -303,6 +303,8 @@ qt_plugin_sources = files(
     'dialogs/preferences/simple_preferences.hpp',
     'dialogs/redesign/addsubtitles/subtitle_matcher.cpp',
     'dialogs/redesign/addsubtitles/subtitle_matcher.hpp',
+    'dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp',
+    'dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp',
     'dialogs/redesign/addsubtitles/subtitle_web.cpp',
     'dialogs/redesign/addsubtitles/subtitle_web.hpp',
     'dialogs/redesign/addsubtitles/opensubtitles.cpp',
@@ -1815,6 +1817,20 @@ if qt6_dep.found()
             'sources': files(
                 'tests/test_rd_reload_throttle.cpp',
                 'util/rd_reload_throttle.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # redesign: the Add Subtitles choice and the subtitle file and track names, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_subtitle_picks',
+            'sources': files(
+                'tests/test_rd_subtitle_picks.cpp',
+                'dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp',
+                'dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,
