@@ -58,3 +58,5 @@ Build from this branch, portable zip. Use a show folder with episodes named `S01
 ## Runs
 | Run | Head | Result |
 |---|---|---|
+| build-windows 263 | f97cb675dd | green with smoke: "upnext-watched" pass (S01E02 at 6 s, 4 s after it began), "track-stop" pass (nothing saved) |
+| build-linux 150 | f97cb675dd | green with smoke on Ubuntu 22.04 and 24.04 (both new checks pass: S01E02 at 4 s; nothing saved), Debian 12 and the Wayland embed |
