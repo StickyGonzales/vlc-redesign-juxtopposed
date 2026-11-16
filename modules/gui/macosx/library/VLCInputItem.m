@@ -297,7 +297,15 @@ static const struct input_item_parser_cbs_t parserCallbacks =
 
 - (NSString *)decodedMRL
 {
-    char *psz_url = vlc_uri_decode(input_item_GetURI(_vlcInputItem));
+    char *uri = input_item_GetURI(_vlcInputItem);
+    if (uri == NULL)
+        return @"";
+    char *psz_url = vlc_uri_decode(uri);
+    if (psz_url == NULL)
+    {
+        free(uri);
+        return @"";
+    }
     NSString *returnValue = toNSStr(psz_url);
     FREENULL(psz_url);
     return returnValue;
@@ -356,6 +364,31 @@ static const struct input_item_parser_cbs_t parserCallbacks =
 - (enum input_item_type_e)inputType
 {
     return _vlcInputItem->i_type;
+}
+
+- (NSString *)inputTypeDescription
+{
+    switch (self.inputType) {
+        case ITEM_TYPE_UNKNOWN:
+            return NSTR("Unknown");
+        case ITEM_TYPE_FILE:
+            return self.MRL.fileTypeDescription;
+        case ITEM_TYPE_DIRECTORY:
+            return NSTR("Directory");
+        case ITEM_TYPE_DISC:
+            return NSTR("Disc");
+        case ITEM_TYPE_CARD:
+            return NSTR("Card");
+        case ITEM_TYPE_STREAM:
+            return NSTR("Stream");
+        case ITEM_TYPE_PLAYLIST:
+            return NSTR("Playlist");
+        case ITEM_TYPE_NODE:
+            return NSTR("Node");
+        case ITEM_TYPE_NUMBER:
+            return NSTR("Undefined");
+    }
+    return NSTR("Unknown");
 }
 
 - (NSURL *)artworkURL

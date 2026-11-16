@@ -23,6 +23,7 @@ import QtQml
 import QtQml.Models
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls.Basic
 import QtQuick.Templates
 import QtQuick.Window
 
@@ -96,14 +97,11 @@ Item {
 
             yAxis.enabled: false
 
-            // Qt version check in disguise, only available starting with 6.5:
-            enabled: !!xAxis?.activeValueChanged
-
             property double accumulatedDelta: 0.0
 
             readonly property real threshold: 80.0
 
-            function onXAxisActiveValueChanged(delta) {
+            xAxis.onActiveValueChanged: (delta) => {
                 // We do not want to set enabled based on history condition, because the gesture should be captured
                 // regardless to prevent confusion:
                 // redesign: the library keeps its own history (MainDisplay.canGoBack / goBack())
@@ -112,12 +110,6 @@ Item {
                     return
 
                 historyDragHandler.accumulatedDelta = Math.min(threshold, historyDragHandler.accumulatedDelta + delta)
-            }
-
-            Component.onCompleted: {
-                if (historyDragHandler?.xAxis?.activeValueChanged) {
-                    xAxis.activeValueChanged.connect(historyDragHandler, onXAxisActiveValueChanged)
-                }
             }
 
             onActiveChanged: {
@@ -344,7 +336,7 @@ Item {
                 case MainCtx.MAININTERFACE_MODE_MINIMAL:
                     return "qrc:///qt/qml/VLC/Player/MinimalView.qml"
                 case  MainCtx.MAININTERFACE_MODE_PLAYER:
-                    return "qrc:///qt/qml/VLC/Player/Player.qml"
+                    return "qrc:///qt/qml/VLC/Player/PlayerView.qml"
                 default:
                     console.error("unexpected interface mode", MainCtx.effectiveMainInterfaceMode)
                 case MainCtx.MAININTERFACE_MODE_MAINDISPLAY:
@@ -580,9 +572,6 @@ Item {
         // size than the window to compensate. If you want bigger blur radius, either decrease the compensation
         // factor which can lead to visible clipping, or increase the window extended margin:
         blurRadius: (MainCtx.windowExtendedMargin / effect.compensationFactor)
-
-        // 2.0 (default) compensation factor makes clipping obvious, especially with white background
-        implicitCompensationFactor: 3.0
 
         compensationFactor: MainCtx.intfMainWindow.active ? (implicitCompensationFactor)
                                                           : (implicitCompensationFactor * 2)

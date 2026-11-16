@@ -164,7 +164,8 @@ int ListCache<T>::updateItem(ItemType&& newItem)
 
     int pos = std::distance(m_cachedData->list.begin(), it);
     *it = std::move(newItem);
-    emit localDataChanged(pos, pos);
+    if (static_cast<size_t>(pos) < m_cachedData->queryCount)
+        emit localDataChanged(pos, pos);
     return pos;
 }
 
@@ -187,14 +188,21 @@ int ListCache<T>::deleteItem(const std::function<bool (const ItemType&)>&& f)
         return -1;
 
     int pos = std::distance(m_cachedData->list.begin(), it);
+    const bool visible = static_cast<size_t>(pos) < m_cachedData->queryCount;
 
-    emit beginRemoveRows(pos, pos);
+    if (visible)
+        emit beginRemoveRows(pos, pos);
     m_cachedData->list.erase(it, it+1);
     size_t delta = m_cachedData->loadedCount - m_cachedData->list.size();
     m_cachedData->loadedCount -= delta;
     m_cachedData->maximumCount -= delta;
-    m_cachedData->queryCount -= delta;
-    emit endRemoveRows();
+    if (visible)
+    {
+        m_cachedData->queryCount -= delta;
+        emit endRemoveRows();
+    }
+    //an item past the limit may take the place of the removed one
+    applyLimit();
     emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
 
     return pos;
@@ -216,12 +224,21 @@ void ListCache<T>::insertItem(ItemType&& item, int position)
     if (unlikely(position < 0 || position > (int)m_cachedData->list.size()))
         return;
 
-    emit beginInsertRows(position, position);
+    //items inserted past the limit are not visible
+    const bool visible = static_cast<size_t>(position) <= m_cachedData->queryCount;
+
+    if (visible)
+        emit beginInsertRows(position, position);
     m_cachedData->list.insert(m_cachedData->list.begin() + position, std::move(item));
     m_cachedData->loadedCount++;
     m_cachedData->maximumCount++;
-    m_cachedData->queryCount++;
-    emit endInsertRows();
+    if (visible)
+    {
+        m_cachedData->queryCount++;
+        emit endInsertRows();
+    }
+    //the inserted item may push the last row past the limit
+    applyLimit();
     emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
 }
 
@@ -242,12 +259,24 @@ void ListCache<T>::insertItemList(IterType first, IterType last, int position)
         return;
 
     size_t count = std::distance(first, last);
-    emit beginInsertRows(position, position + (int)count - 1);
+    if (count == 0)
+        return;
+
+    //items inserted past the limit are not visible
+    const bool visible = static_cast<size_t>(position) <= m_cachedData->queryCount;
+
+    if (visible)
+        emit beginInsertRows(position, position + (int)count - 1);
     std::move(first, last, std::inserter(m_cachedData->list, m_cachedData->list.begin() + position));
     m_cachedData->loadedCount += count;
     m_cachedData->maximumCount += count;
-    m_cachedData->queryCount += count;
-    emit endInsertRows();
+    if (visible)
+    {
+        m_cachedData->queryCount += count;
+        emit endInsertRows();
+    }
+    //the inserted items may push the last rows past the limit
+    applyLimit();
     emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
 }
 
@@ -313,6 +342,8 @@ void ListCache<T>::deleteRange(int first, int last)
     m_cachedData->queryCount -= rangeSize;
     m_cachedData->maximumCount -= rangeSize;
     emit endRemoveRows();
+    //items past the limit may take the place of the removed ones
+    applyLimit();
     emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
 }
 
@@ -393,6 +424,96 @@ void  ListCache<T>::fetchMore()
     if (!m_appendTask
             && cache != m_oldData.get()) // data will be loaded after completing pending updates
         asyncFetchMore();
+}
+
+template<typename T>
+size_t ListCache<T>::countWithLimit(size_t maximumCount) const
+{
+    const size_t count = (maximumCount > m_offset) ? maximumCount - m_offset : 0;
+    if (m_limit == 0)
+        return count;
+    return std::min(m_limit, count);
+}
+
+template<typename T>
+bool ListCache<T>::applyLimit()
+{
+    assert(m_cachedData);
+
+    const size_t newQueryCount = countWithLimit(m_cachedData->maximumCount);
+    const size_t oldQueryCount = m_cachedData->queryCount;
+    if (newQueryCount == oldQueryCount)
+        return false;
+
+    if (newQueryCount < oldQueryCount)
+    {
+        emit beginRemoveRows(newQueryCount, oldQueryCount - 1);
+        m_cachedData->queryCount = newQueryCount;
+        emit endRemoveRows();
+    }
+    else
+    {
+        emit beginInsertRows(oldQueryCount, newQueryCount - 1);
+        m_cachedData->queryCount = newQueryCount;
+        emit endInsertRows();
+    }
+    return true;
+}
+
+template<typename T>
+void ListCache<T>::setLimit(size_t limit)
+{
+    m_limit = limit;
+    if (!m_cachedData || m_oldData)
+        return;
+
+    if (applyLimit())
+        emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
+}
+
+template<typename T>
+void ListCache<T>::setOffset(size_t offset)
+{
+    if (m_offset == offset)
+        return;
+
+    if (m_cachedData && !m_oldData && !m_countTask && offset > m_offset)
+    {
+        const size_t delta = offset - m_offset;
+        const size_t droppedItems = std::min(delta, m_cachedData->loadedCount);
+        const size_t removedRows = std::min(delta, m_cachedData->queryCount);
+        m_offset = offset;
+
+        //a pending append still targets m_offset + loadedCount, unless we skipped past it
+        if (m_appendTask && delta > m_cachedData->loadedCount)
+        {
+            m_loader->cancelTask(m_appendTask);
+            m_appendTask = 0;
+        }
+
+        if (removedRows > 0)
+            emit beginRemoveRows(0, removedRows - 1);
+        m_cachedData->list.erase(m_cachedData->list.begin(), m_cachedData->list.begin() + droppedItems);
+        m_cachedData->loadedCount -= droppedItems;
+        m_cachedData->queryCount -= removedRows;
+        if (removedRows > 0)
+            emit endRemoveRows();
+
+        m_maxReferedIndex = (m_maxReferedIndex > delta) ? m_maxReferedIndex - delta : 0;
+        if (applyLimit() || removedRows > 0)
+            emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
+        if (!m_appendTask)
+            asyncFetchMore();
+        return;
+    }
+
+    m_offset = offset;
+    if (m_countTask)
+    {
+        m_loader->cancelTask(m_countTask);
+        m_countTask = 0;
+    }
+    invalidate();
 }
 
 template<typename T>
@@ -525,6 +646,8 @@ void ListCache<T>::partialUpdate()
             emit localSizeChanged(m_cachedData->queryCount, m_cachedData->maximumCount);
         }
     }
+
+    setLimit(m_limit);
 }
 
 template<typename T>
@@ -549,9 +672,7 @@ void ListCache<T>::asyncCountAndLoad()
                 m_needReload = true;
             }
 
-            size_t queryCount = (m_limit > 0)
-                ? std::min(m_limit, maximumCount)
-                : maximumCount;
+            size_t queryCount = countWithLimit(maximumCount);
 
             //note: should we drop items past queryCount?
             m_cachedData = std::make_unique<CacheData>(std::move(list),
@@ -601,13 +722,13 @@ template<typename T>
 void ListCache<T>::asyncFetchMore()
 {
     assert(m_cachedData);
+    m_maxReferedIndex = std::min(m_cachedData->queryCount, m_maxReferedIndex);
     if (m_maxReferedIndex <= m_cachedData->loadedCount)
         return;
 
     if (m_appendTask)
         m_loader->cancelTask(m_appendTask);
 
-    m_maxReferedIndex = std::min(m_cachedData->queryCount, m_maxReferedIndex);
     size_t count = ((m_maxReferedIndex - m_cachedData->loadedCount) / m_chunkSize + 1 ) * m_chunkSize;
 
     m_appendTask = m_loader->loadTask(
@@ -625,7 +746,9 @@ void ListCache<T>::asyncFetchMore()
                 int updatedOffset = m_cachedData->loadedCount;
                 std::move(list.begin(), list.end(), std::back_inserter(m_cachedData->list));
                 m_cachedData->loadedCount += updatedCount;
-                emit localDataChanged(updatedOffset, updatedOffset + updatedCount - 1);
+                const int visibleEnd = static_cast<int>(std::min(m_cachedData->loadedCount, m_cachedData->queryCount));
+                if (updatedOffset < visibleEnd)
+                    emit localDataChanged(updatedOffset, visibleEnd - 1);
             }
 
             m_appendTask = 0;

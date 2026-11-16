@@ -76,6 +76,7 @@ class UpdateModel;
 #endif
 struct vlc_preparser_t;
 class ThreadRunner;
+class ModelRecoveryAgent;
 
 namespace vlc {
 namespace playlist {
@@ -131,6 +132,7 @@ class MainCtx : public QObject
     Q_PROPERTY(bool hasAcrylicSurface READ hasAcrylicSurface NOTIFY hasAcrylicSurfaceChanged FINAL)
     Q_PROPERTY(bool smoothScroll READ smoothScroll NOTIFY smoothScrollChanged FINAL)
     Q_PROPERTY(QWindow* intfMainWindow READ intfMainWindow CONSTANT FINAL)
+    Q_PROPERTY(bool videoSurfaceCanHaveFractionalPosition READ videoSurfaceCanHaveFractionalPosition CONSTANT FINAL)
     Q_PROPERTY(bool useGlobalShortcuts READ getUseGlobalShortcuts WRITE setUseGlobalShortcuts NOTIFY useGlobalShortcutsChanged FINAL)
     Q_PROPERTY(int maxVolume READ maxVolume NOTIFY maxVolumeChanged FINAL)
     // redesign: how near an edge the mouse shows a bar in fullscreen, in dp ("qt-fs-sensitivity")
@@ -311,15 +313,6 @@ public:
                                                                         unsigned char patch)
                                                                        { return QT_VERSION_CHECK(major, minor, patch); }
 
-    Q_INVOKABLE static /*constexpr*/ inline bool qtQuickControlRejectsHoverEvents() {
-        // QTBUG-100543
-        return (QT_VERSION < QT_VERSION_CHECK(6, 3, 0) && QT_VERSION >= QT_VERSION_CHECK(6, 2, 5)) ||
-               (QT_VERSION < QT_VERSION_CHECK(6, 4, 0) && QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)) ||
-               (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0));
-    }
-
-    Q_INVOKABLE QJSValue urlListToMimeData(const QJSValue& array);
-
     Q_INVOKABLE static void setFiltersChildMouseEvents(QQuickItem *item, bool enable)
     {
         assert(item);
@@ -410,6 +403,9 @@ public:
     /* redesign: writes the interface state the destructor saves (and the window geometry
      * when asked), so a quit that never reaches the destructor keeps it */
     void saveSettings(bool withGeometry);
+    // redesign: drops the play queue's crash recovery (its file and setting) at once; a quit the
+    // quit watchdog may end calls it (QuitWatchdog::setDiscardOnQuit, qt.cpp)
+    void discardPlaylistRecovery();
 
     bool acrylicActive() const;
     void setAcrylicActive(bool newAcrylicActive);
@@ -423,6 +419,7 @@ public:
     // saved one back: the custom color editor's Escape (RdAccentEditor.qml)
     Q_INVOKABLE QString accentOption() const { return QString::fromUtf8(m_accentOption); }
     Q_INVOKABLE void restoreAccentOption(const QString& option);
+    bool videoSurfaceCanHaveFractionalPosition() const;
 
     Q_INVOKABLE QVariant settingValue(const QString &key, const QVariant &defaultValue) const;
     Q_INVOKABLE void setSettingValue(const QString &key, const QVariant &value);
@@ -578,6 +575,7 @@ protected:
 
 private:
     void holdFirstStartPlayback();
+    std::unique_ptr<ModelRecoveryAgent> m_playlistRecoveryAgent;
 
 public slots:
     void toggleToolbarMenu();
@@ -641,7 +639,7 @@ signals:
     void trackPopupRequested(const QString& name, const QUrl& artwork, const QRect& area, int duration);
     // redesign: a mouse move without a pressed button over the interface window, in scene
     // (window) coordinates, seen by InterfaceWindowHandler before Qt Quick delivers it; the
-    // player's bars wake up from it (Player.qml, Decision 30)
+    // player's bars wake up from it (PlayerView.qml, Decision 30)
     void intfMouseMoved(QPointF scenePos);
     // redesign: the mouse left the interface window
     void intfMouseLeft();

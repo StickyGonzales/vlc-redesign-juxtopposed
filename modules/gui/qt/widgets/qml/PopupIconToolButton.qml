@@ -19,8 +19,8 @@
  *****************************************************************************/
 
 import QtQuick
-// upstream dropped QtQuick.Controls (fc71047387) but this file still uses its types
-import QtQuick.Controls.Basic
+import QtQuick.Templates as T
+
 import VLC.MainInterface
 import VLC.Style
 import VLC.Widgets as Widgets
@@ -62,8 +62,13 @@ Widgets.IconToolButton {
 
     // Children
 
-    Popup {
+    T.Popup {
         id: popup
+
+        implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                                implicitContentWidth + leftPadding + rightPadding)
+        implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                                 implicitContentHeight + topPadding + bottomPadding)
 
         x: (parent.width - width) / 2
         y: -height - VLCStyle.margin_xxxsmall

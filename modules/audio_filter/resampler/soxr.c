@@ -273,8 +273,7 @@ SoXR_Resample( filter_t *p_filter, soxr_t soxr, block_t *p_in, size_t i_olen )
     if( error )
     {
         msg_Err( p_filter, "soxr_process failed: %s", soxr_strerror( error ) );
-        block_Release( p_out );
-        goto error;
+        goto drop;
     }
     if( unlikely( i_idone < i_ilen ) )
         msg_Err( p_filter, "lost %zd of %zd input frames",
@@ -297,11 +296,23 @@ SoXR_Resample( filter_t *p_filter, soxr_t soxr, block_t *p_in, size_t i_olen )
         p_sys->last_soxr = NULL;
     }
 
-error:
+    /* SoXR can keep all the input frames to fill its filter: never return an
+     * empty block */
+    if( i_odone == 0 )
+        goto drop;
+
     if( p_in && p_out != p_in )
         block_Release( p_in );
 
     return p_out;
+
+drop:
+    if( p_out != p_in )
+        block_Release( p_out );
+error:
+    if( p_in )
+        block_Release( p_in );
+    return NULL;
 }
 
 static size_t
@@ -361,11 +372,9 @@ Resample( filter_t *p_filter, block_t *p_in )
     {
         assert( !p_out );
         p_out = SoXR_Resample( p_filter, soxr, p_in, i_olen );
-        if( !p_out )
-            goto error;
     }
 
-    if( p_flushed_out )
+    if( p_flushed_out && p_out )
     {
         /* Prepend the flushed output data to p_out */
         const unsigned i_nb_samples = p_flushed_out->i_nb_samples
@@ -374,14 +383,19 @@ Resample( filter_t *p_filter, block_t *p_in )
         block_ChainAppend( &p_flushed_out, p_out );
         p_out = block_ChainGather( p_flushed_out );
         if( !p_out )
-            goto error;
+        {
+            block_ChainRelease( p_flushed_out );
+            return NULL;
+        }
         p_out->i_nb_samples = i_nb_samples;
     }
+    else if( p_flushed_out )
+        p_out = p_flushed_out;
+
+    if( !p_out )
+        return NULL;
     p_out->i_pts = i_pts;
     return p_out;
-error:
-    block_Release( p_in );
-    return NULL;
 }
 
 static block_t *

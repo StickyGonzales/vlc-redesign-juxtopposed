@@ -44,6 +44,8 @@ extern NSString * const VLCLibraryModelFavoriteArtistsListReset;
 extern NSString * const VLCLibraryModelFavoriteGenresListReset;
 extern NSString * const VLCLibraryModelRecentsMediaListReset;
 extern NSString * const VLCLibraryModelRecentAudioMediaListReset;
+extern NSString * const VLCLibraryModelRecentlyAddedVideoMediaListReset;
+extern NSString * const VLCLibraryModelRecentlyAddedAudioMediaListReset;
 extern NSString * const VLCLibraryModelListOfShowsReset;
 extern NSString * const VLCLibraryModelListOfMoviesReset;
 extern NSString * const VLCLibraryModelListOfGroupsReset;
@@ -59,6 +61,7 @@ extern NSString * const VLCLibraryModelGroupDeleted;
 extern NSString * const VLCLibraryModelPlaylistDeleted;
 extern NSString * const VLCLibraryModelShowDeleted;
 
+extern NSString * const VLCLibraryModelMediaItemUpdated;
 extern NSString * const VLCLibraryModelAudioMediaItemUpdated;
 extern NSString * const VLCLibraryModelVideoMediaItemUpdated;
 extern NSString * const VLCLibraryModelRecentsMediaItemUpdated;
@@ -105,6 +108,10 @@ extern NSString * const VLCLibraryModelDiscoveryFailed;
 @property (readwrite) uint32_t recentAudioMediaLimit;
 @property (readonly) size_t numberOfRecentAudioMedia;
 @property (readonly) NSArray <VLCMediaLibraryMediaItem *> *listOfRecentAudioMedia;
+
+// The latest 20 additions of each type, newest first, following the current search filter.
+@property (readonly) NSArray <VLCMediaLibraryMediaItem *> *listOfRecentlyAddedVideoMedia;
+@property (readonly) NSArray <VLCMediaLibraryMediaItem *> *listOfRecentlyAddedAudioMedia;
 
 @property (readonly) size_t numberOfShows;
 @property (readonly) NSArray <VLCMediaLibraryShow *> *listOfShows;

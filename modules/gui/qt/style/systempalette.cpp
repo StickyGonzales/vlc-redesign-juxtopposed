@@ -455,13 +455,11 @@ void SystemPalette::applyRdColors()
     else if (m_ctx)
     {
         char* accentColor = var_InheritString(m_ctx->getIntf(), "qt-accent-color");
-#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
         if (accentColor && !strcmp(accentColor, "system"))
         {
             assert(qApp);
             main = qApp->palette().color(QPalette::Normal, QPalette::Accent);
         }
-#endif
         free(accentColor);
     }
 

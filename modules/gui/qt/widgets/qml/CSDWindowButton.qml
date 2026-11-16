@@ -95,4 +95,9 @@ T.Button {
             color: control.color
         }
     }
+
+    // register this button on the C++ side so WM_NCHITTEST can
+    // find it; unregistration happens automatically when the item
+    // is destroyed
+    Component.onCompleted: modelData.registerItem(control)
 }

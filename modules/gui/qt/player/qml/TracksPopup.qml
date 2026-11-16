@@ -40,7 +40,7 @@ Item {
     readonly property string tab: RdPanels.tracksOpen ? RdPanels.current : "subtitles"
     readonly property SystemPalette rdPalette: VLCStyle.palette
 
-    // room between the top bar and the 20 px margin above the control bar (Player.qml); the
+    // room between the top bar and the 20 px margin above the control bar (PlayerView.qml); the
     // popup keeps 20 px below the top bar like the sidebars, so the Figma height (524) shrinks
     // to fit small windows
     property real maximumHeight: VLCStyle.dp(524, VLCStyle.scale) + _topGap

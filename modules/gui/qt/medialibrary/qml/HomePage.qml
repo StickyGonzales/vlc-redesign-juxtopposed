@@ -92,8 +92,7 @@ Widgets.PageExt {
         // FIXME: make the media rows positioners consider the flickable margins when adjusting flickable `contentY`.
         bottomMargin: VLCStyle.margin_large
 
-        pixelAligned: (MainCtx.qtVersion() >= MainCtx.qtVersionCheck(6, 2, 5)) // QTBUG-103996
-                      && (Screen.pixelDensity >= VLCStyle.highPixelDensityThreshold) // no need for sub-pixel alignment with high pixel density
+        pixelAligned: (Screen.pixelDensity >= VLCStyle.highPixelDensityThreshold) // no need for sub-pixel alignment with high pixel density
 
         property bool _hasMedias: true
 
@@ -237,6 +236,8 @@ Widgets.PageExt {
                     sortOrder: root.sort.order
                     searchPattern: root.search.pattern
 
+                    chunkSize: VLCStyle.gridView_maxNbItemPerRow_wide
+
                     // FIXME: Make limit 0 load no items, instead of loading all items.
                     limit: MainCtx.gridView ? Math.max(continueWatchingRow.currentItem?.nbItemPerRow ?? null, 1) : 5
                 }
@@ -319,6 +320,8 @@ Widgets.PageExt {
                     sortOrder: root.sort.order
                     searchPattern: root.search.pattern
 
+                    chunkSize: VLCStyle.gridView_maxNbItemPerRow_square
+
                     // FIXME: Make limit 0 load no items, instead of loading all items.
                     limit: MainCtx.gridView ? Math.max(favoritesRow.currentItem?.nbItemPerRow ?? null, 1) : 5
                 }
@@ -392,6 +395,8 @@ Widgets.PageExt {
                     sortCriteria: root.sort.criteria || "insertion"
                     sortOrder: root.sort.order
                     searchPattern: root.search.pattern
+
+                    chunkSize: VLCStyle.gridView_maxNbItemPerRow_wide
 
                     // FIXME: Make limit 0 load no items, instead of loading all items.
                     limit: MainCtx.gridView ? Math.max(newVideoRow.currentItem?.nbItemPerRow ?? null, 1) : 5
@@ -472,6 +477,8 @@ Widgets.PageExt {
                     sortCriteria: root.sort.criteria || "insertion"
                     sortOrder: root.sort.order
                     searchPattern: root.search.pattern
+
+                    chunkSize: VLCStyle.gridView_maxNbItemPerRow_square
 
                     // FIXME: Make limit 0 load no items, instead of loading all items.
                     limit: MainCtx.gridView ? Math.max(newMusicRow.currentItem?.nbItemPerRow ?? null, 1) : 5

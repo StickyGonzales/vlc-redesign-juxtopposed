@@ -51,14 +51,14 @@ QtObject {
     property real updateHeight: 0
     property real updateWidth: 0
 
-    // set by Player.qml while the player view exists: the center line's offset from the window's
+    // set by PlayerView.qml while the player view exists: the center line's offset from the window's
     // center (the compact library on the left, an open panel on the right) and the widest a
     // notice may be there; outside the player the notices center over the whole window
     property bool playerShown: false
     property real axisOffset: 0
     property real playerRoom: 0
 
-    // set by Player.qml while the Up Next card shows: its left edge from the window's left
+    // set by PlayerView.qml while the Up Next card shows: its left edge from the window's left
     property real upNextLeft: 0
 
     // the frame around the interface inside the window (client-side decorations, windowed)

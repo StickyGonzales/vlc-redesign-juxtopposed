@@ -127,7 +127,7 @@ FocusScope {
         TextureProviderIndirection {
             id: textureProviderIndirection
 
-            // Like in `Player.qml`, this is used because when the source is
+            // Like in `PlayerView.qml`, this is used because when the source is
             // mipmapped, sometimes it can not be sampled. This is considered
             // a Qt bug, but `QSGTextureView` has a workaround for that. So,
             // we can have an indirection here through `TextureProviderIndirection`.

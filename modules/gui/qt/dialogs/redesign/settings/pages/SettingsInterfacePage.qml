@@ -273,7 +273,7 @@ SettingsPage {
                 // RdEndlessSlider with its limits at the range is a plain RdSlider that also
                 // takes a value an accessibility tool writes (UI Automation's RangeValue SetValue)
                 Widgets.RdEndlessSlider {
-                    // distance from the edge, in dp (Player.qml); Medium is the default
+                    // distance from the edge, in dp (PlayerView.qml); Medium is the default
                     readonly property var distances: [16, 40, 96]
 
                     implicitWidth: VLCStyle.dp(320)

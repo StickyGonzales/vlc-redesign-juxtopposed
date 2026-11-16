@@ -34,7 +34,7 @@
 #import "library/audio-library/VLCLibraryAudioViewController.h"
 
 #import "library/home-library/VLCLibraryHomeViewStackViewController.h"
-#import "library/home-library/VLCLibraryHomeViewVideoContainerViewDataSource.h"
+#import "library/home-library/VLCLibraryHomeViewMediaContainerViewDataSource.h"
 
 #import "library/search-library/VLCLibrarySearchViewController.h"
 
@@ -104,6 +104,14 @@
                                selector:@selector(librarySearchFieldDidChange:)
                                    name:NSControlTextDidChangeNotification
                                  object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(libraryModelUpdated:)
+                                   name:VLCLibraryBookmarkedLocationsChanged
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(libraryModelUpdated:)
+                                   name:NSUserDefaultsDidChangeNotification
+                                 object:nil];
     }
 
     return self;
@@ -166,9 +174,17 @@
     return _internalPlaceholderImageViewSizeConstraints;
 }
 
+- (BOOL)homeContentPresent
+{
+    VLCLibraryModel * const model = VLCMain.sharedInstance.libraryController.libraryModel;
+    return model.numberOfVideoMedia > 0 ||
+           model.numberOfAudioMedia > 0 ||
+           [NSUserDefaults.standardUserDefaults stringArrayForKey:VLCLibraryBookmarkedLocationsKey].count > 0;
+}
+
 - (void)updatePresentedView
 {
-    if (VLCMain.sharedInstance.libraryController.libraryModel.numberOfVideoMedia == 0) { // empty library
+    if (![self homeContentPresent]) {
         [self presentPlaceholderHomeLibraryView];
     } else if (self.isShowingSearchOverlay) {
         [self presentSearchOverlay];
@@ -206,25 +222,29 @@
 {
     [self.searchViewController presentInContainer:self.libraryTargetView];
     self.isShowingSearchOverlay = YES;
+    [self.libraryWindow updateGridVsListViewModeSegmentedControl];
     [self.libraryWindow updateToolbarDisplayFlags];
 }
 
 - (void)libraryModelUpdated:(NSNotification *)aNotification
 {
     NSParameterAssert(aNotification);
-    VLCLibraryModel * const model = VLCMain.sharedInstance.libraryController.libraryModel;
-    const NSUInteger videoCount = model.numberOfVideoMedia;
-    const NSUInteger audioCount = model.numberOfAudioMedia;
+    if (!NSThread.isMainThread) {
+        __weak typeof(self) weakSelf = self;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [weakSelf libraryModelUpdated:aNotification];
+        });
+        return;
+    }
+    const BOOL shouldPresentHome = [self homeContentPresent];
 
     NSArray<NSView *> * const targetViewSubViews = self.libraryTargetView.subviews;
     const BOOL emptyLibraryViewPresent = [targetViewSubViews containsObject:self.emptyLibraryView];
     const BOOL homeLibraryViewPresent = [targetViewSubViews containsObject:self.homeLibraryView];
     if (self.libraryWindow.librarySegmentType == VLCLibraryHomeSegmentType &&
         !self.isShowingSearchOverlay &&
-        ((videoCount == 0 && !emptyLibraryViewPresent) ||
-         (videoCount > 0 && !homeLibraryViewPresent) ||
-         (audioCount == 0 && !emptyLibraryViewPresent) ||
-         (audioCount > 0 && !homeLibraryViewPresent)) &&
+        ((shouldPresentHome && !homeLibraryViewPresent) ||
+         (!shouldPresentHome && !emptyLibraryViewPresent)) &&
         !self.libraryWindow.embeddedVideoPlaybackActive) {
 
         [self updatePresentedView];
@@ -277,6 +297,7 @@
     [self.searchViewController dismissFromContainer];
     self.isShowingSearchOverlay = NO;
     [VLCMain.sharedInstance.libraryController filterByString:@""];
+    [self.libraryWindow updateGridVsListViewModeSegmentedControl];
     [self.libraryWindow updateToolbarDisplayFlags];
 
     // Re-present the home content (or placeholder) in the target view.
@@ -344,6 +365,7 @@
         VLCLibraryWindowPersistentPreferences.sharedInstance;
     if (self.isShowingSearchOverlay) {
         prefs.searchLibraryViewMode = viewMode;
+        [self.searchViewController presentInContainer:self.libraryTargetView];
     } else {
         prefs.homeLibraryViewMode = viewMode;
     }

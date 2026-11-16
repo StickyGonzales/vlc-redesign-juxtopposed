@@ -40,6 +40,9 @@ export VLC_PATH="$SHIM:$QT_ROOT/bin"
 CCACHE_BIN="$(command -v ccache || true)"
 # shellcheck source=/dev/null
 source "$ROOT/extras/package/macosx/env.build.sh" none
+# upstream's env.build.sh reads VLC_HOST_OS (set by extras/package/apple/build.sh, unset by the
+# macosx one); this script runs with set -u
+export VLC_HOST_OS=macosx
 SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
 export SDKROOT
 BUILD_TRIPLET="$(vlcGetBuildTriplet)"

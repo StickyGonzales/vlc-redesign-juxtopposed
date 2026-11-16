@@ -22,10 +22,11 @@
 #![allow(non_snake_case)]
 
 use std::{
-    ffi::{c_char, c_double, c_void},
+    ffi::{c_char, c_double},
     ptr::NonNull,
 };
 
+use super::Trace;
 use crate::object::Object;
 
 pub type vlc_tick = i64;
@@ -70,17 +71,17 @@ pub struct vlc_tracer {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct vlc_tracer_operations {
-    pub trace: extern "C" fn(opaque: *const c_void, ts: vlc_tick, trace: NonNull<vlc_tracer_trace>),
-    pub destroy: extern "C" fn(*mut c_void),
+pub struct vlc_tracer_operations<T> {
+    pub trace: extern "C" fn(opaque: &T, ts: vlc_tick, trace: &Trace),
+    pub destroy: extern "C" fn(Box<T>),
 }
 
 extern "C" {
     pub fn vlc_tracer_Create(parent: &Object, name: *const c_char) -> Option<NonNull<vlc_tracer>>;
+    pub fn vlc_tracer_Destroy(tracer: NonNull<vlc_tracer>); 
     pub fn vlc_tracer_TraceWithTs(
         tracer: NonNull<vlc_tracer>,
         tick: vlc_tick,
-        trace: NonNull<vlc_tracer_trace>,
+        trace: &Trace,
     );
 }

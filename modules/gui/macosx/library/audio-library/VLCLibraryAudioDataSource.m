@@ -27,7 +27,6 @@
 #import "extensions/NSView+VLCAdditions.h"
 
 #import "library/VLCInputItem.h"
-#import "library/VLCLibraryCarouselViewItemView.h"
 #import "library/VLCLibraryCollectionViewFlowLayout.h"
 #import "library/VLCLibraryCollectionViewItem.h"
 #import "library/VLCLibraryCollectionViewMediaItemListSupplementaryDetailView.h"
@@ -43,8 +42,6 @@
 #import "library/audio-library/VLCLibraryAllAudioGroupsMediaLibraryItem.h"
 #import "library/audio-library/VLCLibraryAudioGroupDataSource.h"
 #import "library/audio-library/VLCLibrarySongsTableViewSongPlayingTableCellView.h"
-
-#import "library/home-library/VLCLibraryHomeViewBaseCarouselContainerView.h"
 
 #import "main/VLCMain.h"
 
@@ -75,6 +72,7 @@ NSString * const VLCLibraryArtistSortDescriptorKey = @"VLCLibraryArtistSortDescr
 NSString * const VLCLibraryAlbumSortDescriptorKey = @"VLCLibraryAlbumSortDescriptorKey";
 NSString * const VLCLibraryPlayCountSortDescriptorKey = @"VLCLibraryPlayCountSortDescriptorKey";
 NSString * const VLCLibraryYearSortDescriptorKey = @"VLCLibraryYearSortDescriptorKey";
+NSString * const VLCLibraryRatingSortDescriptorKey = @"VLCLibraryRatingSortDescriptorKey";
 // TODO: Add sorting by genre
 
 NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification = @"VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification";
@@ -131,6 +129,7 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
     self = [super init];
     if(self) {
         _displayedCollectionUpdating = NO;
+        _collectionViewItemIdentifier = VLCLibraryCollectionViewItemIdentifier;
     }
 
     return self;
@@ -550,6 +549,9 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
     } else if (existingSortCriteria == VLC_ML_SORTING_RELEASEDATE) {
         return VLCLibraryYearSortDescriptorKey;
 
+    } else if (existingSortCriteria == VLC_ML_SORTING_RATING) {
+        return VLCLibraryRatingSortDescriptorKey;
+
     }
 
     return VLCLibraryTitleSortDescriptorKey;
@@ -705,8 +707,6 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
             NSAssert(self.songsTableView == nil || self.songsTableView.dataSource == self, @"Cannot reload a table view with a different data source");
             [self.songsTableView reloadData];
 
-            NSAssert(self.carouselView == nil || self.carouselView.dataSource == (id)self, @"Cannot reload a carousel view with a different data source");
-            [self.carouselView reloadData];
         }];
 
         if (selectedGridModeItem != nil) {
@@ -770,7 +770,6 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
     // Don't update gridModeListSelectionCollectionView, let its VLCLibraryAudioGroupDataSource do it.
     // Also don't update collectionSelectionTableView, as this will only show artists/genres/albums
 
-    [self.carouselView reloadData];
 }
 
 - (void)deleteDataForMediaLibraryItem:(const id<VLCMediaLibraryItemProtocol>)item
@@ -789,7 +788,6 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
             [self.collectionView deleteItemsAtIndexPaths:[NSSet setWithObject:indexPath]];
         } completionHandler:^(BOOL __unused finished) {
             [self.songsTableView removeRowsAtIndexes:rowIndexSet withAnimation:NSTableViewAnimationSlideUp];
-            [self.carouselView reloadData];
         }];
     }];
 }
@@ -965,6 +963,9 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
     } else if ([sortDescriptorKey isEqualToString:VLCLibraryYearSortDescriptorKey]) {
         return VLC_ML_SORTING_RELEASEDATE;
 
+    } else if ([sortDescriptorKey isEqualToString:VLCLibraryRatingSortDescriptorKey]) {
+        return VLC_ML_SORTING_RATING;
+
     }
 
     return VLC_ML_SORTING_DEFAULT;
@@ -1024,9 +1025,10 @@ NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification
 - (NSCollectionViewItem *)collectionView:(NSCollectionView *)collectionView
      itemForRepresentedObjectAtIndexPath:(NSIndexPath *)indexPath
 {
-    VLCLibraryCollectionViewItem * const viewItem =
-        [collectionView makeItemWithIdentifier:VLCLibraryCollectionViewItemIdentifier
-                                  forIndexPath:indexPath];
+    NSCollectionViewItem<VLCLibraryRepresentedItemCollectionViewItem> * const viewItem =
+        (NSCollectionViewItem<VLCLibraryRepresentedItemCollectionViewItem> *)[collectionView
+            makeItemWithIdentifier:self.collectionViewItemIdentifier
+                       forIndexPath:indexPath];
     const id<VLCMediaLibraryItemProtocol> actualItem = self.displayedCollection[indexPath.item];
     VLCLibraryRepresentedItem * const representedItem = [[VLCLibraryRepresentedItem alloc] initWithItem:actualItem parentType:_currentParentType];
 
@@ -1100,31 +1102,6 @@ viewForSupplementaryElementOfKind:(NSCollectionViewSupplementaryElementKind)kind
 
     return [NSIndexPath indexPathForItem:libraryItemRow inSection:0];
 }
-
-// pragma mark: iCarouselDataSource methods
-- (NSInteger)numberOfItemsInCarousel:(iCarousel *)carousel
-{
-    return self.displayedCollection.count;
-}
-
-- (NSView *)carousel:(iCarousel *)carousel viewForItemAtIndex:(NSInteger)index reusingView:(NSView *)view
-{
-    VLCLibraryCarouselViewItemView *carouselItemView = (VLCLibraryCarouselViewItemView *)view;
-    if (carouselItemView == nil) {
-        const NSRect itemFrame = NSMakeRect(0,
-                                            0,
-                                            VLCUIUnits.carouselViewItemViewHeight,
-                                            VLCUIUnits.carouselViewItemViewHeight);
-        carouselItemView = [VLCLibraryCarouselViewItemView fromNibWithOwner:self];
-        carouselItemView.frame = itemFrame;
-    }
-
-    const id<VLCMediaLibraryItemProtocol> libraryItem = [self libraryItemAtRow:index forTableView:nil];
-    VLCLibraryRepresentedItem * const representedItem = [[VLCLibraryRepresentedItem alloc] initWithItem:libraryItem
-                                                                                             parentType:self.currentParentType];
-    carouselItemView.representedItem = representedItem;
-    return carouselItemView;
- }
 
 - (NSArray<VLCLibraryRepresentedItem *> *)representedItemsAtIndexPaths:(NSSet<NSIndexPath *> *const)indexPaths
                                                      forCollectionView:(NSCollectionView *)collectionView

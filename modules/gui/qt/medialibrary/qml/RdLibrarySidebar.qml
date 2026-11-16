@@ -21,7 +21,7 @@
 // padding 20 and gap 17, a Divider/Dim line above the rows; Player.png, Player - Music-1.png).
 // The user never has to leave the video (11:41).
 //
-// Hosted by the player page (Player.qml, PC session): docked on the left between the top bar and
+// Hosted by the player page (PlayerView.qml, PC session): docked on the left between the top bar and
 // the control bar, the video area to its right; opened and closed by the top bar's sidebar
 // toggle and folder chip with a 208 ms "slow" animation (F-16). See LIBRARY_NOTES.md.
 import QtQuick

@@ -52,13 +52,36 @@ extern NSString * const VLCLibraryCollectionViewItemAdjustmentKey;
 
 // Note that these values are not necessarily linked to the layout defined in the .xib files.
 // If the spacing in the layout is changed you will want to change these values too.
+@property (class, readonly) const CGFloat extraLargeSpacing;
 @property (class, readonly) const CGFloat largeSpacing;
 @property (class, readonly) const CGFloat mediumSpacing;
 @property (class, readonly) const CGFloat smallSpacing;
+@property (class, readonly) const CGFloat extraSmallSpacing;
+@property (class, readonly) const CGFloat compactControlPadding;
 
 @property (class, readonly) const CGFloat cornerRadius;
+@property (class, readonly) const CGFloat mediumCornerRadius;
+@property (class, readonly) const CGFloat largeCornerRadius;
 
 @property (class, readonly) const CGFloat borderThickness;
+@property (class, readonly) const CGFloat dashedBorderDashLength;
+@property (class, readonly) const CGFloat dashedBorderDashSpacing;
+
+@property (class, readonly) const CGFloat disabledOpacity;
+
+// Minimum mouse movement, in points, before a click becomes a drag.
+@property (class, readonly) const CGFloat mouseDragThreshold;
+
+// Common icon, illustration and action-button sizes.
+@property (class, readonly) const CGFloat smallIconSize;
+@property (class, readonly) const CGFloat mediumIconSize;
+@property (class, readonly) const CGFloat largeIconSize;
+@property (class, readonly) const CGFloat largeIconContainerSize;
+@property (class, readonly) const CGFloat largeIllustrationSize;
+@property (class, readonly) const CGFloat largeActionButtonHeight;
+@property (class, readonly) const CGFloat actionButtonCompactWidthThreshold;
+@property (class, readonly) const CGFloat actionButtonNarrowWidthThreshold;
+@property (class, readonly) const NSUInteger actionButtonMaximumTitleLines;
 
 @property (class, readonly) const CGFloat scrollBarSmallSideSize;
 
@@ -78,6 +101,8 @@ extern NSString * const VLCLibraryCollectionViewItemAdjustmentKey;
 @property (class, readonly) const NSSize defaultMediaItemCollectionViewItemSize;
 @property (class, readonly) const NSSize defaultVideoItemCollectionViewItemSize;
 
+@property (class, readonly) const NSSize libraryCompactCardSize;
+
 @property (class, readonly) const CGFloat dynamicCollectionViewItemMinimumWidth;
 @property (class, readonly) const CGFloat dynamicCollectionViewItemMaximumWidth;
 @property (class, readonly) const CGFloat collectionViewItemMinimumWidth;
@@ -88,6 +113,12 @@ extern NSString * const VLCLibraryCollectionViewItemAdjustmentKey;
 
 @property (class, readonly) const CGFloat carouselViewVideoItemViewWidth;
 @property (class, readonly) const CGFloat carouselViewItemViewHeight;
+
+// Home drop-area layout.
+@property (class, readonly) const CGFloat libraryHomeActionsMinimumHeight;
+@property (class, readonly) const CGFloat libraryHomeActionsNarrowWidthThreshold;
+@property (class, readonly) const CGFloat libraryHomeActionsGridWidthMultiplier;
+@property (class, readonly) const CGFloat libraryHomeActionsLogoWidthMultiplier;
 
 @property (class, readonly) const NSEdgeInsets libraryViewScrollViewContentInsets;
 @property (class, readonly) const NSEdgeInsets libraryViewScrollViewDetailListContentInsets;

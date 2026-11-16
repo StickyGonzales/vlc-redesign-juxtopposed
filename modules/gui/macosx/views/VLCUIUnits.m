@@ -41,6 +41,11 @@ NSString * const VLCLibraryCollectionViewItemAdjustmentKey = @"VLCLibraryCollect
 
 @implementation VLCUIUnits
 
++ (const CGFloat)extraLargeSpacing
+{
+    return self.largeSpacing + self.mediumSpacing;
+}
+
 + (const CGFloat)largeSpacing
 {
     return 16;
@@ -56,14 +61,99 @@ NSString * const VLCLibraryCollectionViewItemAdjustmentKey = @"VLCLibraryCollect
     return 4;
 }
 
++ (const CGFloat)extraSmallSpacing
+{
+    return self.smallSpacing / 2.;
+}
+
++ (const CGFloat)compactControlPadding
+{
+    return self.smallSpacing + self.extraSmallSpacing;
+}
+
 + (const CGFloat)cornerRadius
 {
     return 4.;
 }
 
++ (const CGFloat)mediumCornerRadius
+{
+    return 10.;
+}
+
++ (const CGFloat)largeCornerRadius
+{
+    return 12.;
+}
+
 + (const CGFloat)borderThickness
 {
     return 1.;
+}
+
++ (const CGFloat)dashedBorderDashLength
+{
+    return self.smallSpacing + self.extraSmallSpacing;
+}
+
++ (const CGFloat)dashedBorderDashSpacing
+{
+    return self.smallSpacing + self.borderThickness;
+}
+
++ (const CGFloat)disabledOpacity
+{
+    return .5;
+}
+
++ (const CGFloat)mouseDragThreshold
+{
+    return 3.;
+}
+
++ (const CGFloat)smallIconSize
+{
+    return self.largeSpacing;
+}
+
++ (const CGFloat)mediumIconSize
+{
+    return self.largeSpacing + self.smallSpacing;
+}
+
++ (const CGFloat)largeIconSize
+{
+    return 26.;
+}
+
++ (const CGFloat)largeIconContainerSize
+{
+    return 40.;
+}
+
++ (const CGFloat)largeIllustrationSize
+{
+    return self.largeSpacing * 4.;
+}
+
++ (const CGFloat)largeActionButtonHeight
+{
+    return 56.;
+}
+
++ (const CGFloat)actionButtonCompactWidthThreshold
+{
+    return 130.;
+}
+
++ (const CGFloat)actionButtonNarrowWidthThreshold
+{
+    return 160.;
+}
+
++ (const NSUInteger)actionButtonMaximumTitleLines
+{
+    return 2;
 }
 
 + (const CGFloat)scrollBarSmallSideSize
@@ -138,6 +228,11 @@ NSString * const VLCLibraryCollectionViewItemAdjustmentKey = @"VLCLibraryCollect
     return CGSizeMake(width, imageViewHeight + VLCUIUnits.mediaItemCollectionViewItemFooterTextHeight);
 }
 
++ (const NSSize)libraryCompactCardSize
+{
+    return NSMakeSize(200., 72.);
+}
+
 + (const CGFloat)videoItemCollectionViewImageViewAspectRatioMultiplier
 {
     return 10. / 16.;
@@ -173,6 +268,26 @@ NSString * const VLCLibraryCollectionViewItemAdjustmentKey = @"VLCLibraryCollect
 {
     const CGFloat inset = [self largeSpacing];
     return NSEdgeInsetsMake(inset, inset, inset, inset);
+}
+
++ (const CGFloat)libraryHomeActionsMinimumHeight
+{
+    return self.largeActionButtonHeight * 2. + self.mediumSpacing + self.largeSpacing * 2.;
+}
+
++ (const CGFloat)libraryHomeActionsNarrowWidthThreshold
+{
+    return 600.;
+}
+
++ (const CGFloat)libraryHomeActionsGridWidthMultiplier
+{
+    return 0.52;
+}
+
++ (const CGFloat)libraryHomeActionsLogoWidthMultiplier
+{
+    return 0.22;
 }
 
 + (const NSSize)adjustedCollectionViewItemSizeForCollectionView:(NSCollectionView *)collectionView

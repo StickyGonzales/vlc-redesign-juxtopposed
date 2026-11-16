@@ -18,7 +18,7 @@
 
 // redesign (W8.1b, the top bar's folder chip, Figma "Frame 12", video 11:24-11:31): the folder
 // icon and the name of the folder that holds the playing file (82 x 28 at least, radius 6, gap
-// 4); a click opens the compact library on that folder (Player.qml, RdPanels.libraryRequested).
+// 4); a click opens the compact library on that folder (PlayerView.qml, RdPanels.libraryRequested).
 // For media that are not in a folder it takes no room (the bar owns its visibility).
 import QtQuick
 import QtQuick.Templates as T

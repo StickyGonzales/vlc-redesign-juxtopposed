@@ -35,7 +35,7 @@ import VLC.Util
 FocusScope {
     id: resumePanel
 
-    // the widest the toast may get (Player.qml: the video area left of an open panel)
+    // the widest the toast may get (PlayerView.qml: the video area left of an open panel)
     property real maxWidth: Number.POSITIVE_INFINITY
 
     readonly property real _padLeft: VLCStyle.dp(20, VLCStyle.scale)
@@ -66,7 +66,7 @@ FocusScope {
     readonly property bool _stacked: _sideColumnWidth < Math.min(_textNaturalWidth, _textMinWidth)
                                      || _textNaturalWidth > 1.85 * _sideColumnWidth
 
-    // stacked, the toast is never narrower than its buttons (hidden below that, Player.qml)
+    // stacked, the toast is never narrower than its buttons (hidden below that, PlayerView.qml)
     readonly property real _textWidth: Math.max(0, Math.min(_textNaturalWidth, _textMaxWidth,
                                                             _stacked ? Math.max(maxWidth - _padLeft - _padRight, _buttonsWidth)
                                                                      : _sideColumnWidth))

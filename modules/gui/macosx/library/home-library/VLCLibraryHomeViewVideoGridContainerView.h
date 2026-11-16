@@ -22,23 +22,26 @@
 
 #import <Cocoa/Cocoa.h>
 
+#import "library/VLCLibraryItemPresentingCapable.h"
 #import "library/home-library/VLCLibraryHomeViewVideoContainerView.h"
-#import "library/video-library/VLCLibraryVideoGroupDescriptor.h"
+#import "library/VLCLibraryMediaGroupDescriptor.h"
 
 @class VLCSubScrollView;
 @class VLCLibraryCollectionView;
 @class VLCLibraryCollectionViewDelegate;
 @class VLCLibraryCollectionViewFlowLayout;
-@class VLCLibraryVideoCollectionViewGroupDescriptor;
+@class VLCLibraryHomeViewSectionHeaderView;
+@class VLCLibraryMediaCollectionViewGroupDescriptor;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface VLCLibraryHomeViewVideoGridContainerView : NSView<VLCLibraryHomeViewVideoContainerView>
+@interface VLCLibraryHomeViewVideoGridContainerView : NSView<VLCLibraryHomeViewVideoContainerView, VLCLibraryItemPresentingCapable>
 
 @property (readonly) VLCLibraryCollectionView *collectionView;
 @property (readonly) VLCLibraryCollectionViewDelegate *collectionViewDelegate;
 @property (readonly) VLCLibraryCollectionViewFlowLayout *collectionViewLayout;
 @property (readonly) VLCSubScrollView *scrollView;
+@property (readonly) VLCLibraryHomeViewSectionHeaderView *headerView;
 
 @end
 

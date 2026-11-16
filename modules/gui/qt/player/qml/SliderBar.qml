@@ -616,8 +616,7 @@ T.ProgressBar {
                 }
             }
 
-            onCentroidChanged: {
-                // FIXME: Qt 6.5 use xAxis.onActiveValueChanged in the DragHandler
+            xAxis.onActiveValueChanged: {
                 if (filterEvents) {
                     Qt.callLater(dragHandler.moveControl)
                 } else {
@@ -835,7 +834,8 @@ T.ProgressBar {
             // the animation flickered at the start of the bar on each seek of a drag. It shows
             // once the buffering stayed at 0 for a moment, never while the bar is dragged
             property bool loadingDisplay: false
-            readonly property bool _notStarted: Player.buffering === 0 && !dragHandler.active
+            // (upstream da8cf042aa: not without a media loaded)
+            readonly property bool _notStarted: Player.buffering === 0 && Player.isStarted && !dragHandler.active
 
             height: control.barHeight
             opacity: 0.4
@@ -929,7 +929,7 @@ T.ProgressBar {
                 },
                 State {
                     name: "playing from buffer"
-                    when: control.visible && !bufferRect.display
+                    when: control.visible && bufferRect.buffering && !bufferRect.display
                     PropertyChanges {
                         target: bufferRect
                         width: Player.buffering * parent.width

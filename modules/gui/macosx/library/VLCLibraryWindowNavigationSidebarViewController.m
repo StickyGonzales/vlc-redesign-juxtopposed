@@ -318,6 +318,11 @@ static NSString * const VLCLibrarySegmentCellIdentifier = @"VLCLibrarySegmentCel
         return;
     }
 
+    // Music is a grouping node. Match sidebar clicks by presenting Artists.
+    if (segmentType == VLCLibraryMusicSegmentType) {
+        segmentType = VLCLibraryArtistsMusicSubSegmentType;
+    }
+
     VLCLibrarySegment * const segment = [VLCLibrarySegment segmentWithSegmentType:segmentType];
     if (segment.mediaLibraryRequired &&
         VLCMain.sharedInstance.libraryController.libraryModel == nil) {
@@ -332,10 +337,6 @@ static NSString * const VLCLibrarySegmentCellIdentifier = @"VLCLibrarySegmentCel
     }
 
     self.libraryWindow.librarySegmentType = segmentType;
-
-    if (segmentType == VLCLibraryMusicSegmentType) {
-        [self.outlineView expandItem:[self nodeForSegmentType:VLCLibraryMusicSegmentType]];
-    }
 
     [self expandParentsOfNode:targetNode];
     const NSInteger segmentIndex = [self.outlineView rowForItem:targetNode];
@@ -425,7 +426,6 @@ static NSString * const VLCLibrarySegmentCellIdentifier = @"VLCLibrarySegmentCel
     } else if ([representedObject isKindOfClass:VLCLibrarySegmentBookmarkedLocation.class]) {
         VLCLibrarySegmentBookmarkedLocation * const bookmarkedLocation =
             (VLCLibrarySegmentBookmarkedLocation *)representedObject;
-        self.libraryWindow.librarySegmentType = bookmarkedLocation.segmentType;
         [self.libraryWindow browseFolderByMrl:bookmarkedLocation.mrl];
     } else if ([representedObject isKindOfClass:VLCMediaLibraryGroup.class]) {
         [self.libraryWindow presentLibraryItem:(VLCMediaLibraryGroup *)representedObject];
