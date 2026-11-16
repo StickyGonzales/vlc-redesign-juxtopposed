@@ -24,12 +24,12 @@ struct json_object;
 /**
  * Picks the format to play from a yt-dlp info dictionary.
  *
- * Formats without any audio or video (storyboards) are never picked.
- * Formats with both video and audio are preferred over formats whose content
- * is unknown, then over audio-only, then over video-only formats.
- * Among formats of the same kind, the highest height at or below
- * \p pref_height wins (the lowest above it if none fits), or the highest
- * height if \p pref_height is NaN; then the highest bit rate.
+ * Storyboards (formats without audio and video, such as YouTube's seek
+ * preview pictures) are never picked. Among the other formats the choice is
+ * VLC's own: formats with an audio bit rate first, then formats with a
+ * height; then the lowest height at or below \p pref_height (the lowest
+ * above it if none fits), or the highest height if \p pref_height is NaN;
+ * then the highest audio bit rate.
  *
  * \param entry info dictionary (one video)
  * \param pref_height preferred video height, or NaN for the best available

@@ -55,7 +55,8 @@ void json_parse_error(void *opaque, const char *msg)
 }
 
 /* Format lists in the layout of `yt-dlp --dump-single-json` (fields the
- * format choice does not read are left out; urls shortened). */
+ * format choice does not read are left out; urls shortened). Written from
+ * yt-dlp's field layout and the itags seen for issue #143, not captured. */
 
 /* A regular YouTube video in 2026: storyboards, audio only, video only (DASH
  * and HLS), and one format with both video and audio (18, 360p). */
@@ -224,40 +225,48 @@ static void check(const char *name, const char *doc, double pref,
     json_free(&obj);
 }
 
+/* Apart from storyboards, the choice is VLC 4's own (CompareFormats): formats
+ * with an audio bit rate first (YouTube's video-only formats have "abr": 0,
+ * the muxed 18 has none), the lowest height at or below the preferred one,
+ * the highest otherwise. These checks pin that behaviour. */
 int main(void)
 {
-    /* The issue: 240p picked the 48x27 storyboard (10 s still); Best
-     * available picked 270 (1080p, no sound). Only 18 has both. */
-    check("youtube", youtube, NAN, "18");
-    check("youtube", youtube, 144, "18");
-    check("youtube", youtube, 240, "18");
-    check("youtube", youtube, 360, "18");
-    check("youtube", youtube, 720, "18");
-    check("youtube", youtube, 1080, "18");
+    /* The issue: every preferred height picked the 48x27 storyboard sb3 (a
+     * still for 10 s, then EOF). Now VLC 4's choice without storyboards:
+     * 144p video-only HLS; Best available: 1080p video-only HLS (no sound,
+     * a known VLC 4 limit). */
+    check("youtube", youtube, NAN, "270");
+    check("youtube", youtube, 144, "269");
+    check("youtube", youtube, 240, "269");
+    check("youtube", youtube, 360, "269");
+    check("youtube", youtube, 720, "269");
+    check("youtube", youtube, 1080, "269");
 
-    /* With video and audio at every height: the chosen quality */
+    /* Storyboards next to muxed HLS are skipped; the rest is VLC 4's */
     check("hls_muxed", hls_muxed, NAN, "96");
-    check("hls_muxed", hls_muxed, 1080, "96");
-    check("hls_muxed", hls_muxed, 720, "95");
-    check("hls_muxed", hls_muxed, 600, "94");
-    check("hls_muxed", hls_muxed, 240, "92");
-    check("hls_muxed", hls_muxed, 100, "91");
-    check("hls_muxed", hls_muxed, 4320, "96");
+    check("hls_muxed", hls_muxed, 1080, "91");
+    check("hls_muxed", hls_muxed, 720, "91");
+    check("hls_muxed", hls_muxed, 240, "91");
+    check("hls_muxed", hls_muxed, 100, "96");
 
+    /* Nothing but storyboards: nothing is played (VLC 4 played sb0 / sb3) */
     check("storyboards", storyboards, NAN, NULL);
     check("storyboards", storyboards, 240, NULL);
 
-    /* No format with both: sound before a silent picture */
-    check("split", split, NAN, "140");
-    check("split", split, 240, "140");
+    /* Unchanged from VLC 4 where no storyboard is involved */
+    check("split", split, NAN, "137");
+    check("split", split, 240, "133");
 
+    /* VLC 4 picked the storyboard sb0 at 360 */
     check("video_only", video_only, NAN, "136");
     check("video_only", video_only, 360, "133");
-    check("video_only", video_only, 144, "133");
+    check("video_only", video_only, 144, "136");
 
+    /* A format with no audio and no video ("none" codecs) is skipped too:
+     * VLC 4 picked "preview" at 480 and 240 */
     check("generic", generic, NAN, "hd");
     check("generic", generic, 480, "sd");
-    check("generic", generic, 240, "sd");
+    check("generic", generic, 240, "hd");
 
     check("single", single, NAN, "(entry)");
     check("single", single, 240, "(entry)");

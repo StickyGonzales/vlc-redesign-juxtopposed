@@ -2,8 +2,8 @@ name: unit-tests
 
 # Cone's QtCore-only unit tests (.github/scripts/unit-tests.sh): the storage cleanup rules, the
 # background queue, the episode parser, the show tracks, the credits point and audio, the
-# on-screen message parser, also with ASan and UBSan; and the YT-DL format choice (C, VLC's JSON
-# parser, .github/scripts/ytdl-format-tests.sh). A few minutes on a plain runner, no VLC build.
+# on-screen message parser, also with ASan and UBSan; and the YT-DL format choice and the Windows
+# spawn quoting (C, .github/scripts/ytdl-tests.sh). A few minutes on a plain runner, no VLC build.
 on:
   workflow_dispatch:
   push:
@@ -22,7 +22,9 @@ on:
       - 'modules/demux/ytdl*'
       - 'modules/demux/json/**'
       - 'test/modules/demux/ytdl_formats.c'
-      - '.github/scripts/ytdl-format-tests.sh'
+      - 'src/win32/cmdline.*'
+      - 'test/src/win32/cmdline.c'
+      - '.github/scripts/ytdl-tests.sh'
       - '.github/workflows/unit-tests.yml'
 
 permissions:
@@ -44,8 +46,8 @@ jobs:
       # leak or undefined behaviour fails them (redesign/PERF_AUDIT_NOTES.md)
       - name: Build and run with sanitizers
         run: SANITIZE=1 .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests-sanitized"
-      # issue #143: the YT-DL extractor's format choice against saved yt-dlp format lists
-      - name: YT-DL format choice
-        run: .github/scripts/ytdl-format-tests.sh "$RUNNER_TEMP/ytdl-tests"
-      - name: YT-DL format choice with sanitizers
-        run: SANITIZE=1 .github/scripts/ytdl-format-tests.sh "$RUNNER_TEMP/ytdl-tests-sanitized"
+      # issue #143: the YT-DL format choice on saved yt-dlp format lists, the spawn quoting
+      - name: YT-DL format choice and spawn quoting
+        run: .github/scripts/ytdl-tests.sh "$RUNNER_TEMP/ytdl-tests"
+      - name: YT-DL format choice and spawn quoting with sanitizers
+        run: SANITIZE=1 .github/scripts/ytdl-tests.sh "$RUNNER_TEMP/ytdl-tests-sanitized"

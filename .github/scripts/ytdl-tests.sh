@@ -1,9 +1,12 @@
 #!/bin/sh
-# The YT-DL extractor's format choice (modules/demux/ytdl_formats.c, issue #143) against saved
-# yt-dlp format lists (test/modules/demux/ytdl_formats.c), built without a VLC build: VLC's
+# Issue #143, built without a VLC build:
+# - the Windows command line quoting of vlc_spawn() (src/win32/cmdline.c, pure C, so it runs
+#   here too), test/src/win32/cmdline.c;
+# - the YT-DL extractor's format choice (modules/demux/ytdl_formats.c) against saved yt-dlp
+#   format lists, test/modules/demux/ytdl_formats.c: VLC's
 # JSON parser is generated with bison and flex, and its libvlccore charset calls are
 # mapped to the C library's iconv. The same test also runs in VLC's own `make check` / `meson test`.
-# Used by unit-tests.yml; locally: .github/scripts/ytdl-format-tests.sh <out dir>
+# Used by unit-tests.yml; locally: .github/scripts/ytdl-tests.sh <out dir>
 # SANITIZE=1: with AddressSanitizer and UndefinedBehaviorSanitizer.
 set -eu
 OUT="${1:-/tmp/cone-ytdl-tests}"
@@ -55,3 +58,7 @@ cc $CFLAGS -o "$OUT/test_ytdl_formats" \
     "$J/json.c" "$OUT/grammar.c" "$OUT/lex.yy.c" "$OUT/stubs.c" -lm
 timeout 60 "$OUT/test_ytdl_formats"
 echo "ytdl format tests: pass"
+# shellcheck disable=SC2086
+cc $CFLAGS -Werror -o "$OUT/test_win32_cmdline" \
+    "$ROOT/test/src/win32/cmdline.c" "$ROOT/src/win32/cmdline.c"
+timeout 60 "$OUT/test_win32_cmdline"
