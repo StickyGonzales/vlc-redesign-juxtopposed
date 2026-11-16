@@ -196,3 +196,10 @@ Explorer or its shortcut**, not from PowerShell, for every step (that is the no-
   `format_id` VLC logs with the list (18 must be the only entry with both `vcodec` and
   `acodec` not "none").
 
+
+### Runs
+| Run | Head | Result |
+|---|---|---|
+| unit-tests 21 | 3d30b1d017 | green: the 25 ytdl format checks pass, also with ASan and UBSan |
+| build-windows 279 | 3d30b1d017 | green on attempt 2 (build and smoke). Attempt 1 built (ytdl.c with the stderr change compiles for Windows); its smoke failed one check, `installed-h264: quit: took 4.76 s (limit 3 s)` (a local H.264 file: ytdl only opens http / https links, so not this change); the one re-run of the smoke job passed |
+| build-linux 158 | 3d30b1d017 | green with smoke |
