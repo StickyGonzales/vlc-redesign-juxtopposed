@@ -221,3 +221,14 @@ Build: build-windows on wip/subtitle-language-first (the run named in the PR).
    results come first.
 6. **From Computer is unchanged.** Several files can be ticked and added, as before.
 7. **Cleanup.** Settings, Storage lists the downloaded subtitles and deletes them.
+
+## Retest 3 (PC session, 2026-11-16): passes
+
+build-windows 277 (a6229571a8), build-linux 157 and unit-tests 20 (test_rd_subtitle_picks: 100 checks) green; a fresh portable profile, Sintel, the real OpenSubtitles API (test key).
+1. **English chosen:** the search reads "Sintel"; "Sintel (2010).eng" is pre-ticked and first, both "sintel_en" next, "sintel.he" last and still listed. Save: one file, "Sintel (2010).eng.srt", listed and selected as "Sintel (2010) [English]".
+2. **Several at once:** both "sintel_en" ticked too (three ticked); Save: three files ("Sintel (2010).eng.srt", "sintel_en.srt", "sintel_en (2).srt"), listed "Sintel (2010) [English]", "sintel [English]", "sintel (2) [English]"; the topmost ticked one is shown.
+3. **Untick:** clicking the pre-ticked row unticks it, Save is disabled; ticking one enables it.
+4. **No duplicates:** a result downloaded before, saved again: still three files, that subtitle shown.
+5. **Hebrew:** the search runs again and lists Hebrew results only, one pre-ticked. (The language list opens upward with the chosen language as its last visible row; languages after it need a scroll.)
+6. **From Computer:** two files ticked, both added ("Sintel.pc-test-a [English]", "Sintel.pc-test-b [French]").
+7. **Cleanup:** there is no Settings > Storage page; Settings > Playback > Remembered shows > Forget all emptied the OpenSubtitles download folder.
