@@ -119,3 +119,13 @@ Linux smoke script; #144 round 2 and #145 not merged), build and Windows smoke g
 - **Square cover:** 613x613. **Recent newest first:** the four files in reverse play order.
 - **Settings > General:** the color wheel in the Custom cell.
 - **Quit:** window gone in 55-64 ms every time; the process ended in 0.31-0.51 s, the HEVC one in 1.46 s; no crash records.
+
+## Final build quick check, round 3 (PC session, 2026-11-16)
+
+build-windows #278 (2b7e2fccad6, wip/next-test with #144, #145 and #146 merged), build and Windows smoke green. Fresh
+portable profile:
+- **Playback:** H.264 + AAC, HEVC with two audio tracks (English, Japanese), an MP4 with an external SRT, a FLAC with a
+  cover: each plays. **Square cover:** 613x613. **Recent newest first.** **Settings:** the color wheel.
+- **Quit:** window gone in 64-125 ms, process ended in 0.47-0.64 s; no crash records.
+- **OpenSubtitles (#144), real API, Sintel, English:** "Sintel (2010).eng" pre-ticked, "sintel.he" last; a second result
+  ticked, Save: two files, listed "Sintel (2010) [English]" and "sintel [English]".
