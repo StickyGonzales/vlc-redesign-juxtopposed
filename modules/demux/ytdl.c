@@ -30,10 +30,13 @@
 #include <string.h>
 #include <unistd.h>         /* STDERR_FILENO */
 #ifdef _WIN32
+# include <fcntl.h>         /* O_WRONLY */
+# include <io.h>            /* _get_osfhandle */
 # include <processthreadsapi.h>
 #endif
 
 #include "json/json.h"
+#include "ytdl_formats.h"
 #include <vlc_common.h>
 #include <vlc_configuration.h>
 #include <vlc_demux.h>
@@ -78,10 +81,22 @@ static int ytdl_popen(pid_t *restrict pid, const char *argv[])
     if (vlc_pipe(fds))
         return -1;
 
-    int fdv[] = { -1, fds[1], STDERR_FILENO, -1 };
+    int errfd = STDERR_FILENO;
+#ifdef _WIN32
+    /* A process started from Explorer or a shortcut has no standard error:
+     * the child cannot inherit it, and vlc_spawnp() would fail. Give the
+     * child the null device instead (as src/win32/process.c checks). */
+    intptr_t h_err = _get_osfhandle(STDERR_FILENO);
+    if (h_err == -1 || h_err == -2)
+        errfd = vlc_open("\\\\.\\NUL", O_WRONLY);
+#endif
+
+    int fdv[] = { -1, fds[1], errfd, -1 };
     int val = vlc_spawnp(pid, argv[0], fdv, argv);
 
     vlc_close(fds[1]);
+    if (errfd != STDERR_FILENO && errfd != -1)
+        vlc_close(errfd);
 
     if (val) {
         vlc_close(fds[0]);
@@ -125,80 +140,24 @@ struct ytdl_playlist {
     stream_t *source;
 };
 
-static int CompareFormats(const struct json_object *f_a,
-                          const struct json_object *f_b, double pref_height)
-{
-    double h_a = json_get_num(f_a, "height");
-    double abr_a = json_get_num(f_a, "abr");
-    double h_b = json_get_num(f_b, "height");
-    double abr_b = json_get_num(f_b, "abr");
-
-    /* Prefer non-mute formats */
-    if (!isnan(abr_a) != !isnan(abr_b))
-        return isnan(abr_a) ? -1 : +1;
-
-    /* Prefer non-blind formats */
-    if (!isnan(h_a) != !isnan(h_b))
-        return isnan(h_a) ? -1 : +1;
-
-    if (islessequal(h_a, pref_height)) {
-        if (!islessequal(h_b, pref_height))
-            return +1;
-        if (h_a > h_b)
-            return -1;
-        if (h_a < h_b)
-            return +1;
-    } else {
-        if (islessequal(h_b, pref_height))
-            return -1;
-        if (isless(h_a, h_b))
-            return -1;
-        if (isgreater(h_a, h_b))
-            return +1;
-    }
-
-    if (isgreater(abr_a, abr_b))
-        return +1;
-    if (isgreater(abr_b, abr_a))
-        return -1;
-
-    return 0;
-}
-
 static const struct json_object *PickFormat(stream_t *s,
                                             const struct json_object *entry)
 {
-     const struct json_value *fmts = json_get(entry, "formats");
+    double pref_height = var_InheritInteger(s, "preferred-resolution");
 
-     if (fmts == NULL)
-         return entry; /* only one format */
-     if (fmts->type != JSON_ARRAY)
-         return NULL;
+    if (isless(pref_height, 0.))
+        pref_height = NAN;
 
-     const struct json_object *best_fmt = NULL;
-     double pref_height = var_InheritInteger(s, "preferred-resolution");
+    const struct json_object *fmt = ytdl_PickFormat(entry, pref_height);
 
-     if (isless(pref_height, 0.))
-         pref_height = NAN;
+    if (fmt != NULL && fmt != entry) {
+        const char *id = json_get_str(fmt, "format_id");
+        const char *name = json_get_str(fmt, "format");
 
-     for (size_t i = 0; i < fmts->array.size; i++) {
-         const struct json_value *v = &fmts->array.entries[i];
-
-         if (v->type != JSON_OBJECT)
-             continue;
-
-         const struct json_object *fmt = &v->object;
-
-         if (best_fmt == NULL) {
-             best_fmt = fmt;
-             continue;
-         }
-
-         if (CompareFormats(fmt, best_fmt, pref_height) > 0)
-              best_fmt = fmt;
-     }
-
-     return best_fmt;
+        msg_Dbg(s, "format %s picked (%s)", id != NULL ? id : "?",
+                name != NULL ? name : "?");
+    }
+    return fmt;
 }
 
 static const char *PickArt(const struct json_object *entry)

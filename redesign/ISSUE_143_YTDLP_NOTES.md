@@ -93,7 +93,7 @@ stable and nightly give the same 55 formats; preferred 240, 360 or 720 all pick 
 `270`. `-f 18` in a yt-dlp config does not help: the JSON still lists all formats and VLC ignores
 yt-dlp's choice.
 
-## What a fix would touch (for StickyGonzales; not done)
+## What a fix would touch (triage, 2026-11-15; done on wip/fix-ytdl-formats, see "The fix" below)
 
 All in VLC core, upstream code, so ideally reported or sent upstream first:
 - ytdl.c CompareFormats: skip storyboards (`format_note` "storyboard" / protocol `mhtml` /
@@ -123,3 +123,76 @@ All in VLC core, upstream code, so ideally reported or sent upstream first:
 >
 > Since this lives in VLC's own code, we've noted what a fix needs (skip the preview picture, pick
 > the right quality, keep the sound) and will update this issue when there's news.
+
+## The fix (branch wip/fix-ytdl-formats, 2026-11-16, core change approved by StickyGonzales, Decision 27)
+
+VLC core, upstream code, minimal: `modules/demux/ytdl.c` plus the format choice moved to
+`modules/demux/ytdl_formats.c` / `.h` so it can be unit tested. Nothing in Cone's interface changes.
+
+1. **Storyboards are never picked.** A format whose `format_note` is "storyboard", whose
+   protocol or extension is `mhtml`, or whose `vcodec` and `acodec` are both "none" is skipped.
+   If a video lists nothing else, the link fails instead of showing a still for 10 s.
+2. **A format with both video and audio wins, for every quality, Best available included.**
+   Audio and video are read from `acodec` / `vcodec` ("none" = absent), no longer from `abr`
+   (a video-only format with `abr: 0` counted as having sound). The order is: video and audio,
+   then formats with no codec information (generic sites), then audio only, then video only.
+   Within a kind: the highest height at or below the chosen quality, or the lowest above it when
+   none fits (the old code took the *lowest* at or below); Best available takes the highest;
+   then the highest bit rate (`tbr`, then `abr`); on a full tie yt-dlp's later (better) entry.
+3. **A start without a standard error can run yt-dlp.** On Windows, when Cone has no stderr
+   handle (`_get_osfhandle(2)` returns -1 or -2: a start from Explorer, the Start menu or a
+   shortcut), yt-dlp gets the null device as its stderr instead of our missing one, so
+   vlc_spawnp no longer fails with `cannot start ...: Unknown error`. The null device rather than
+   no handle at all, so yt-dlp (Python) still has a working stderr for its warnings.
+- **New debug line** for the retest: `ytdl debug: format 18 picked (18 - 640x360 (360p))`.
+
+**What it means on YouTube today:** YouTube offers video and audio together in one format only
+at 360p (itag 18); every higher quality is video-only, with the sound in a separate stream. So
+YouTube links now play **at 360p with sound** whatever the Preferred video quality, instead of
+a 10 s still (any quality set) or a silent 1080p (Best available). Sites and streams that offer
+muxed formats at several heights (YouTube live: HLS 91-96) get the chosen quality. HD with sound
+on YouTube needs VLC to play a separate video and audio URL together: a larger change, not in
+this fix (noted in the upstream draft).
+
+### Unit tests
+- `test/modules/demux/ytdl_formats.c`, in VLC's own `make check` / `meson test`
+  (test_modules_demux_ytdl_formats), and on CI in `unit-tests.yml` through
+  `.github/scripts/ytdl-format-tests.sh` (VLC's JSON parser built with bison and flex, no VLC
+  build; also with ASan and UBSan).
+- Format lists in the layout of `yt-dlp --dump-single-json` (the sandbox cannot reach YouTube,
+  so they were written from yt-dlp's field layout and the itags the triage saw, not captured):
+  a regular YouTube video (storyboards sb0-sb3, audio only 233/139/140/251, video only DASH and
+  HLS up to 1080p with `abr: 0`, the one combined 18); HLS with video and audio at every
+  height (91-96) next to video-only 1080p; storyboards only; video and audio only, split; video
+  only; a generic site without codec names; a single format without a list.
+- **25 checks.** All pass on the new code (also with ASan and UBSan). On the old code 20 fail, among them exactly the
+  triage's picks: 144p to 1080p give `sb3`, Best available gives `270`.
+
+### Windows retest (the PC; nothing of this could run in the sandbox)
+Build from this branch (build-windows, portable zip). yt-dlp.exe (stable) set as in the triage
+(the same way as in the triage: All Cone Settings > Input / Codecs > Stream filters > YT-DL > Path to YT-DLP). The log as in the triage (Tools > Messages
+at debug level, or the log file) shows the `ytdl` lines. Start Cone **by double-clicking Cone.exe in
+Explorer or its shortcut**, not from PowerShell, for every step (that is the no-stderr start).
+1. **A normal video, Best available (the default).**
+   - **Do:** Media > Open Network Stream, paste https://www.youtube.com/watch?v=z-g2huBo9qY, Play.
+   - **Expect:** it plays with sound past 10 s and past 1 min; Messages: `format 18 picked`, no
+     `cannot start`, no `i.ytimg.com/sb/` redirect, no `EOF reached` at 10 s. Before the fix: no
+     playback at all from a shortcut (`cannot start ... Unknown error`), or 1080p without sound.
+2. **The reporter's settings (240p).**
+   - **Do:** Settings > Playback > Preferred video quality 240p (network cache at its maximum,
+     GnuTLS "fastest" if you want the full recipe), the same link.
+   - **Expect:** plays with sound past 10 s; `format 18 picked`. Before: a still picture, 10 s.
+3. **A 1080p video, 1080p chosen.**
+   - **Do:** Preferred video quality 1080p, a 1080p YouTube video (any HD upload).
+   - **Expect:** plays with sound (360p, format 18, see above); no still, no silence.
+4. **Best available with that 1080p video.**
+   - **Do:** back to Best available, the same 1080p video.
+   - **Expect:** plays with sound, `format 18 picked`.
+5. **Started from a shortcut, then quit.**
+   - **Do:** with Cone started from its Start menu or desktop shortcut, open the link of step 1,
+     let it play 30 s, quit with Ctrl+Q.
+   - **Expect:** it plays (the stderr fix), and Cone closes normally.
+- Optional: `yt-dlp -J <link> > list.json` for the two videos, kept local, to compare the
+  `format_id` VLC logs with the list (18 must be the only entry with both `vcodec` and
+  `acodec` not "none").
+

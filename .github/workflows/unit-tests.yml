@@ -2,7 +2,8 @@ name: unit-tests
 
 # Cone's QtCore-only unit tests (.github/scripts/unit-tests.sh): the storage cleanup rules, the
 # background queue, the episode parser, the show tracks, the credits point and audio, the
-# on-screen message parser, also with ASan and UBSan. A few minutes on a plain runner, no VLC build.
+# on-screen message parser, also with ASan and UBSan; and the YT-DL format choice (C, VLC's JSON
+# parser, .github/scripts/ytdl-format-tests.sh). A few minutes on a plain runner, no VLC build.
 on:
   workflow_dispatch:
   push:
@@ -18,6 +19,10 @@ on:
       - 'modules/gui/qt/util/rd_reload_throttle.*'
       - 'modules/gui/qt/tests/test_rd_*'
       - '.github/scripts/unit-tests.sh'
+      - 'modules/demux/ytdl*'
+      - 'modules/demux/json/**'
+      - 'test/modules/demux/ytdl_formats.c'
+      - '.github/scripts/ytdl-format-tests.sh'
       - '.github/workflows/unit-tests.yml'
 
 permissions:
@@ -32,10 +37,15 @@ jobs:
       - name: Qt 6 for the tests
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends qt6-base-dev qt6-base-dev-tools g++ pkg-config
+          sudo apt-get install -y -q --no-install-recommends qt6-base-dev qt6-base-dev-tools g++ pkg-config bison flex
       - name: Build and run
         run: .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests"
       # the same tests with AddressSanitizer and UndefinedBehaviorSanitizer: a memory error, a
       # leak or undefined behaviour fails them (redesign/PERF_AUDIT_NOTES.md)
       - name: Build and run with sanitizers
         run: SANITIZE=1 .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests-sanitized"
+      # issue #143: the YT-DL extractor's format choice against saved yt-dlp format lists
+      - name: YT-DL format choice
+        run: .github/scripts/ytdl-format-tests.sh "$RUNNER_TEMP/ytdl-tests"
+      - name: YT-DL format choice with sanitizers
+        run: SANITIZE=1 .github/scripts/ytdl-format-tests.sh "$RUNNER_TEMP/ytdl-tests-sanitized"
