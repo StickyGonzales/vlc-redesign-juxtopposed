@@ -21,6 +21,11 @@
 MLRecentMediaModel::MLRecentMediaModel( QObject* parent )
     : MLMediaModel( parent )
 {
+    // redesign: the most recently played first (the library's Recent page, the Open Recent menu
+    // and the Ctrl+1..0 shortcuts). The media library sorts its history by the last play date,
+    // newest first only when no query parameters are given; the models always give them, ascending
+    // unless told otherwise, so Recent listed the oldest first (and a limit of 10 kept the oldest)
+    setSortOrder( Qt::DescendingOrder );
 }
 
 QVariant MLRecentMediaModel::itemRoleData(const MLItem *item , int role ) const

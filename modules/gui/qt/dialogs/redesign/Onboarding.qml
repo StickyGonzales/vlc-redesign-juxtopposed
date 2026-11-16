@@ -615,17 +615,19 @@ T.Popup {
                     height: width
                     radius: width / 2
                     color: swatch.swatchColor
-                    gradient: swatch.spectrum ? spectrumGradient : null
 
-                    Gradient {
-                        id: spectrumGradient
-
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "#E15032" }
-                        GradientStop { position: 0.25; color: "#C49E23" }
-                        GradientStop { position: 0.5; color: "#19A234" }
-                        GradientStop { position: 0.75; color: "#185DD3" }
-                        GradientStop { position: 1.0; color: "#F052B3" }
+                    // before a custom color exists: the color wheel (every hue around the centre),
+                    // congruent with the swatches beside it (StickyGonzales): round and the same
+                    // 40 px here, as the Settings one is square like the colors there. An image:
+                    // Qt Quick's gradients are linear only (and the earlier `gradient:` binding
+                    // that switched to null drew nothing at all in Qt 6.8)
+                    Image {
+                        anchors.fill: parent
+                        visible: swatch.spectrum
+                        source: "qrc:///rd/accent_wheel_round.png"
+                        sourceSize: Qt.size(160, 160)
+                        smooth: true
+                        mipmap: true
                     }
                 }
             }

@@ -226,6 +226,19 @@ void MLMediaModel::onVlcMlEvent(const MLEvent &event)
     }
 }
 
+// redesign: a thumbnail generated while the view shows the video reaches its row (the Recent list
+// kept the grey placeholder until the page was opened again: MLMediaModel had no handler, only
+// MLVideoModel and MLPlaylistModel had one)
+void MLMediaModel::thumbnailUpdated(const QModelIndex& idx, MLItem* item, const QString& mrl,
+                                    vlc_ml_thumbnail_status_t status)
+{
+    auto video = dynamic_cast<MLVideo *>(item);
+    if (!video)
+        return;
+    video->setSmallCover(status, mrl);
+    emit dataChanged(idx, idx, {MEDIA_SMALL_COVER});
+}
+
 void MLMediaModel::generateThumbnail(const MLVideo *video) const
 {
     assert(video != nullptr);

@@ -54,9 +54,15 @@ jobs:
     needs: guard
     uses: ./.github/workflows/build-windows.yml
     # build-windows.yml's job asks for contents: write (the test builds' draft pre-release, which a
-    # release build never touches); a called workflow gets no more than its caller grants
+    # release build never touches) and actions: read (SignPath fetches the unsigned files from this
+    # run's artifacts); a called workflow gets no more than its caller grants
     permissions:
       contents: write
+      actions: read
+    # release signing (CODE_SIGNING_POLICY.md, redesign/SUBMIT_TO_SIGNPATH.md): without this secret
+    # (or the SIGNPATH_ORGANIZATION_ID variable) the release is built unsigned, as before
+    secrets:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     with:
       brand: public
       release: true
@@ -97,7 +103,13 @@ jobs:
           RN_EXE: ${{ steps.package.outputs.exe }}
           RN_EXE_SHA256: ${{ steps.package.outputs.exe_sha256 }}
           RN_VLC_VERSION: ${{ steps.package.outputs.vlc_version }}
+          SIGNED: ${{ needs.build.outputs.signed }}
         run: |
+          if [ "$SIGNED" = true ]; then
+            export RN_SIGNING_NOTE='The installer and `Cone.exe` are code-signed: Windows names "SignPath Foundation" as the verified publisher instead of "Unknown publisher". SmartScreen may still warn for a while after a release, until the files are known: choose "More info", then "Run anyway".'
+          else
+            export RN_SIGNING_NOTE='The files are not code-signed yet, so Windows SmartScreen may warn the first time: choose "More info", then "Run anyway".'
+          fi
           python3 .github/scripts/release-notes.py .github/release/release-notes.md out/release-notes.md
           cat out/release-notes.md >> "$GITHUB_STEP_SUMMARY"
 

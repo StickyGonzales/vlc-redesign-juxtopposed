@@ -9,6 +9,12 @@
 #   (Ctrl+Q) ends the process; H.264: within 3 s and without the quit watchdog; HEVC: a quit the
 #   watchdog ends is a warning (known HEVC quit stall, STATUS.md), only a process that outlives the
 #   watchdog fails; the settings land in the zip's portable folder, none in %APPDATA%\Cone.
+#   portable zip, notices: a watched file opened with the update notice forced on shows the resume
+#   toast and the update notice stacked, not overlapping; the notice takes the toast's place after it.
+#   restore question (zip): Ctrl+Q while Cone asks to restore the playlist keeps it for the next
+#   start, which asks again; No clears it.
+#   cast discovery (zip and installed): the microdns and upnp plug-ins load and their renderer
+#   probes are in the plug-in cache (vlc-cache-gen on a copy for the zip, the installer's own cache).
 #   installer: a silent install, the installed Cone plays, silent reinstalls keep or leave out the
 #   desktop shortcut as it is, a silent uninstall removes it.
 # Software rendering on the runner: no picture quality or sound checks.
@@ -99,6 +105,36 @@ public static class RdSmoke {
     }, IntPtr.Zero);
     return best;
   }
+  public static bool Visible(IntPtr h) { return IsWindowVisible(h); }
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  // the process's visible top-level window whose title contains `part` (a Qt dialog's title is its
+  // window text), or zero
+  public static IntPtr FindWindowByTitle(int pid, string part) {
+    IntPtr found = IntPtr.Zero;
+    EnumWindows(delegate(IntPtr h, IntPtr l) {
+      uint p; GetWindowThreadProcessId(h, out p);
+      if (p != (uint)pid || !IsWindowVisible(h)) return true;
+      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, sb.Capacity);
+      if (sb.ToString().IndexOf(part, StringComparison.OrdinalIgnoreCase) < 0) return true;
+      found = h;
+      return false;
+    }, IntPtr.Zero);
+    return found;
+  }
+  // every top-level window of the process: "class 'title' visible", for the log when a check fails
+  public static string ListWindows(int pid) {
+    StringBuilder all = new StringBuilder();
+    EnumWindows(delegate(IntPtr h, IntPtr l) {
+      uint p; GetWindowThreadProcessId(h, out p);
+      if (p != (uint)pid) return true;
+      StringBuilder c = new StringBuilder(256); GetClassName(h, c, c.Capacity);
+      StringBuilder t = new StringBuilder(512); GetWindowText(h, t, t.Capacity);
+      all.Append(c).Append(" '").Append(t).Append("' ").Append(IsWindowVisible(h) ? "visible" : "hidden").Append("; ");
+      return true;
+    }, IntPtr.Zero);
+    return all.ToString();
+  }
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
 }
 "@
 [RdSmoke]::SetProcessDPIAware() | Out-Null
@@ -171,7 +207,7 @@ function Focus-Window($h) {
     }
     if ([RdSmoke]::GetForegroundWindow() -ne $h) { throw 'Cone is not the foreground window, no input sent' }
 }
-# a key with modifiers: virtual-key codes, e.g. Keys 0x11 0x50 = Ctrl+P. With the hardware scan
+# a key with modifiers: virtual-key codes, e.g. Keys @(0x11, 0x50) = Ctrl+P. With the hardware scan
 # code, as a keyboard sends it: Qt's shortcuts (Ctrl+P) ignore a key event without one
 function Keys([byte[]]$vks) {
     foreach ($k in $vks) { [RdSmoke]::keybd_event($k, [byte][RdSmoke]::MapVirtualKey($k, 0), 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
@@ -332,6 +368,23 @@ function Check-Pointer($s) {
 
 # starts Cone with a video and its subtitles; returns the process, its window and its log file
 # $firstStart: Cone's first start (the onboarding), as on a fresh install
+# a session the checks end by killing Cone (Stop-Cone) leaves its playlist saved for a restore, and
+# the next start would ask "The application closed abruptly ... restore the playlist?" in front of
+# its window: each start forgets that, except in the restore question's own checks
+$script:KeepRestore = $false
+function Clear-RestoreState([string]$exe) {
+    if ($script:KeepRestore) { return }
+    foreach ($ini in @((Join-Path (Split-Path -Parent $exe) 'portable\Cone\vlc-qt-interface.ini'),
+                       (Join-Path $env:APPDATA 'Cone\vlc-qt-interface.ini'))) {
+        if (-not (Test-Path $ini)) { continue }
+        $all = [IO.File]::ReadAllLines($ini)
+        $kept = [string[]]@($all | Where-Object { $_ -notmatch '^RecoveryFilePath=' })
+        if ($kept.Count -ne $all.Count) {
+            # UTF-8 without a BOM, as Qt writes it
+            [IO.File]::WriteAllLines($ini, $kept, (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+}
 function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [bool]$firstStart = $false) {
     $log = Join-Path $Out "cone-$tag.log"
     Remove-Item $log -ErrorAction SilentlyContinue
@@ -341,6 +394,7 @@ function Start-Cone([string]$exe, [string]$video, [string]$subs, [string]$tag, [
            '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet',
            "--sub-file=`"$subs`"", "`"$video`"")
     Log "start $exe $($a -join ' ')"
+    Clear-RestoreState $exe
     $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
     return @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
 }
@@ -772,6 +826,205 @@ function Check-PluginsLoad($s) {
     }
 }
 
+# cast discovery (STATUS #131 retest): VLC's two cast discoveries, microdns (mDNS, Chromecast) and
+# upnp, load on Windows and offer their "renderer probe", which the Render list asks for.
+# - Their plug-ins load: Cone started without its interface (-I dummy) and both discoveries asked
+#   for by name; VLC logs '... module matching "microdns": 1 candidates' when the DLL loaded.
+# - Their renderer probes register: vlc-cache-gen (what the installer and Settings > Rescan run)
+#   writes a plug-in cache naming each probe; on a copy of the plug-ins, so the zip keeps no cache
+#   (its other sessions load every plug-in, Check-PluginsLoad). $cache: read that installed cache
+#   instead (the installer ran vlc-cache-gen itself).
+function Check-CastDiscovery([string]$tag, [string]$exe, [string]$cache = '') {
+    Check "$tag`: cast discovery plug-ins load" {
+        $log = Join-Path $Out "cone-$tag-cast.log"
+        Remove-Item $log -ErrorAction SilentlyContinue
+        $a = @('-I', 'dummy', '--no-qt-privacy-ask', '--services-discovery=microdns,upnp',
+               '--file-logging', "--logfile=`"$log`"", '--log-verbose=2', 'vlc://quit')
+        Log "start $exe $($a -join ' ')"
+        Clear-RestoreState $exe
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+        # the end of this run is not what is checked (under wine it stays in the shutdown)
+        if (-not $p.WaitForExit(30000)) { Log "$tag cast run still running after 30 s: ended"; try { $p.Kill() } catch {}; $p.WaitForExit(5000) | Out-Null }
+        if (-not (Test-Path $log)) { throw "no log at $log" }
+        $found = @()
+        foreach ($name in 'microdns', 'upnp') {
+            $line = Select-String -Path $log -SimpleMatch "services_discovery module matching `"$name`"" | Select-Object -First 1
+            if (-not $line) { throw "Cone never looked for $name (log: $log)" }
+            if ($line.Line -notmatch ': 1 candidates') { throw "$name did not load: $($line.Line.Trim())" }
+            $found += $name
+        }
+        "$($found -join ' and ') load (1 candidate each)"
+    } | Out-Null
+    Check "$tag`: cast discovery renderer probes register" {
+        $dat = $cache
+        if (-not $dat) {
+            $gen = Join-Path (Split-Path -Parent $exe) 'vlc-cache-gen.exe'
+            if (-not (Test-Path $gen)) { throw "no $gen" }
+            $copy = Join-Path $Out "plugins-$tag"
+            Remove-Item $copy -Recurse -Force -ErrorAction SilentlyContinue
+            Copy-Item (Join-Path (Split-Path -Parent $exe) 'plugins') $copy -Recurse
+            Remove-Item (Join-Path $copy 'plugins.dat') -ErrorAction SilentlyContinue
+            $p = Start-Process -FilePath $gen -ArgumentList "`"$copy`"" -PassThru -Wait -WindowStyle Hidden
+            Log "vlc-cache-gen ended with exit code $($p.ExitCode)"
+            $dat = Join-Path $copy 'plugins.dat'
+        }
+        if (-not (Test-Path $dat)) { throw "no plug-in cache at $dat" }
+        $text = [Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($dat))
+        $probes = ([regex]::Matches($text, 'renderer probe')).Count
+        $missing = @('microdns_renderer', 'upnp_renderer' | Where-Object { -not $text.Contains($_) })
+        if ($missing.Count) { throw "the plug-in cache has no $($missing -join ', ') ($probes renderer probe entries)" }
+        if ($probes -lt 2) { throw "$probes renderer probe entries in the plug-in cache (expected 2)" }
+        "$probes renderer probe entries (microdns_renderer, upnp_renderer) in $(Split-Path -Leaf (Split-Path -Parent $dat))\plugins.dat"
+    } | Out-Null
+}
+
+# the restore question (redesign/RETEST_FOLLOWUPS_NOTES.md section 3): after a session that ended
+# abruptly, the next start asks "The application closed abruptly ... restore the playlist?". Ctrl+Q
+# while it asks ends Cone and keeps the saved playlist: the next start asks again (after #128 it did
+# not); No clears it, so the start after that does not ask
+function Find-RestoreQuestion([int]$procId, [int]$timeoutMs) {
+    # by its window title (Win32), then its UI Automation element (for the No button)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        $h = [RdSmoke]::FindWindowByTitle($procId, 'closed abruptly')
+        if ($h -ne [IntPtr]::Zero) { return [System.Windows.Automation.AutomationElement]::FromHandle($h) }
+        Start-Sleep -Milliseconds 250
+    } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
+    return $null
+}
+function No-RestoreQuestion($s, [string]$what) {
+    Shot "$($s.tag)-no-question"
+    "$what (Cone's windows: $([RdSmoke]::ListWindows($s.proc.Id)))"
+}
+function Quit-Window($s) {
+    if ($s.proc.HasExited) { return }
+    # the main window found again: Check-Window may have taken the question for it
+    $h = [RdSmoke]::FindMainWindow($s.proc.Id)
+    if ($h -eq [IntPtr]::Zero) { $h = $s.hwnd }
+    [RdSmoke]::PostMessage($h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CLOSE
+    if (-not $s.proc.WaitForExit(10000)) { try { Rc 'quit' | Out-Null } catch {}; $s.proc.WaitForExit(10000) | Out-Null }
+}
+function Check-RestoreQuestion([string]$exe) {
+    $video = Join-Path $Media 'test-h264.mp4'; $subs = Join-Path $Media 'test.srt'
+    $ini = Join-Path (Split-Path -Parent $exe) 'portable\Cone\vlc-qt-interface.ini'
+    try {
+        $s = Start-Cone $exe $video $subs 'restore-killed'
+        try {
+            if (-not (Check-Window $s)) { return }
+            # the playlist is saved for a restore 10 s after it last changed (on the runner it can
+            # take longer): killed once the saved file has content, as only then the next start asks
+            Check 'restore: the playlist is saved for a restore' {
+                $sw = [Diagnostics.Stopwatch]::StartNew()
+                while ($sw.Elapsed.TotalSeconds -lt 60) {
+                    $line = if (Test-Path $ini) { Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | Select-Object -First 1 } else { $null }
+                    if ($line) {
+                        $path = $line.Matches[0].Groups[1].Value.Trim('"')
+                        if ((Test-Path -LiteralPath $path) -and (Get-Item -LiteralPath $path).Length -gt 0) {
+                            return "saved after $([math]::Round($sw.Elapsed.TotalSeconds)) s ($((Get-Item -LiteralPath $path).Length) bytes)"
+                        }
+                    }
+                    Start-Sleep -Milliseconds 500
+                }
+                throw 'the playlist was not saved for a restore within 60 s'
+            } | Out-Null
+        } finally { Stop-Cone $s }   # ended abruptly
+        $script:KeepRestore = $true
+        # what the next start finds: the setting naming the saved playlist, and that file
+        $saved = $null
+        if (Test-Path $ini) { $saved = Select-String -Path $ini -Pattern '^RecoveryFilePath=(.*)$' | Select-Object -First 1 }
+        if ($saved) {
+            $path = $saved.Matches[0].Groups[1].Value.Trim('"')
+            $size = if (Test-Path -LiteralPath $path) { "$((Get-Item -LiteralPath $path).Length) bytes" } else { 'missing' }
+            Log "restore: saved playlist $path ($size)"
+        } else { Log "restore: no RecoveryFilePath in $ini after the killed session" }
+        $s = Start-Cone $exe $video $subs 'restore-quit'
+        try {
+            if (-not (Check-Window $s)) { return }
+            Check 'restore: Ctrl+Q while Cone asks to restore the playlist ends Cone' {
+                $q = Find-RestoreQuestion $s.proc.Id 15000
+                if (-not $q) { throw (No-RestoreQuestion $s 'no "The application closed abruptly" question after a killed session') }
+                Focus-Window ([IntPtr]$q.Current.NativeWindowHandle)
+                Keys @(0x11, 0x51)   # Ctrl+Q
+                if (-not $s.proc.WaitForExit(20000)) { throw 'Cone did not end within 20 s of Ctrl+Q' }
+                "ended (exit code $($s.proc.ExitCode))"
+            } | Out-Null
+        } finally { Stop-Cone $s }
+        $s = Start-Cone $exe $video $subs 'restore-again'
+        try {
+            if (-not (Check-Window $s)) { return }
+            Check 'restore: the question comes back after a quit without an answer' {
+                $q = Find-RestoreQuestion $s.proc.Id 15000
+                if (-not $q) { throw (No-RestoreQuestion $s 'no restore question at the start after Ctrl+Q without an answer (the quit dropped the saved playlist)') }
+                $name = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'No')
+                $no = $q.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $name)
+                if (-not $no) { throw 'the question has no "No" button' }
+                $no.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+                Start-Sleep -Seconds 1
+                if (Find-RestoreQuestion $s.proc.Id 500) { throw 'the question did not close on No' }
+                'asked again, answered No'
+            } | Out-Null
+            Quit-Window $s
+        } finally { Stop-Cone $s }
+        $s = Start-Cone $exe $video $subs 'restore-gone'
+        try {
+            if (-not (Check-Window $s)) { return }
+            Check 'restore: answering No clears the saved playlist' {
+                if (Find-RestoreQuestion $s.proc.Id 8000) { throw 'the restore question came back after it was answered No' }
+                'no question within 8 s'
+            } | Out-Null
+            Quit-Window $s
+        } finally { Stop-Cone $s }
+    } finally {
+        $script:KeepRestore = $false
+        # the question never stands in front of the later checks' windows
+        if (Test-Path $ini) {
+            # UTF-8 without a BOM, as Qt writes it (Windows PowerShell's Set-Content would write ANSI)
+            $lines = [string[]]@([IO.File]::ReadAllLines($ini) | Where-Object { $_ -notmatch '^RecoveryFilePath=' })
+            [IO.File]::WriteAllLines($ini, $lines, (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+}
+
+# the quit feels instant (redesign/QUIT_INSTANT_NOTES.md): closed like the window's close button (a
+# WM_CLOSE, no keyboard focus needed), the window is hidden within 0.5 s and the process is gone within
+# the watchdog's 5 s. With CONE_TEST_HANG_QUIT the quit blocks on purpose after the watchdog is armed:
+# only the watchdog can end it, and the process must be gone within 6 s
+function Close-AndTime($s, [string]$what, [double]$limit) {
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    [RdSmoke]::PostMessage($s.hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CLOSE
+    $hidden = $null
+    while ($sw.Elapsed.TotalSeconds -lt $limit + 2) {
+        if ($null -eq $hidden -and -not [RdSmoke]::Visible($s.hwnd)) { $hidden = $sw.Elapsed.TotalSeconds }
+        if ($s.proc.HasExited) { break }
+        Start-Sleep -Milliseconds 25
+    }
+    $gone = if ($s.proc.HasExited) { $sw.Elapsed.TotalSeconds } else { $null }
+    if ($null -eq $gone) { try { $s.proc.Kill() } catch {}; throw "$what`: Cone was still running $([math]::Round($limit + 2, 1)) s after the close" }
+    if ($null -eq $hidden -or $hidden -gt 0.5) { throw "$what`: the window was hidden only after $([math]::Round([double]$hidden, 2)) s (limit 0.5 s)" }
+    if ($gone -gt $limit) { throw "$what`: the process ended after $([math]::Round($gone, 2)) s (limit $limit s)" }
+    "window hidden after $([math]::Round($hidden, 2)) s, process gone after $([math]::Round($gone, 2)) s"
+}
+function Check-QuitInstant([string]$exe) {
+    $video = Join-Path $Media 'test-h264.mp4'; $subs = Join-Path $Media 'test.srt'
+    $s = Start-Cone $exe $video $subs 'quit-instant'
+    try {
+        if (-not (Check-Window $s)) { return }
+        Start-Sleep -Seconds 4
+        Check 'quit-instant: the window goes at once, the process within 5 s' { Close-AndTime $s 'close' $WatchdogSeconds } | Out-Null
+    } finally { Stop-Cone $s }
+    $env:CONE_TEST_HANG_QUIT = '1'
+    try { $s = Start-Cone $exe $video $subs 'quit-hang' } finally { Remove-Item Env:CONE_TEST_HANG_QUIT -ErrorAction SilentlyContinue }
+    try {
+        if (-not (Check-Window $s)) { return }
+        Start-Sleep -Seconds 4
+        Check 'quit-hang: a quit that never finishes is ended by the watchdog within 6 s' {
+            $r = Close-AndTime $s 'hung close' 6
+            if (-not (Select-String -Path $s.log -Pattern 'quit watchdog: Cone did not finish quitting' -SimpleMatch -Quiet)) { throw "$r, but the log has no watchdog line" }
+            "$r (ended by the watchdog)"
+        } | Out-Null
+    } finally { Stop-Cone $s }
+}
+
 # Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode, and that
 # episode is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
 # redesign/FIX_UP_NEXT_NEXT_STOP_NOTES.md). The show's 7-minute episodes show the card in their last
@@ -788,6 +1041,7 @@ function Check-UpNextNext([string]$exe) {
     $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
            '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$ep1`"")
     Log "start $exe $($a -join ' ')"
+    Clear-RestoreState $exe
     $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
     $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = 'upnext' }
     try {
@@ -821,6 +1075,186 @@ function Check-UpNextNext([string]$exe) {
         Add-Result 'upnext' 'fail' "unexpected error: $($_.Exception.Message)"
     } finally {
         Stop-Cone $s
+    }
+}
+
+# Up Next fixes from the 1.5.0 test pass (redesign/FIX_UPNEXT_RESUME_TRACKS_NOTES.md), the
+# counterparts of linux-smoke.py check_upnext_watched / check_track_stop
+function Start-ConeArgs([string]$exe, [string]$tag, [string[]]$extra) {
+    $log = Join-Path $Out "cone-$tag.log"
+    Remove-Item $log -ErrorAction SilentlyContinue
+    $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
+           '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet') + $extra
+    Log "start $exe $($a -join ' ')"
+    Clear-RestoreState $exe
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+    return @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
+}
+function Quit-Cli($s) {
+    try { Rc 'quit' | Out-Null } catch {}
+    $s.proc.WaitForExit(15000) | Out-Null
+    Stop-Cone $s
+}
+# an episode watched to its end, played again by Up Next, starts from the beginning: resumed, it
+# began at its last frame, ended at once and autoplay ran on through the show (bug 1)
+function Check-UpNextWatched([string]$exe) {
+    $ep1 = Join-Path $Media 'Smoke Show\Smoke Show S01E01.mp4'
+    $ep2 = Join-Path $Media 'Smoke Show\Smoke Show S01E02.mp4'
+    Check 'upnext-watched: Up Next starts an episode watched to its end from the beginning' {
+        # S01E02 on its own, played to its end and quit cleanly: its position at the end is saved
+        $s = Start-ConeArgs $exe 'upnext-watched-watch' @("`"$ep2`"")
+        try {
+            Wait-Rc 25
+            Start-Sleep -Seconds 2
+            Rc 'seek 414' | Out-Null
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ($sw.Elapsed.TotalSeconds -lt 25 -and (Rc 'status') -match 'S01E02') { Start-Sleep -Milliseconds 500 }
+        } finally { Quit-Cli $s }
+        # S01E01 to its end: Up Next plays S01E02
+        $s = Start-ConeArgs $exe 'upnext-watched' @("`"$ep1`"")
+        try {
+            Wait-Rc 25
+            Start-Sleep -Seconds 2
+            Rc 'seek 414' | Out-Null
+            # S01E02 resumed at its end lasts an instant before S01E03 starts: either one ends the wait
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            $ep = 1
+            while ($sw.Elapsed.TotalSeconds -lt 30 -and $ep -lt 2) { $ep = Episode-Of (Rc 'status'); Start-Sleep -Milliseconds 300 }
+            if ($ep -ge 3) { Shot 'upnext-watched'; throw 'S01E02, watched to its end, was skipped: S01E03 plays already' }
+            if ($ep -ne 2) { throw 'Up Next did not play S01E02 after S01E01' }
+            Start-Sleep -Seconds 4
+            $ep = Episode-Of (Rc 'status')
+            $t = Rc-Number 'get_time'
+            Shot 'upnext-watched'
+            if ($ep -ne 2 -or $t -gt 60) { throw "S01E02, watched to its end, did not start from the beginning: episode $ep at $t s" }
+            "S01E02 (watched to its end) started from the beginning: at $t s 4 s after it began"
+        } finally { Quit-Cli $s }
+    } | Out-Null
+}
+# a stop saves no track choice for the show: only a pick does. A stop emptied the track list and
+# that was saved as "subtitles off" (bug 2)
+function Check-TrackStop([string]$exe) {
+    $ep1 = Join-Path $Media 'Smoke Show\Smoke Show S01E01.mp4'
+    $subs = Join-Path $Media 'test.srt'
+    Check 'track-stop: a stop saves no track choice for the show' {
+        # the external subtitle file is selected (VLC's default); nothing is picked
+        $s = Start-ConeArgs $exe 'track-stop' @("--sub-file=`"$subs`"", "`"$ep1`"")
+        try {
+            Wait-Rc 25
+            Start-Sleep -Seconds 5
+            $sel = @((Rc 'strack') -split "`n" | Where-Object { $_ -match '\*' })
+            Rc 'stop' | Out-Null
+            Start-Sleep -Seconds 3
+        } finally { Quit-Cli $s }
+        $saved = @(Get-Content $s.log -ErrorAction SilentlyContinue | Where-Object { $_ -match 'tracks for the show saved' })
+        if ($sel.Count -eq 0) { throw 'no subtitle track selected at the start (the check needs one)' }
+        if ($saved.Count -gt 0) { throw "a stop saved a track choice nobody picked: $($saved[0].Trim())" }
+        "subtitles $($sel[0].Trim()) at the start, stopped, quit: nothing saved for the show"
+    } | Out-Null
+}
+
+# an element whose name ends with $suffix (the update notice: "<name> <version> is available")
+function Uia-FindSuffix($hwnd, [string]$suffix, [int]$timeoutMs) {
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        foreach ($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+            try {
+                if ($e.Current.Name.EndsWith($suffix) -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Width -gt 0) { return $e }
+            } catch {}
+        }
+        Start-Sleep -Milliseconds 250
+    } while ($sw.ElapsedMilliseconds -lt $timeoutMs)
+    return $null
+}
+
+# the notices at the bottom stack (redesign/POPUP_STACK_NOTES.md): a file watched to 2:00 opened
+# again with the update notice forced on (CONE_UPDATE_CHECK_TEST_FILE) shows the resume toast and
+# the update notice one above the other, never overlapping, on the same center line, 10 px apart;
+# when the toast goes (it closes by itself 10 s after it shows) the notice slides down into its place.
+# The earlier sessions made real update checks: their stored answer is removed first, so this one
+# asks (reads the test file), and the forced answer is removed after it
+function Check-PopupStack([string]$exe) {
+    $tag = 'popup-stack'
+    $video = Join-Path $Media 'Smoke Show\Smoke Show S01E03.mp4'
+    $answer = Join-Path $Out 'update-answer.json'
+    '{"tag_name": "v9.9.9", "html_url": "https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/v9.9.9"}' |
+        Set-Content -Path $answer -Encoding ASCII
+    $ini = Join-Path $ZipDir 'ConePlayer-*\portable\Cone\vlc-qt-interface.ini'
+    function Clear-UpdateAnswer {
+        foreach ($f in @(Get-ChildItem $ini -ErrorAction SilentlyContinue)) {
+            $keep = Get-Content $f.FullName | Where-Object { $_ -notmatch '^(AnsweredAt|LatestVersion|ReleasePage|DismissedOn|SkippedVersion)=' }
+            Set-Content -Path $f.FullName -Value $keep -Encoding UTF8
+        }
+    }
+    $s = $null
+    try {
+        # watch to 2:00 of 7:00 and quit: the media library keeps the progress
+        $log = Join-Path $Out "cone-$tag-watch.log"
+        $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check', '--file-logging', "--logfile=`"$log`"",
+               '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
+        Log "start $exe $($a -join ' ')"
+        Clear-RestoreState $exe
+    $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+        $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = "$tag-watch" }
+        if (-not (Check-Window $s)) { return }
+        Wait-Rc 20
+        Start-Sleep -Seconds 2
+        Rc 'seek 120' | Out-Null
+        Start-Sleep -Seconds 2
+        try { Rc 'quit' | Out-Null } catch {}
+        if (-not $s.proc.WaitForExit(15000)) { throw 'the first session did not quit' }
+
+        # again, with the update notice forced on
+        Clear-UpdateAnswer
+        $log = Join-Path $Out "cone-$tag.log"
+        $a = @('--no-qt-privacy-ask', '--no-qt-video-autoresize', '--file-logging', "--logfile=`"$log`"",
+               '--log-verbose=2', '--extraintf=cli', "--rc-host=127.0.0.1:$RcPort", '--rc-quiet', "`"$video`"")
+        Log "start $exe $($a -join ' ') (CONE_UPDATE_CHECK_TEST_FILE=$answer)"
+        $env:CONE_UPDATE_CHECK_TEST_FILE = $answer
+        Clear-RestoreState $exe
+        try { $p = Start-Process -FilePath $exe -ArgumentList $a -WorkingDirectory (Split-Path -Parent $exe) -PassThru }
+        finally { Remove-Item Env:CONE_UPDATE_CHECK_TEST_FILE -ErrorAction SilentlyContinue }
+        $s = @{ proc = $p; hwnd = [IntPtr]::Zero; log = $log; tag = $tag }
+        if (-not (Check-Window $s)) { return }
+        Check "$tag`: the resume toast and the update notice stack without overlapping" {
+            Wait-Rc 20
+            $r = Uia-Find $s.hwnd 'Resume dialog' 15000
+            $u = Uia-FindSuffix $s.hwnd ' is available' 15000
+            if (-not $r -or -not $u) { Shot "$tag-missing"; throw "resume toast found: $([bool]$r), update notice found: $([bool]$u); both expected" }
+            Start-Sleep -Milliseconds 600   # past a slide
+            $rr = $r.Current.BoundingRectangle; $ur = $u.Current.BoundingRectangle
+            Shot "$tag-two"
+            $rt = "($([int]$rr.X), $([int]$rr.Y), $([int]$rr.Width), $([int]$rr.Height))"
+            $ut = "($([int]$ur.X), $([int]$ur.Y), $([int]$ur.Width), $([int]$ur.Height))"
+            $hOverlap = -not ($rr.Right -le $ur.Left -or $ur.Right -le $rr.Left)
+            $vOverlap = -not ($rr.Bottom -le $ur.Top -or $ur.Bottom -le $rr.Top)
+            if ($hOverlap -and $vOverlap) { throw "they overlap: resume toast $rt, update notice $ut" }
+            if ($ur.Bottom -gt $rr.Top) { throw "the update notice is not above the resume toast: $ut / $rt" }
+            $gap = [int]($rr.Top - $ur.Bottom)
+            if ($gap -lt 6 -or $gap -gt 14) { throw "$gap px between them (10 expected): $ut / $rt" }
+            $dc = [math]::Abs(($rr.Left + $rr.Width / 2) - ($ur.Left + $ur.Width / 2))
+            if ($dc -gt 2) { throw "not on the same center line ($([int]$dc) px apart): $ut / $rt" }
+            # the toast closes by itself 10 s after it shows (ResumeDialog's timeout)
+            $sw2 = [Diagnostics.Stopwatch]::StartNew()
+            while ((Uia-Find $s.hwnd 'Resume dialog' 0) -and $sw2.Elapsed.TotalSeconds -lt 14) { Start-Sleep -Milliseconds 250 }
+            if (Uia-Find $s.hwnd 'Resume dialog' 0) { throw 'the resume toast still shows 14 s later' }
+            Start-Sleep -Milliseconds 600   # past the slide
+            $u2 = Uia-FindSuffix $s.hwnd ' is available' 2000
+            Shot "$tag-after"
+            if (-not $u2 -or [math]::Abs($u2.Current.BoundingRectangle.Bottom - $rr.Bottom) -gt 2) {
+                throw "the update notice did not take the toast's place (its bottom $(if ($u2) { [int]$u2.Current.BoundingRectangle.Bottom }), the toast's $([int]$rr.Bottom))"
+            }
+            "resume toast $rt, update notice $ut above it, $gap px apart, centers $([int]$dc) px apart; then the notice moved down to the toast's place"
+        } | Out-Null
+        # a clean quit: a killed Cone makes the next start ask to restore its playlist
+        try { Rc 'quit' | Out-Null } catch {}
+        $s.proc.WaitForExit(15000) | Out-Null
+    } catch {
+        Add-Result $tag 'fail' "unexpected error: $($_.Exception.Message)"
+    } finally {
+        Stop-Cone $s
+        Clear-UpdateAnswer
     }
 }
 
@@ -1007,7 +1441,13 @@ if (-not $zipExe) {
     # before the first-start and open-in-running checks: after those (a Cone raised by a second
     # start, then ended) the runner no longer lets the next Cone take the foreground for a click
     # (build-windows #206)
+    Check-CastDiscovery 'zip' $zipExe.FullName
+    Check-RestoreQuestion $zipExe.FullName
     Check-UpNextNext $zipExe.FullName
+    Check-UpNextWatched $zipExe.FullName
+    Check-TrackStop $zipExe.FullName
+    Check-QuitInstant $zipExe.FullName
+    Check-PopupStack $zipExe.FullName
     Run-FirstStart $zipExe.FullName
     Run-OpenInRunning $zipExe.FullName
 }
@@ -1025,6 +1465,7 @@ $installed = Check 'installer: silent install' {
 }
 if ($installed) {
     Run-Session (Join-Path $installDir 'Cone.exe') 'h264' $false 'installed-h264'
+    Check-CastDiscovery 'installed' (Join-Path $installDir 'Cone.exe') (Join-Path $installDir 'plugins\plugins.dat')
     # the desktop shortcut on a reinstall follows the install as it is (#73,
     # redesign/FIX_UPGRADE_SHORTCUT_NOTES.md): kept when it is there, not brought back once removed
     $lnk = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Cone Player.lnk'

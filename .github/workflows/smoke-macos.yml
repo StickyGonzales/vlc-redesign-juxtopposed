@@ -12,6 +12,10 @@ on:
         description: 'The Intel .dmg was built too'
         type: boolean
         default: true
+      arm64:
+        description: 'The Apple Silicon .dmg was built'
+        type: boolean
+        default: true
 
 jobs:
   # the same test media as the Windows and Linux checks (smoke-media.sh), from the same cache
@@ -52,10 +56,14 @@ jobs:
       - id: m
         env:
           INTEL: ${{ inputs.intel }}
+          ARM64: ${{ inputs.arm64 }}
         run: |
           ARM='{"arch":"arm64","runner":"macos-15"}'
           INTEL_ROW='{"arch":"x86_64","runner":"macos-15-intel"}'
-          if [ "$INTEL" = true ]; then M="[$ARM,$INTEL_ROW]"; else M="[$ARM]"; fi
+          ROWS=()
+          if [ "$ARM64" = true ]; then ROWS+=("$ARM"); fi
+          if [ "$INTEL" = true ]; then ROWS+=("$INTEL_ROW"); fi
+          M="[$(IFS=,; echo "${ROWS[*]}")]"
           echo "matrix={\"include\":$M}" >> "$GITHUB_OUTPUT"
 
   smoke:

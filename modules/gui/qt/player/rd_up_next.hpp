@@ -27,14 +27,18 @@
 #include <QTimer>
 #include <QUrl>
 
+#include <functional>
 #include <memory>
 
 #include "qt.hpp"
 #include "player/rd_credits_point.hpp"
 #include "player/rd_credits_scans.hpp"
 #include "player/rd_episode_parser.hpp"
+#include "player/rd_up_next_mode.hpp"
 #include "playlist/media.hpp"
 #include "util/shared_input_item.hpp"
+
+class RdStorage;
 
 class MainCtx;
 class PlayerController;
@@ -58,7 +62,8 @@ struct vlc_preparser_req;
  * (shuffle, repeat one, a stop or quit at the end, pause on the last frame, an A-B loop, the
  * command-line flow options) take the autoplay item out and keep the card away.
  *
- * Settings (qt.cpp): qt-autoplay-next ("Play episodes in a row", on / off), qt-autoplay-countdown
+ * Settings (qt.cpp): qt-autoplay-next ("When an episode ends": play the next episode / show Up
+ * Next and wait for a click / do nothing, rd_up_next_mode.hpp), qt-autoplay-countdown
  * (5 / 10 / 15 s), qt-autoplay-credits-lead (the card's fallback point: the last 30 / 60 / 120 s)
  * and qt-autoplay-still-watching. The answer per show (yes / no) and the credits point learned
  * per show are kept per show root folder in rd-shows.json in VLC's user data folder, read and
@@ -71,13 +76,16 @@ struct vlc_preparser_req;
  * learned point agree, or at the set point. There it offers Next episode and Cancel; the
  * countdown only runs in the last `countdown` seconds, as before.
  *
- * Nothing runs while the setting is Off: no scan, no card, no item.
+ * Nothing runs while the setting is "Do nothing": no scan, no card, no item. With "Show Up Next,
+ * I'll click" every show behaves as a plain-numbered one always did: no autoplay item, the card
+ * offers the next episode and waits for a click.
  */
 class RdUpNext : public QObject
 {
     Q_OBJECT
 
-    // the setting "Play episodes in a row": 0 Off, 1 On
+    // the setting "When an episode ends": 0 do nothing, 1 play the next episode, 3 show Up Next and
+    // wait for a click (rd_up_next_mode.hpp)
     Q_PROPERTY(int mode READ mode NOTIFY settingsChanged FINAL)
     Q_PROPERTY(int countdown READ countdown NOTIFY settingsChanged FINAL)
 
@@ -133,7 +141,7 @@ class RdUpNext : public QObject
     Q_PROPERTY(QString creditsSource READ creditsSource NOTIFY creditsChanged FINAL)
 
 public:
-    enum Mode { ModeOff = 0, ModeOn = 1 };
+    enum Mode { ModeOff = rdupnext::ModeOff, ModeOn = rdupnext::ModeOn, ModeClick = rdupnext::ModeClick };
     enum CardMode { CardNext = 0, CardStillWatching = 1 };
     Q_ENUM(CardMode)
 
@@ -176,7 +184,8 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void keepWatching();
     Q_INVOKABLE void stopWatching();
-    // the card's "Turn off autoplay": the setting goes off
+    // the card's "Turn off autoplay": the setting becomes "Show Up Next, I'll click" (the countdown
+    // goes, the card stays and waits)
     Q_INVOKABLE void turnOffAutoplay();
     // the sidebar toggle: the remembered answer for the show playing
     Q_INVOKABLE void setShowEnabled(bool enabled);
@@ -186,9 +195,13 @@ public:
     // back to Automatic
     Q_INVOKABLE void setCreditsFixed(int secondsBeforeEnd);
     Q_INVOKABLE void resetCredits();
-    // a seek bar is hovered or dragged (true), or no longer (false): the background scans wait
-    // while any is (seek previews stay fast)
+    // a seek bar is hovered or dragged (true), or no longer (false): the background queue
+    // (RdBackgroundQueue) waits while any is (seek previews stay fast)
     Q_INVOKABLE void setSeekBarBusy(bool busy);
+
+    // Cone's own data kept tidy (STORAGE_CLEANUP_NOTES.md): a show found at another place
+    // takes its answer, credits and track choice along; a forgotten one drops them
+    void setStorage(RdStorage* storage);
 
 public slots:
     // the options were written (a settings row, a profile switch)
@@ -235,6 +248,9 @@ private:
     // the current file is an episode Up Next acts on: a show, and not shorter than the show's
     // shortest episode (a short clip is never autoplayed, so it is not asked about either)
     bool longEnough() const;
+    // the player's length is the playing file's (after Next it still gives the previous one's
+    // until the new file's first update: STATUS #127 retest)
+    bool lengthKnown() const;
     QString guardReason() const;
     bool queueIsCones() const;
     void updateCard();
@@ -278,6 +294,9 @@ private:
     void pruneOwnItems();
     // the user is there after all: "Still watching?" goes, the next episode is queued playing
     void leaveStillWatching();
+    // after a change of the mode: a mode in which nothing plays by itself drops the countdown,
+    // the "Still watching?" state and the card
+    void dropAutoplayState();
     void refreshQueued();
     QStringList itemOptions(bool startPaused) const;
 
@@ -288,8 +307,16 @@ private:
     void onStopped();
 
     void markWatched(const QUrl& url);
+    // the next episode's saved position (media library), read in the background when the next
+    // episode is known: one watched to its end starts from the beginning, not at its last frame
+    void requestNextProgress();
     void requestThumbnail();
+    void submitThumbnail(const QString& target, const QString& episodePath, int generation);
+    void finishThumbnailJob();
     void onThumbnailDone(int generation, const QString& path);
+    void onRelocated(const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media);
+    void onForgetEntries(const QStringList& paths);
+    void importLegacyShows();
 
     // the show answers
     QString showKey() const;
@@ -308,6 +335,10 @@ private:
     int m_mode = ModeOff;
     int m_countdown = 10;
     qint64 m_creditsLeadMs = 60 * 1000;
+    // the next episode whose saved position was read (its MRL), and whether it was watched to its end
+    QString m_progressMrl;
+    bool m_nextWatched = false;
+    quint64 m_progressGeneration = 0;
     bool m_stillWatching = true;
 
     // the media playing and its show
@@ -317,7 +348,6 @@ private:
     bool m_showKnown = false;
     int m_nextIndex = -1;
     int m_generation = 0;
-    QThreadPool m_scanPool;
 
     // the autoplay item: the media handed to the queue (held to recognise it)
     SharedInputItem m_queued;
@@ -374,6 +404,7 @@ private:
     RdCreditsScans::Found m_found;
     // the seek bars hovered or dragged now (the scans wait while any is)
     int m_seekBarsBusy = 0;
+    RdStorage* m_storage = nullptr;
     // learning (UP_NEXT_CREDITS_SCAN_NOTES.md section 1), per episode: the credits card showed,
     // Cancel was pressed on it, its Next episode button moved on
     bool m_cardShownEpisode = false;
@@ -387,6 +418,7 @@ private:
     // new one sends its first position: that time is not used (it put the card of the next
     // episode up for a moment, the retest of #87). The time the previous episode was at
     qint64 m_staleTimeMs = -1;
+    qint64 m_staleLengthMs = -1;
     bool m_timeFresh = true;
     // where the episode playing was last (the time and length the player reported), for learning
     qint64 m_lastTimeMs = -1;
@@ -428,6 +460,12 @@ private:
     // no selection is not a pick
     QString m_audioSelection;
     QString m_subtitleSelection;
+    // every track of each list once settled: a change of the list itself (a stop, the end, a quit
+    // or a file switch clears it; a subtitle file adds one) is not a pick (1.5.0 test pass bug 2)
+    QString m_audioList;
+    QString m_subtitleList;
+    // the input (m_generation) a selection change was seen on: the pick belongs to that file
+    int m_recordGeneration = -1;
 
 
     // remembered answers, keyed by the show root folder
@@ -444,6 +482,12 @@ private:
     vlc_preparser_t* m_preparser = nullptr;
     vlc_preparser_req* m_thumbReq = nullptr;
     int m_thumbGeneration = 0;
+    // the next episode's picture waits for the playing file's length: a file shorter than an
+    // episode shows no card, so no picture is made for it (STATUS #127 retest)
+    bool m_thumbWaitsLength = false;
+    // the picture's request holds a slot of the background queue until it is answered
+    std::function<void()> m_thumbFinish;
+    QString m_thumbEpisode;
 };
 
 #endif

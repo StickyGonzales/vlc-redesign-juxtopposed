@@ -39,8 +39,6 @@ constexpr uint32_t THUMBNAIL_WIDTH = 512;
 constexpr uint32_t THUMBNAIL_HEIGHT = 320;
 constexpr double THUMBNAIL_POSITION = .15;
 
-// the page reloads once the media library has been quiet for this long
-constexpr int RELOAD_DELAY_MS = 300;
 
 QString thumbnailOf(const vlc_ml_thumbnail_t (&thumbnails)[VLC_ML_THUMBNAIL_SIZE_COUNT])
 {
@@ -205,8 +203,8 @@ RdLibraryModel::RdLibraryModel(QObject* parent)
     })
 {
     m_reloadTimer.setSingleShot(true);
-    m_reloadTimer.setInterval(RELOAD_DELAY_MS);
     connect(&m_reloadTimer, &QTimer::timeout, this, &RdLibraryModel::reload);
+    m_reloadClock.start();
 }
 
 RdLibraryModel::~RdLibraryModel()
@@ -337,10 +335,11 @@ void RdLibraryModel::onMlEvent(void* data, const vlc_ml_event_t* event)
 
 void RdLibraryModel::scheduleReload()
 {
-    // the first event of a burst starts the delay, the next ones join it (a long scan still
-    // refreshes the page every RELOAD_DELAY_MS)
+    // the first event of a burst starts the delay, the next ones join it; a scan sending events
+    // all the time refreshes the page at most once a second (the home page's rows each reload
+    // with a library query: every 300 ms they kept the media library busy for the whole scan)
     if (!m_reloadTimer.isActive())
-        m_reloadTimer.start();
+        m_reloadTimer.start(m_reloadThrottle.delayFor(m_reloadClock.elapsed()));
 }
 
 void RdLibraryModel::requestReload()
@@ -364,6 +363,7 @@ void RdLibraryModel::requestReload()
 void RdLibraryModel::reload()
 {
     m_reloadTimer.stop();
+    m_reloadThrottle.reloaded(m_reloadClock.elapsed());
     if (!m_mediaLib || !canLoad())
     {
         if (m_loading && m_taskId == 0)

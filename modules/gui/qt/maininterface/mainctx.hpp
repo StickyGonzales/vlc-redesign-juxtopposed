@@ -402,6 +402,11 @@ public:
     /* redesign (redesign/FIX_CTRLQ_QUIT_NOTES.md): the quit key (Ctrl+Q) quits exactly like the
      * window's close button (onWindowClose): playback stops first, then the quit */
     Q_INVOKABLE void quitLikeClose();
+    /* redesign: every user quit (the quit key, the close button, Quit in the menu): logs the
+     * source, arms the watchdog, hides the windows at once (unless a dialog needs the user),
+     * stops playback, then quits; a quit is under way once it ran (isClosing) */
+    void requestQuit(const char* source);
+    bool isClosing() const { return m_closing; }
     /* redesign: writes the interface state the destructor saves (and the window geometry
      * when asked), so a quit that never reaches the destructor keeps it */
     void saveSettings(bool withGeometry);
@@ -520,6 +525,7 @@ protected:
     bool m_preferHotkeys = false;
     // redesign: onWindowClose ran (a quit is under way); a second close or quit key does nothing
     bool m_closing = false;
+    void hideWindowsForQuit();
 
     int m_maxVolume = 125;
     int m_fsSensitivity = 40;
@@ -527,9 +533,8 @@ protected:
     // pause is turned off through the libvlc object's "mouse-pause-policy" variable
     int m_videoDoubleClick = 0;
     void applyVideoDoubleClick();
-    // redesign (S2-10): "qt-cast-discovery", applied once the window has shown
+    // redesign (S2-10): "qt-cast-discovery": whether the Render picker looks for cast devices
     bool m_castDiscovery = true;
-    bool m_windowShown = false;
     void applyCastDiscovery();
     // redesign: options MainCtx writes itself (accent, fullscreen sensitivity) reach the
     // configuration file shortly after a change, not only when VLC quits

@@ -12,6 +12,7 @@ import argparse
 import ctypes
 import ctypes.util
 import glob
+import json
 import os
 import re
 import shutil
@@ -114,6 +115,18 @@ def cone_app():
     return None
 
 
+def named(name):
+    """what carries `name` in the accessibility tree, with its role (for a failure's message)"""
+    found = []
+    for acc in _walk(cone_app()):
+        try:
+            if acc.name == name:
+                found.append(acc.getRoleName())
+        except Exception:  # noqa: BLE001
+            continue
+    return ', '.join(found) or 'nothing named so'
+
+
 def find(name, timeout=0.0, role=None):
     """the first showing element named `name`: (x, y, w, h) on the screen, or None"""
     end = time.time() + timeout
@@ -165,28 +178,127 @@ def rc_number(cmd):
     raise CheckFailed(f'no number from "{cmd}"')
 
 
+def client_windows():
+    """the windows the window manager manages (_NET_CLIENT_LIST), as decimal ids like xdotool's"""
+    out = run(['xprop', '-root', '_NET_CLIENT_LIST']).stdout
+    return {str(int(x, 16)) for x in re.findall(r'0x[0-9a-fA-F]+', out)}
+
+
+# a session the checks end by killing Cone (Session.stop) leaves its playlist saved for a restore,
+# and a quit without an answer keeps it (#134): the next start would ask "The application closed
+# abruptly ... restore the playlist?" in front of its window. Each start forgets it, except inside
+# the restore checks
+KEEP_RESTORE = [False]
+
+
+def clear_restore_state(env):
+    if KEEP_RESTORE[0]:
+        return
+    home = (env or os.environ).get('XDG_CONFIG_HOME') or os.path.join((env or os.environ).get('HOME', ''), '.config')
+    conf = os.path.join(home, 'Cone', 'vlc-qt-interface.conf')
+    try:
+        lines = open(conf, encoding='utf-8').read().splitlines(True)
+    except OSError:
+        return
+    kept = [l for l in lines if not l.startswith('RecoveryFilePath=')]
+    if len(kept) != len(lines):
+        open(conf, 'w', encoding='utf-8').writelines(kept)
+
+
+# every Cone a check started; a start waits until the ones before it have ended
+STARTED = []
+
+
+def bus_name_owned():
+    """a Cone holds the one-instance name on the session bus (it would take the next start's files)"""
+    try:
+        r = run(['dbus-send', '--session', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus',
+                 'org.freedesktop.DBus.NameHasOwner', 'string:org.mpris.MediaPlayer2.cone'], timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        # no dbus-send or no answer: the wait for the processes alone
+        return False
+    return 'boolean true' in r.stdout
+
+
+def wait_quiet(tag):
+    """before a start: the Cones started before have ended and none holds the one-instance name, so a
+    check never starts next to a Cone that is still quitting (it could take the new start's files, or
+    its quit could reach the new one); a Cone still there after 10 s is ended"""
+    end = time.time() + 10
+    waited = False
+    for p in STARTED:
+        while p.poll() is None and time.time() < end:
+            waited = True
+            time.sleep(0.1)
+        if p.poll() is None:
+            log(f'{tag}: a Cone started before (pid {p.pid}) still runs after 10 s, ending it')
+            try:
+                os.killpg(p.pid, 9)
+                p.wait(10)
+            except Exception:  # noqa: BLE001
+                pass
+    STARTED[:] = [p for p in STARTED if p.poll() is None]
+    while bus_name_owned() and time.time() < end:
+        waited = True
+        time.sleep(0.1)
+    if waited:
+        log(f'{tag}: waited for the previous Cone to end before starting')
+
+
+def early_exit_reason(logfile):
+    """why a Cone ended before its window: the quit lines of its own log"""
+    try:
+        lines = [l.strip() for l in open(logfile, errors='replace')
+                 if 'quit: ' in l or 'quit watchdog' in l or 'running VLC instance' in l
+                 or 'to running instance' in l or 'one-instance' in l]
+    except OSError:
+        return 'no log'
+    return ' | '.join(lines[-4:]) or 'no quit line in its log'
+
+
 class Session:
-    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True):
+    def __init__(self, exe, video, tag, env=None, first_start=False, repeat=True, subs=True, update_answer=None,
+                 extra=()):
         self.tag = tag
+        wait_quiet(tag)
+        clear_restore_state(env)
         self.log = os.path.join(OUT, f'cone-{tag}.log')
         if os.path.exists(RC_SOCK):
             os.remove(RC_SOCK)
         # first_start: Cone's first start (the onboarding), as on a fresh install
-        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+        # update_answer: a file standing for GitHub's answer (CONE_UPDATE_CHECK_TEST_FILE), the update
+        # check on; otherwise the check is off
+        if update_answer:
+            env = dict(env or os.environ, CONE_UPDATE_CHECK_TEST_FILE=update_answer)
+        a = [exe, '--qt-privacy-ask' if first_start else '--no-qt-privacy-ask', '--no-qt-video-autoresize',
+             *([] if update_answer else ['--no-qt-cone-update-check']),
              '--aout=adummy', *(['--input-repeat=50'] if repeat else []), '--file-logging',
              f'--logfile={self.log}', '--log-verbose=2', '--extraintf=cli', f'--rc-unix={RC_SOCK}',
-             '--rc-fake-tty', *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), video]
+             *([f'--sub-file={os.path.join(MEDIA, "test.srt")}'] if subs else []), *extra, video]
         log('start ' + ' '.join(a))
-        self.proc = subprocess.Popen(a, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        # the checks use the cli's socket only. With --rc-fake-tty (or a terminal on stdin) the cli
+        # also reads stdin and quits VLC when it ends; the smoke's stdin ends at once, and that quit
+        # ended Cone 0.2 s after its start whenever the cli got there after bin/vlc.c had set its
+        # exit handler (build-linux #152, #153; macos-smoke.py found it first). No fake tty and
+        # stdin from /dev/null: no stdin reader at all
+        self.proc = subprocess.Popen(a, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      env=env, start_new_session=True)
+        STARTED.append(self.proc)
         self.win = None
 
     def window(self):
         end = time.time() + 30
         while time.time() < end:
             if self.proc.poll() is not None:
-                raise CheckFailed(f'Cone exited with {self.proc.returncode} before its window appeared')
-            for w in xdo('search', '--onlyvisible', '--pid', self.proc.pid).split():
+                raise CheckFailed(f'Cone exited with {self.proc.returncode} before its window appeared '
+                                  f'({early_exit_reason(self.log)})')
+            found = xdo('search', '--onlyvisible', '--pid', self.proc.pid).split()
+            # the window manager's own window for Cone: Qt's inner windows carry the same pid, and
+            # on a slow start (a sanitizer build) the search lists one of them first, which cannot
+            # be activated
+            clients = client_windows()
+            managed = [w for w in found if w in clients]
+            for w in managed:
                 geo = xdo('getwindowgeometry', w)
                 if 'Geometry:' in geo:
                     width = int(geo.split('Geometry:')[1].split('x')[0])
@@ -311,6 +423,45 @@ def check_seek(s):
         shot(f'{s.tag}-seek')
         return f'clicked at 75 % of {length} s, the time is {t} s'
     return check(f'{s.tag}: seek bar responds', body)
+
+
+def check_seek_bar_rest(s):
+    """the background queue waits while the pointer moves over the seek bar, and goes on once it
+    rests there (redesign/PERF_AUDIT_NOTES.md: a resting pointer held it for good)"""
+    def state():
+        lines = [l for l in open(s.log, errors='replace')
+                 if 'background: paused' in l or 'background: resumed' in l]
+        return lines[-1].split('background: ')[1].strip() if lines else ''
+    def body():
+        s.focus()
+        s.show_bars()
+        r = find('Progress', 3, role='slider')
+        if not r:
+            raise CheckFailed('the seek bar ("Progress") is not shown')
+        x, y, w, h = r
+        # an earlier hold (the seek of check_seek, "seeking", 1.5 s) ends first, so "paused" below
+        # is the seek bar's
+        xdo('mousemove', x + w // 2, y - 200)
+        end = time.time() + 8
+        while time.time() < end and state().startswith('paused'):
+            time.sleep(0.25)
+        s.show_bars()
+        for d in range(0, 60, 6):
+            xdo('mousemove', x + int(w * 0.3) + d, y + h // 2)
+            time.sleep(0.05)
+        time.sleep(0.5)
+        moving = state()
+        if not moving.startswith('paused'):
+            raise CheckFailed(f'the queue did not wait while the pointer moved over the seek bar (last: "{moving}")')
+        end = time.time() + 8
+        while time.time() < end and not state().startswith('resumed'):
+            time.sleep(0.25)
+        rest = state()
+        if not rest.startswith('resumed'):
+            raise CheckFailed(f'the pointer rests on the seek bar and the queue still waits after 8 s (last: "{rest}")')
+        xdo('mousemove', x + w // 2, y - 200)
+        return f'moving: "{moving}", resting: "{rest}"'
+    return check(f'{s.tag}: the background queue goes on while the pointer rests on the seek bar', body)
 
 
 def check_settings(s):
@@ -630,6 +781,88 @@ def check_handoff(s, exe, env):
     return check(f'{s.tag}: a second start opens the file in the running window', body)
 
 
+def check_quit_handoff(exe):
+    """a file double-clicked while Cone quits opens in a new window (redesign/FIX_LINUX_QUIT_HANDOFF_NOTES.md):
+    since the instant quit (#128) the window goes at once while the process can live on up to the
+    watchdog's 5 s, and it kept the one-instance D-Bus name, so the new start handed its file to the
+    quitting Cone and exited: nothing opened. CONE_TEST_HANG_QUIT makes the quit stall on purpose, so
+    the gap is always there; the file is double-clicked 1 s after Ctrl+Q"""
+    tag = 'quit-handoff'
+    env = fresh_env(tag)
+    other = os.path.join(WORK, 'quit-handoff.mp4')
+    if not os.path.exists(other):
+        shutil.copy(os.path.join(MEDIA, 'test-hevc.mp4'), other)
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), tag + '-quitting', dict(env, CONE_TEST_HANG_QUIT='1'),
+                repeat=False, subs=False, extra=['--started-from-file'])
+    b = None
+    blog = os.path.join(OUT, f'cone-{tag}-new.log')
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            nonlocal b
+            time.sleep(2)
+            s.focus()
+            t0 = time.time()
+            xdo('key', 'ctrl+q')
+            while xdo('search', '--onlyvisible', '--pid', s.proc.pid).split() and time.time() - t0 < 2:
+                time.sleep(0.05)
+            time.sleep(max(0.0, 1.0 - (time.time() - t0)))
+            if s.proc.poll() is not None:
+                raise CheckFailed('the quitting Cone ended within 1 s: the stalled quit (CONE_TEST_HANG_QUIT) did not stall')
+            if os.path.exists(blog):
+                os.remove(blog)
+            b = subprocess.Popen([exe, '--no-qt-privacy-ask', '--no-qt-video-autoresize', '--no-qt-cone-update-check',
+                                  '--aout=adummy', '--file-logging', f'--logfile={blog}', '--log-verbose=2',
+                                  '--started-from-file', other],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env, start_new_session=True)
+            STARTED.append(b)
+            started = time.time() - t0
+            end = time.time() + 30
+            mine = []
+            while time.time() < end and not mine:
+                if b.poll() is not None:
+                    shot(tag)
+                    raise CheckFailed(f'the file double-clicked {started:.1f} s after Ctrl+Q was lost: the new start '
+                                      f'exited with {b.returncode} ({early_exit_reason(blog)})')
+                mine = [w for w in xdo('search', '--onlyvisible', '--name', 'quit-handoff.mp4').split()
+                        if xdo('getwindowpid', w).strip() == str(b.pid)]
+                time.sleep(0.25)
+            if not mine:
+                raise CheckFailed('no window of the new start shows the file within 30 s')
+            # the quitting Cone still ran when the new one showed: the hand-off was really there
+            quitting_then = s.proc.poll() is None
+            try:
+                s.proc.wait(15)
+            except subprocess.TimeoutExpired:
+                raise CheckFailed('the quitting Cone did not end within 15 s')
+            ended = time.time() - t0
+            time.sleep(1)
+            if b.poll() is not None:
+                raise CheckFailed(f'the new window closed when the quitting Cone ended (exit {b.returncode})')
+            released = any('one-instance name released' in l for l in open(s.log, errors='replace'))
+            if not released:
+                raise CheckFailed('the quitting Cone did not log "one-instance name released"')
+            shot(tag)
+            return (f'double-clicked {started:.1f} s after Ctrl+Q: its own window plays quit-handoff.mp4 '
+                    f'({"while the quitting Cone still ran" if quitting_then else "the quitting Cone had ended"}), '
+                    f'still there after the quitting Cone ended ({ended:.1f} s)')
+        check(f'{tag}: a file double-clicked while Cone quits opens in a new window', body)
+    finally:
+        s.stop()
+        if b is not None and b.poll() is None:
+            try:
+                w = xdo('search', '--onlyvisible', '--pid', b.pid).split()
+                if w:
+                    xdo('windowactivate', '--sync', w[0])
+                    time.sleep(0.3)
+                    xdo('key', 'ctrl+q')
+                b.wait(15)
+            except Exception:  # noqa: BLE001
+                os.killpg(b.pid, 9)
+
+
 def check_identity(s, folder):
     """the names the desktop matches against the menu entry: the window class (X11; Qt's
     desktop file name is the Wayland app id), and the media controls' entry and name (MPRIS)"""
@@ -684,6 +917,8 @@ def session(exe, codec, tag, full, env=None):
             check_osd(s)
             check_settings(s)
             check_seek(s)
+            if codec == 'h264':
+                check_seek_bar_rest(s)
             check_menu(s)
             check_speed(s)
             if codec == 'h264':
@@ -709,6 +944,466 @@ def episode_of(status):
     return int(m.group(1)) if m else 0
 
 
+def quit_cleanly(s):
+    """a killed Cone makes the next start ask to restore its playlist ("closed abruptly"), and
+    that dialog would stand in front of the next checks' windows"""
+    try:
+        rc('quit')
+        s.proc.wait(15)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def frames_drawn(s):
+    """the frames Qt has drawn so far (QSG_RENDER_TIMING with --qt-verbose: one line each)"""
+    return sum(1 for l in open(s.log, errors='replace') if 'time in renderer' in l)
+
+
+def check_idle_drawing(exe, env):
+    """while a file plays with the bars hidden, and while Cone is minimized, Qt draws nothing:
+    a hidden control bar following the time made it draw two empty frames a second, and the
+    interface was drawn offscreen while minimized (redesign/PERF_AUDIT_NOTES.md)"""
+    denv = dict(env, QSG_RENDER_TIMING='1')
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'drawing', denv, subs=False, extra=['--qt-verbose'])
+    try:
+        if not check_window(s):
+            return
+
+        def hidden():
+            time.sleep(2)
+            xdo('mousemove', 1900, 1060)
+            time.sleep(6)
+            n0 = frames_drawn(s)
+            time.sleep(10)
+            n = frames_drawn(s) - n0
+            if n > 4:
+                raise CheckFailed(f'{n} frames drawn in 10 s of playback with the bars hidden (the bars follow the time while hidden)')
+            return f'{n} frames in 10 s with the bars hidden'
+        check('drawing: nothing is drawn while playing with the bars hidden', hidden)
+
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+    # minimized: with the bars pinned the time is on screen and the window draws, so a still
+    # window while minimized is the compositor waiting (the bars alone no longer draw when hidden)
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'drawing-pinned', denv, subs=False,
+                extra=['--qt-verbose', '--qt-pin-controls'])
+    try:
+        if not check_window(s):
+            return
+
+        def minimized():
+            time.sleep(3)
+            xdo('mousemove', 1900, 1060)
+            n0 = frames_drawn(s)
+            time.sleep(5)
+            shown = frames_drawn(s) - n0
+            if shown < 3:
+                raise CheckFailed(f'only {shown} frames in 5 s with the pinned bars showing the time (the count does not work)')
+            xdo('windowminimize', s.win)
+            time.sleep(3)
+            n0 = frames_drawn(s)
+            time.sleep(10)
+            n = frames_drawn(s) - n0
+            xdo('windowactivate', s.win)
+            time.sleep(3)
+            back = frames_drawn(s) - n0 - n
+            if n > 2:
+                raise CheckFailed(f'{n} frames drawn in 10 s while minimized')
+            if back < 1:
+                raise CheckFailed('nothing drawn after the window came back')
+            return f'{shown} frames in 5 s shown, {n} in 10 s minimized, {back} after it came back'
+        check('drawing: nothing is drawn while minimized, the window draws again after', minimized)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_cast_discovery(exe, env):
+    """cast devices are looked for only while a Render list is open, as in VLC: not at start, from
+    the moment the right-click menu's Playback > Renderer opens, until the menu closes
+    (StickyGonzales 2026-11-13)"""
+    s = Session(exe, os.path.join(MEDIA, 'test-h264.mp4'), 'cast', env, subs=False)
+
+    def lines(text):
+        return sum(1 for l in open(s.log, errors='replace') if text in l)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            # counted from here: a retry starts from what the first attempt left in the log
+            started0 = lines('starting renderer discovery service')
+            stopped0 = lines('renderer discovery stopped')
+            time.sleep(12)
+            if lines('starting renderer discovery service') > started0:
+                raise CheckFailed('cast devices are looked for before the Render picker was opened')
+            # the right-click menu's Playback > Renderer list (RdCascadeMenu: the submenu opens as a
+            # level of its own and is told when it closes)
+            s.focus()
+            xdo('mousemove', 640, 300)
+            time.sleep(0.3)
+            xdo('click', 3)
+            p = find('Playback', 5)
+            if not p:
+                shot('cast-no-menu')
+                raise CheckFailed('the right-click menu has no "Playback" row (' + named('Playback') + ')')
+            xdo('mousemove', p[0] + p[2] // 2, p[1] + p[3] // 2)
+            xdo('click', 1)
+            time.sleep(0.5)
+            r = find('Renderer', 5)
+            if not r:
+                shot('cast-no-renderer')
+                raise CheckFailed('Playback has no "Renderer" row (' + named('Renderer') + ')')
+            xdo('mousemove', r[0] + r[2] // 2, r[1] + r[3] // 2)
+            xdo('click', 1)
+            end = time.time() + 5
+            while time.time() < end and lines('starting renderer discovery service') == started0:
+                time.sleep(0.25)
+            started = lines('starting renderer discovery service') - started0
+            if not started:
+                raise CheckFailed('opening the Renderer list started no search for cast devices')
+            # the whole menu closes
+            for _ in range(3):
+                xdo('key', 'Escape')
+                time.sleep(0.2)
+            end = time.time() + 5
+            while time.time() < end and lines('renderer discovery stopped') == stopped0:
+                time.sleep(0.25)
+            if lines('renderer discovery stopped') == stopped0:
+                raise CheckFailed('the search for cast devices went on after the menu closed')
+            return f'none at start; {started} service(s) started with the picker, stopped when it closed'
+        check('cast: devices are looked for only while the Render picker is open', body)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def saturation(x, y, w, h):
+    """the mean HSL saturation of a screen area (0 grey, 1 pure colour)"""
+    png = os.path.join(OUT, 'cover-probe.png')
+    r = run(['import', '-window', 'root', '-crop', f'{max(w, 1)}x{max(h, 1)}+{x}+{y}', png], timeout=30)
+    if r.returncode != 0:
+        raise CheckFailed(f'screen grab failed: {r.stderr.strip()[:200]}')
+    r = run(['convert', png, '-colorspace', 'HSL', '-channel', 'G', '-separate', '-format', '%[fx:mean]', 'info:'],
+            timeout=30)
+    try:
+        return float(r.stdout)
+    except ValueError:
+        raise CheckFailed(f'could not measure the cover: {r.stderr.strip()[:200]}')
+
+
+def cover_filled(box):
+    """whether the square shows the picture over its whole height: its middle, and thin strips near the
+    top and the bottom (inset from the rounded corners) are colourful (testsrc2's bars). The grey
+    placeholder fails the middle; a wide cover letterboxed (fitted) instead of cropped fails the strips"""
+    x, y, w, h = box
+    middle = saturation(x + w // 4, y + h // 4, w // 2, h // 2)
+    top = saturation(x + w // 4, y + h * 10 // 100, w // 2, max(h // 10, 1))
+    bottom = saturation(x + w // 4, y + h * 80 // 100, w // 2, max(h // 10, 1))
+    return min(middle, top, bottom) > 0.25, f'saturation middle {middle:.2f}, top {top:.2f}, bottom {bottom:.2f}'
+
+
+def check_music_cover(exe, env):
+    """the music player's cover stays square at every window size and with any cover shape (#129,
+    #69: it was squeezed into a tall, narrow card, e.g. 120x380 at 1040x570); Figma "Player - Music",
+    VIDEO_INDEX 209 / 211. The cover's on-screen box is measured through AT-SPI; a wide cover is
+    cropped to the square, not fitted into it"""
+    s = Session(exe, os.path.join(MEDIA, 'song-square.flac'), 'music-cover', env, subs=False)
+    sizes = [(1040, 570), (1500, 600), (1100, 900), (600, 900), (480, 360), (1280, 720)]
+    try:
+        if not check_window(s):
+            return
+
+        def toggle_fullscreen():
+            # the top bar's Fullscreen button (Decision 1): the F key and Escape do nothing while only
+            # music plays (VLC's fullscreen keys act on the video output). The first click on the bar
+            # can be taken by the window to get the focus: clicked again if nothing changed
+            was = is_fullscreen(s)
+            for _ in range(3):
+                s.focus()
+                xdo('mousemove', 600, 2 if was else 30)
+                time.sleep(0.5)
+                b = find('Fullscreen', 5)
+                if not b:
+                    raise CheckFailed('no Fullscreen button in the top bar (' + named('Fullscreen') + ')')
+                xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
+                time.sleep(0.3)
+                xdo('click', 1)
+                end = time.time() + 4
+                while time.time() < end and is_fullscreen(s) == was:
+                    time.sleep(0.25)
+                if is_fullscreen(s) != was:
+                    time.sleep(1.5)
+                    return
+
+        def wait_picture(label):
+            """the artwork is shown (not the placeholder that stands in while it loads)"""
+            end = time.time() + 10
+            while True:
+                box = find('Cover', 2)
+                if box and cover_filled(box)[0]:
+                    return box
+                if time.time() >= end:
+                    shot(f'cover-{label}-missing')
+                    if not box:
+                        raise CheckFailed(f'{label}: no cover on screen ({named("Cover")})')
+                    raise CheckFailed(f'{label}: the cover shows no picture ({cover_filled(box)[1]})')
+                time.sleep(0.5)
+
+        def square_at(song, label, results):
+            box = wait_picture(f'{song}-{label}')
+            shot(f'cover-{song}-{label}')
+            if abs(box[2] - box[3]) > 2:
+                raise CheckFailed(f'{song} cover at {label} is {box[2]}x{box[3]}, not square '
+                                  f'(so far: {"; ".join(results)})')
+            if box[2] < 40:
+                raise CheckFailed(f'{song} cover at {label} is only {box[2]}x{box[3]}')
+            results.append(f'{label}: {box[2]}x{box[3]}')
+
+        def at_sizes(song):
+            results = []
+            for w, h in sizes:
+                xdo('windowsize', s.win, w, h)
+                time.sleep(1.5)
+                square_at(song, f'{w}x{h}', results)
+            xdo('windowsize', s.win, '100%', '100%')
+            time.sleep(1.5)
+            square_at(song, 'screen-sized', results)
+            xdo('windowsize', s.win, 1280, 720)
+            time.sleep(1)
+            return '; '.join(results)
+
+        check('music-cover: a square cover stays square at every window size',
+              lambda: at_sizes('square'))
+
+        def wide():
+            rc('add ' + os.path.join(MEDIA, 'song-wide.flac'))
+            end = time.time() + 10
+            while 'Cover wide' not in rc('status') and 'song-wide' not in rc('status') and time.time() < end:
+                time.sleep(0.5)
+            return at_sizes('wide')
+        check('music-cover: a wide (2:1) cover is cropped to the square', wide)
+
+        def fullscreen():
+            # last: leaving fullscreen is not needed (the session ends here)
+            if not is_fullscreen(s):
+                toggle_fullscreen()
+            if not is_fullscreen(s):
+                raise CheckFailed('the Fullscreen button did not put Cone in fullscreen')
+            results = []
+            square_at('wide', 'fullscreen', results)
+            rc('add ' + os.path.join(MEDIA, 'song-square.flac'))
+            end = time.time() + 10
+            while 'song-square' not in rc('status') and time.time() < end:
+                time.sleep(0.5)
+            time.sleep(1)
+            square_at('square', 'fullscreen', results)
+            return '; '.join(results)
+        check('music-cover: both covers stay square in fullscreen', fullscreen)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_recent_thumbnails(exe, work):
+    """the library's Recent list shows every video's thumbnail once it is made, while the page is
+    open (VLC's MLMediaModel had no handler for a generated thumbnail: the card kept its grey
+    placeholder until the page was opened again; redesign/FIX_LIBRARY_THUMBNAILS_NOTES.md). A home
+    of its own (a fresh media library), the videos played one by one first, so each comes to the
+    list without a thumbnail"""
+    home = os.path.join(work, 'recent-home')
+    os.makedirs(home, exist_ok=True)
+    renv = dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
+                XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
+    videos = [os.path.join(MEDIA, 'Smoke Show', f'Smoke Show S01E0{e}.mp4') for e in (1, 2, 3)] + \
+             [os.path.join(MEDIA, 'test-h264.mp4'), os.path.join(MEDIA, 'test-hevc.mp4')]
+    for i, video in enumerate(videos):
+        s = Session(exe, video, f'recent-play{i}', renv, repeat=False, subs=False)
+        try:
+            s.window()
+            time.sleep(4)
+            quit_cleanly(s)
+        except CheckFailed as e:
+            # its own failure, named, rather than a puzzling one later
+            RESULTS.append((f'recent: play {os.path.basename(video)} to put it in Recent', 'fail', str(e)))
+            log(f'FAIL  recent: play {os.path.basename(video)}  {e}')
+        finally:
+            s.stop()
+    s = Session(exe, '--no-video-title-show', 'recent', renv, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def open_page(name):
+            # the library sidebar's entry: a page header of the same name comes only once it is open
+            b = find(name, 10)
+            if not b:
+                raise CheckFailed(f'no "{name}" in the library sidebar ({named(name)})')
+            xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
+            xdo('click', 1)
+            time.sleep(1)
+
+        def body():
+            open_page('Recent')
+            names = [os.path.basename(v) for v in videos]
+            geo = xdo('getwindowgeometry', s.win)
+            wsize = geo.split('Geometry:')[1].strip().split('x') if 'Geometry:' in geo else ['1280', '720']
+            ww, wh = int(wsize[0]), int(wsize[1])
+            end = time.time() + 60
+            while True:
+                grey, unlisted, shown = [], [], []
+                for name in names:
+                    # the card: a list item named after the file (its picture is the upper part,
+                    # the title under it)
+                    card = find(name, 2, role='list item')
+                    if not card or card[0] + card[2] > ww or card[1] + card[3] > wh:
+                        unlisted.append(name)
+                        continue
+                    x, y, w, h = card
+                    if saturation(x + w // 4, y + h // 6, w // 2, h // 4) > 0.25:
+                        shown.append(name)
+                    else:
+                        grey.append(name)
+                if not grey and not unlisted:
+                    shot('recent-thumbnails')
+                    return f'{len(shown)} of {len(names)} cards show their thumbnail'
+                if time.time() >= end:
+                    shot('recent-thumbnails-missing')
+                    raise CheckFailed(f'after 60 s on the Recent page: grey {grey or "none"}; '
+                                      f'not listed on screen {unlisted or "none"}')
+                time.sleep(3)
+
+        def retry():
+            # another page and back builds the Recent page again (a thumbnail that failed is asked
+            # for again then)
+            open_page('Home')
+        check('recent: every video in the Recent list gets its thumbnail while the page is open', body, retry)
+
+        def order():
+            # the cards in reading order (rows top to bottom, each left to right): the last played
+            # first (Recent listed the oldest first: the media library's history was asked for
+            # ascending; redesign/FIX_1_5_0_NOTES.md)
+            open_page('Recent')
+            cards = []
+            for video in videos:
+                card = find(os.path.basename(video), 2, role='list item')
+                if not card:
+                    raise CheckFailed(f'no Recent card for {os.path.basename(video)}')
+                cards.append((card[1] // max(card[3] // 2, 1), card[0], os.path.basename(video)))
+            shown = [name for _, _, name in sorted(cards)]
+            expected = [os.path.basename(v) for v in reversed(videos)]
+            if shown != expected:
+                shot('recent-order-wrong')
+                raise CheckFailed(f'Recent order {shown}, expected the last played first {expected}')
+            shot('recent-order')
+            return ', '.join(shown)
+        check('recent: the Recent list shows the last played video first', order)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def check_restore_quit(exe, env):
+    try:
+        _check_restore_quit(exe, env)
+    finally:
+        KEEP_RESTORE[0] = False
+
+
+def _check_restore_quit(exe, env):
+    """after a session that ended abruptly, the next start asks whether to restore the playlist;
+    quitting while it asks crashed (VLC's ModelRecoveryAgent went on with the deleted playlist:
+    exit by signal 11, redesign/PERF_AUDIT_NOTES.md section 9); the question then comes back at
+    the next start, and No clears it"""
+    video = os.path.join(MEDIA, 'test-h264.mp4')
+    s = Session(exe, video, 'restore-killed', env, subs=False)
+    try:
+        if not check_window(s):
+            return
+        # the recovery file is written 10 s after the queue changed
+        time.sleep(13)
+    finally:
+        s.stop()
+    KEEP_RESTORE[0] = True
+    s = Session(exe, video, 'restore-quit', env, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def body():
+            end = time.time() + 15
+            asked = []
+            while time.time() < end and not asked:
+                asked = xdo('search', '--name', 'closed abruptly').split()
+                time.sleep(0.5)
+            if not asked:
+                raise CheckFailed('no "The application closed abruptly" question after a killed session')
+            # Ctrl+Q, as a user would (Cone's quit: QuitWatchdog::arm, which drops the queue's
+            # recovery agent at once, #128); the cli's quit closes the interface another way
+            t = time.time()
+            xdo('windowactivate', asked[0])
+            time.sleep(0.5)
+            xdo('key', 'ctrl+q')
+            try:
+                s.proc.wait(20)
+            except subprocess.TimeoutExpired:
+                raise CheckFailed('Cone did not end within 20 s of Ctrl+Q')
+            code = s.proc.returncode
+            if code != 0:
+                raise CheckFailed(f'Cone ended with {code} when quit while asking to restore the playlist')
+            return f'quit while asking: ended normally after {time.time() - t:.1f} s'
+        check('restore: quitting while Cone asks to restore the playlist ends normally', body)
+    finally:
+        s.stop()
+    # quitting without an answer keeps the recovery data (STATUS #131 retest): the next start asks
+    # again; answering No there clears it, so the start after that does not ask (and the question
+    # does not stand in front of the next checks' windows)
+    s = Session(exe, video, 'restore-clear', env, subs=False)
+    try:
+        if check_window(s):
+            def again():
+                end = time.time() + 15
+                asked = []
+                while time.time() < end and not asked:
+                    asked = xdo('search', '--name', 'closed abruptly').split()
+                    time.sleep(0.5)
+                if not asked:
+                    raise CheckFailed('no restore question at the start after a quit without an answer')
+                for w in asked:
+                    xdo('windowactivate', w)
+                    time.sleep(0.5)
+                    xdo('key', 'Escape')   # No (the question's escape button)
+                time.sleep(1)
+                if xdo('search', '--name', 'closed abruptly').split():
+                    raise CheckFailed('the restore question did not close on No')
+                return 'asked again, answered No'
+            check('restore: a quit without an answer keeps the question for the next start', again)
+            quit_cleanly(s)
+    finally:
+        s.stop()
+    s = Session(exe, video, 'restore-gone', env, subs=False)
+    try:
+        if check_window(s):
+            def gone():
+                end = time.time() + 8
+                while time.time() < end:
+                    if xdo('search', '--name', 'closed abruptly').split():
+                        raise CheckFailed('the restore question came back after it was answered No')
+                    time.sleep(0.5)
+                return 'no question within 8 s'
+            check('restore: answering No clears the recovery data', gone)
+            for w in xdo('search', '--name', 'closed abruptly').split():
+                xdo('windowactivate', w)
+                time.sleep(0.5)
+                xdo('key', 'Escape')
+            quit_cleanly(s)
+    finally:
+        s.stop()
+    KEEP_RESTORE[0] = False
+
+
 def check_up_next(exe, env):
     """Up Next (Cone extra): a click on the card's "Next episode" moves on to the next episode,
     which is still playing 5 s later (on Windows it stopped at once and Cone showed the home page,
@@ -732,6 +1427,7 @@ def check_up_next(exe, env):
             if not b:
                 shot('upnext-nocard')
                 raise CheckFailed(f'no "Next episode" button on the card at 6:10 of episode {before}')
+            pictures.append((time.time(), before + 1))
             xdo('mousemove', b[0] + b[2] // 2, b[1] + b[3] // 2)
             time.sleep(0.3)
             xdo('click', 1)
@@ -749,9 +1445,305 @@ def check_up_next(exe, env):
             if t2 <= t1:
                 raise CheckFailed(f'episode {after} stands still at {t1} s, then {t2} s')
             return f'episode {before} -> {after}, still playing 5 s after the click ({t1} s, then {t2} s)'
+        # (time the card showed, next episode) per attempt of the check above
+        pictures = []
+
+        def card_picture(shown, episode):
+            """the card shows in Cone's first minute: the next episode's picture is made within 8 s
+            (it waited for that minute to pass, so the card had none: PC retest of #127)"""
+            folder = os.path.join(env['XDG_CACHE_HOME'], 'Cone', 'up-next')
+            end = shown + 8
+            while True:
+                made = [l for l in open(s.log, errors='replace')
+                        if 'thumbnailing' in l and f'S01E0{episode}' in l]
+                pngs = glob.glob(os.path.join(folder, '*.png'))
+                if made and pngs:
+                    return f'picture of episode {episode} made ({len(pngs)} in up-next/)'
+                if time.time() >= end:
+                    break
+                time.sleep(0.25)
+            why = [l.strip() for l in open(s.log, errors='replace') if 'up next picture' in l or 'up next: no picture' in l]
+            return f'FAIL: no picture of episode {episode} 8 s after the card showed ({" | ".join(why) or "no picture job"})'
+
         check("upnext: the card's Next episode keeps the next episode playing", body)
+
+        def picture():
+            if not pictures:
+                raise CheckFailed('the card did not show')
+            result = card_picture(*pictures[-1])
+            if result.startswith('FAIL: '):
+                raise CheckFailed(result[6:])
+            return result
+        check("upnext: the card's picture is made in Cone's first minute", picture)
     finally:
         s.stop()
+
+
+def check_next_short(exe, env):
+    """Next from a playing episode to one shorter than an episode (STATUS #127 retest): the
+    background queue's "opening a file" hold ends when the new file plays (it lasted its full 8 s,
+    since the playing state never changed), and no Up Next picture is made for the episode after
+    the short one (the card never shows there)"""
+    video = os.path.join(MEDIA, 'Mixed Show', 'Mixed Show S01E01.mp4')
+    s = Session(exe, video, 'next-short', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def count(text):
+            return sum(1 for l in open(s.log, errors='replace') if text in l)
+
+        def hold():
+            time.sleep(4)
+            if episode_of(rc('status')) != 1:
+                raise CheckFailed('episode 1 does not play')
+            resumed = count('background: resumed')
+            t = time.time()
+            rc('next')
+            while time.time() < t + 9 and count('background: resumed') == resumed:
+                time.sleep(0.1)
+            took = time.time() - t
+            if count('background: resumed') == resumed:
+                raise CheckFailed('the background queue did not resume within 9 s of Next')
+            if took > 5:
+                raise CheckFailed(f'the background queue resumed only {took:.1f} s after Next (the 8 s hold ran out)')
+            return f'resumed {took:.1f} s after Next to episode {episode_of(rc("status"))}'
+        check('next-short: the background queue resumes once the next file plays', hold)
+
+        def no_picture():
+            time.sleep(6)
+            if episode_of(rc('status')) != 2:
+                raise CheckFailed('episode 2 does not play')
+            made = [l.strip() for l in open(s.log, errors='replace') if 'thumbnailing' in l and 'S01E03' in l]
+            if made:
+                raise CheckFailed(f'a picture of episode 3 was made after a 60 s episode: {made[0][:120]}')
+            return 'no picture of episode 3 while the 60 s episode 2 plays'
+        check('next-short: no Up Next picture after an episode too short for the card', no_picture)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+    # the short episode opened directly: Up Next decides before the file's length is known
+    video = os.path.join(MEDIA, 'Mixed Show', 'Mixed Show S01E02.mp4')
+    s = Session(exe, video, 'open-short', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+
+        def no_picture_open():
+            time.sleep(8)
+            made = [l.strip() for l in open(s.log, errors='replace') if 'thumbnailing' in l and 'S01E03' in l]
+            if made:
+                raise CheckFailed(f'a picture of episode 3 was made for a 60 s episode opened directly: {made[0][:120]}')
+            return 'no picture of episode 3 while the 60 s episode 2 plays'
+        check('open-short: no Up Next picture for an episode too short for the card', no_picture_open)
+        quit_cleanly(s)
+    finally:
+        s.stop()
+
+
+def find_where(pred, timeout=0.0):
+    """the first showing element `pred` accepts: (x, y, w, h) on the screen, or None"""
+    end = time.time() + timeout
+    while True:
+        for acc in _walk(cone_app()):
+            try:
+                if not pred(acc):
+                    continue
+                x, y, w, h = acc.queryComponent().getExtents(pyatspi.DESKTOP_COORDS)
+                if w > 0 and h > 0:
+                    return (x, y, w, h)
+            except Exception:  # noqa: BLE001
+                continue
+        if time.time() >= end:
+            return None
+        time.sleep(0.25)
+
+
+def check_popup_stack(exe, env):
+    """the notices at the bottom stack (redesign/POPUP_STACK_NOTES.md): a file watched to 2:00 opened
+    again with the update notice forced on shows the resume toast and the update notice one above
+    the other, never overlapping, on the same center line, 10 px apart; when the toast goes the
+    notice slides down into its place (the toast closes by itself 10 s after it shows)"""
+    video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E03.mp4')
+    answer = os.path.join(WORK, 'update-answer.json')
+    with open(answer, 'w') as f:
+        json.dump([{'tag_name': 'linux-v9.9.9', 'draft': False, 'prerelease': True,
+                    'html_url': 'https://github.com/StickyGonzales/vlc-redesign-juxtopposed/releases/tag/linux-v9.9.9'}], f)
+    tag = 'popup-stack'
+
+    # watch to 2:00 of 7:00 and quit: the media library keeps the progress
+    s = Session(exe, video, tag + '-watch', env, repeat=False, subs=False)
+    try:
+        if not check_window(s):
+            return
+        time.sleep(2)
+        rc('seek 120')
+        time.sleep(2)
+        rc('quit')
+        s.proc.wait(15)
+    except Exception as e:  # noqa: BLE001
+        RESULTS.append((f'{tag}: watch a file to 2:00', 'fail', str(e)))
+        log(f'FAIL  {tag}: watch a file to 2:00  {e}')
+        return
+    finally:
+        s.stop()
+
+    s = Session(exe, video, tag, env, repeat=False, subs=False, update_answer=answer)
+    try:
+        if not check_window(s):
+            return
+
+        def is_update(acc):
+            return (acc.name or '').endswith(' is available') and acc.getRoleName() == 'alert'
+
+        def body():
+            r = find('Resume dialog', 15)
+            u = find_where(is_update, 15)
+            if not r or not u:
+                shot(f'{tag}-missing')
+                raise CheckFailed(f'resume toast {r}, update notice {u}: both expected')
+            time.sleep(0.6)   # past a slide
+            r = find('Resume dialog', 2)
+            u = find_where(is_update, 2)
+            if not r or not u:
+                raise CheckFailed(f'resume toast {r}, update notice {u}: both expected 0.6 s later')
+            shot(f'{tag}-two')
+            overlap = not (r[1] >= u[1] + u[3] or u[1] >= r[1] + r[3]
+                           or r[0] >= u[0] + u[2] or u[0] >= r[0] + r[2])
+            if overlap:
+                raise CheckFailed(f'they overlap: resume toast {r}, update notice {u}')
+            if u[1] + u[3] > r[1]:
+                raise CheckFailed(f'the update notice is not above the resume toast: {u} / {r}')
+            gap = r[1] - (u[1] + u[3])
+            if not 6 <= gap <= 14:
+                raise CheckFailed(f'{gap} px between them (10 expected): {u} / {r}')
+            dc = abs((r[0] + r[2] / 2) - (u[0] + u[2] / 2))
+            if dc > 2:
+                raise CheckFailed(f'not on the same center line ({dc:.0f} px apart): {u} / {r}')
+            # the toast closes by itself 10 s after it shows (ResumeDialog's timeout): the notice
+            # slides down into its place
+            end = time.time() + 14
+            while find('Resume dialog', 0) and time.time() < end:
+                time.sleep(0.25)
+            gone = find('Resume dialog', 0)
+            if gone:
+                raise CheckFailed(f'the resume toast still shows 14 s later: {gone}')
+            time.sleep(0.6)   # past the slide
+            u2 = find_where(is_update, 2)
+            shot(f'{tag}-after')
+            if not u2 or abs((u2[1] + u2[3]) - (r[1] + r[3])) > 2:
+                raise CheckFailed(f'the update notice did not take the toast\'s place: {u2}, toast was {r}')
+            return (f'resume toast {r}, update notice {u} above it, {gap} px apart, centers {dc:.0f} px apart; '
+                    f'after the toast went the notice moved to {u2}')
+        check(f'{tag}: the resume toast and the update notice stack without overlapping', body)
+        # a clean quit: a killed Cone makes the next start ask to restore its playlist ("closed
+        # abruptly"), and that dialog would stand in front of the next checks' windows
+        try:
+            rc('quit')
+            s.proc.wait(15)
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        s.stop()
+
+
+def fresh_env(tag):
+    """a new, empty Cone profile (settings, media library, Up Next store) for one check"""
+    home = os.path.join(WORK, 'home-' + tag + '-' + str(int(time.time() * 1000)))
+    os.makedirs(home)
+    return dict(os.environ, HOME=home, XDG_CONFIG_HOME=os.path.join(home, '.config'),
+                XDG_DATA_HOME=os.path.join(home, '.local/share'), XDG_CACHE_HOME=os.path.join(home, '.cache'))
+
+
+def check_upnext_watched(exe):
+    """an episode watched to its end, played again by Up Next, starts from the beginning: resumed, it
+    began at its last frame, ended at once and autoplay ran on through the show (1.5.0 test pass,
+    redesign/TEST_PASS_1.5.0_LINUX_MAC.md bug 1; redesign/FIX_UPNEXT_RESUME_TRACKS_NOTES.md)"""
+    tag = 'upnext-watched'
+    show = os.path.join(MEDIA, 'Smoke Show')
+
+    def body():
+        env = fresh_env(tag)
+        # S01E02 on its own, played to its end and quit cleanly: its position at the end is saved
+        s = Session(exe, os.path.join(show, 'Smoke Show S01E02.mp4'), tag + '-watch', env, repeat=False, subs=False)
+        try:
+            if not check_window(s):
+                raise CheckFailed('no window for S01E02')
+            time.sleep(2)
+            rc('seek 414')
+            end = time.time() + 25
+            while time.time() < end and rc_time() is not None:
+                time.sleep(0.5)
+            rc('quit')
+            s.proc.wait(15)
+        finally:
+            s.stop()
+        # S01E01 to its end: Up Next plays S01E02
+        s = Session(exe, os.path.join(show, 'Smoke Show S01E01.mp4'), tag, env, repeat=False, subs=False)
+        try:
+            if not check_window(s):
+                raise CheckFailed('no window for S01E01')
+            time.sleep(2)
+            rc('seek 414')
+            # S01E02 resumed at its end lasts an instant before S01E03 starts: either one ends the wait
+            end = time.time() + 30
+            st = ''
+            while time.time() < end and 'S01E02' not in st and 'S01E03' not in st:
+                st = rc('status')
+                time.sleep(0.3)
+            if 'S01E03' in st:
+                shot(tag)
+                raise CheckFailed('S01E02, watched to its end, was skipped: S01E03 plays already')
+            if 'S01E02' not in st:
+                raise CheckFailed('Up Next did not play S01E02 after S01E01')
+            time.sleep(4)
+            t = rc_time()
+            st = rc('status')
+            shot(tag)
+            if 'S01E03' in st or t is None or t > 60:
+                raise CheckFailed(f'S01E02, watched to its end, did not start from the beginning: '
+                                  f'{"S01E03 plays already" if "S01E03" in st else f"at {t} s"}')
+            return f'S01E02 (watched to its end) started from the beginning: at {t} s 4 s after it began'
+        finally:
+            try:
+                rc('quit')
+                s.proc.wait(15)
+            except Exception:  # noqa: BLE001
+                pass
+            s.stop()
+    check(f'{tag}: Up Next starts an episode watched to its end from the beginning', body)
+
+
+def check_track_stop(exe):
+    """a stop saves no track choice for the show: only a pick does. A stop emptied the track list and
+    that was saved as "subtitles off", so the next episodes started without subtitles (1.5.0 test
+    pass bug 2)"""
+    tag = 'track-stop'
+    video = os.path.join(MEDIA, 'Smoke Show', 'Smoke Show S01E01.mp4')
+
+    def body():
+        env = fresh_env(tag)
+        # the external subtitle file is selected (VLC's default); nothing is picked
+        s = Session(exe, video, tag, env, repeat=False, subs=True)
+        try:
+            if not check_window(s):
+                raise CheckFailed('no window')
+            time.sleep(5)
+            selected = [l.strip() for l in rc('strack').splitlines() if '*' in l]
+            rc('stop')
+            time.sleep(3)
+            rc('quit')
+            s.proc.wait(15)
+        finally:
+            s.stop()
+        with open(s.log, errors='replace') as f:
+            saved = [l.strip() for l in f if 'tracks for the show saved' in l]
+        if not selected:
+            raise CheckFailed('no subtitle track selected at the start (the check needs one)')
+        if saved:
+            raise CheckFailed(f'a stop saved a track choice nobody picked: {saved[0]}')
+        return f'subtitles {selected[0]} at the start, stopped, quit: nothing saved for the show'
+    check(f'{tag}: a stop saves no track choice for the show', body)
 
 
 def rc_time():
@@ -844,6 +1836,16 @@ session(os.path.join(folder, 'cone'), 'h264', 'tar-h264', True, env)
 session(os.path.join(folder, 'cone'), 'hevc', 'tar-hevc', True, env)
 first_start(os.path.join(folder, 'cone'), env)
 check_up_next(os.path.join(folder, 'cone'), env)
+check_next_short(os.path.join(folder, 'cone'), env)
+check_upnext_watched(os.path.join(folder, 'cone'))
+check_track_stop(os.path.join(folder, 'cone'))
+check_popup_stack(os.path.join(folder, 'cone'), env)
+check_quit_handoff(os.path.join(folder, 'cone'))
+check_idle_drawing(os.path.join(folder, 'cone'), env)
+check_cast_discovery(os.path.join(folder, 'cone'), env)
+check_music_cover(os.path.join(folder, 'cone'), env)
+check_recent_thumbnails(os.path.join(folder, 'cone'), WORK)
+check_restore_quit(os.path.join(folder, 'cone'), env)
 
 
 def settings_in_home():
@@ -952,6 +1954,22 @@ if not args.skip_deb and check('deb: install next to VLC', deb_install):
             raise CheckFailed('/usr/bin/vlc is gone')
         return 'removed; /opt/cone-player and its files gone, VLC still installed'
     check('deb: remove', deb_remove)
+
+def no_start_quit():
+    """no Cone of this run was told to quit before its Qt interface started (the cli's stdin quit,
+    build-linux #152 and #153: a quit there ends Cone at its start, at random)"""
+    early = []
+    for path in sorted(glob.glob(os.path.join(OUT, 'cone-*.log'))):
+        for line in open(path, errors='replace'):
+            if 'using interface module "qt"' in line:
+                break
+            if 'main debug: exiting' in line:
+                early.append(os.path.basename(path))
+                break
+    if early:
+        raise CheckFailed(f'{len(early)} Cone(s) told to quit before their interface started: {", ".join(early[:5])}')
+    return f'{len(glob.glob(os.path.join(OUT, "cone-*.log")))} Cone logs, none quit at the start'
+check('no Cone of this run is quit before its interface starts', no_start_quit)
 
 # ------------------------------------------------------------------ summary
 fails = [r for r in RESULTS if r[1] == 'fail']

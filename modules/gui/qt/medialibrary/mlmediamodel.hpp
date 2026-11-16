@@ -64,6 +64,8 @@ protected:
     QHash<int, QByteArray> roleNames() const override;
     QVariant itemRoleData(const MLItem *item, int role) const override;
     void onVlcMlEvent(const MLEvent &event) override;
+    void thumbnailUpdated(const QModelIndex& idx, MLItem* item, const QString& mrl,
+                          vlc_ml_thumbnail_status_t status) override;
     std::unique_ptr<MLListCacheLoader> createMLLoader() const override;
 
 private:

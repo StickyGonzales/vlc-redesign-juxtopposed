@@ -19,6 +19,10 @@ on:
       - 'README.md'
   workflow_dispatch:
     inputs:
+      arm64:
+        description: 'Build for Apple Silicon (arm64); off only for an Intel-only check while Apple Silicon runners are scarce'
+        type: boolean
+        default: true
       intel:
         description: 'Also build for Intel Macs (x86_64)'
         type: boolean
@@ -56,10 +60,16 @@ jobs:
         env:
           # a push has no inputs: both architectures
           INTEL: ${{ github.event_name == 'push' || inputs.intel }}
+          # workflow_call (releases) has no arm64 input: always built
+          ARM64: ${{ github.event_name != 'workflow_dispatch' || inputs.arm64 }}
         run: |
           ARM='{"arch":"arm64","host":"aarch64","runner":"macos-15","ci":"macos-arm64"}'
           INTEL_ROW='{"arch":"x86_64","host":"x86_64","runner":"macos-15-intel","ci":"macos-x86_64"}'
-          if [ "$INTEL" = true ]; then M="[$ARM,$INTEL_ROW]"; else M="[$ARM]"; fi
+          ROWS=()
+          if [ "$ARM64" = true ]; then ROWS+=("$ARM"); fi
+          if [ "$INTEL" = true ]; then ROWS+=("$INTEL_ROW"); fi
+          if [ ${#ROWS[@]} -eq 0 ]; then echo "::error::neither architecture selected"; exit 1; fi
+          M="[$(IFS=,; echo "${ROWS[*]}")]"
           echo "matrix={\"include\":$M}" >> "$GITHUB_OUTPUT"
 
   macos:
@@ -248,3 +258,4 @@ jobs:
     uses: ./.github/workflows/smoke-macos.yml
     with:
       intel: ${{ github.event_name == 'push' || inputs.intel }}
+      arm64: ${{ github.event_name != 'workflow_dispatch' || inputs.arm64 }}

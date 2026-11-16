@@ -107,6 +107,24 @@ T.Pane {
             menu.close()
     }
 
+    // redesign: the playback time the bar shows, followed only while the bar is visible. Any
+    // change to a hidden item still makes Qt draw the window again, so a hidden bar following
+    // the time cost two empty frames a second during playback (redesign/PERF_AUDIT_NOTES.md);
+    // the bar catches up the moment it shows
+    property var _shownTime: Player.time
+    property var _shownRemainingTime: Player.remainingTime
+
+    onVisibleChanged: {
+        if (visible) {
+            _shownTime = Qt.binding(() => Player.time)
+            _shownRemainingTime = Qt.binding(() => Player.remainingTime)
+        } else {
+            // a plain assignment ends the binding: the values stay as they are
+            _shownTime = _shownTime
+            _shownRemainingTime = _shownRemainingTime
+        }
+    }
+
     readonly property ColorContext colorContext: ColorContext {
         id: theme
         colorSet: ColorContext.Window
@@ -123,7 +141,7 @@ T.Pane {
             // Length might not be reported in some cases, for that reason we should check both and use the bigger one.
 
             // Some extra space to compensate non-monospaced fonts ("-" takes more space than ":", double "-" for guarantee)
-            return (Player.time.isSubHour() && Player.length.isSubHour()) ? "00--00" : "00--00--00"
+            return (root._shownTime.isSubHour() && Player.length.isSubHour()) ? "00--00" : "00--00--00"
         }
     }
 
@@ -229,9 +247,9 @@ T.Pane {
                         // the subtitle timeline: the start of its window (video 6:52)
                         if (trackPositionSlider.timelineShown)
                             return trackPositionSlider.timelineStartText
-                        return Player.time.formatHHMMSS()
+                        return root._shownTime.formatHHMMSS()
                     }
-                    return Player.time.formatHMS(length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
+                    return root._shownTime.formatHMS(length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
                 }
                 color: mediaTime.editing ? "transparent"
                        : (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.palette.rdFgA2 : theme.fg.primary
@@ -349,7 +367,7 @@ T.Pane {
                 Layout.preferredHeight: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.rd_seekBarHeight : -1
                 verticalAlignment: Text.AlignVCenter
 
-                readonly property bool showRemainingTime: (MainCtx.showRemainingTime && Player.remainingTime.valid())
+                readonly property bool showRemainingTime: (MainCtx.showRemainingTime && root._shownRemainingTime.valid())
 
                 readonly property bool _inline: textPosition === ControlBar.TimeTextPosition.Inline
                 // the subtitle timeline: the end of its window (video 6:52)
@@ -357,7 +375,7 @@ T.Pane {
 
                 text: _timeline ? trackPositionSlider.timelineEndText
                       : showRemainingTime
-                      ? "-" + (_inline ? Player.remainingTime.formatHHMMSS() : Player.remainingTime.formatHMS())
+                      ? "-" + (_inline ? root._shownRemainingTime.formatHHMMSS() : root._shownRemainingTime.formatHMS())
                       : (_inline ? Player.length.formatHHMMSS() : Player.length.formatHMS())
                 color: mediaTime.color
                 font: timeTextMetrics.font

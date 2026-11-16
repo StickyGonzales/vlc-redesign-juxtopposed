@@ -88,6 +88,7 @@ T.Popup {
         root._pendingLevel = -1
         root.model.build()
 
+        root._hideSubmenus(1)
         root._models = [root.model]
         root._anchors = [{ x: p.x, y: p.y }]
         root._openRows = []
@@ -95,10 +96,20 @@ T.Popup {
         root.open()
     }
 
+    // the submenus from `level` on close: each is told, as a QMenu would be (VLC's renderer menu
+    // stops its search for cast devices then)
+    function _hideSubmenus(level) {
+        for (let i = Math.max(1, level); i < root._models.length; ++i) {
+            if (root._models[i])
+                root._models[i].aboutToHide()
+        }
+    }
+
     function _reset() {
         if (root.visible)
             return
         hoverTimer.stop()
+        root._hideSubmenus(1)
         root._models = []
         root._anchors = []
         root._openRows = []
@@ -118,6 +129,7 @@ T.Popup {
     function _closeLevels(count) {
         if (root._models.length <= count)
             return
+        root._hideSubmenus(count)
         root._models = root._models.slice(0, count)
         root._anchors = root._anchors.slice(0, count)
         root._openRows = root._openRows.slice(0, Math.max(0, count - 1))
@@ -140,6 +152,7 @@ T.Popup {
         if (root._models.length > level + 1 && root._openRows[level] === row) {
             root._closeLevels(level + 2)
         } else {
+            root._hideSubmenus(level + 1)
             submenu.aboutToShow()
 
             const p = rowItem.mapToItem(root.contentItem, 0, 0)

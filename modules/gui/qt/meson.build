@@ -167,6 +167,8 @@ moc_headers = files(
     'util/csdbuttonmodel.hpp',
     'util/csdmenu.hpp',
     'util/rd_update_check.hpp',
+    'util/rd_background_queue.hpp',
+    'util/rd_storage.hpp',
     'util/imageluminanceextractor.hpp',
     'util/keyhelper.hpp',
     'util/listcache.hpp',
@@ -301,6 +303,8 @@ qt_plugin_sources = files(
     'dialogs/preferences/simple_preferences.hpp',
     'dialogs/redesign/addsubtitles/subtitle_matcher.cpp',
     'dialogs/redesign/addsubtitles/subtitle_matcher.hpp',
+    'dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp',
+    'dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp',
     'dialogs/redesign/addsubtitles/subtitle_web.cpp',
     'dialogs/redesign/addsubtitles/subtitle_web.hpp',
     'dialogs/redesign/addsubtitles/opensubtitles.cpp',
@@ -533,6 +537,7 @@ qt_plugin_sources = files(
     'player/rd_credits_subtitles.hpp',
     'player/rd_up_next.cpp',
     'player/rd_up_next.hpp',
+    'player/rd_up_next_mode.hpp',
     'player/input_models.hpp',
     'player/player_controller.cpp',
     'player/player_controller.hpp',
@@ -583,6 +588,15 @@ qt_plugin_sources = files(
     'util/csdmenu.hpp',
     'util/rd_update_check.cpp',
     'util/rd_update_check.hpp',
+    'util/rd_background_queue.cpp',
+    'util/rd_background_queue.hpp',
+    'util/rd_reload_throttle.hpp',
+    'util/rd_storage.cpp',
+    'util/rd_storage.hpp',
+    'util/rd_storage_model.cpp',
+    'util/rd_storage_model.hpp',
+    'util/rd_volume.cpp',
+    'util/rd_volume.hpp',
     'util/imageluminanceextractor.cpp',
     'util/imageluminanceextractor.hpp',
     'util/imagehelper.cpp',
@@ -995,6 +1009,7 @@ qml_modules += {
    ),
    'singletons' : files(
        'player/qml/PlayerControlbarControls.qml',
+       'player/qml/RdNoticeStack.qml',
        'player/qml/RdPanels.qml',
        'player/qml/RdSleepTimer.qml',
    )
@@ -1747,6 +1762,77 @@ if qt6_dep.found()
                 'tests/test_rd_credits_audio.cpp',
                 'player/rd_credits_audio.cpp',
                 'player/rd_credits_audio.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone's storage cleanup rules, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_storage_model',
+            'sources': files(
+                'tests/test_rd_storage_model.cpp',
+                'util/rd_storage_model.cpp',
+                'util/rd_storage_model.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Cone's one background queue, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_background_queue',
+            'sources': [files(
+                'tests/test_rd_background_queue.cpp',
+                'util/rd_background_queue.cpp',
+                'util/rd_background_queue.hpp'
+            ), qt6.compile_moc(headers: files('util/rd_background_queue.hpp'),
+                               dependencies: qt6_dep)],
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # Up Next: When an episode ends, the saved values and which episodes play, no Qt
+        vlc_tests += {
+            'name': 'test_qt_rd_up_next_mode',
+            'sources': files(
+                'tests/test_rd_up_next_mode.cpp',
+                'player/rd_up_next_mode.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # the library views refresh at most once a second during a scan, no Qt
+        vlc_tests += {
+            'name': 'test_qt_rd_reload_throttle',
+            'sources': files(
+                'tests/test_rd_reload_throttle.cpp',
+                'util/rd_reload_throttle.hpp'
+            ),
+            'suite': ['qt'],
+            'include_directories' : qt_include_dir,
+            'link_args': qt_link_args,
+            'dependencies': [qt6_dep]
+        }
+
+        # redesign: the Add Subtitles choice and the subtitle file and track names, QtCore only
+        vlc_tests += {
+            'name': 'test_qt_rd_subtitle_picks',
+            'sources': files(
+                'tests/test_rd_subtitle_picks.cpp',
+                'dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp',
+                'dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp',
+                'dialogs/redesign/addsubtitles/subtitle_matcher.cpp',
+                'dialogs/redesign/addsubtitles/subtitle_matcher.hpp'
             ),
             'suite': ['qt'],
             'include_directories' : qt_include_dir,

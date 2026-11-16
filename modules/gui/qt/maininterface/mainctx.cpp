@@ -84,6 +84,8 @@
 
 #ifdef _WIN32
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QThread>
 #include <QTimer>
 #endif
 
@@ -507,12 +509,11 @@ void MainCtx::loadPrefs(const bool callSignals)
 
 void MainCtx::applyCastDiscovery()
 {
-    // S2-10 / Decision 36: on, cast devices are looked for in the background so the Render
-    // picker lists them at once; off, only while the picker is open. Started after the window
-    // has shown (startup first); the services start on a worker thread
-    if (!m_windowShown || !p_intf->p_mainPlayerController)
+    // S2-10: cast devices are looked for only while the Render picker is open, as in VLC (a
+    // search running all session cost every user, StickyGonzales 2026-11-13); off, not at all
+    if (!p_intf->p_mainPlayerController)
         return;
-    THEMIM->getRendererManager()->setBackgroundDiscovery(m_castDiscovery);
+    THEMIM->getRendererManager()->setDiscoveryEnabled(m_castDiscovery);
 }
 
 void MainCtx::applyVideoDoubleClick()
@@ -720,13 +721,6 @@ void MainCtx::updateIntfScaleFactor()
 void MainCtx::onWindowVisibilityChanged(QWindow::Visibility visibility)
 {
     m_windowVisibility = visibility;
-
-    if (!m_windowShown && visibility != QWindow::Hidden && visibility != QWindow::Minimized)
-    {
-        m_windowShown = true;
-        // after the first frames
-        QMetaObject::invokeMethod(this, &MainCtx::applyCastDiscovery, Qt::QueuedConnection);
-    }
 }
 
 void MainCtx::setHasAcrylicSurface(const bool v)
@@ -1125,10 +1119,33 @@ constexpr int kCloseStopTimeoutMs = 3000;
 
 void MainCtx::quitLikeClose()
 {
-    onWindowClose(nullptr);
+    requestQuit("the quit key");
 }
 
-void MainCtx::onWindowClose( QWindow* )
+void MainCtx::onWindowClose( QWindow* window )
+{
+    requestQuit(window ? "the window's close button" : "a close request");
+}
+
+/* redesign (StickyGonzales, 2026-11-12): the quit feels instant. The windows go at once and the
+ * sound stops with the stop request; VLC's core shuts down in the background (plain VLC 4 itself
+ * takes about 2 s to quit on Windows, redesign/QUIT_INSTANT_NOTES.md) and the watchdog ends it
+ * within 5 s. A window stays while a dialog needs the user (a modal window is open). */
+void MainCtx::hideWindowsForQuit()
+{
+    if (QGuiApplication::modalWindow() != nullptr)
+    {
+        msg_Dbg(p_intf, "quit: a dialog is open, the windows stay until the quit ends");
+        return;
+    }
+    for (QWindow* window : QGuiApplication::topLevelWindows())
+    {
+        if (window->isVisible())
+            window->hide();
+    }
+}
+
+void MainCtx::requestQuit(const char* source)
 {
     PlaylistController* playlistController = p_intf->p_mainPlaylistController;
     PlayerController* playerController = p_intf->p_mainPlayerController;
@@ -1139,8 +1156,18 @@ void MainCtx::onWindowClose( QWindow* )
         return;
     m_closing = true;
 
-    // redesign: the quit starts here (the stop below can hang in the core): save and arm
+    QuitWatchdog::logRequest(p_intf, source);
+    // redesign: the quit starts here (the stop below can hang in the core): save and arm, then
+    // the windows go (after the save, which keeps the window's geometry and state)
     QuitWatchdog::arm(p_intf);
+    hideWindowsForQuit();
+
+    if (QuitWatchdog::testHangRequested())
+    {
+        msg_Warn(p_intf, "quit: CONE_TEST_HANG_QUIT is set, the quit blocks here (test only)");
+        for (;;)
+            QThread::msleep(1000);
+    }
 
     if (m_videoSurfaceProvider)
         m_videoSurfaceProvider->onWindowClosed();
@@ -1163,6 +1190,9 @@ void MainCtx::onWindowClose( QWindow* )
     }
     else
     {
+        // redesign: the sound stops now, not when the core gets to it in libvlc_Quit
+        if (playlistController)
+            playlistController->stop();
         emit askToQuit(); /* ask THEDP to quit, so we have a unique method */
     }
 }

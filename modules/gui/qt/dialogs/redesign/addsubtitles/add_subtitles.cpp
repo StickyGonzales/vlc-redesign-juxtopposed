@@ -21,7 +21,9 @@
 #endif
 
 #include "add_subtitles.hpp"
+#include "util/rd_storage.hpp"
 #include "subtitle_web.hpp"
+#include "rd_subtitle_picks.hpp"
 
 #include "player/player_controller.hpp"
 
@@ -234,6 +236,9 @@ SubtitleMatcher::Name parseResult(const OpenSubtitles::Result& result)
         name.episode = result.episode;
         name.season = result.season;
     }
+    // OpenSubtitles' language tag ranks the results; the name's own language word catches an
+    // upload filed under the wrong one (rankResults)
+    name.nameLanguage = SubtitleMatcher::namedLanguage(result.fileName, result.release);
     if (!result.language.isEmpty())
         name.language = result.language;
     return name;
@@ -358,8 +363,51 @@ AddSubtitles::AddSubtitles(qt_intf_t* intf, QObject* parent)
             m_storeLoaded = true;
             if (!saved.isEmpty())
                 writeStore();
+            const QVector<std::function<void()>> waiting = std::move(m_afterStoreLoad);
+            m_afterStoreLoad.clear();
+            for (const auto& action : waiting)
+                action();
+            if (m_storage)
+                m_storage->setDownloadOwners(m_store.downloadOwners(RdStorage::downloadsDir()));
             onPlayingStateChanged();
         }, 0, false);
+}
+
+void AddSubtitles::whenStoreLoaded(std::function<void()> action)
+{
+    if (m_storeLoaded)
+        action();
+    else
+        m_afterStoreLoad.append(std::move(action));
+}
+
+void AddSubtitles::setStorage(RdStorage* storage)
+{
+    m_storage = storage;
+    connect(storage, &RdStorage::relocated, this,
+            [this](const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media) {
+        whenStoreLoaded([this, oldRoot, newRoot, media]() {
+            if (m_store.relocate(oldRoot, newRoot, media))
+                writeStore();
+        });
+    });
+    connect(storage, &RdStorage::forgetEntries, this, [this](const QStringList& paths) {
+        whenStoreLoaded([this, paths]() {
+            bool changed = false;
+            for (const QString& path : paths)
+                changed |= m_store.forgetUnder(path);
+            if (changed)
+                writeStore();
+        });
+    });
+    connect(storage, &RdStorage::unlinkDownloads, this, [this](const QStringList& files) {
+        whenStoreLoaded([this, files]() {
+            if (m_store.unlink(files))
+                writeStore();
+        });
+    });
+    if (m_storeLoaded)
+        storage->setDownloadOwners(m_store.downloadOwners(RdStorage::downloadsDir()));
 }
 
 AddSubtitles::~AddSubtitles()
@@ -633,11 +681,11 @@ QString AddSubtitles::defaultSearchText() const
     else
         name = nameOf(m_playlistItems.value(0));
 
-    // a season folder ("S01") is named after the season only: the show is its parent
-    SubtitleMatcher::Name parsed = SubtitleMatcher::parse(name + QStringLiteral(".x"));
+    // a season folder ("S01") is named after the season only: the show is its parent. parse()
+    // takes off only a real extension: a video's ".mkv" goes, a folder name keeps every word
+    SubtitleMatcher::Name parsed = SubtitleMatcher::parse(name);
     if (m_target == TargetFolder && parsed.title.isEmpty() && !m_videoFolder.isEmpty())
-        parsed.title = SubtitleMatcher::parse(QFileInfo(QFileInfo(m_videoFolder).path()).fileName()
-                                              + QStringLiteral(".x")).title;
+        parsed.title = SubtitleMatcher::parse(QFileInfo(QFileInfo(m_videoFolder).path()).fileName()).title;
     if (m_target != TargetFile)
     {
         // a playlist or folder of episodes: their season
@@ -776,7 +824,7 @@ void AddSubtitles::search()
     }
 
     // "The Wand S01E01": the title as the query, the episode as its own parameters
-    const SubtitleMatcher::Name query = SubtitleMatcher::parse(m_searchText + QStringLiteral(".x"));
+    const SubtitleMatcher::Name query = SubtitleMatcher::parse(m_searchText);
     const QString text = query.title.isEmpty() ? m_searchText : query.title;
     const bool wholeSeason = m_target != TargetFile;
     const int season = query.season;
@@ -787,11 +835,17 @@ void AddSubtitles::search()
     auto error = std::make_shared<QString>();
     const OpenSubtitles::Account account = m_account;
     const QString language = m_language;
+    // a newer search (another language, other words) replaces this one: an older answer that
+    // comes last is dropped, so the results shown are always ranked with the language they were
+    // searched in
+    const int serial = ++m_searchSerial;
     rebuild();
     run([=](vlc_object_t* obj) {
             *results = OpenSubtitles::search(obj, account, text, language, season, episode, pages, error.get());
         },
-        [this, results, error]() {
+        [this, results, error, serial]() {
+            if (serial != m_searchSerial)
+                return;
             m_online.clear();
             for (const OpenSubtitles::Result& result : *results)
                 m_online.append({ result.fileName, QString(), result.fileId, parseResult(result) });
@@ -901,6 +955,34 @@ SubtitleMatcher::Preference AddSubtitles::preference() const
     return preference;
 }
 
+QVector<QPair<int, int>> AddSubtitles::rankedCandidates(const SubtitleMatcher::Name& video,
+                                                        const QVector<Candidate>& candidates,
+                                                        const SubtitleMatcher::Preference& pref) const
+{
+    // { score, candidate } best first; a score below 0: not this video's
+    QVector<QPair<int, int>> order;
+    order.reserve(candidates.size());
+    if (m_source == SourceOpenSubtitles)
+    {
+        // OpenSubtitles results: the chosen language first, then OpenSubtitles' own ranking (the
+        // order of their results); a Hebrew file named exactly like the film came before English
+        // ones with longer names (1.5.0 Windows retest)
+        QVector<SubtitleMatcher::Name> names;
+        names.reserve(candidates.size());
+        for (const Candidate& candidate : candidates)
+            names.append(candidate.parsed);
+        for (const int i : SubtitleMatcher::rankResults(video, names, m_language, pref))
+            order.append({ SubtitleMatcher::score(video, names.at(i), pref), i });
+        return order;
+    }
+    for (int i = 0; i < candidates.size(); ++i)
+        order.append({ SubtitleMatcher::score(video, candidates.at(i).parsed, pref), i });
+    std::stable_sort(order.begin(), order.end(), [](const QPair<int, int>& a, const QPair<int, int>& b) {
+        return a.first > b.first;
+    });
+    return order;
+}
+
 // ------------------------------------------------------------------------------------ rows
 
 void AddSubtitles::rebuild()
@@ -913,13 +995,7 @@ void AddSubtitles::rebuild()
         // the files of this episode first, best first (Figma "Folder-2": the episode's
         // languages); then every other subtitle of the source
         const SubtitleMatcher::Name video = SubtitleMatcher::parse(nameOf(m_mrl));
-        QVector<QPair<int, int>> order;
-        order.reserve(candidates.size());
-        for (int i = 0; i < candidates.size(); ++i)
-            order.append({ SubtitleMatcher::score(video, candidates.at(i).parsed, pref), i });
-        std::stable_sort(order.begin(), order.end(), [](const QPair<int, int>& a, const QPair<int, int>& b) {
-            return a.first > b.first;
-        });
+        const QVector<QPair<int, int>> order = rankedCandidates(video, candidates, pref);
 
         // the first time a source has files: the best match is checked
         if (!m_selected.contains(m_source) && !order.isEmpty())
@@ -949,7 +1025,8 @@ void AddSubtitles::rebuild()
         auto rows = std::make_shared<QVector<AddSubtitlesModel::Row>>();
         const int serial = ++m_rebuildSerial;
         const int source = m_source;
-        run([rows, videos, candidates, pref](vlc_object_t*) {
+        const QString language = m_language;
+        run([rows, videos, candidates, pref, source, language](vlc_object_t*) {
                 QVector<SubtitleMatcher::Name> names;
                 names.reserve(candidates.size());
                 for (const Candidate& candidate : candidates)
@@ -960,7 +1037,10 @@ void AddSubtitles::rebuild()
                     AddSubtitlesModel::Row row;
                     row.videoName = video.name;
                     row.videoMrl = video.mrl;
-                    row.candidate = SubtitleMatcher::bestMatch(video.parsed, names, pref);
+                    // OpenSubtitles: a result in the chosen language first (rankResults)
+                    row.candidate = source == SourceOpenSubtitles
+                        ? SubtitleMatcher::bestResult(video.parsed, names, language, pref)
+                        : SubtitleMatcher::bestMatch(video.parsed, names, pref);
                     if (row.candidate >= 0)
                         row.name = candidates.at(row.candidate).name;
                     rows->append(row);
@@ -1024,14 +1104,20 @@ void AddSubtitles::toggle(int row)
 {
     if (m_target != TargetFile || row < 0 || row >= m_files.count())
         return;
-    AddSubtitlesModel::Row value = m_files.at(row);
-    value.selected = !value.selected;
+    // a click checks or unchecks the row, for every source: several OpenSubtitles results can be
+    // downloaded at once and tried one by one (StickyGonzales, 1.5.0, as in 1.4.0); the best match
+    // is checked to start with (rebuild)
     QSet<int>& selected = m_selected[m_source];
-    if (value.selected)
-        selected.insert(value.candidate);
-    else
-        selected.remove(value.candidate);
-    m_files.setRow(row, value);
+    selected = rdsubtitles::picked(selected, m_files.at(row).candidate);
+    for (int i = 0; i < m_files.count(); ++i)
+    {
+        AddSubtitlesModel::Row value = m_files.at(i);
+        const bool checked = selected.contains(value.candidate);
+        if (value.selected == checked)
+            continue;
+        value.selected = checked;
+        m_files.setRow(i, value);
+    }
     emit canSaveChanged();
 }
 
@@ -1047,15 +1133,11 @@ QVariantList AddSubtitles::choices(int row) const
     if (video == videos.cend())
         return list;
 
-    // the subtitles of this episode first, then all the others in name order
+    // the subtitles of this episode first, best first (OpenSubtitles: the chosen language first,
+    // then their order), then the others
     const SubtitleMatcher::Preference pref = preference();
     const QVector<Candidate>& candidates = pool();
-    QVector<QPair<int, int>> order;
-    for (int i = 0; i < candidates.size(); ++i)
-        order.append({ SubtitleMatcher::score(video->parsed, candidates.at(i).parsed, pref), i });
-    std::stable_sort(order.begin(), order.end(), [](const QPair<int, int>& a, const QPair<int, int>& b) {
-        return a.first > b.first;
-    });
+    const QVector<QPair<int, int>> order = rankedCandidates(video->parsed, candidates, pref);
     const int current = m_matches.at(row).candidate;
     for (const QPair<int, int>& entry : order)
         list.append(QVariantMap { { QStringLiteral("candidate"), entry.second },
@@ -1105,9 +1187,17 @@ void AddSubtitles::save()
     QVector<QPair<QString, int>> assignments;
     if (m_target == TargetFile)
     {
+        // in the list's order, best first: the first is the subtitle shown (attach)
+        QVector<int> order;
+        QSet<int> checked;
         for (const AddSubtitlesModel::Row& row : m_files.rows())
+        {
+            order.append(row.candidate);
             if (row.selected)
-                assignments.append({ m_mrl, row.candidate });
+                checked.insert(row.candidate);
+        }
+        for (const int candidate : rdsubtitles::checkedInOrder(order, checked))
+            assignments.append({ m_mrl, candidate });
     }
     else
     {
@@ -1144,16 +1234,21 @@ void AddSubtitles::save()
             }
     }
 
-    // OpenSubtitles results are downloaded first
-    QHash<int, qint64> downloads;
+    // OpenSubtitles results are downloaded first, in the list's order (best first): when one fails
+    // (the quota, the network) the ones before it, the better ranked, are kept
+    QVector<QPair<int, qint64>> downloads;
+    QSet<int> downloaded;
     for (const auto& assignment : assignments)
-        if (candidates.at(assignment.second).fileId > 0)
-            downloads.insert(assignment.second, candidates.at(assignment.second).fileId);
+        if (candidates.at(assignment.second).fileId > 0 && !downloaded.contains(assignment.second))
+        {
+            downloads.append({ assignment.second, candidates.at(assignment.second).fileId });
+            downloaded.insert(assignment.second);
+        }
 
     auto paths = std::make_shared<QHash<int, QString>>();
     auto error = std::make_shared<QString>();
     for (const auto& assignment : assignments)
-        if (!downloads.contains(assignment.second))
+        if (!downloaded.contains(assignment.second))
             paths->insert(assignment.second, candidates.at(assignment.second).path);
 
     m_saving = true;
@@ -1170,11 +1265,11 @@ void AddSubtitles::save()
 
     run([downloads, candidates, paths, error, account](vlc_object_t* obj) {
             const QString folder = downloadFolder("opensubtitles");
-            for (auto it = downloads.cbegin(); it != downloads.cend(); ++it)
+            for (const QPair<int, qint64>& download : downloads)
             {
                 QString name;
                 QString failure;
-                const QByteArray data = OpenSubtitles::download(obj, account, it.value(), &name, &failure);
+                const QByteArray data = OpenSubtitles::download(obj, account, download.second, &name, &failure);
                 if (data.isEmpty())
                 {
                     *error = failure.isEmpty() ? qtr("A subtitle could not be downloaded.") : failure;
@@ -1182,14 +1277,16 @@ void AddSubtitles::save()
                     break;
                 }
                 if (name.isEmpty())
-                    name = candidates.at(it.key()).name;
-                const QString file = folder + QChar('/') + QString::number(it.value()) + QChar('-') + safeFileName(name);
-                if (folder.isEmpty() || !writeFile(file, data))
+                    name = candidates.at(download.first).name;
+                // the subtitle's own name ("Sintel (2010).eng.srt"), numbered only when another
+                // subtitle already has it
+                const QString file = rdsubtitles::saveDownload(folder, safeFileName(name), data);
+                if (file.isEmpty())
                 {
                     *error = qtr("The subtitle file cannot be saved.");
                     break;
                 }
-                paths->insert(it.key(), file);
+                paths->insert(download.first, file);
             }
         },
         [this, assignments, paths, error, target, source, variant, searchText, language, computerFolder, folderKey]() {
@@ -1204,13 +1301,18 @@ void AddSubtitles::save()
                 const QString path = paths->value(assignment.second);
                 if (!path.isEmpty() && !added[assignment.first].contains(path))
                     added[assignment.first].append(path);
+                // a download: the storage cleanup knows its video (unused ones go)
+                if (!path.isEmpty() && source == SourceOpenSubtitles && m_storage)
+                    m_storage->downloadWritten(path, SubtitleStore::mediaKey(assignment.first));
             }
             for (auto it = added.cbegin(); it != added.cend(); ++it)
             {
-                QStringList subtitles = target == TargetFile ? m_store.subtitlesFor(it.key()) : QStringList();
-                for (const QString& path : it.value())
-                    if (!subtitles.contains(path))
-                        subtitles.append(path);
+                // the ones just picked first: the first is the one shown when the video plays again
+                QStringList subtitles = it.value();
+                if (target == TargetFile)
+                    for (const QString& path : m_store.subtitlesFor(it.key()))
+                        if (!subtitles.contains(path))
+                            subtitles.append(path);
                 m_store.setSubtitles(it.key(), subtitles);
             }
 
@@ -1221,7 +1323,7 @@ void AddSubtitles::save()
                 rule.valid = true;
                 rule.source = source == SourceOpenSubtitles ? SubtitleStore::OpenSubtitles : SubtitleStore::Computer;
                 rule.path = source == SourceComputer ? computerFolder : QString();
-                const SubtitleMatcher::Name query = SubtitleMatcher::parse(searchText + QStringLiteral(".x"));
+                const SubtitleMatcher::Name query = SubtitleMatcher::parse(searchText);
                 rule.query = source == SourceOpenSubtitles ? (query.title.isEmpty() ? searchText : query.title) : QString();
                 rule.language = source == SourceOpenSubtitles ? language : rule.language;
                 if (!variant.isEmpty())
@@ -1240,7 +1342,7 @@ void AddSubtitles::save()
             }
             for (auto it = added.cbegin(); it != added.cend(); ++it)
                 if (!playing.isEmpty() && SubtitleStore::mediaKey(it.key()) == playing)
-                    attach(it.key(), it.value(), true, source == SourceOpenSubtitles);
+                    attach(it.key(), it.value(), true, source == SourceOpenSubtitles, true);
 
             if (!error->isEmpty())
             {
@@ -1380,15 +1482,18 @@ void AddSubtitles::applyTo(const QString& mrl)
             QVector<SubtitleMatcher::Name> names;
             for (const OpenSubtitles::Result& r : results)
                 names.append(parseResult(r));
-            const int best = SubtitleMatcher::bestMatch(video, names, pref);
+            // a result in the folder's language first (the search asked for it, results can mix)
+            const int best = SubtitleMatcher::bestResult(video, names, rule.language, pref);
             if (best < 0)
                 return;
             QString fileName;
             const QByteArray data = OpenSubtitles::download(obj, account, results.at(best).fileId, &fileName, nullptr);
             const QString folder = downloadFolder("opensubtitles");
-            const QString file = folder + QChar('/') + QString::number(results.at(best).fileId) + QChar('-')
-                                 + safeFileName(fileName.isEmpty() ? results.at(best).fileName : fileName);
-            if (!data.isEmpty() && !folder.isEmpty() && writeFile(file, data))
+            if (data.isEmpty())
+                return;
+            const QString file = rdsubtitles::saveDownload(
+                folder, safeFileName(fileName.isEmpty() ? results.at(best).fileName : fileName), data);
+            if (!file.isEmpty())
                 result->append(file);
         },
         [this, result, mrl, saved, network]() {
@@ -1399,12 +1504,16 @@ void AddSubtitles::applyTo(const QString& mrl)
             {
                 m_store.setSubtitles(mrl, *result);
                 writeStore();
+                if (network && m_storage)
+                    for (const QString& file : *result)
+                        m_storage->downloadWritten(file, SubtitleStore::mediaKey(mrl));
             }
             attach(mrl, *result, true, network);
         }, network ? 3 : 0, false);
 }
 
-void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded)
+void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded,
+                          bool picked)
 {
     vlc_player_t* player = m_intf->p_mainPlayerController->getPlayer();
     vlc_player_locker lock{ player };
@@ -1413,23 +1522,37 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
     if (!item || SubtitleStore::mediaKey(qfu(item->psz_uri)) != SubtitleStore::mediaKey(mrl))
         return;
 
-    // the subtitles VLC already loaded (found next to the video, added before)
-    QSet<QString> loaded;
+    // the subtitles VLC already loaded (found next to the video, added before), with the URI VLC
+    // has for each: their tracks' ids come from it
+    QHash<QString, QString> loaded;
     vlc_mutex_lock(&item->lock);
     for (int i = 0; i < item->i_slaves; ++i)
-        loaded.insert(SubtitleStore::mediaKey(qfu(item->pp_slaves[i]->psz_uri)));
+        loaded.insert(SubtitleStore::mediaKey(qfu(item->pp_slaves[i]->psz_uri)), qfu(item->pp_slaves[i]->psz_uri));
     vlc_mutex_unlock(&item->lock);
 
     bool first = select;
     QString selectUri;
+    bool selectAdded = false;
     for (const QString& subtitle : subtitles)
     {
         const QString uri = QUrl(subtitle).scheme().size() > 1 ? subtitle : mrlOf(subtitle);
-        if (uri.isEmpty() || loaded.contains(SubtitleStore::mediaKey(uri)))
+        if (uri.isEmpty())
             continue;
+        const auto known = loaded.constFind(SubtitleStore::mediaKey(uri));
+        if (known != loaded.cend())
+        {
+            // already loaded: the same subtitle picked again in the dialog is still the one to show
+            if (first && picked)
+                selectUri = known.value();
+            first = first && !picked;
+            continue;
+        }
         vlc_player_AddAssociatedMedia(player, SPU_ES, qtu(uri), first, false, false);
         if (first)
+        {
             selectUri = uri;
+            selectAdded = true;
+        }
         first = false;
     }
 
@@ -1440,7 +1563,8 @@ void AddSubtitles::attach(const QString& mrl, const QStringList& subtitles, bool
         selectSubtitleWhenListed(this, player,
                                  QCryptographicHash::hash(selectUri.toUtf8(), QCryptographicHash::Md5).toHex(),
                                  kSelectLookups);
-        if (downloaded && m_autoSyncDownloads)
+        // a subtitle loaded before was synced then
+        if (downloaded && selectAdded && m_autoSyncDownloads)
             emit downloadAttached(selectUri.toUtf8());
     }
 }

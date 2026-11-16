@@ -26,6 +26,7 @@
 // RdCollectionModel); every unbounded library list uses VLC's paged MLBaseModel models.
 
 #include <QAbstractListModel>
+#include <QElapsedTimer>
 #include <QSet>
 #include <QTimer>
 
@@ -34,6 +35,7 @@
 #include <vector>
 
 #include "mlqmltypes.hpp"
+#include "util/rd_reload_throttle.hpp"
 
 Q_MOC_INCLUDE("medialibrary/medialib.hpp")
 
@@ -163,6 +165,9 @@ private:
     MediaLib* m_mediaLib = nullptr;
     std::unique_ptr<vlc_ml_event_callback_t, std::function<void(vlc_ml_event_callback_t*)>> m_eventCallback;
     QTimer m_reloadTimer;
+    // during a library scan the page refreshes at most once a second
+    RdReloadThrottle m_reloadThrottle;
+    QElapsedTimer m_reloadClock;
     quint64 m_taskId = 0;
     bool m_loading = false;
     bool m_reloadQueued = false;

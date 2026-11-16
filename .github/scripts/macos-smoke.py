@@ -13,6 +13,7 @@
 #                  test-hevc.mp4, test.srt> --out <folder>
 import argparse
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -543,15 +544,48 @@ def finder_open_running():
         s.stop()
 
 
+def finder_trail(log_path, err_path):
+    # where the open request went: darwinvlc's handler (stderr) and the Qt interface (log)
+    lines = []
+    for path in (err_path, log_path):
+        try:
+            with open(path, errors='replace') as f:
+                lines += [l.strip() for l in f if 'macOS:' in l or 'openFiles' in l or 'FileOpen' in l]
+        except OSError:
+            lines.append(f'(no {os.path.basename(path)})')
+    return ' | trail: ' + ' / '.join(lines[:30])
+
+
+def sample_cone(tag):
+    # every thread's stack of a Cone that stopped answering (macOS's sample tool), kept with the
+    # results; the message names the main thread's innermost frames
+    r = run(['pgrep', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+    pids = r.stdout.split()
+    if not pids:
+        return ' | sample: Cone is not running'
+    path = os.path.join(OUT, f'cone-{tag}-sample.txt')
+    run(['sample', pids[0], '3', '-file', path], timeout=60)
+    try:
+        with open(path, errors='replace') as f:
+            text = f.read()
+    except OSError:
+        return ' | sample: none'
+    main = text.split('Thread_', 2)[1] if 'Thread_' in text else ''
+    frames = [l.strip() for l in main.splitlines() if '(in ' in l][-6:]
+    return f' | sample ({os.path.basename(path)}), main thread innermost: ' + ' < '.join(
+        re.sub(r'\s+', ' ', f)[:90] for f in reversed(frames))
+
+
 def finder_open_launch():
     # Cone started by LaunchServices with a file, as a double-click in Finder; the cli's socket
     # through --args, which the file does not travel with (it comes as the Apple event)
     if os.path.exists(RC_SOCK):
         os.remove(RC_SOCK)
     log_path = os.path.join(OUT, 'cone-finder-launch.log')
+    err_path = os.path.join(OUT, 'cone-finder-launch.stderr.txt')
     # Qt's macOS application logging (the delegate's launch and open-files calls) into Cone's log,
     # to see whether the launch's open event reaches Qt at all (run 17 and 18: it did not play)
-    r = run(['open', '-n', '-a', APP, '--env', 'QT_LOGGING_RULES=qt.qpa.application*=true;qt.qpa.events*=true',
+    r = run(['open', '-n', '-a', APP, '--stderr', err_path, '--env', 'QT_LOGGING_RULES=qt.qpa.application*=true;qt.qpa.events*=true',
              os.path.join(MEDIA, 'test-hevc.mp4'), '--args',
              '--no-qt-privacy-ask', '--no-qt-cone-update-check', '--aout=adummy', '--input-repeat=50',
              '--file-logging', f'--logfile={log_path}', '--log-verbose=2', '--extraintf=cli',
@@ -562,7 +596,10 @@ def finder_open_launch():
         end = time.time() + 30
         while not os.path.exists(RC_SOCK) and time.time() < end:
             time.sleep(0.5)
-        return 'a start from Finder: ' + playing_file('test-hevc.mp4', 20)
+        try:
+            return 'a start from Finder: ' + playing_file('test-hevc.mp4', 20) + finder_trail(log_path, err_path)
+        except CheckFailed as e:
+            raise CheckFailed(str(e) + finder_trail(log_path, err_path) + sample_cone('finder-launch')) from None
     finally:
         try:
             rc('quit')
@@ -574,6 +611,27 @@ def finder_open_launch():
 
 check('finder: a file opened while Cone runs plays there', finder_open_running, soft=True)
 check('finder: a start with a file plays it', finder_open_launch, soft=True)
+
+
+def finder_launch_plain():
+    # exactly what Finder does: LaunchServices starts Cone with the file and nothing else (no
+    # options, no new-instance flag); only open's own --stderr keeps what Cone prints. No socket to
+    # ask whether it plays: the trail tells whether the open request reached Cone
+    run(['pkill', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+    time.sleep(2)
+    err_path = os.path.join(OUT, 'cone-finder-plain.stderr.txt')
+    r = run(['open', '-a', APP, '--stderr', err_path, os.path.join(MEDIA, 'test-hevc.mp4')])
+    if r.returncode:
+        return f'open -a failed: {r.stderr.strip()}'
+    time.sleep(20)
+    trail = finder_trail(os.path.join(OUT, 'no-log'), err_path)
+    run(['pkill', '-f', os.path.join(APP, 'Contents', 'MacOS')])
+    time.sleep(2)
+    return trail.replace(' | trail: ', '')
+
+
+note('finder: a start like a Finder double-click (open -a, no options)', finder_launch_plain())
+
 
 
 # information only: why the picture is black on the runner (MACOS_NOTES.md, "The black picture").

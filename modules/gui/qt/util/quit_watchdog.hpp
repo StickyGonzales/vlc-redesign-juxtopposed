@@ -29,8 +29,17 @@ namespace QuitWatchdog
  * process is still running 5 s later (30 s while recording), it ends itself, so no player
  * is ever left running without a window. Then saves what a forced end would lose (the
  * interface state and window geometry, the Qt and VLC settings, the resume position of
- * the current media). Only the first arm counts. Interface thread only. */
+ * the current media). The timer starts once, whichever path starts it first; the save runs
+ * once. Interface thread only. */
 void arm(qt_intf_t *p_intf);
+
+/* Logs which path asked for the quit and the wall-clock time ("quit: requested by Ctrl+Q at
+ * 18:33:25.123"), so a quit key that never arrived is told apart from a quit that hangs. */
+void logRequest(qt_intf_t *p_intf, const char *source);
+
+/* Test only: CONE_TEST_HANG_QUIT is set, the quit blocks after the watchdog is armed (the smoke
+ * check that the watchdog ends a quit that never finishes). */
+bool testHangRequested();
 
 /* For a quit that did not start in the interface (--play-and-exit, vlc://quit, a remote
  * control): the timer only, from the interface module's Close. */

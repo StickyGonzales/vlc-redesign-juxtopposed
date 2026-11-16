@@ -29,6 +29,7 @@
 #define VLC_DBUS_DBUS_COMMON_H_
 
 #include <vlc_common.h>
+#include <stdatomic.h>
 #include <vlc_arrays.h>
 #include <vlc_interface.h>
 #include <vlc_player.h>
@@ -112,7 +113,18 @@ struct intf_sys_t
     vlc_mutex_t     lock;
     vlc_thread_t    thread;
     bool            has_input;
+    /* redesign: the one-instance name is held (DBUS_MPRIS_BUS_NAME), and a quit asked for it to
+     * be given up (one-instance-release) */
+    bool            owns_name;
+    atomic_bool     release_name;
+    /* redesign: a quit started: files and Raise sent by a new start are refused (the new start
+     * then opens them itself, src/posix/specific.c) */
+    atomic_bool     quitting;
 };
+
+/* redesign: the reply to a new start's AddTrack or Raise while this instance quits */
+#define DBUS_CONE_QUITTING_ERROR "org.mpris.MediaPlayer2.cone.Quitting"
+
 
 enum
 {

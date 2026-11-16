@@ -40,6 +40,7 @@
 #include <iterator>
 
 #include "dialogs/redesign/addsubtitles/subtitle_web.hpp"
+#include "util/rd_background_queue.hpp"
 
 namespace {
 
@@ -296,7 +297,7 @@ void RdUpdateCheck::request(bool explicitCheck)
         setStatus(Checking);
     }
     // a request already on its way answers "Check now" too
-    if (m_job)
+    if (m_job || m_queued)
         return;
 
     const QString testFile = qEnvironmentVariable(testAnswerVariable);
@@ -310,6 +311,43 @@ void RdUpdateCheck::request(bool explicitCheck)
         return;
     }
 
+    // one small request: a light job of the background queue, which may run in the first minute
+    if (RdBackgroundQueue* queue = RdBackgroundQueue::instance())
+    {
+        m_queued = true;
+        QPointer<RdUpdateCheck> self(this);
+        queue->postAsync(QStringLiteral("update check"), RdBackgroundQueue::Weight::Light, RdBackgroundQueue::High,
+            [self](const RdBackgroundQueue::Finish& finish) {
+                if (!self)
+                {
+                    finish();
+                    return;
+                }
+                self->m_queued = false;
+                self->m_queueFinish = finish;
+                self->startRequest();
+            }, requestTimeout + 5000);
+        return;
+    }
+    startRequest();
+#else
+    Q_UNUSED(explicitCheck);
+#endif
+}
+
+void RdUpdateCheck::finishQueued()
+{
+    if (m_queueFinish)
+    {
+        const std::function<void()> finish = std::move(m_queueFinish);
+        m_queueFinish = nullptr;
+        finish();
+    }
+}
+
+void RdUpdateCheck::startRequest()
+{
+#ifdef VLC_BRAND_PUBLIC
     auto job = std::make_shared<Job>();
     if (!job->interrupt)
     {
@@ -346,14 +384,14 @@ void RdUpdateCheck::request(bool explicitCheck)
                 self->onReply(reply.error.isEmpty() ? reply.status : 0, reply.body);
         }, Qt::QueuedConnection);
     });
-#else
-    Q_UNUSED(explicitCheck);
 #endif
 }
 
 void RdUpdateCheck::onReply(int httpStatus, const QByteArray& body)
 {
 #ifdef VLC_BRAND_PUBLIC
+    // the background queue's slot is free again
+    finishQueued();
     // the worker is done: its thread can go
     m_job.reset();
     const bool explicitCheck = m_explicitCheck;

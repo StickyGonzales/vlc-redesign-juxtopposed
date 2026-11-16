@@ -296,6 +296,10 @@ FocusScope {
         RdPanels.close()
         RdPanels.uiHidden = false
         RdPanels.upNextCardTop = 0
+        RdNoticeStack.upNextLeft = 0
+        RdNoticeStack.resumeHeight = 0
+        RdNoticeStack.resumeWidth = 0
+        RdNoticeStack.playerShown = false
     }
 
     Keys.priority: Keys.AfterItem
@@ -937,13 +941,18 @@ FocusScope {
 
                         Item {
                             id: coverItem
-                            // no wider than the pane it sits in (a narrow window, lyrics)
-                            Layout.preferredHeight: Math.min(rootPlayer.height / sizeConstant,
-                                                             parent.parent.width - 2 * VLCStyle.margin_large)
-                            // the placeholder is square, also when a short window limits its height
-                            Layout.preferredWidth: coverShown ? cover.paintedWidth
-                                                              : Math.min(Layout.preferredHeight, Layout.maximumHeight)
-                            Layout.maximumHeight: centerContent.height
+                            // redesign: Figma "Player - Music": a square (#129, #69: it was squeezed into a
+                            // tall, narrow card when the window was not maximized). The largest square no
+                            // taller than the Figma share of the window, no wider than the pane it sits in
+                            // (a narrow window, lyrics) and no taller than that pane (the space between the
+                            // bars, or the lyrics' right pane)
+                            readonly property real side: Math.max(0, Math.floor(Math.min(rootPlayer.height / sizeConstant,
+                                                                                         parent.parent.width - 2 * VLCStyle.margin_large,
+                                                                                         parent.parent.height)))
+                            Layout.preferredWidth: side
+                            Layout.preferredHeight: side
+                            Layout.maximumWidth: side
+                            Layout.maximumHeight: side
                             Layout.alignment: Qt.AlignHCenter
 
                             // redesign: Figma "Player - Music": the cover is 737 high in a 1080 high window
@@ -962,8 +971,8 @@ FocusScope {
 
                                 visible: coverItem.coverShown && roundedCover.effectiveRadius <= 0
 
-                                //source aspect ratio
-                                readonly property real sar: paintedHeight > 0 ? paintedWidth / paintedHeight : 1
+                                // source aspect ratio (the image's own shape: the square shows it cropped)
+                                readonly property real sar: implicitHeight > 0 ? implicitWidth / implicitHeight : 1
                                 readonly property int maximumWidth: Helpers.alignUp((Screen.desktopAvailableWidth * eDPR / coverItem.sizeConstant), 32)
                                 readonly property int maximumHeight: Helpers.alignUp((Screen.desktopAvailableHeight * eDPR / coverItem.sizeConstant), 32)
 
@@ -973,11 +982,11 @@ FocusScope {
 
                                 readonly property url targetSource: rootPlayer.coverSource !== "" ? VLCAccessImage.uri(rootPlayer.coverSource) : ""
 
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                anchors.horizontalCenter: parent.horizontalCenter
+                                // a cover of any shape fills the square, centred (a wide or tall one cropped)
+                                anchors.fill: parent
                                 source: targetSource
-                                fillMode: Image.PreserveAspectFit
+                                fillMode: Image.PreserveAspectCrop
+                                clip: true
                                 mipmap: true
                                 cache: false
                                 asynchronous: true
@@ -1034,8 +1043,14 @@ FocusScope {
                                 visible: coverItem.coverShown
                                 anchors.fill: cover
                                 textureProviderItem: cover
-                                fillMode: Image.PreserveAspectFit
+                                fillMode: Image.PreserveAspectCrop
                                 radius: VLCStyle.rd_radius_cover
+
+                                // the cover as shown (the image above is hidden while this draws it; without
+                                // rounding the image shows and carries the name)
+                                Accessible.role: Accessible.Graphic
+                                Accessible.name: qsTr("Cover")
+                                Accessible.ignored: effectiveRadius <= 0
 
                                 // Figma: one faint glow, #FFFFFF 3 %, no offset, blur 90.5
                                 Widgets.RoundedRectangleShadow {
@@ -2397,16 +2412,46 @@ FocusScope {
                                              : 0
     readonly property real _toastRoom: width - _videoInset - _toastRightInset - 2 * VLCStyle.margin_normal
 
-    // redesign: resume toast centered just above the control bar (video 14:00-14:10, W3.8)
+    // the notices at the bottom (this resume toast, the profile and the update notices over every
+    // view) stack in one place over the video area (RdNoticeStack, POPUP_STACK_NOTES.md)
+    Binding {
+        target: RdNoticeStack
+        property: "playerShown"
+        value: !rootPlayer._leaving
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "axisOffset"
+        value: (rootPlayer._videoInset - rootPlayer._toastRightInset) / 2
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "playerRoom"
+        value: rootPlayer._toastRoom
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "resumeHeight"
+        value: (resumeToast.visible && resumeToast.opacity > 0) ? resumeToast.height : 0
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "resumeWidth"
+        value: (resumeToast.visible && resumeToast.opacity > 0) ? resumeToast.width : 0
+    }
+
+    // redesign: resume toast centered just above the control bar (video 14:00-14:10, W3.8), the
+    // lowest of the notices' stack
     ResumeDialog {
         id: resumeToast
 
         anchors.horizontalCenter: parent.horizontalCenter
         // centered over the video area, right of the compact library and left of an open panel
-        anchors.horizontalCenterOffset: (rootPlayer._videoInset - rootPlayer._toastRightInset) / 2
-        anchors.bottom: controlBar.top
-        // Figma "continue": 24 px above the control bar (visual audit A21)
-        anchors.bottomMargin: VLCStyle.dp(24, VLCStyle.scale)
+        anchors.horizontalCenterOffset: RdNoticeStack.centerX(rootPlayer.width) - rootPlayer.width / 2
+        anchors.bottom: parent.bottom
+        // Figma "continue": 24 px above the control bar (visual audit A21), above the Up Next card
+        // when they would meet; the lowest notice, nothing under it to slide over
+        anchors.bottomMargin: RdNoticeStack.resumeBottom(rootPlayer.width)
         z: 2
 
         // it hugs its sentence (Figma) and wraps it when the room is narrower
@@ -2473,6 +2518,11 @@ FocusScope {
         target: RdPanels
         property: "upNextCardTop"
         value: upNextCard.shown ? rootPlayer._upNextBottom + upNextCard.height : 0
+    }
+    Binding {
+        target: RdNoticeStack
+        property: "upNextLeft"
+        value: upNextCard.shown ? upNextCard.x : 0
     }
 
     // redesign: right-click menu and Hide UI (W4.10); the video's right click arrives through

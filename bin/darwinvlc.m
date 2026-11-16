@@ -43,6 +43,127 @@
 
 #include "../lib/libvlc_internal.h"
 
+/* Cone (macOS, issue #69): Finder opens a file (double-click, Open With, a file dropped on the
+ * Dock icon) with an "open documents" Apple event, never on the command line. A Cone started
+ * that way showed no file: the event did not reach the interface. This handler is installed
+ * here, before any interface or window exists, and again when AppKit finishes launching (where
+ * AppKit installs its own handlers), so every such event while Cone runs comes here first; the
+ * documents of a start come in the launch event itself, read when launching finishes. The files go on to the application delegate (Qt's, once the Qt interface
+ * runs), which turns them into the QFileOpenEvent the Qt interface queues until the play queue
+ * is ready. Each step is written to stderr ("open --stderr" in the macOS smoke checks). */
+@interface VLCOpenDocumentsHandler : NSObject
+{
+@public
+    bool launched;
+    NSMutableArray<NSString *> *pending;
+}
+- (void)install;
+@end
+
+@implementation VLCOpenDocumentsHandler
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self)
+        pending = [[NSMutableArray alloc] init];
+    return self;
+}
+
+- (void)dealloc
+{
+    [pending release];
+    [super dealloc];
+}
+
+- (void)install
+{
+    [[NSAppleEventManager sharedAppleEventManager]
+        setEventHandler:self
+            andSelector:@selector(handleOpenDocuments:withReplyEvent:)
+          forEventClass:kCoreEventClass
+             andEventID:kAEOpenDocuments];
+}
+
+- (void)willFinishLaunching:(NSNotification *)notification
+{
+    (void)notification;
+    [self install];
+    /* An app started by LaunchServices with documents gets them in its launch event itself,
+     * which AppKit does not send through the event handlers (build-macos run 20: the handler was
+     * installed, no event came): read it here, where it is the current Apple event */
+    NSAppleEventDescriptor *launch = [[NSAppleEventManager sharedAppleEventManager] currentAppleEvent];
+    const FourCharCode cls = launch ? launch.eventClass : 0, eid = launch ? launch.eventID : 0;
+    if (launch)
+        fprintf(stderr, "macOS: open-documents handler installed at launch (launch event '%c%c%c%c'/'%c%c%c%c')\n",
+                (char)(cls >> 24), (char)(cls >> 16), (char)(cls >> 8), (char)cls,
+                (char)(eid >> 24), (char)(eid >> 16), (char)(eid >> 8), (char)eid);
+    else
+        fprintf(stderr, "macOS: open-documents handler installed at launch (no launch event)\n");
+    if (cls == kCoreEventClass && eid == kAEOpenDocuments)
+        [self handleOpenDocuments:launch withReplyEvent:nil];
+}
+
+- (void)didFinishLaunching:(NSNotification *)notification
+{
+    /* whether macOS started Cone plainly or to open documents (diagnostics of a start from Finder) */
+    id isDefault = notification.userInfo[NSApplicationLaunchIsDefaultLaunchKey];
+    fprintf(stderr, "macOS: launch finished (%s)\n",
+            isDefault == nil ? "launch kind unknown"
+            : [isDefault boolValue] ? "a plain launch" : "a launch to open documents");
+    launched = true;
+    [self deliver];
+}
+
+- (void)deliver
+{
+    if (pending.count == 0)
+        return;
+    id delegate = [NSApp delegate];
+    if (!launched || delegate == nil)
+        return; /* didFinishLaunching delivers them */
+    NSArray<NSString *> *files = [[pending copy] autorelease];
+    [pending removeAllObjects];
+    if ([delegate respondsToSelector:@selector(application:openFiles:)])
+        [delegate application:NSApp openFiles:files];
+    else if ([delegate respondsToSelector:@selector(application:openFile:)])
+        for (NSString *file in files)
+            [delegate application:NSApp openFile:file];
+    else
+    {
+        fprintf(stderr, "macOS: no interface takes opened files, %lu ignored\n",
+                (unsigned long)files.count);
+        return;
+    }
+    fprintf(stderr, "macOS: %lu opened file(s) passed to the interface\n",
+            (unsigned long)files.count);
+}
+
+- (void)handleOpenDocuments:(NSAppleEventDescriptor *)event
+             withReplyEvent:(NSAppleEventDescriptor *)reply
+{
+    (void)reply;
+    NSAppleEventDescriptor *list =
+        [[event paramDescriptorForKeyword:keyDirectObject] coerceToDescriptorType:typeAEList];
+    for (NSInteger i = 1; i <= list.numberOfItems; i++)
+    {
+        NSAppleEventDescriptor *item =
+            [[list descriptorAtIndex:i] coerceToDescriptorType:typeFileURL];
+        if (item == nil)
+            continue;
+        NSString *text = [[[NSString alloc] initWithData:item.data
+                                                encoding:NSUTF8StringEncoding] autorelease];
+        NSURL *url = text ? [NSURL URLWithString:text] : nil;
+        if (url.isFileURL && url.path.length > 0 && ![pending containsObject:url.path])
+            [pending addObject:url.path];
+    }
+    fprintf(stderr, "macOS: open-documents event, %lu file(s) waiting (%s)\n",
+            (unsigned long)pending.count, launched ? "while running" : "at launch");
+    [self deliver];
+}
+
+@end
+
 struct vlc_context {
     libvlc_instance_t *vlc;
     dispatch_queue_t intf_queue;
@@ -311,7 +432,21 @@ int main(int i_argc, const char *ppsz_argv[])
      * before actually starting the loop.
      */
     @autoreleasepool {
+        /* before the interface starts: Finder's file of a start arrives as an Apple event */
+        VLCOpenDocumentsHandler *open_handler = [[VLCOpenDocumentsHandler alloc] init];
+        [open_handler install];
+        NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+        [center addObserver:open_handler selector:@selector(willFinishLaunching:)
+                       name:NSApplicationWillFinishLaunchingNotification object:nil];
+        [center addObserver:open_handler selector:@selector(didFinishLaunching:)
+                       name:NSApplicationDidFinishLaunchingNotification object:nil];
+
         CFRunLoopRun();
+
+        [center removeObserver:open_handler];
+        [[NSAppleEventManager sharedAppleEventManager]
+            removeEventHandlerForEventClass:kCoreEventClass andEventID:kAEOpenDocuments];
+        [open_handler release];
     }
 
     if (!intf_started)

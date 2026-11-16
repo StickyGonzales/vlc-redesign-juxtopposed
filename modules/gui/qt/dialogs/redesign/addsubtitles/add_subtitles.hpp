@@ -39,6 +39,8 @@
 #include "subtitle_matcher.hpp"
 #include "subtitle_store.hpp"
 
+class RdStorage;
+
 /**
  * redesign (Add Subtitles, W6.5; video 6:02-6:24, Figma "Add Subtitles to Playlist/Folder"):
  * the dialog's logic, a QML singleton ("AddSubtitles").
@@ -164,6 +166,11 @@ public:
     // the dialog closed without saving: stops what is still running
     Q_INVOKABLE void cancel();
 
+    // Cone's own data kept tidy (STORAGE_CLEANUP_NOTES.md): each download is registered with
+    // its video; a show or movie found at another place takes its links along; a forgotten one
+    // drops them; deleted downloads leave every link
+    void setStorage(RdStorage* storage);
+
 signals:
     void openRequested();
     // the dialog's work is done: it closes
@@ -220,16 +227,24 @@ private:
     void updateMessage();
     const QVector<Candidate>& pool() const;
     SubtitleMatcher::Preference preference() const;
+    // the candidates for `video`, best first, as { score, index }: OpenSubtitles results in the
+    // chosen language first, then in OpenSubtitles' order; other sources by score
+    QVector<QPair<int, int>> rankedCandidates(const SubtitleMatcher::Name& video, const QVector<Candidate>& candidates,
+                                              const SubtitleMatcher::Preference& pref) const;
     QString defaultSearchText() const;
     void saveAccount();
     void writeStore();
+    // a change asked by the storage cleanup; waits until the store is read
+    void whenStoreLoaded(std::function<void()> action);
 
     // playback: adds the saved subtitles of the media that starts
     void onInputChanged(bool hasInput);
     void onPlayingStateChanged();
     void applyTo(const QString& mrl);
-    // `downloaded`: the files were just downloaded from OpenSubtitles
-    void attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded = false);
+    // `downloaded`: the files were just downloaded from OpenSubtitles; `picked`: just picked in the
+    // dialog, so the first is shown even when VLC has it loaded already
+    void attach(const QString& mrl, const QStringList& subtitles, bool select, bool downloaded = false,
+                bool picked = false);
 
     qt_intf_t* m_intf;
     QThreadPool m_pool;
@@ -240,6 +255,8 @@ private:
     int m_generation = 0;
     // the folder rows of an older rebuild are dropped
     int m_rebuildSerial = 0;
+    // the latest OpenSubtitles search: an older answer that comes after it is dropped
+    int m_searchSerial = 0;
     int m_busyCount = 0;
     bool m_saving = false;
     bool m_autoSyncDownloads = false;
@@ -278,6 +295,8 @@ private:
 
     SubtitleStore m_store;
     bool m_storeLoaded = false;
+    QVector<std::function<void()>> m_afterStoreLoad;
+    RdStorage* m_storage = nullptr;
     // playback: the media whose subtitles are added once it plays
     QString m_pendingApply;
 };

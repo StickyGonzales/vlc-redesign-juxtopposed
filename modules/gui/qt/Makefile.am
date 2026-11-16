@@ -153,6 +153,8 @@ libqt_plugin_la_SOURCES = \
 	dialogs/preferences/simple_preferences.hpp \
 	dialogs/redesign/addsubtitles/subtitle_matcher.cpp \
 	dialogs/redesign/addsubtitles/subtitle_matcher.hpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp \
 	dialogs/redesign/addsubtitles/subtitle_web.cpp \
 	dialogs/redesign/addsubtitles/subtitle_web.hpp \
 	dialogs/redesign/addsubtitles/opensubtitles.cpp \
@@ -377,6 +379,7 @@ libqt_plugin_la_SOURCES = \
 	player/rd_credits_subtitles.hpp \
 	player/rd_up_next.cpp \
 	player/rd_up_next.hpp \
+	player/rd_up_next_mode.hpp \
 	player/player_controller.cpp player/player_controller.hpp player/player_controller_p.hpp \
 	player/player_controlbar_model.cpp player/player_controlbar_model.hpp \
 	player/control_list_model.cpp player/control_list_model.hpp \
@@ -411,6 +414,11 @@ libqt_plugin_la_SOURCES = \
 	util/csdbuttonmodel.cpp util/csdbuttonmodel.hpp \
 	util/csdmenu.cpp util/csdmenu.hpp \
 	util/rd_update_check.cpp util/rd_update_check.hpp \
+	util/rd_background_queue.cpp util/rd_background_queue.hpp \
+	util/rd_reload_throttle.hpp \
+	util/rd_storage.cpp util/rd_storage.hpp \
+	util/rd_storage_model.cpp util/rd_storage_model.hpp \
+	util/rd_volume.cpp util/rd_volume.hpp \
 	util/imagehelper.cpp util/imagehelper.hpp \
 	util/keyhelper.cpp util/keyhelper.hpp \
 	util/listcache.hxx util/listcache.hpp \
@@ -635,6 +643,8 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/csdbuttonmodel.moc.cpp \
 	util/csdmenu.moc.cpp \
 	util/rd_update_check.moc.cpp \
+	util/rd_background_queue.moc.cpp \
+	util/rd_storage.moc.cpp \
 	util/keyhelper.moc.cpp \
 	util/listcache.moc.cpp \
 	util/locallistcacheloader.moc.cpp \
@@ -926,6 +936,8 @@ libqt_plugin_la_RES = \
 	pixmaps/fonts/LICENSE-Inter.txt \
 	pixmaps/fonts/DMMono-Regular.ttf \
 	pixmaps/fonts/LICENSE-DMMono.txt \
+	pixmaps/redesign/accent_wheel.png \
+	pixmaps/redesign/accent_wheel_round.png \
 	pixmaps/redesign/accessibility.svg \
 	pixmaps/redesign/add.svg \
 	pixmaps/redesign/album.svg \
@@ -1636,6 +1648,7 @@ libqml_module_player_a_QML = \
 
 libqml_module_player_a_Singleton_QML = \
 	player/qml/PlayerControlbarControls.qml \
+	player/qml/RdNoticeStack.qml \
 	player/qml/RdPanels.qml \
 	player/qml/RdSleepTimer.qml
 libqml_module_player_a_SOURCES = $(QML_MODULE_player_SRC)
@@ -2395,6 +2408,22 @@ test_rd_episode_parser_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 check_PROGRAMS += test_rd_episode_parser
 TESTS += test_rd_episode_parser
 
+# test_rd_subtitle_picks (redesign): the Add Subtitles choice, file and track names, QtCore only
+
+test_rd_subtitle_picks_SOURCES = \
+	tests/test_rd_subtitle_picks.cpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.cpp \
+	dialogs/redesign/addsubtitles/rd_subtitle_picks.hpp \
+	dialogs/redesign/addsubtitles/subtitle_matcher.cpp \
+	dialogs/redesign/addsubtitles/subtitle_matcher.hpp
+
+test_rd_subtitle_picks_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_subtitle_picks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_subtitle_picks_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_subtitle_picks_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+check_PROGRAMS += test_rd_subtitle_picks
+TESTS += test_rd_subtitle_picks
+
 # test_rd_credits_point (Cone extra, Up Next): QtCore only
 
 test_rd_credits_point_SOURCES = \
@@ -2430,6 +2459,52 @@ test_rd_show_tracks_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
 test_rd_show_tracks_LDADD = $(QT_QTEST_COMMON_ldadd)
 test_rd_show_tracks_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
 TESTS += test_rd_show_tracks
+
+# test_rd_storage_model (Cone's storage cleanup rules): QtCore only
+check_PROGRAMS += test_rd_storage_model
+test_rd_storage_model_SOURCES = \
+	tests/test_rd_storage_model.cpp \
+	util/rd_storage_model.cpp util/rd_storage_model.hpp
+test_rd_storage_model_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_storage_model_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_storage_model_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_storage_model_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_storage_model
+
+# test_rd_background_queue (Cone's one background queue): QtCore only
+check_PROGRAMS += test_rd_background_queue
+test_rd_background_queue_SOURCES = \
+	tests/test_rd_background_queue.cpp \
+	util/rd_background_queue.cpp util/rd_background_queue.hpp
+nodist_test_rd_background_queue_SOURCES = \
+	util/rd_background_queue.moc.cpp
+test_rd_background_queue_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_background_queue_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_background_queue_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_background_queue_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_background_queue
+
+# test_rd_up_next_mode (Up Next: When an episode ends, the saved values and which episodes play)
+check_PROGRAMS += test_rd_up_next_mode
+test_rd_up_next_mode_SOURCES = \
+	tests/test_rd_up_next_mode.cpp \
+	player/rd_up_next_mode.hpp
+test_rd_up_next_mode_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_up_next_mode_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_up_next_mode_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_up_next_mode_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_up_next_mode
+
+# test_rd_reload_throttle (the library views refresh at most once a second during a scan)
+check_PROGRAMS += test_rd_reload_throttle
+test_rd_reload_throttle_SOURCES = \
+	tests/test_rd_reload_throttle.cpp \
+	util/rd_reload_throttle.hpp
+test_rd_reload_throttle_CPPFLAGS = $(QT_QTEST_COMMON_cppflags)
+test_rd_reload_throttle_CXXFLAGS = $(QT_QTEST_COMMON_cxxflags)
+test_rd_reload_throttle_LDADD = $(QT_QTEST_COMMON_ldadd)
+test_rd_reload_throttle_LDFLAGS = $(QT_QTEST_COMMON_ldflags)
+TESTS += test_rd_reload_throttle
 
 # test_rd_osd_parse (Cone's on-screen messages): QtCore only
 

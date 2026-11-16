@@ -28,6 +28,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QSaveFile>
+#include <QSet>
 
 #include <vlc_common.h>
 #include <vlc_configuration.h>
@@ -52,6 +53,21 @@ QString localPath(const QString& mrl)
     result = result.toLower();
 #endif
     return result;
+}
+
+// a local path as the store keys it (mediaKey of its MRL)
+QString pathKey(const QString& path)
+{
+    QString clean = QDir::cleanPath(QDir::fromNativeSeparators(path));
+#ifdef _WIN32
+    clean = clean.toLower();
+#endif
+    return clean;
+}
+
+bool isUnder(const QString& key, const QString& root)
+{
+    return !root.isEmpty() && (key == root || key.startsWith(root + QLatin1Char('/')));
 }
 
 } // namespace
@@ -154,4 +170,151 @@ void SubtitleStore::setRule(const QString& folderKey, const Rule& rule)
         { QStringLiteral("variant"), QJsonArray::fromStringList(rule.variant) }
     });
     m_data.insert(foldersKey, folders);
+}
+
+bool SubtitleStore::relocate(const QString& oldRoot, const QString& newRoot, const QHash<QString, QString>& media)
+{
+    const QString from = pathKey(oldRoot);
+    const QString to = pathKey(newRoot);
+    if (from.isEmpty() || to.isEmpty() || from == to)
+        return false;
+    bool changed = false;
+
+    QJsonObject files = m_data.value(filesKey).toObject();
+    QJsonObject movedFiles;
+    for (auto it = files.begin(); it != files.end();)
+    {
+        QString target;
+        const auto mapped = media.constFind(it.key());
+        if (mapped != media.constEnd())
+            target = pathKey(mapped.value());
+        else if (isUnder(it.key(), from))
+            target = to + it.key().mid(from.size());
+        if (target.isEmpty() || target == it.key())
+        {
+            ++it;
+            continue;
+        }
+        movedFiles.insert(target, it.value());
+        it = files.erase(it);
+        changed = true;
+    }
+    for (auto it = movedFiles.begin(); it != movedFiles.end(); ++it)
+        files.insert(it.key(), it.value());
+
+    QJsonObject folders = m_data.value(foldersKey).toObject();
+    QJsonObject movedFolders;
+    for (auto it = folders.begin(); it != folders.end();)
+    {
+        if (!isUnder(it.key(), from))
+        {
+            ++it;
+            continue;
+        }
+        QJsonObject rule = it.value().toObject();
+        // subtitles kept inside the show's folder moved with it
+        const QString path = rule.value(QStringLiteral("path")).toString();
+        if (!path.isEmpty() && isUnder(pathKey(path), from))
+            rule.insert(QStringLiteral("path"), QString(newRoot + pathKey(path).mid(from.size())));
+        movedFolders.insert(to + it.key().mid(from.size()), rule);
+        it = folders.erase(it);
+        changed = true;
+    }
+    for (auto it = movedFolders.begin(); it != movedFolders.end(); ++it)
+        folders.insert(it.key(), it.value());
+
+    if (changed)
+    {
+        m_data.insert(filesKey, files);
+        m_data.insert(foldersKey, folders);
+    }
+    return changed;
+}
+
+bool SubtitleStore::forgetUnder(const QString& root)
+{
+    const QString key = pathKey(root);
+    bool changed = false;
+    QJsonObject files = m_data.value(filesKey).toObject();
+    for (auto it = files.begin(); it != files.end();)
+    {
+        if (isUnder(it.key(), key))
+        {
+            it = files.erase(it);
+            changed = true;
+        }
+        else
+            ++it;
+    }
+    QJsonObject folders = m_data.value(foldersKey).toObject();
+    for (auto it = folders.begin(); it != folders.end();)
+    {
+        if (isUnder(it.key(), key))
+        {
+            it = folders.erase(it);
+            changed = true;
+        }
+        else
+            ++it;
+    }
+    if (changed)
+    {
+        m_data.insert(filesKey, files);
+        m_data.insert(foldersKey, folders);
+    }
+    return changed;
+}
+
+bool SubtitleStore::unlink(const QStringList& removed)
+{
+    QSet<QString> keys;
+    for (const QString& file : removed)
+        keys.insert(pathKey(file));
+    bool changed = false;
+    QJsonObject files = m_data.value(filesKey).toObject();
+    for (auto it = files.begin(); it != files.end();)
+    {
+        QJsonObject entry = it.value().toObject();
+        QJsonArray kept;
+        bool dropped = false;
+        for (const QJsonValue& value : entry.value(QStringLiteral("subtitles")).toArray())
+        {
+            if (keys.contains(pathKey(value.toString())))
+                dropped = true;
+            else
+                kept.append(value);
+        }
+        if (!dropped)
+        {
+            ++it;
+            continue;
+        }
+        changed = true;
+        if (kept.isEmpty())
+        {
+            it = files.erase(it);
+            continue;
+        }
+        entry.insert(QStringLiteral("subtitles"), kept);
+        it.value() = entry;
+        ++it;
+    }
+    if (changed)
+        m_data.insert(filesKey, files);
+    return changed;
+}
+
+QHash<QString, QString> SubtitleStore::downloadOwners(const QString& downloadsDir) const
+{
+    QHash<QString, QString> owners;
+    const QString dir = pathKey(downloadsDir);
+    const QJsonObject files = m_data.value(filesKey).toObject();
+    for (auto it = files.begin(); it != files.end(); ++it)
+        for (const QJsonValue& value : it.value().toObject().value(QStringLiteral("subtitles")).toArray())
+        {
+            const QString file = value.toString();
+            if (isUnder(pathKey(file), dir))
+                owners.insert(file, it.key());
+        }
+    return owners;
 }

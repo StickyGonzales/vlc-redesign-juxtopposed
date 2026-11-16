@@ -1,0 +1,41 @@
+# The release after 1.4.0: release notes (draft, started 2026-11-12)
+
+Nothing is released before StickyGonzales says go. Items are added as they are merged into wip/next-test;
+the texts are written up in the 1.4.0 style (by area, with tips) when the release is made.
+
+## Fixed
+
+- **Notices no longer cover each other.** The "You already watched till ..." prompt, the update notice and the
+  profile notice ("Some settings of ... apply after Cone restarts") now stack above the control bar, centered,
+  10 px apart: the prompt at the bottom, the profile notice in the middle, the update notice on top. When one
+  closes, the ones above it slide down into its place. This works in a window, maximized and in fullscreen, and
+  the stack stays clear of the Up Next card's Next episode button in a narrow window. (PR #126)
+- **Quitting is instant.** Ctrl+Q, the window's close button and Quit in the menu hide Cone Player at once and
+  stop the sound; the rest of the shutdown happens in the background (VLC 4 itself takes about 2 seconds to quit
+  on Windows). If a shutdown ever gets stuck, Cone Player still ends itself within 5 seconds. A window that is
+  waiting for your answer (a dialog) stays until the quit ends. (PR #128)
+- **Cone tidies up after itself.** Up Next pictures, waveforms and downloaded subtitles are cleaned up: a show you deleted is forgotten after 14 days, a drive you unplugged keeps its data, a show you renamed or moved (also to another drive or drive letter) keeps its track choices, Up Next answers and credits points, and downloaded subtitles you tried but never used are deleted when the video closes. Settings > Playback > Remembered shows > Forget all also clears the pictures and downloaded subtitles. (PR #127)
+- **Background work waits its turn.** Show detection, credits scans, waveforms and Up Next pictures share one low-priority queue: one job at a time, nothing heavy in Cone's first minute, paused while you seek or hover the seek bar. The Up Next card's picture is made a few seconds after an episode starts, so the card always has it. (PR #127)
+- **Less work in the background.** Cone no longer redraws its interface while the bars are hidden or the window is minimized, searches for cast devices only while a Render list is open, and keeps the home page smooth during a big library scan. Quitting while Cone asks to restore the playlist no longer crashes. (PR #131)
+
+- **A crash can now restore your playlist on Windows.** Cone saves the playlist at most 10 seconds after it changes, also while a video plays, so after a crash the next start offers to restore it. Quitting while that question is open keeps it for the next start; only Yes or No clears it. (PR #134)
+- **Cleanup finishes even when you quit at once.** A downloaded subtitle you never used is deleted even if you quit right after moving on to the next file, each download is recorded once, and a file too short to be an episode gets no Up Next picture. (PR #134)
+
+- **The album cover stays square.** In the music player the cover is a square with rounded corners at every window size, maximized, in fullscreen and next to the lyrics, instead of a tall, narrow card in some windows. A cover that is not square shows its middle as a square, like the song list's thumbnails. (PR #136, issues #129 and #69)
+- **macOS: double-clicking a file in Finder while Cone Player is closed plays it.** The same for Open With > Cone Player: Cone starts and plays the file in its window. This was the known issue in the 1.4.0 macOS notes; it is fixed, so the release notes no longer list it. (PR #137, issue #69)
+- **Thumbnails appear in Recent and Videos right away.** A video's thumbnail made while the Recent or Videos page is open now shows on its card at once, instead of a grey square until you left the page or restarted Cone Player. (PR #139)
+- **Recent shows the latest first.** The Recent page and Open Recent now start with the video you played last, instead of the oldest. (PR #141)
+- **OpenSubtitles: tick one result or several, and the best match is in your language.** The best match is ticked to start with; tick more to download several at once and try them one by one, or click a ticked one to untick it. Save downloads every ticked subtitle and shows the best ranked of them, also when you pick one you downloaded before (it is reused, not downloaded twice). The best match is a result in the language you chose, even when OpenSubtitles files an upload under the wrong language (a "sintel.he" file listed as English goes below the English ones); nothing is hidden. (PR #141, PR #144)
+- **Clean names for downloaded subtitles.** A download keeps its own name, such as "Sintel (2010).eng.srt", and the subtitle list shows "Sintel (2010) [English]", without the OpenSubtitles number in front and with its brackets; a second subtitle of the same name shows its number once, as "sintel (2) [English]". (PR #141, #144)
+- **Up Next no longer skips episodes you finished.** An episode you watched to the end before starts from the beginning when autoplay reaches it; one you stopped partway still continues where you left it. (PR #140)
+- **Stopping an episode keeps the show's subtitles.** Stopping, quitting or opening another file no longer saves "subtitles off" for the show; only a subtitle or audio track you pick yourself carries over to the next episodes. (PR #140)
+- **The custom accent color shows a color wheel until you pick one.** In Settings > General > Accent color and on the first-start theme screen, the Custom swatch was empty until you had typed a custom color. It now shows a color wheel, in the same shape as the colors beside it. (PR #142)
+- **Linux: a file you open right after quitting plays.** Quitting hides Cone at once while it finishes in the background; a video double-clicked in that moment was handed to the closing Cone and lost. It now opens in a new window; opening a file while Cone runs normally still plays it in the same window. (PR #145)
+- **YouTube links play** (with your own yt-dlp, issue #143): no still image (a link no longer shows a tiny preview picture for 10 seconds and stops); works from shortcuts and the Start menu and with a yt-dlp in a folder with a space; the quality setting is respected (Preferred video quality picks the highest quality at or below it: 1080p gives 1080p, not 144p). **YouTube plays without sound for now:** YouTube sends the sound of its HD videos as a separate stream, and the VLC 4 engine can't play the two together yet. That is a VLC core limit; sound comes in a later release. Normal playback is unchanged: the change only runs for web links no other part of VLC can open. (PR #147)
+
+## Changed
+- **Choose what happens when an episode ends.** Settings > Playback > Episodes > "When an episode ends" replaces "Play episodes in a row": **Play the next episode** (the countdown on the Up Next card, as before), **Show Up Next, I'll click** (the card offers the next episode and waits for your click, no countdown), or **Do nothing**. Your saved choice carries over. The card's "Turn off autoplay" now switches to "Show Up Next, I'll click". (PR #135)
+
+## For the 1.5.0 test pass
+
+- **#137, a start with a file (shared startup code).** Windows: a video double-clicked in Explorer while Cone is closed plays; Open with > Cone Player while a video plays opens the new file in the same window; a file dragged onto the window plays; a start from the shortcut with no file opens Home. macOS (real Mac): MACOS_NOTES.md tester list, step 2 (Finder, Cone closed). Checked on build-windows 260 before the merge.

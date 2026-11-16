@@ -102,9 +102,17 @@ struct RdWaveformScanner::Scan
     void accumulate(int bin, const audio_format_t& fmt, const uint8_t* data, size_t frames);
     QByteArray result() const;
 
-    // the scan ends: a failure, a cancel, or the time budget spent
+    // the scan ends: a failure, a cancel, or the time budget spent; while the background queue
+    // is paused the scan waits here, and that time is not counted
     bool stopped()
     {
+        if (scanner.m_control && scanner.m_control->paused())
+        {
+            const vlc_tick_t pausedAt = vlc_tick_now();
+            scanner.m_control->waitWhilePaused([this]() { return scanner.cancelled(); });
+            if (deadline != VLC_TICK_MAX)
+                deadline += vlc_tick_now() - pausedAt;
+        }
         if (!failed && !overBudget && vlc_tick_now() >= deadline)
             overBudget = true;
         return failed || overBudget || scanner.cancelled();

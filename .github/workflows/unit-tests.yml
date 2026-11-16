@@ -1,0 +1,52 @@
+name: unit-tests
+
+# Cone's QtCore-only unit tests (.github/scripts/unit-tests.sh): the storage cleanup rules, the
+# background queue, the episode parser, the show tracks, the credits point and audio, the
+# on-screen message parser, also with ASan and UBSan; and the YT-DL format choice and the quoting of
+# yt-dlp's arguments on Windows (C, .github/scripts/ytdl-tests.sh). A few minutes on a plain runner, no VLC build.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['wip/**', redesign]
+    paths:
+      - 'modules/gui/qt/util/rd_storage_model.*'
+      - 'modules/gui/qt/util/rd_background_queue.*'
+      - 'modules/gui/qt/player/rd_show_tracks.*'
+      - 'modules/gui/qt/player/rd_episode_parser.*'
+      - 'modules/gui/qt/player/rd_credits_audio.*'
+      - 'modules/gui/qt/player/rd_credits_point.*'
+      - 'modules/gui/qt/player/rd_osd_parse.*'
+      - 'modules/gui/qt/util/rd_reload_throttle.*'
+      - 'modules/gui/qt/tests/test_rd_*'
+      - '.github/scripts/unit-tests.sh'
+      - 'modules/demux/ytdl*'
+      - 'modules/demux/json/**'
+      - 'test/modules/demux/ytdl_formats.c'
+      - 'test/modules/demux/ytdl_cmdline.c'
+      - '.github/scripts/ytdl-tests.sh'
+      - '.github/workflows/unit-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qt 6 for the tests
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends qt6-base-dev qt6-base-dev-tools g++ pkg-config bison flex
+      - name: Build and run
+        run: .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests"
+      # the same tests with AddressSanitizer and UndefinedBehaviorSanitizer: a memory error, a
+      # leak or undefined behaviour fails them (redesign/PERF_AUDIT_NOTES.md)
+      - name: Build and run with sanitizers
+        run: SANITIZE=1 .github/scripts/unit-tests.sh "$RUNNER_TEMP/unit-tests-sanitized"
+      # issue #143: the YT-DL format choice on saved yt-dlp format lists, the spawn quoting
+      - name: YT-DL format choice and spawn quoting
+        run: .github/scripts/ytdl-tests.sh "$RUNNER_TEMP/ytdl-tests"
+      - name: YT-DL format choice and spawn quoting with sanitizers
+        run: SANITIZE=1 .github/scripts/ytdl-tests.sh "$RUNNER_TEMP/ytdl-tests-sanitized"

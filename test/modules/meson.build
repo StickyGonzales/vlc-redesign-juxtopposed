@@ -110,6 +110,13 @@ vlc_tests += {
 }
 
 vlc_tests += {
+    'name' : 'test_modules_demux_ytdl_formats',
+    'sources' : files('demux/ytdl_formats.c', '../../modules/demux/ytdl_formats.c'),
+    'suite' : ['modules', 'test_modules'],
+    'link_with' : [vlc_json_lib, libvlccore],
+}
+
+vlc_tests += {
     'name' : 'test_modules_demux_libmp4',
     'sources' : files(
         'demux/libmp4.c',

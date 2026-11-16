@@ -30,4 +30,23 @@ for e in 1 2 3; do
     "$FFMPEG" -v error -y -f lavfi -i testsrc2=size=320x180:rate=15 -f lavfi -i "sine=frequency=$((300 + e * 100)):sample_rate=48000" \
         -t 420 -c:v libx264 -preset veryfast -crf 36 -pix_fmt yuv420p -g 150 -c:a aac -b:a 48k "$SHOW/Smoke Show S01E0$e.mp4"
 done
-ls -la "$OUT" "$SHOW"
+# a show whose first episode is long enough for Up Next and the others are not (shorter than 120 s):
+# after Next to the short one no picture is made for the one after it (linux-smoke.py)
+MIXED="$OUT/Mixed Show"
+mkdir -p "$MIXED"
+for e in 1 2 3; do
+    len=60; [ "$e" = 1 ] && len=200
+    # shellcheck disable=SC2086
+    "$FFMPEG" -v error -y -f lavfi -i testsrc2=size=320x180:rate=15 -f lavfi -i "sine=frequency=$((300 + e * 100)):sample_rate=48000" \
+        -t $len -c:v libx264 -preset veryfast -crf 36 -pix_fmt yuv420p -g 150 -c:a aac -b:a 48k "$MIXED/Mixed Show S01E0$e.mp4"
+done
+# two songs with a cover (#129, #69: the music player's cover stays square, linux-smoke.py): a
+# square 600x600 cover and a wide 800x400 one; FLAC with the picture attached
+for c in square:600x600 wide:800x400; do
+    # shellcheck disable=SC2086
+    "$FFMPEG" -v error -y -f lavfi -i "sine=frequency=330:sample_rate=44100:duration=90" \
+        -f lavfi -i "testsrc2=size=${c#*:}:rate=1:duration=1" \
+        -map 0:a -map 1:v -c:a flac -c:v mjpeg -disposition:v attached_pic \
+        -metadata title="Cover ${c%%:*}" -metadata artist="Smoke" "$OUT/song-${c%%:*}.flac"
+done
+ls -la "$OUT" "$SHOW" "$MIXED"

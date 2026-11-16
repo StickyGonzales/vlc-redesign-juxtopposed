@@ -172,3 +172,101 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | `wip/fix-ctrlq-quit` | `14b33daa80786832b68c1df32af222fa399bd3bf` | PR #123 merged (Ctrl+Q) |
 | `wip/fix-pointer-hide-resume` | `b1303a0f6a93f89b1f1e125d8577b1234f8b0aeb` | PR #124 merged (pointer after Space) |
 | `wip/round-1.4.0` | `7162f781885f8779cd956aba3a2b5bb7959c0586` | the 1.4.0 combined test build, merged into wip/next-test |
+
+## 2026-11-12, PR #126
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-popup-stack` | `b8ce9883ef3c519caafad18a61c1476c38e61dd6` | PR #126 merged into wip/next-test (notices stack) |
+
+## 2026-11-12, quit follow-up
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/quit-instant` | `efafe778ca12ba848c18a9aa388ddc525c0b7d9a` | PR #128 merged into wip/next-test |
+| `wip/fix-quit-stalls` | `4825fe8513fa61637c9dadb149ada9719ead70f1` | PR #125 closed (no measurable gain); its repro script kept on wip/next-test |
+
+## 2026-11-13, SignPath code signing prep
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/signpath-signing` | `89730d9786465a54a32b1a89145c732b3e6ccfca` | PR #130 merged into wip/next-test; the policy page and README links also on redesign (f8417da6bb2) |
+
+## 2026-11-13, storage cleanup and audit
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/storage-cleanup` | `4bbf29470a49e68efc16c8542f73e9c4e2f7894d` | PR #127 merged into wip/next-test (08a05d2aea3) |
+| `wip/perf-audit` | `8885cd206702d37dadf56c207c9c83b688400324` | PR #131 merged into wip/next-test (3780cd92d87) |
+
+## 2026-11-13, Up Next click mode
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/up-next-click-mode` | `01aaf823b49e8f70d347cc185430b53ad3af4637` | PR #135 merged into wip/next-test (14dcb7fbda6) |
+
+## 2026-11-13, retest follow-ups
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/retest-followups` | `40553d7f07df4299d81659fa4d6cefb9408dd355` | PR #134 merged into wip/next-test (31232076ea8) |
+
+## 2026-11-13, square music cover
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-music-cover` | `6e1ad8b3055333b62e1e0b1d1fcafffa201d454f` | PR #136 merged into wip/next-test (9dbb6052480) |
+
+## 2026-11-14, macOS Finder start
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/macos-finder-launch` | `6a91b8367aa2ec6049a6f7b04f148715fdefeb38` | PR #137 merged into wip/next-test (42269edc666) |
+
+## 2026-11-14, library thumbnails
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/library-thumbnails` | `8d9fa54e267ae1003ccd1dbc4a3ada8032d76223` | PR #139 merged into wip/next-test (04ad0d1150a) |
+
+## 2026-11-15, 1.5.0 fixes (Recent, OpenSubtitles, subtitle names)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fixes-1.5.0` | `bb7ce278505642edfc51451b8051f65351be438c` | PR #141 merged into wip/next-test (17376c86e05) |
+
+## 2026-11-15, Up Next resume and track fixes
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-upnext-resume-tracks` | `d3da549e9f91893193c44b925d860f6e958ef34a` | PR #140 merged into wip/next-test (d6f5d4cf49b) |
+
+## 2026-11-15, custom accent color wheel
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/custom-accent-rainbow` | `f20a05a97bf102f2cd07edc7b6b5caee36836b57` | PR #142 merged into wip/next-test (b943665e233) |
+
+## 2026-11-15, Linux smoke stdin quit
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-smoke-stdin-quit` | `860d92b7a09741778a6210db65d7c66accde99db` | PR #146 merged into wip/next-test (c1f4d13e130) |
+
+## 2026-11-16, Linux quit hand-off
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-linux-quit-handoff` | `ecc999c4f5acaf1804d6971e14d5e496fed5dd08` | PR #145 merged into wip/next-test (a1edb7de22d) |
+
+## 2026-11-16, OpenSubtitles language first and several results
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/subtitle-language-first` | `f9a7e384f8d1367918b1ee4c9152e16d0186ff3a` | PR #144 merged into wip/next-test (acccc6e8d9d) |
+
+## 2026-11-16, YouTube through yt-dlp (#143)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-ytdl-formats` | `5394b37050149b67c2e9ad3fe1016d9481b4b01a` | PR #147 merged into wip/next-test (8db8ab8963f) |
