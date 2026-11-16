@@ -268,8 +268,8 @@ Build from this branch (build-windows, portable zip). Use stable yt-dlp.exe.
    - **Do:** Preferred video quality 1080p, the same link (or the 634 s test video); watch 1 min.
    - **Expect:**
      - real time, no still picture, **no sound**;
-     - `format 269 picked`, so a **144p** picture: VLC 4's own rule (the lowest height at or
-       below the setting), kept as asked.
+     - round 3: `format 270 picked`, a **1080p** picture (the highest at or below the setting;
+       rounds 1-2 expected 269, 144p, VLC 4's lowest-fit rule).
    - **Before:** the storyboard still for 10 s.
 4. **A link after a shortcut start.**
    - **Do:** close Cone, start it from its Start menu or desktop shortcut, open the link of
@@ -285,3 +285,45 @@ Build from this branch (build-windows, portable zip). Use stable yt-dlp.exe.
 | unit-tests 22 | 3c76ef5e86 (round 2) | green: 23 format checks and 11 quoting checks, also with ASan and UBSan |
 | build-windows 280 | 3c76ef5e86 | green with smoke, first attempt (spawn.c and cmdline.c build for Windows) |
 | build-linux 159 | 3c76ef5e86 | green with smoke |
+| unit-tests 23, build-windows 281, build-linux 160 | 1336dabc1c (round 3) | green; 281 and 160 with smoke (the quick check: playback, subtitles, seek bar, Settings, quit, installer); the PC retest below passed |
+
+### PC retest of round 3 (build-windows 281, 2026-11-16)
+Fresh portable profiles in test lanes, every start without a standard error (as from a shortcut),
+yt-dlp stable 2026.10.26 in `<TEST_MEDIA_DIR>\builds\ytdl147\yt-dlp\` (the folder name has a
+space). Media: the open movie Tears of Steel (local .mov) and the Blender Sintel trailer as a
+direct link (`https://download.blender.org/durian/trailer/sintel_trailer-480p.mp4`); never the
+owner's own recordings. Logs stay local (they hold the PC's IP).
+
+**Step 1c, normal playback, #147 (281) next to wip/next-test (278, the same code as the
+branch's base):**
+
+| Build | File | Modules | ytdl lines | yt-dlp started | First picture (warm start) | Real time | Clock gaps |
+|---|---|---|---|---|---|---|---|
+| 278 | local .mov | filesystem, cache_read, mp4, avcodec, mpg123, direct3d11, wasapi | 0 | 0 | 5.8 s | yes (0:14 -> 0:16) | 0 |
+| 281 | local .mov | the same | 0 | 0 | 6.1 s | yes (0:14 -> 0:16) | 0 |
+| 278 | direct .mp4 | http, prefetch, mp4, avcodec, faad, direct3d11, wasapi | 0 | 0 | 3.6 s | yes (0:12 -> 0:14) | 0 |
+| 281 | direct .mp4 | the same | 0 | 0 | 4.2 s | yes (0:12 -> 0:14) | 0 |
+
+- **yt-dlp processes:** counted every 250 ms, only the test yt-dlp or a child of the lane's Cone
+  (Task Manager's view through Win32_Process). None during any normal-playback run.
+- **First runs:** the first start after a lane was copied took longer on both builds (it builds the
+  plugin cache): 278's first local start had no picture within 15 s, and 281 took 13.3 s once. The
+  warm runs above are the same within a second.
+
+**Step 3, YouTube (lane y147, build 281):**
+
+| Step | Setting | Pick | Picture | Sound | Time after ~20 s / ~60 s | Still image / EOF / clock gaps |
+|---|---|---|---|---|---|---|
+| 1 + 2 | Best available, yt-dlp in a folder with a space | `format 270 picked` | 1920x1080 | none (video track only, as expected) | 0:00 -> 0:03 / 0:39 -> 0:41 | none / 0 / 0 |
+| 3 | 1080p | `format 270 picked` | 1920x1080 | none (as expected) | 0:10 -> 0:12 / 0:48 -> 0:50 | none / 0 / 0 |
+| 4 | a real shortcut start (Explorer opened a .lnk, no stderr), then the HD test link handed to it; Best available | `format 628 picked` (3840x2160 HLS) | 3840x2160 | none (as expected) | 0:10 -> 0:12 / 0:48 -> 0:50 | none / 0 / 0 |
+
+- No `cannot start`, no `ytdl error: syntax error` from the folder with a space, no
+  `i.ytimg.com/sb/` redirect in any passing run.
+- **One run of step 3 failed first** (`ytdl error: syntax error`, `cannot extract infos`, nothing
+  played); the same step passed right after. Three more starts with yt-dlp's stderr captured show
+  why: YouTube answered this PC with `HTTP Error 403: Forbidden` and `ERROR: [youtube] ...: Sign in
+  to confirm you're not a bot` (2 of 3 starts). yt-dlp then prints no JSON and VLC's parser
+  reports the empty answer as a syntax error. That is YouTube limiting yt-dlp after many requests
+  from one address, not #147; it also hits yt-dlp alone. A user sees nothing play and no message
+  (a possible follow-up: show yt-dlp's error).
