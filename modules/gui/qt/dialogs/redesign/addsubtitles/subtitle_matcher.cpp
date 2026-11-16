@@ -47,6 +47,26 @@ const QSet<QString>& releaseTags()
     return tags;
 }
 
+// the extensions withoutExtension() takes off: subtitle, video and audio files. Only these: an
+// OpenSubtitles file name has none ("sintel.he"), and its last word is then a language code
+const QSet<QString>& mediaExtensions()
+{
+    static const QSet<QString> extensions {
+        // subtitles
+        "srt", "ass", "ssa", "sub", "idx", "vtt", "webvtt", "smi", "sami", "txt", "sup", "usf",
+        "ttml", "dfxp", "mpl", "mpl2", "mks", "jss", "rt", "pjs", "psb", "stl", "scc", "sbv", "lrc",
+        "aqt", "cdg", "zip",
+        // video
+        "mkv", "mp4", "m4v", "avi", "mov", "qt", "wmv", "asf", "flv", "f4v", "webm", "ts", "m2ts",
+        "mts", "m2t", "tp", "trp", "mpg", "mpeg", "mpe", "mpv", "m1v", "m2v", "vob", "ogm", "ogv",
+        "divx", "xvid", "3gp", "3g2", "rm", "rmvb", "wtv", "dvr-ms", "mxf", "iso", "evo", "y4m",
+        // audio
+        "mka", "mp3", "flac", "m4a", "aac", "ac3", "eac3", "dts", "ogg", "oga", "opus", "wav",
+        "wma", "ape", "wv", "alac", "aiff", "aif"
+    };
+    return extensions;
+}
+
 // words that tell subtitle variants apart besides the language
 const QSet<QString>& variantWords()
 {
@@ -201,18 +221,27 @@ QString SubtitleMatcher::languageCode(const QString& word, bool allowTwoLetters)
     return {};
 }
 
+QString SubtitleMatcher::withoutExtension(const QString& fileName)
+{
+    const qsizetype dot = fileName.lastIndexOf(QChar('.'));
+    if (dot <= 0 || dot == fileName.size() - 1)
+        return fileName;
+    if (!mediaExtensions().contains(fileName.mid(dot + 1).toLower()))
+        return fileName;
+    return fileName.left(dot);
+}
+
 SubtitleMatcher::Name SubtitleMatcher::parse(const QString& fileName)
 {
     Name name;
 
-    // the extension only ("show.en.srt" keeps "en")
+    // the extension only ("show.en.srt" keeps "en"), and only a real one: OpenSubtitles gives
+    // names without one, "sintel.he" keeps its ".he" (1.5.0 retest of #144)
     QString base = fileName;
     const qsizetype slash = std::max(base.lastIndexOf(QChar('/')), base.lastIndexOf(QChar('\\')));
     if (slash >= 0)
         base = base.mid(slash + 1);
-    const qsizetype dot = base.lastIndexOf(QChar('.'));
-    if (dot > 0 && base.size() - dot <= 5)
-        base.truncate(dot);
+    base = withoutExtension(base);
 
     const QStringList original = words(base);
     const QStringList tokens = tokenize(base);
@@ -333,6 +362,19 @@ SubtitleMatcher::Name SubtitleMatcher::parse(const QString& fileName)
     return name;
 }
 
+int SubtitleMatcher::variantScore(const Name& subtitle, const Preference& preference)
+{
+    int result = 0;
+    for (const QString& word : preference.variantTokens)
+        if (subtitle.variantTokens.contains(word))
+            result += 50;
+    // variants the user did not ask for come after the plain file
+    for (const QString& word : subtitle.variantTokens)
+        if (variantWords().contains(word) && !preference.variantTokens.contains(word))
+            result -= 5;
+    return result;
+}
+
 int SubtitleMatcher::score(const Name& video, const Name& subtitle, const Preference& preference)
 {
     int result = 0;
@@ -378,15 +420,9 @@ int SubtitleMatcher::score(const Name& video, const Name& subtitle, const Prefer
         }
     }
 
-    for (const QString& word : preference.variantTokens)
-        if (subtitle.variantTokens.contains(word))
-            result += 50;
+    result += variantScore(subtitle, preference);
     if (!preference.language.isEmpty() && !subtitle.language.isEmpty())
         result += subtitle.language == preference.language ? 40 : -10;
-    // variants the user did not ask for come after the plain file
-    for (const QString& word : subtitle.variantTokens)
-        if (variantWords().contains(word) && !preference.variantTokens.contains(word))
-            result -= 5;
 
     return std::max(result, 0);
 }
@@ -409,6 +445,127 @@ int SubtitleMatcher::bestMatch(const Name& video, const QVector<Name>& subtitles
         }
     }
     return best;
+}
+
+namespace {
+
+// "en" and "en", "pt" and "pt-br": the same language; "pt-br" and "pt-pt" or "zh-cn" and "zh-tw":
+// not (another spelling or script)
+bool sameLanguage(const QString& a, const QString& b)
+{
+    const QString x = a.toLower();
+    const QString y = b.toLower();
+    if (x.isEmpty() || y.isEmpty())
+        return false;
+    if (x == y)
+        return true;
+    const QString xBase = x.section(QChar('-'), 0, 0);
+    const QString yBase = y.section(QChar('-'), 0, 0);
+    return xBase == yBase && (xBase == x || yBase == y);
+}
+
+} // namespace
+
+QVector<int> SubtitleMatcher::rankResults(const Name& video, const QVector<Name>& results, const QString& language,
+                                          const Preference& preference)
+{
+    QVector<int> inLanguage;
+    QVector<int> otherLanguages;
+    QVector<int> others;
+    for (int i = 0; i < results.size(); ++i)
+    {
+        if (score(video, results.at(i), preference) < 0)
+            others.append(i);
+        else if (language.isEmpty() || sameLanguage(results.at(i).language, language))
+            inLanguage.append(i);
+        else
+            otherLanguages.append(i);
+    }
+    // within a language, the variant kept for the show (a plain file, "forced", "SDH": chosen by
+    // hand for an earlier episode) still wins; OpenSubtitles' order decides the rest
+    const auto byVariant = [&results, &preference](int a, int b) {
+        return variantScore(results.at(a), preference) > variantScore(results.at(b), preference);
+    };
+    // in the chosen language, a result whose name names another language goes after the others:
+    // OpenSubtitles files some uploads under the wrong language (the 1.5.0 retest: "sintel.he",
+    // Hebrew text, listed as English)
+    // compared on the base language: a ".chi" upload names Chinese, which "zh-tw" chosen also is
+    const QString chosenBase = language.toLower().section(QChar('-'), 0, 0);
+    const auto namedElsewhere = [&results, &chosenBase](int i) {
+        const QString named = results.at(i).nameLanguage.toLower().section(QChar('-'), 0, 0);
+        return !chosenBase.isEmpty() && !named.isEmpty() && named != chosenBase;
+    };
+    std::stable_sort(inLanguage.begin(), inLanguage.end(), [&](int a, int b) {
+        const bool elsewhereA = namedElsewhere(a);
+        const bool elsewhereB = namedElsewhere(b);
+        if (elsewhereA != elsewhereB)
+            return elsewhereB;
+        return byVariant(a, b);
+    });
+    std::stable_sort(otherLanguages.begin(), otherLanguages.end(), byVariant);
+    return inLanguage + otherLanguages + others;
+}
+
+namespace {
+
+// the language a name names: a language word (code or name) that is not the first word and not a
+// variant word ("HI" is hearing impaired, not Hindi), and stands where a language goes: the last
+// meaningful word ("sintel.he", "Sintel.2010.en.hi"), or right before a release tag, a year or the
+// episode ("Sintel.2010.Hebrew.WEB", "Sintel.Hebrew.720p", "Show.Hebrew.S01E04"). A word inside the
+// title or an episode title ("The Hebrew Hammer", "The Chinese Restaurant") stands elsewhere
+QString languageWordOf(const QString& normalized)
+{
+    static const QRegularExpression episodeMark(QStringLiteral("^(?:s\\d{1,2}e\\d{1,3}(?:e\\d{1,3})?|\\d{1,2}x\\d{1,3}|s\\d{1,2})$"));
+    const QStringList words = normalized.split(QChar(' '), Qt::SkipEmptyParts);
+    const auto isYear = [](const QString& w) {
+        return w.size() == 4 && isNumber(w) && (w.startsWith(QLatin1String("19")) || w.startsWith(QLatin1String("20")));
+    };
+    const auto isMark = [&](const QString& w) {
+        return releaseTags().contains(w) || isYear(w) || episodeMark.match(w).hasMatch();
+    };
+    qsizetype lastMeaningful = -1;
+    for (qsizetype i = words.size() - 1; i >= 0; --i)
+    {
+        const QString& w = words.at(i);
+        if (!variantWords().contains(w) && !isMark(w) && !isNumber(w))
+        {
+            lastMeaningful = i;
+            break;
+        }
+    }
+    for (qsizetype i = 1; i < words.size(); ++i)
+    {
+        const QString& w = words.at(i);
+        if (variantWords().contains(w))
+            continue;
+        const bool placed = i == lastMeaningful || (i + 1 < words.size() && isMark(words.at(i + 1)));
+        if (!placed)
+            continue;
+        const QString code = SubtitleMatcher::languageCode(w, true);
+        if (!code.isEmpty())
+            return code;
+    }
+    return {};
+}
+
+} // namespace
+
+QString SubtitleMatcher::namedLanguage(const QString& fileName, const QString& release)
+{
+    const QString fromFile = languageWordOf(parse(fileName).normalized);
+    if (!fromFile.isEmpty() || release.trimmed().isEmpty())
+        return fromFile;
+    // a release name has no extension: parse() would take its last word for one
+    return languageWordOf(parse(release.trimmed() + QStringLiteral(".srt")).normalized);
+}
+
+int SubtitleMatcher::bestResult(const Name& video, const QVector<Name>& results, const QString& language,
+                                const Preference& preference)
+{
+    const QVector<int> order = rankResults(video, results, language, preference);
+    if (order.isEmpty() || score(video, results.at(order.first()), preference) < 0)
+        return -1;
+    return order.first();
 }
 
 QStringList SubtitleMatcher::variantOf(const Name& video, const Name& subtitle)

@@ -108,7 +108,10 @@ private:
         // track is first shown (the file is listed on the media once it has loaded)
         bool m_external = false;
         mutable QString m_fileName;
+        // the lookups asked again later (lookUpFileNameLater), one at a time: the row repaints
+        // many times at once (a selected track), each repaint must not use up a lookup
         mutable int m_fileNameLookups = 0;
+        mutable bool m_fileNameLookupPending = false;
         // the track's language code or name as the file gives it, empty when none
         QString m_language;
     };

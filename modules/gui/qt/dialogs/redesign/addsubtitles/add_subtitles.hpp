@@ -227,6 +227,10 @@ private:
     void updateMessage();
     const QVector<Candidate>& pool() const;
     SubtitleMatcher::Preference preference() const;
+    // the candidates for `video`, best first, as { score, index }: OpenSubtitles results in the
+    // chosen language first, then in OpenSubtitles' order; other sources by score
+    QVector<QPair<int, int>> rankedCandidates(const SubtitleMatcher::Name& video, const QVector<Candidate>& candidates,
+                                              const SubtitleMatcher::Preference& pref) const;
     QString defaultSearchText() const;
     void saveAccount();
     void writeStore();
@@ -251,6 +255,8 @@ private:
     int m_generation = 0;
     // the folder rows of an older rebuild are dropped
     int m_rebuildSerial = 0;
+    // the latest OpenSubtitles search: an older answer that comes after it is dropped
+    int m_searchSerial = 0;
     int m_busyCount = 0;
     bool m_saving = false;
     bool m_autoSyncDownloads = false;

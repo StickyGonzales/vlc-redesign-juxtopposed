@@ -22,6 +22,7 @@
 #include <QByteArray>
 #include <QSet>
 #include <QString>
+#include <QVector>
 
 #include <functional>
 #include <utility>
@@ -33,10 +34,14 @@
  */
 namespace rdsubtitles {
 
-// the checked rows after a click on `candidate`. `single`: OpenSubtitles results for one file
-// (Figma "Folder-3": one result checked), so a click checks that row alone and a click on the
-// checked row keeps it; otherwise (files from the computer, Figma "Folder-2") a click flips it
-QSet<int> picked(const QSet<int>& selected, int candidate, bool single);
+// the checked rows after a click on `candidate`: it flips that row, for every source, so several
+// results or files can be checked (StickyGonzales, 1.5.0: several OpenSubtitles results tried one
+// by one, as in 1.4.0)
+QSet<int> picked(const QSet<int>& selected, int candidate);
+
+// the checked candidates in the order of the list (`order`, best first): the order they are saved
+// in, so the first, the best ranked one the user checked, is the subtitle shown
+QVector<int> checkedInOrder(const QVector<int>& order, const QSet<int>& selected);
 
 // where a downloaded subtitle is written in `folder`: its own name ("Sintel (2010).eng.srt"),
 // the file already there when it holds the same bytes (the same subtitle downloaded again), else
@@ -49,8 +54,13 @@ QString downloadFile(const QString& folder, const QString& name, const QByteArra
 // written again (VLC may have it open)
 QString saveDownload(const QString& folder, const QString& name, const QByteArray& data);
 
-// a file name without its extension (".srt", ".ass": at most four characters after the dot)
+// a file name without its extension, only a subtitle, video or audio one
+// (SubtitleMatcher::withoutExtension): "sintel.he" keeps ".he"
 QString withoutExtension(const QString& fileName);
+
+// `text` without a copy number " (2)" .. " (99)" at its end (downloadFile()'s numbering), which
+// goes to `number` when given; a year such as "(2010)" stays
+QString withoutCopyNumber(const QString& text, QString* number);
 
 // `base` without the word that starts at `wordStart` and the separators (space . _ -) before it:
 // "Sintel (2010).eng" without "eng" is "Sintel (2010)"; brackets stay. `fallback` when nothing
@@ -67,7 +77,9 @@ using LanguageLookup = std::function<std::pair<QString, QString>(const QString&)
 // an external file's track as the video shows it (6:22-6:24, Decision 11): "The_Wand_S01E04
 // [English]", the file name without its extension and the language in brackets: the track's own,
 // else the one at the end of the file name ("_EN", ".eng"), which then leaves the name with the
-// separators before it ("Sintel (2010).eng.srt": "Sintel (2010) [English]")
+// separators before it ("Sintel (2010).eng.srt": "Sintel (2010) [English]"). A numbered copy shows
+// its number once, after the name and outside the language ("sintel_en (2).srt", VLC's language
+// "en (2)": "sintel (2) [English]")
 QString externalTrackName(const QString& fileName, const QString& trackLanguage,
                           const LanguageLookup& languageOf);
 

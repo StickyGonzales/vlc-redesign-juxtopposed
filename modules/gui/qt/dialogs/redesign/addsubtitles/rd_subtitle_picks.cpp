@@ -27,6 +27,7 @@
 #include <QFileInfo>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QRegularExpression>
 
 #include <tuple>
 
@@ -59,15 +60,22 @@ bool holds(const QString& path, const QByteArray& data)
 
 } // namespace
 
-QSet<int> picked(const QSet<int>& selected, int candidate, bool single)
+QSet<int> picked(const QSet<int>& selected, int candidate)
 {
-    if (single)
-        return { candidate };
     QSet<int> result = selected;
     if (result.contains(candidate))
         result.remove(candidate);
     else
         result.insert(candidate);
+    return result;
+}
+
+QVector<int> checkedInOrder(const QVector<int>& order, const QSet<int>& selected)
+{
+    QVector<int> result;
+    for (const int candidate : order)
+        if (selected.contains(candidate))
+            result.append(candidate);
     return result;
 }
 
@@ -109,10 +117,20 @@ QString saveDownload(const QString& folder, const QString& name, const QByteArra
 
 QString withoutExtension(const QString& fileName)
 {
-    const qsizetype dot = fileName.lastIndexOf(QChar('.'));
-    if (dot > 0 && fileName.size() - dot <= 5)
-        return fileName.left(dot);
-    return fileName;
+    return SubtitleMatcher::withoutExtension(fileName);
+}
+
+QString withoutCopyNumber(const QString& text, QString* number)
+{
+    // " (2)" .. " (99)" at the end, as downloadFile() numbers a second subtitle of the same name;
+    // a year ("Sintel (2010)") has more digits and stays
+    static const QRegularExpression copy(QStringLiteral("^(.*\\S)\\s+\\((\\d{1,2})\\)$"));
+    const QRegularExpressionMatch match = copy.match(text);
+    if (!match.hasMatch())
+        return text;
+    if (number)
+        *number = match.captured(2);
+    return match.captured(1);
 }
 
 QString withoutLastWord(const QString& base, qsizetype wordStart, const QString& fallback)
@@ -136,7 +154,13 @@ QString withoutDownloadId(const QString& fileName)
 QString externalTrackName(const QString& fileName, const QString& trackLanguage,
                           const LanguageLookup& languageOf)
 {
-    QString base = withoutExtension(fileName);
+    // a numbered copy ("sintel_en (2).srt") shows its number once, after the title and outside the
+    // language: "sintel (2) [English]". VLC reads the language from the file name and keeps the
+    // number with it ("en (2)"), which is no language: the number goes there too
+    QString copy;
+    QString base = withoutCopyNumber(withoutExtension(fileName), &copy);
+    const QString cleanLanguage = withoutCopyNumber(trackLanguage.trimmed(), nullptr);
+    const QString number = copy.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(copy);
 
     qsizetype wordStart = base.size();
     while (wordStart > 0 && base.at(wordStart - 1).isLetterOrNumber())
@@ -146,17 +170,23 @@ QString externalTrackName(const QString& fileName, const QString& trackLanguage,
 
     QString language;
     QString code;
-    if (!trackLanguage.isEmpty())
-        std::tie(language, code) = languageOf(trackLanguage);
-    else if (!nameCode.isEmpty())
-        std::tie(language, code) = languageOf(nameCode);
+    // a language the lookup knows comes back with a code or as a name other than the text given
+    // (a language without a two letter code); an unknown one comes back as it was
+    const auto lookUp = [&languageOf](const QString& text, QString& name, QString& twoLetters) {
+        std::tie(name, twoLetters) = languageOf(text);
+        return !name.isEmpty() && (!twoLetters.isEmpty() || name.compare(text, Qt::CaseInsensitive) != 0);
+    };
+    bool known = !cleanLanguage.isEmpty() && lookUp(cleanLanguage, language, code);
+    // VLC's language is not one it knows ("en (2)" before the number went): the file name's word
+    if (!known && !nameCode.isEmpty())
+        known = lookUp(nameCode, language, code);
 
-    if (language.isEmpty())
-        return base;
+    if (!known)
+        return base + number;
     // only the separators before the language word go: "Sintel (2010).eng" keeps its ")"
     if (!nameCode.isEmpty() && nameCode == code)
         base = withoutLastWord(base, wordStart, fileName);
-    return QStringLiteral("%1 [%2]").arg(base, language);
+    return QStringLiteral("%1%2 [%3]").arg(base, number, language);
 }
 
 } // namespace rdsubtitles

@@ -29,6 +29,11 @@ player's "recent" list does and what the test pass expected.
 
 ## 2. OpenSubtitles results: the pick was not what got downloaded and shown
 
+**Superseded (StickyGonzales, 2026-11-15, for 1.5.0):** the one-choice rule below was reversed;
+several OpenSubtitles results can be ticked again, as in 1.4.0. See
+redesign/FIX_SUBTITLE_LANGUAGE_FIRST_NOTES.md, "Several OpenSubtitles results again". The clean names,
+the reuse of a re-picked download and "the picked one is shown" stay.
+
 **What was wrong.**
 - The best result came pre-ticked.
 - Clicking it unticked it, so Save downloaded nothing.
