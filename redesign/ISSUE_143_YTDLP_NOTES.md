@@ -232,3 +232,11 @@ Build from this branch (build-windows, portable zip). Use stable yt-dlp.exe.
    - **Expect:**
      - it plays (no `cannot start ... Unknown error`), as in step 2;
      - Cone closes normally.
+
+### Runs
+| Run | Head | Result |
+|---|---|---|
+| unit-tests 21, build-windows 279 (attempt 2), build-linux 158 | 3d30b1d017 (round 1) | green; the PC retest of 279 failed, see round 1 above |
+| unit-tests 22 | 3c76ef5e86 (round 2) | green: 23 format checks and 11 quoting checks, also with ASan and UBSan |
+| build-windows 280 | 3c76ef5e86 | green with smoke, first attempt (spawn.c and cmdline.c build for Windows) |
+| build-linux 159 | 3c76ef5e86 | green with smoke |
