@@ -117,6 +117,11 @@ void testTrackName()
     checkEqual(withoutExtension(s("Sintel (2010).eng")), s("Sintel (2010).eng"), "no extension: .eng kept");
     checkEqual(withoutExtension(s("Movie.2010.ASS")), s("Movie.2010"), "extension: any case");
     checkEqual(withoutExtension(s("Sintel.mkv")), s("Sintel"), "extension: a video");
+    // the dialog's search text comes from parse(): a video's extension goes, a name without one
+    // (a typed search, a folder) keeps every word (round 3 dropped the old fake ".x" extension)
+    checkEqual(SubtitleMatcher::parse(s("Sintel.mkv")).normalized, s("sintel"), "parse: the video's .mkv goes");
+    checkEqual(SubtitleMatcher::parse(s("Sintel mkv")).normalized, s("sintel mkv"), "parse: a typed search keeps its words");
+    checkEqual(SubtitleMatcher::parse(s("The.Wand.S01")).normalized, s("the wand s01"), "parse: a folder keeps its last word");
 
     // the 1.5.0 track "Sintel (2010 [English]": the language word went with the ")" before it
     const QString base = s("Sintel (2010).eng");

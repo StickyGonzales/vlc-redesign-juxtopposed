@@ -681,11 +681,11 @@ QString AddSubtitles::defaultSearchText() const
     else
         name = nameOf(m_playlistItems.value(0));
 
-    // a season folder ("S01") is named after the season only: the show is its parent
-    SubtitleMatcher::Name parsed = SubtitleMatcher::parse(name + QStringLiteral(".x"));
+    // a season folder ("S01") is named after the season only: the show is its parent. parse()
+    // takes off only a real extension: a video's ".mkv" goes, a folder name keeps every word
+    SubtitleMatcher::Name parsed = SubtitleMatcher::parse(name);
     if (m_target == TargetFolder && parsed.title.isEmpty() && !m_videoFolder.isEmpty())
-        parsed.title = SubtitleMatcher::parse(QFileInfo(QFileInfo(m_videoFolder).path()).fileName()
-                                              + QStringLiteral(".x")).title;
+        parsed.title = SubtitleMatcher::parse(QFileInfo(QFileInfo(m_videoFolder).path()).fileName()).title;
     if (m_target != TargetFile)
     {
         // a playlist or folder of episodes: their season
@@ -824,7 +824,7 @@ void AddSubtitles::search()
     }
 
     // "The Wand S01E01": the title as the query, the episode as its own parameters
-    const SubtitleMatcher::Name query = SubtitleMatcher::parse(m_searchText + QStringLiteral(".x"));
+    const SubtitleMatcher::Name query = SubtitleMatcher::parse(m_searchText);
     const QString text = query.title.isEmpty() ? m_searchText : query.title;
     const bool wholeSeason = m_target != TargetFile;
     const int season = query.season;
@@ -1323,7 +1323,7 @@ void AddSubtitles::save()
                 rule.valid = true;
                 rule.source = source == SourceOpenSubtitles ? SubtitleStore::OpenSubtitles : SubtitleStore::Computer;
                 rule.path = source == SourceComputer ? computerFolder : QString();
-                const SubtitleMatcher::Name query = SubtitleMatcher::parse(searchText + QStringLiteral(".x"));
+                const SubtitleMatcher::Name query = SubtitleMatcher::parse(searchText);
                 rule.query = source == SourceOpenSubtitles ? (query.title.isEmpty() ? searchText : query.title) : QString();
                 rule.language = source == SourceOpenSubtitles ? language : rule.language;
                 if (!variant.isEmpty())
