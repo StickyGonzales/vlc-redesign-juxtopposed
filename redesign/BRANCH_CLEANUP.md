@@ -258,3 +258,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/fix-linux-quit-handoff` | `ecc999c4f5acaf1804d6971e14d5e496fed5dd08` | PR #145 merged into wip/next-test (a1edb7de22d) |
+
+## 2026-11-16, OpenSubtitles language first and several results
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/subtitle-language-first` | `f9a7e384f8d1367918b1ee4c9152e16d0186ff3a` | PR #144 merged into wip/next-test (acccc6e8d9d) |
