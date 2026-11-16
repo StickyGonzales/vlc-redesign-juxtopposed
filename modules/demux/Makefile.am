@@ -543,7 +543,9 @@ check_PROGRAMS += adaptive_test
 TESTS += adaptive_test
 endif
 
-libytdl_plugin_la_SOURCES = demux/ytdl.c
+libytdl_plugin_la_SOURCES = demux/ytdl.c \
+	demux/ytdl_formats.c demux/ytdl_formats.h \
+	demux/ytdl_cmdline.c demux/ytdl_cmdline.h
 libytdl_plugin_la_CPPFLAGS = $(AM_CPPFLAGS) -DEXEEXT=\"$(EXEEXT)\"
 libytdl_plugin_la_LIBADD = libvlc_json.la
 if !HAVE_ANDROID
