@@ -29,9 +29,8 @@
 #include <vlc_common.h>
 #include <vlc_fs.h>
 #include <vlc_spawn.h>
+#include <vlc_memstream.h>
 #include <vlc_charset.h>
-
-#include "cmdline.h"
 
 static LPPROC_THREAD_ATTRIBUTE_LIST allow_hstd_inherit(HANDLE *handles)
 {
@@ -186,13 +185,16 @@ static int vlc_spawn_inner(pid_t *restrict pid, const char *path,
     }
 
     if (likely(argv[0])) {
-        /* Arguments with spaces (a path in "Program Files") or quotes must
-         * be quoted, or the child splits them into several arguments. */
-        char *cmdline_u8 = vlc_win32_cmdline(argv);
-        if (unlikely(cmdline_u8 == NULL))
+        struct vlc_memstream cmdline_s;
+        if (unlikely(vlc_memstream_open(&cmdline_s) != 0))
             goto error;
-        cmdline = ToWide(cmdline_u8);
-        free(cmdline_u8);
+        vlc_memstream_printf(&cmdline_s, "%s", argv[0]);
+        for (int argc = 1; argv[argc]; ++argc)
+            vlc_memstream_printf(&cmdline_s, " %s", argv[argc]);
+        if (vlc_memstream_close(&cmdline_s) != 0)
+            goto error;
+        cmdline = ToWide(cmdline_s.ptr);
+        free(cmdline_s.ptr);
         if (unlikely(cmdline == NULL))
             goto error;
     }

@@ -37,6 +37,9 @@
 
 #include "json/json.h"
 #include "ytdl_formats.h"
+#ifdef _WIN32
+# include "ytdl_cmdline.h"
+#endif
 #include <vlc_common.h>
 #include <vlc_configuration.h>
 #include <vlc_demux.h>
@@ -76,10 +79,38 @@ size_t json_read(void *data, void *buf, size_t size)
 
 static int ytdl_popen(pid_t *restrict pid, const char *argv[])
 {
+    int ret = -1;
     int fds[2];
 
-    if (vlc_pipe(fds))
+#ifdef _WIN32
+    /* vlc_spawnp() joins the arguments with spaces as they are, so a yt-dlp
+     * in a folder with a space ("C:\Program Files") would be split into
+     * several arguments: quote them here. Only yt-dlp's arguments are quoted;
+     * every other caller of vlc_spawnp() is left as it is. The path searched
+     * for the program (argv[0] below) stays unquoted. */
+    size_t argc = 0;
+
+    while (argv[argc] != NULL)
+        argc++;
+
+    char **quoted = calloc(argc + 1, sizeof (*quoted));
+    if (unlikely(quoted == NULL))
         return -1;
+    for (size_t i = 0; i < argc; i++) {
+        quoted[i] = ytdl_QuoteArg(argv[i]);
+        if (unlikely(quoted[i] == NULL)) {
+            errno = ENOMEM;
+            goto out;
+        }
+    }
+
+    const char *const *spawn_argv = (const char *const *)quoted;
+#else
+    const char *const *spawn_argv = argv;
+#endif
+
+    if (vlc_pipe(fds))
+        goto out;
 
     int errfd = STDERR_FILENO;
 #ifdef _WIN32
@@ -92,7 +123,7 @@ static int ytdl_popen(pid_t *restrict pid, const char *argv[])
 #endif
 
     int fdv[] = { -1, fds[1], errfd, -1 };
-    int val = vlc_spawnp(pid, argv[0], fdv, argv);
+    int val = vlc_spawnp(pid, argv[0], fdv, spawn_argv);
 
     vlc_close(fds[1]);
     if (errfd != STDERR_FILENO && errfd != -1)
@@ -101,10 +132,22 @@ static int ytdl_popen(pid_t *restrict pid, const char *argv[])
     if (val) {
         vlc_close(fds[0]);
         errno = val;
-        return -1;
+        goto out;
     }
 
-    return fds[0];
+    ret = fds[0];
+out:
+#ifdef _WIN32
+    {
+        int err = errno;
+
+        for (size_t i = 0; i < argc; i++)
+            free(quoted[i]);
+        free(quoted);
+        errno = err;
+    }
+#endif
+    return ret;
 }
 
 #ifdef _WIN32

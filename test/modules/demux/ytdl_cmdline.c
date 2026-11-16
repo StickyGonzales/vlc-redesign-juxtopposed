@@ -1,5 +1,6 @@
 /*****************************************************************************
- * cmdline.c: test for the Windows command line quoting of vlc_spawn()
+ * ytdl_cmdline.c: test for the Windows command line quoting of yt-dlp's
+ * arguments (modules/demux/ytdl_cmdline.c)
  *****************************************************************************
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,7 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-/* Pure C: builds and runs on any platform (src/win32/cmdline.c uses no
+/* Pure C: builds and runs on any platform (ytdl_cmdline.c uses no
  * Windows API). Each command line is checked against the expected text and
  * split again with the rules of CommandLineToArgvW / the Microsoft C
  * start-up code, which must give back the same arguments. */
@@ -28,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../../src/win32/cmdline.h"
+#include "../../../modules/demux/ytdl_cmdline.h"
 
 #define MAX_ARGS 16
 
@@ -103,7 +104,7 @@ static int split(const char *line, char *out[MAX_ARGS])
 
 static void check(const char *const *argv, const char *expected)
 {
-    char *line = vlc_win32_cmdline(argv);
+    char *line = ytdl_JoinArgs(argv);
 
     assert(line != NULL);
     printf("[%s]\n", line);
@@ -159,6 +160,19 @@ int main(void)
           "prog C:\\no\\space\\");
     check((const char *[]){ "prog", "tab\there", "new\nline", NULL },
           "prog \"tab\there\" \"new\nline\"");
+
+    /* One argument at a time, as the YT-DL extractor quotes them before
+     * vlc_spawnp() joins them with spaces */
+    {
+        char *q = ytdl_QuoteArg("C:\\Program Files\\yt-dlp.exe");
+        assert(q != NULL);
+        assert(strcmp(q, "\"C:\\Program Files\\yt-dlp.exe\"") == 0);
+        free(q);
+        q = ytdl_QuoteArg("--dump-single-json");
+        assert(q != NULL);
+        assert(strcmp(q, "--dump-single-json") == 0);
+        free(q);
+    }
 
     /* UTF-8 is copied as it is */
     check((const char *[]){ "C:\\Users\\Zo\xc3\xab\\yt dlp\\yt-dlp.exe",

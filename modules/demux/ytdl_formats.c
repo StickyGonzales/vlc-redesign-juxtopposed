@@ -67,10 +67,12 @@ static int CompareFormats(const struct json_object *f_a,
     if (islessequal(h_a, pref_height)) {
         if (!islessequal(h_b, pref_height))
             return +1;
+        /* The highest height at or below the preferred one: the option asks
+         * for the resolution "closest to (but not higher than)" it */
         if (h_a > h_b)
-            return -1;
-        if (h_a < h_b)
             return +1;
+        if (h_a < h_b)
+            return -1;
     } else {
         if (islessequal(h_b, pref_height))
             return -1;

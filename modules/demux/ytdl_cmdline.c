@@ -1,5 +1,5 @@
 /*****************************************************************************
- * cmdline.c: Windows command line from an argument vector
+ * ytdl_cmdline.c: Windows command line quoting for yt-dlp's arguments
  *****************************************************************************
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cmdline.h"
+#include "ytdl_cmdline.h"
 
 static bool NeedsQuotes(const char *arg)
 {
@@ -76,7 +76,17 @@ static size_t QuoteArg(const char *arg, char *out)
     return len;
 }
 
-char *vlc_win32_cmdline(const char *const *argv)
+char *ytdl_QuoteArg(const char *arg)
+{
+    char *quoted = malloc(QuoteArg(arg, NULL) + 1);
+
+    if (quoted == NULL)
+        return NULL;
+    quoted[QuoteArg(arg, quoted)] = '\0';
+    return quoted;
+}
+
+char *ytdl_JoinArgs(const char *const *argv)
 {
     size_t size = 1;
 

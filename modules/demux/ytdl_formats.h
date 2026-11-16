@@ -27,9 +27,10 @@ struct json_object;
  * Storyboards (formats without audio and video, such as YouTube's seek
  * preview pictures) are never picked. Among the other formats the choice is
  * VLC's own: formats with an audio bit rate first, then formats with a
- * height; then the lowest height at or below \p pref_height (the lowest
- * above it if none fits), or the highest height if \p pref_height is NaN;
- * then the highest audio bit rate.
+ * height; then the highest height at or below \p pref_height (as the
+ * option's help says: closest to, but not higher than, the setting; VLC 4
+ * took the lowest), else the highest height if none fits or \p pref_height
+ * is NaN; then the highest audio bit rate.
  *
  * \param entry info dictionary (one video)
  * \param pref_height preferred video height, or NaN for the best available

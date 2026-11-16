@@ -225,28 +225,31 @@ static void check(const char *name, const char *doc, double pref,
     json_free(&obj);
 }
 
-/* Apart from storyboards, the choice is VLC 4's own (CompareFormats): formats
- * with an audio bit rate first (YouTube's video-only formats have "abr": 0,
- * the muxed 18 has none), the lowest height at or below the preferred one,
- * the highest otherwise. These checks pin that behaviour. */
+/* Apart from storyboards and the height at or below the preferred one, the
+ * choice is VLC 4's own (CompareFormats): formats with an audio bit rate first
+ * (YouTube's video-only formats have "abr": 0, the muxed 18 has none), the
+ * highest height at or below the preferred one (VLC 4 took the lowest, so a
+ * 1080p setting gave 144p), the highest otherwise. These checks pin that. */
 int main(void)
 {
     /* The issue: every preferred height picked the 48x27 storyboard sb3 (a
-     * still for 10 s, then EOF). Now VLC 4's choice without storyboards:
-     * 144p video-only HLS; Best available: 1080p video-only HLS (no sound,
-     * a known VLC 4 limit). */
+     * still for 10 s, then EOF). Now the highest video-only HLS at or below
+     * the preferred height (no sound, a known VLC 4 limit; this list has no
+     * 720p HLS, so 720 gives 360p); Best available: 1080p video-only HLS. */
     check("youtube", youtube, NAN, "270");
     check("youtube", youtube, 144, "269");
-    check("youtube", youtube, 240, "269");
-    check("youtube", youtube, 360, "269");
-    check("youtube", youtube, 720, "269");
-    check("youtube", youtube, 1080, "269");
+    check("youtube", youtube, 240, "229");
+    check("youtube", youtube, 360, "230");
+    check("youtube", youtube, 720, "230");
+    check("youtube", youtube, 1080, "270");
 
-    /* Storyboards next to muxed HLS are skipped; the rest is VLC 4's */
+    /* Storyboards next to muxed HLS are skipped; each height gets its own
+     * muxed format (VLC 4 gave 91, 144p, for all of them); on a tie at the
+     * same height the first listed stays */
     check("hls_muxed", hls_muxed, NAN, "96");
-    check("hls_muxed", hls_muxed, 1080, "91");
-    check("hls_muxed", hls_muxed, 720, "91");
-    check("hls_muxed", hls_muxed, 240, "91");
+    check("hls_muxed", hls_muxed, 1080, "96");
+    check("hls_muxed", hls_muxed, 720, "95");
+    check("hls_muxed", hls_muxed, 240, "92");
     check("hls_muxed", hls_muxed, 100, "96");
 
     /* Nothing but storyboards: nothing is played (VLC 4 played sb0 / sb3) */

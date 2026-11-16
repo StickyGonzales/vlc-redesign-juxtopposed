@@ -1,7 +1,7 @@
 #!/bin/sh
 # Issue #143, built without a VLC build:
-# - the Windows command line quoting of vlc_spawn() (src/win32/cmdline.c, pure C, so it runs
-#   here too), test/src/win32/cmdline.c;
+# - the Windows command line quoting of yt-dlp's arguments (modules/demux/ytdl_cmdline.c, pure C,
+#   so it runs here too), test/modules/demux/ytdl_cmdline.c;
 # - the YT-DL extractor's format choice (modules/demux/ytdl_formats.c) against saved yt-dlp
 #   format lists, test/modules/demux/ytdl_formats.c: VLC's
 # JSON parser is generated with bison and flex, and its libvlccore charset calls are
@@ -60,5 +60,5 @@ timeout 60 "$OUT/test_ytdl_formats"
 echo "ytdl format tests: pass"
 # shellcheck disable=SC2086
 cc $CFLAGS -Werror -o "$OUT/test_win32_cmdline" \
-    "$ROOT/test/src/win32/cmdline.c" "$ROOT/src/win32/cmdline.c"
+    "$ROOT/test/modules/demux/ytdl_cmdline.c" "$ROOT/modules/demux/ytdl_cmdline.c"
 timeout 60 "$OUT/test_win32_cmdline"

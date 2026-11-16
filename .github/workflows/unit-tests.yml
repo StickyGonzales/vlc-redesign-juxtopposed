@@ -2,8 +2,8 @@ name: unit-tests
 
 # Cone's QtCore-only unit tests (.github/scripts/unit-tests.sh): the storage cleanup rules, the
 # background queue, the episode parser, the show tracks, the credits point and audio, the
-# on-screen message parser, also with ASan and UBSan; and the YT-DL format choice and the Windows
-# spawn quoting (C, .github/scripts/ytdl-tests.sh). A few minutes on a plain runner, no VLC build.
+# on-screen message parser, also with ASan and UBSan; and the YT-DL format choice and the quoting of
+# yt-dlp's arguments on Windows (C, .github/scripts/ytdl-tests.sh). A few minutes on a plain runner, no VLC build.
 on:
   workflow_dispatch:
   push:
@@ -22,8 +22,7 @@ on:
       - 'modules/demux/ytdl*'
       - 'modules/demux/json/**'
       - 'test/modules/demux/ytdl_formats.c'
-      - 'src/win32/cmdline.*'
-      - 'test/src/win32/cmdline.c'
+      - 'test/modules/demux/ytdl_cmdline.c'
       - '.github/scripts/ytdl-tests.sh'
       - '.github/workflows/unit-tests.yml'
 

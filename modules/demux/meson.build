@@ -688,7 +688,7 @@ vlc_modules += {
 
 vlc_modules += {
     'name' : 'ytdl',
-    'sources' : files('ytdl.c', 'ytdl_formats.c'),
+    'sources' : files('ytdl.c', 'ytdl_formats.c', 'ytdl_cmdline.c'),
     'c_args' : host_system == 'windows' ? '-DEXEEXT=".exe"' : '-DEXEEXT=""',
     'link_with' : vlc_json_lib,
     'plugin_dir' : 'demux',
