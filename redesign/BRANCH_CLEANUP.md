@@ -264,3 +264,9 @@ Not deleted, unmerged and not in the Task owners table (for StickyGonzales to de
 | Branch | Last commit | Why |
 |---|---|---|
 | `wip/subtitle-language-first` | `f9a7e384f8d1367918b1ee4c9152e16d0186ff3a` | PR #144 merged into wip/next-test (acccc6e8d9d) |
+
+## 2026-11-16, YouTube through yt-dlp (#143)
+
+| Branch | Last commit | Why |
+|---|---|---|
+| `wip/fix-ytdl-formats` | `5394b37050149b67c2e9ad3fe1016d9481b4b01a` | PR #147 merged into wip/next-test (8db8ab8963f) |
