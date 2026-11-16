@@ -47,7 +47,11 @@ main debug: EOF reached
 **Proposed fix** (the format choice moved to `ytdl_formats.c`, with a unit test
 `test/modules/demux/ytdl_formats.c` on saved yt-dlp format lists):
 - skip formats with no audio and no video: `format_note` "storyboard", `mhtml`, or `vcodec` and
-  `acodec` both "none". The rest of the choice is unchanged;
+  `acodec` both "none";
+- among the formats at or below the preferred height keep the **highest**, as the option's help
+  says ("closest to (but not higher than) this setting"): `if (h_a > h_b) return +1;`. Without
+  this, the storyboard skip alone would turn 1080p into 144p (itag 269). The rest of the choice
+  is unchanged;
 - on Windows, pass the null device as the child's stderr when `_get_osfhandle(STDERR_FILENO)`
   is -1 or -2.
 
@@ -56,8 +60,8 @@ main debug: EOF reached
   yt-dlp gives video-only formats `abr: 0`, while the muxed YouTube format 18 has no `abr` at
   all. So the choice is always video-only on YouTube:
   - without a preference: itag 270, 1080p HLS, no sound;
-  - with any preference: itag 269, 144p, the lowest at or below it. The inverted comparison
-    above, which the storyboard hid until now.
+  - with a preference: the video-only HLS format of the highest height at or below it (1080p:
+    270, 720p: 232), no sound.
 - **Picking 18 is no fix either.** Picking the muxed 18 instead runs into report 3. Sound in HD
   needs the separate video and audio URLs played together (yt-dlp's `requested_formats`, for
   example through an input slave).
@@ -89,9 +93,14 @@ YouTube link.
   This follows the documented Windows rules: inside the quotes `"` becomes `\"`, and the
   backslashes in front of a `"` or of the closing quote are doubled. Other arguments are
   unchanged.
-- **Where it lives:** the quoting is a small pure function (`src/win32/cmdline.c`).
-- **Its unit test** (`test/src/win32/cmdline.c`) checks the expected command lines and splits
-  them back with the CommandLineToArgvW rules into the original arguments.
+- **Where it lives:** the quoting is a small pure function. In Cone it is applied to yt-dlp's
+  arguments only (`modules/demux/ytdl_cmdline.c`, called by `ytdl_popen()`), so that the other
+  Windows caller of `vlc_spawnp()`, the external preparser, keeps its command line exactly as
+  before. Upstream may prefer it in `vlc_spawn_inner()` for every caller: then the preparser,
+  whose argv[0] is its own path ("C:\Program Files\VideoLAN\VLC\vlc-preparser.exe"), would get
+  a quoted program name too, which needs its own check.
+- **Its unit test** (`test/modules/demux/ytdl_cmdline.c`) checks the expected command lines and
+  splits them back with the CommandLineToArgvW rules into the original arguments.
 
 ---
 

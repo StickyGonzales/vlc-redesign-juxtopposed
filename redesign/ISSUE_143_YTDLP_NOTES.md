@@ -147,7 +147,7 @@ minimal. Nothing in Cone's interface changes.
    - formats with an `abr` field first (YouTube's video-only formats have `abr: 0`, the muxed
      18 none), then formats with a height;
    - with a Preferred video quality, the **lowest** height at or below it, or the highest when
-     none fits;
+     none fits (round 3: the highest at or below it, see below);
    - Best available: the highest height.
    - On YouTube today:
      - **Best available:** itag 270, 1080p HLS, video only, **no sound**: the known VLC 4 limit,
@@ -160,7 +160,7 @@ minimal. Nothing in Cone's interface changes.
    shortcut), yt-dlp gets the null device as its stderr (`modules/demux/ytdl.c`), so vlc_spawnp
    no longer fails with `cannot start ...: Unknown error`.
 4. **New: arguments with a space or a quote are quoted** (`src/win32/spawn.c`, the quoting in the
-   new `src/win32/cmdline.c` / `.h`).
+   new `src/win32/cmdline.c` / `.h`; round 3: only yt-dlp's, in `modules/demux/ytdl_cmdline.c`).
    - **The rules:** the Windows command-line rules (CommandLineToArgvW and the Microsoft C
      start-up code).
    - **When an argument gets quotes:** when it is empty or holds a space, tab, new line,
@@ -173,6 +173,51 @@ minimal. Nothing in Cone's interface changes.
 - **Debug line** for the retest: `ytdl debug: format 270 picked (270 - 1920x1080)`.
 - **Not fixed (a later release, upstream report 3):** YouTube's progressive MP4 over HTTP races to
   its end (round 1, (b)).
+
+**Round 3 (PC, 2026-11-16, 1336dabc1c, StickyGonzales: #147 must not change normal playback).**
+Items 2 and 4 of round 2 changed as follows; items 1 and 3 stay.
+
+*Regression proof, from the code (step 1 a and b):*
+- **Every caller of the spawn code.** `vlc_spawn` / `vlc_spawnp` / `vlc_process_Spawn` in the tree:
+  - `modules/demux/ytdl.c` (yt-dlp);
+  - `src/win32/process.c` `vlc_process_Spawn`, used by `src/preparser/external.c`: the external
+    preparser, `vlc-preparser.exe --timeout-tick <n> --types <n> --daemon`, started for normal
+    files (thumbnails, durations, metadata). Its argv[0] is its own full path, which has a space
+    when Cone is installed in `C:\Program Files`;
+  - `modules/stream_filter/decomp.c` and `modules/misc/inhibit/xdg.c`: not built on Windows
+    (`if !HAVE_WIN32` in modules/stream_filter/Makefile.am; xdg is Linux only);
+  - `src/posix/netconf.c`, `src/posix/*`: other systems, other spawn code (posix_spawn).
+  - So on Windows the shared quoting of round 2 would have changed how vlc-preparser.exe gets its
+    command line for every normal file. **Round 3 takes it out of the core:** `src/win32/spawn.c`,
+    `src/Makefile.am` and `src/meson.build` are byte for byte those of wip/next-test, and
+    `git diff wip/next-test` touches nothing under `src/` or `include/`. The quoting moved to
+    `modules/demux/ytdl_cmdline.c` / `.h` (the same rules), and `ytdl_popen()` quotes yt-dlp's
+    arguments one by one (`ytdl_QuoteArg`) before `vlc_spawnp()` joins them with spaces, on
+    Windows only; the program path it searches for stays unquoted. Its test moved to
+    `test/modules/demux/ytdl_cmdline.c`, plus a check of the one-argument quote.
+- **When the ytdl module runs at all** (`modules/demux/ytdl.c`, unchanged by #147: `OpenFilter`,
+  the module block):
+  - it is a demux of priority 7, so VLC tries it only after every demux of a higher priority
+    (mp4 240, es 155, mkv 50, adaptive 12, ts 10, ...) has refused the stream (avformat, 5,
+    comes after it);
+  - `OpenFilter` refuses at once unless the URL starts with `http:` or `https:` and the `ytdl`
+    option is on: a local file (`file://`), a disc, a network share never reach it;
+  - a direct media link (`https://.../video.mp4`) is taken by its real demux (mp4 at 240) before
+    ytdl is tried, so yt-dlp is not started; only a link no real demux accepts (a web page such as
+    youtube.com/watch) reaches ytdl. The `ytdl://` access is used only when typed on purpose.
+  - All of this is plain VLC 4 behaviour; #147 changes only what happens after yt-dlp has run (the
+    format choice) and how yt-dlp is started (stderr, quoting).
+
+*Height choice (step 2).* The option's help text (`src/libvlc-module.c`,
+INPUT_PREFERREDRESOLUTION_LONGTEXT): "select one whose resolution is closest to (but not higher
+than) this setting". So among the heights at or below the setting the **highest** now wins
+(`modules/demux/ytdl_formats.c`); VLC 4 took the lowest, so 1080p set gave 144p. Unchanged: Best
+available (the highest), and the highest when nothing fits. On YouTube today (`--dump-single-json`
+of the test video, 2026-11-16): every height has a video-only HLS format with `abr: 0` listed
+first (602/269 144p, 229 240p, 230 360p, 231 480p, 232 720p, 270 1080p), so 1080p set gives
+**270, 1080p HLS** like Best available, 720p gives 232, still without sound. Unit tests: youtube
+240 -> 229, 360 and 720 -> 230 (the saved list has no 720p HLS), 1080 -> 270; muxed HLS 1080 ->
+96, 720 -> 95, 240 -> 92.
 
 ### Unit tests
 - `.github/scripts/ytdl-tests.sh` runs both on CI in `unit-tests.yml` (no VLC build), also with
