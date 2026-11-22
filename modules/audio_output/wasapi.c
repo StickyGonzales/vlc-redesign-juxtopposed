@@ -891,10 +891,12 @@ static HRESULT Start(aout_stream_t *s, audio_sample_format_t *restrict pfmt,
                 unsigned mix_channels;
                 uint32_t mix_physical = vlc_MixChannels(pwf_mix, &mix_channels);
 
-                if (mix_channels > 0 && mix_channels < fmt.i_channels)
+                if (mix_channels <= 2 || mix_physical == 0)
+                    mix_physical = AOUT_CHANS_STEREO;
+                /* (a mono device keeps a stereo stream: Windows folds that down) */
+                if (mix_channels > 0 && mix_channels < fmt.i_channels
+                 && mix_physical != fmt.i_physical_channels)
                 {
-                    if (mix_channels <= 2 || mix_physical == 0)
-                        mix_physical = AOUT_CHANS_STEREO;
                     msg_Dbg(s, "device mixes in %u channels, downmixing "
                             "%u channels in VLC", mix_channels, fmt.i_channels);
                     fmt.i_physical_channels = mix_physical;

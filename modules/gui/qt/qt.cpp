@@ -217,7 +217,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 
 /* redesign: a close button in the fullscreen top bar (player/qml/TopBar.qml, issue #98) */
 #define FULLSCREEN_CLOSE_TEXT N_( "Show a close button in fullscreen" )
-#define FULLSCREEN_CLOSE_LONGTEXT N_( "Show a close button at the right end of the top bar "                                      "in fullscreen, as in a window. It quits the player." )
+#define FULLSCREEN_CLOSE_LONGTEXT N_( "Show a close button at the right end of the top bar "                                      "in fullscreen. It works like the close button of the window." )
 
 /* redesign: Cone's update notice (util/rd_update_check.cpp) */
 #define CONE_UPDATE_CHECK_TEXT N_( "Check for updates" )
