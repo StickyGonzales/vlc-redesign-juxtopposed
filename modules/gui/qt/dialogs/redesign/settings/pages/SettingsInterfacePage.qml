@@ -157,6 +157,12 @@ SettingsPage {
             option: "qt-fs-controller"
             text: qsTr("Show controls in fullscreen")
         }
+
+        // issue #98: off by default, as VLC; in a window the close button is always there
+        SettingsOption {
+            option: "qt-fullscreen-close"
+            text: qsTr("Show a close button in fullscreen")
+        }
     }
 
     SettingsSection {

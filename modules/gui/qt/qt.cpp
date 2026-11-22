@@ -215,6 +215,10 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
                             "versions of the software. It runs once every " \
                             "two weeks." )
 
+/* redesign: a close button in the fullscreen top bar (player/qml/TopBar.qml, issue #98) */
+#define FULLSCREEN_CLOSE_TEXT N_( "Show a close button in fullscreen" )
+#define FULLSCREEN_CLOSE_LONGTEXT N_( "Show a close button at the right end of the top bar "                                      "in fullscreen, as in a window. It quits the player." )
+
 /* redesign: Cone's update notice (util/rd_update_check.cpp) */
 #define CONE_UPDATE_CHECK_TEXT N_( "Check for updates" )
 #define CONE_UPDATE_CHECK_LONGTEXT N_( "Once a day at most, when Cone starts, ask GitHub " \
@@ -505,6 +509,8 @@ vlc_module_begin ()
               TITLE_LONGTEXT )
     add_bool( "qt-fs-controller", true, QT_FULLSCREEN_TEXT,
               nullptr )
+    add_bool( "qt-fullscreen-close", false, FULLSCREEN_CLOSE_TEXT,
+              FULLSCREEN_CLOSE_LONGTEXT )
 
     add_string("qt-compositor", "auto", QT_COMPOSITOR_TEXT, QT_COMPOSITOR_LONGTEXT)
             change_string_list(compositor_vlc, compositor_user)

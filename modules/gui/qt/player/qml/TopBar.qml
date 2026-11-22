@@ -68,6 +68,11 @@ FocusScope{
     // buttons
     property bool showLibraryButtons: true
     readonly property bool _editable: showLibraryButtons && !!RdProfiles.topBarModel
+    // issue #98: an optional close button at the right end in fullscreen, where the window
+    // buttons are (Settings > Interface, "qt-fullscreen-close"; off by default)
+    readonly property bool _fullscreenClose: !showCSD && MainCtx.fullscreenCloseButton
+                                             && MainCtx.intfMainWindow.visibility === Window.FullScreen
+    readonly property real _fullscreenCloseWidth: _fullscreenClose ? fullscreenCloseButton.width : 0
     property string accessibleName: qsTr("Player topbar")
 
     readonly property ColorContext colorContext: ColorContext {
@@ -289,6 +294,7 @@ FocusScope{
             // (a themed window button set has no middle slot: the right zone sits before it)
             width: root.showCSD ? csdDecorations.width + ((root._editable && !rightZone._slot) ? rightZone.width : 0)
                                 : (root._editable ? rightZone.width : fullscreenButton.width) + VLCStyle.dp(6, VLCStyle.scale)
+                                  + root._fullscreenCloseWidth
 
             Loader {
                 id: csdDecorations
@@ -338,7 +344,7 @@ FocusScope{
                 height: rightGroup.height
                 x: _slot ? csdDecorations.x + _slot.x
                          : (root.showCSD ? csdDecorations.x - width
-                                         : rightGroup.width - VLCStyle.dp(6, VLCStyle.scale) - width)
+                                         : rightGroup.width - VLCStyle.dp(6, VLCStyle.scale) - root._fullscreenCloseWidth - width)
 
                 // Figma: 36 wide cells as the window buttons, no gap
                 iconWidth: VLCStyle.dp(36, VLCStyle.scale)
@@ -361,8 +367,10 @@ FocusScope{
                 visible: !root._editable
                          && (!root.showCSD || !(csdDecorations.item && csdDecorations.item.showFullscreenButton !== undefined))
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.right: root.showCSD ? csdDecorations.left : parent.right
-                anchors.rightMargin: root.showCSD ? 0 : VLCStyle.dp(6, VLCStyle.scale)
+                anchors.right: root.showCSD ? csdDecorations.left
+                                            : (root._fullscreenClose ? fullscreenCloseButton.left : parent.right)
+                // back to back with the close button, as fullscreen and close in a window
+                anchors.rightMargin: (root.showCSD || root._fullscreenClose) ? 0 : VLCStyle.dp(6, VLCStyle.scale)
                 width: VLCStyle.rd_iconButtonWidth
                 height: VLCStyle.rd_iconButtonHeight
                 font.pixelSize: VLCStyle.rd_iconSize
@@ -372,6 +380,30 @@ FocusScope{
                 description: qsTr("Fullscreen")
 
                 onClicked: MainCtx.toggleInterfaceFullScreen()
+                onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
+            }
+
+            // issue #98: the window's close button, kept in fullscreen when the option is on.
+            // Same button, colors and action as the window buttons (CSDWindowButtonSet: red on
+            // hover, closes the main window, which quits)
+            Widgets.CSDWindowButton {
+                id: fullscreenCloseButton
+
+                visible: root._fullscreenClose
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.rightMargin: VLCStyle.dp(6, VLCStyle.scale)
+
+                readonly property bool _useWinIcons: (MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10)
+
+                color: hovered ? "white" : theme.fg.primary
+                hoverColor: "red"
+                isThemeDark: theme.palette.isDark
+                rdIcon: "close"
+                iconTxt: _useWinIcons ? "" : VLCIcons.window_close
+
+                onClicked: MainCtx.intfMainWindow.close()
                 onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
             }
         }
