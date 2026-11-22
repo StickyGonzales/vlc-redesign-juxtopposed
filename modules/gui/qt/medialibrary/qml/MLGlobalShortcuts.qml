@@ -51,7 +51,10 @@ Item {
                     if (index < recentModel.count)
                     {
 
-                        const trackId = recentModel.data(recentModel.index(index, 0), MLRecentMediaModel.MEDIA_ID)
+                        // redesign: the role enum is not visible to QML (MLRecentMediaModel.MEDIA_ID
+                        // is undefined), so data() returned the display role, a local path, which
+                        // was then played as an address ("c:/..."); read the item's id by role name
+                        const trackId = recentModel.getDataAt(index).id
                         if (!!trackId)
                             MediaLib.addAndPlay([trackId])
                     }
