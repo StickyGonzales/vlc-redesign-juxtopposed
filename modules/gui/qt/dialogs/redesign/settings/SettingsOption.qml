@@ -122,7 +122,7 @@ SettingsRow {
     // switch the running window's compact mode
     readonly property bool _readByInterface: ["mouse-hide-timeout", "mouse-pause-policy",
                                               "qt-bgcone", "qt-cast-discovery",
-                                              "qt-fs-opacity", "qt-max-volume",
+                                              "qt-fs-opacity", "qt-fullscreen-close", "qt-max-volume",
                                               "qt-menubar", "qt-pin-controls", "qt-safe-area",
                                               "qt-smooth-scrolling", "qt-titlebar", "qt-video-double-click",
                                               "video-on-top"].indexOf(option) >= 0

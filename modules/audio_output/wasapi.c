@@ -590,6 +590,29 @@ static int vlc_FromWave(const WAVEFORMATEX *restrict wf,
     return 0;
 }
 
+/* Speakers of the shared-mode mix format (the format the Windows audio engine
+ * mixes in for this device): the VLC channel bitmap and the number of channels.
+ * The bit depth is not checked (24 valid bits in a 32-bit container is common). */
+static uint32_t vlc_MixChannels(const WAVEFORMATEX *restrict wf,
+                                unsigned *restrict count)
+{
+    uint32_t physical_channels = 0;
+
+    *count = wf->nChannels;
+    if (wf->wFormatTag == WAVE_FORMAT_EXTENSIBLE &&
+        wf->cbSize >= sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX))
+    {
+        const WAVEFORMATEXTENSIBLE *wfe = container_of(wf, WAVEFORMATEXTENSIBLE, Format);
+
+        for (unsigned i = 0; chans_in[i]; i++)
+            if (wfe->dwChannelMask & chans_in[i])
+                physical_channels |= pi_vlc_chan_order_wg4[i];
+    }
+    if (vlc_popcount(physical_channels) != wf->nChannels)
+        physical_channels = 0; /* no usable mask: the caller picks stereo */
+    return physical_channels;
+}
+
 static unsigned vlc_CheckWaveOrder (const WAVEFORMATEX *restrict wf,
                                     uint8_t *restrict table)
 {
@@ -856,6 +879,35 @@ static HRESULT Start(aout_stream_t *s, audio_sample_format_t *restrict pfmt,
         else
         {
             shared_mode = AUDCLNT_SHAREMODE_SHARED;
+
+            /* Downmix in VLC when the device mixes in fewer channels than the
+             * stream has (5.1 on stereo speakers): some drivers accept the
+             * multichannel stream in shared mode and their own fold-down
+             * distorts. A device that mixes in 5.1 or more keeps the stream's
+             * channels. Not for Ambisonics, which already uses the mix format. */
+            if (pwf_mix == NULL
+             && SUCCEEDED(IAudioClient_GetMixFormat(sys->client, &pwf_mix)))
+            {
+                unsigned mix_channels;
+                uint32_t mix_physical = vlc_MixChannels(pwf_mix, &mix_channels);
+
+                if (mix_channels <= 2 || mix_physical == 0)
+                    mix_physical = AOUT_CHANS_STEREO;
+                /* (a mono device keeps a stereo stream: Windows folds that down) */
+                if (mix_channels > 0 && mix_channels < fmt.i_channels
+                 && mix_physical != fmt.i_physical_channels)
+                {
+                    msg_Dbg(s, "device mixes in %u channels, downmixing "
+                            "%u channels in VLC", mix_channels, fmt.i_channels);
+                    fmt.i_physical_channels = mix_physical;
+                    fmt.i_chan_mode = 0;
+                    aout_FormatPrepare(&fmt);
+                    vlc_ToWave(pwfe, &fmt);
+                }
+                CoTaskMemFree(pwf_mix);
+                pwf_mix = NULL;
+            }
+
             hr = IAudioClient_IsFormatSupported(sys->client, shared_mode,
                                                 pwf, &pwf_closest);
         }

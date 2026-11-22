@@ -500,6 +500,8 @@ void MainCtx::loadPrefs(const bool callSignals)
 
     loadFromVLCOption(m_mouseHideTimeout, "mouse-hide-timeout", &MainCtx::mouseHideTimeoutChanged);
 
+    loadFromVLCOption(m_fullscreenCloseButton, "qt-fullscreen-close", &MainCtx::fullscreenCloseButtonChanged);
+
     loadFromVLCOption(m_videoDoubleClick, "qt-video-double-click", nullptr);
     applyVideoDoubleClick();
 
