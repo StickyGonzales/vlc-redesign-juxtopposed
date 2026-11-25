@@ -42,7 +42,7 @@ import VLC.Util
 FocusScope{
     id: root
 
-    // Properties (same interface as before the redesign, used by Player.qml)
+    // Properties (same interface as before the redesign, used by PlayerView.qml)
 
     required property int textWidth
 

@@ -65,7 +65,7 @@ QtObject {
     // Modal redesign popups (menus, dialogs) that are open. While the player is shown VLC sends
     // every key to its hotkeys unless the focused item shows keyboard focus
     // (MainCtx.preferHotkeys); a modal popup needs the keys itself (Escape, arrows, Space,
-    // typing), so Player.qml prefers hotkeys only while this is 0. A popup calls acquireModal()
+    // typing), so PlayerView.qml prefers hotkeys only while this is 0. A popup calls acquireModal()
     // when it opens and releaseModal() when it closes (and on destruction while open); a count
     // keeps nested popups (a menu opening a dialog) correct.
     property int modalCount: 0
@@ -79,21 +79,21 @@ QtObject {
     }
 
     // the compact library docked on the left of the player (video 11:37-11:59, P5-23): opened and
-    // closed by the top bar's sidebar toggle and folder chip. Kept here, not in Player.qml, so
+    // closed by the top bar's sidebar toggle and folder chip. Kept here, not in PlayerView.qml, so
     // the player finds it open again after a visit to the full library (11:58).
     property bool libraryOpen: false
 
     // the height of the player's control bar (one 54 px row, two when the seek row has its own
-    // row, ControlBar), set by Player.qml; 0 while no player exists. Overlays outside the player
+    // row, ControlBar), set by PlayerView.qml; 0 while no player exists. Overlays outside the player
     // (RdProfileNotice) keep clear of it.
     property real controlBarHeight: 0
 
     // Cone extra (Up Next): how far above the window's bottom the Up Next card's top is while it
-    // shows, 0 otherwise, set by Player.qml; the update notice keeps clear of it
+    // shows, 0 otherwise, set by PlayerView.qml; the update notice keeps clear of it
     property real upNextCardTop: 0
 
     // the sidebar toggle (reveal false) and the folder chip (reveal true) controls, in either bar
-    // (W8.1b): Player.qml opens or closes the compact library (toggleLibrary)
+    // (W8.1b): PlayerView.qml opens or closes the compact library (toggleLibrary)
     signal libraryRequested(bool reveal)
 
     // the info overlays over the video, switched by the settings sidebar's Playback tab

@@ -130,6 +130,7 @@ typedef struct decoder_sys_t
             vlc_video_context *ctx;
             struct asurface_picture_ctx apic_ctxs[MAX_PIC];
             void *p_surface;
+            AWindowHandler *awh;
             unsigned i_angle;
             unsigned i_input_offset_x, i_input_offset_y;
             unsigned i_input_width, i_input_height;
@@ -1046,6 +1047,7 @@ CreateSurface(decoder_t *p_dec, vlc_decoder_device *dec_dev,
             msg_Err(p_dec, "Could not find a valid ANativeWindow");
             goto error;
         }
+        p_sys->video.awh = awh;
         goto end;
     }
 
@@ -1200,7 +1202,11 @@ static int OpenDecoder(vlc_object_t *p_this, pf_MediaCodecApi_init pf_init)
             mime = "video/mpeg2";
             break;
         case VLC_CODEC_WMV3: mime = "video/x-ms-wmv"; break;
-        case VLC_CODEC_VC1:  mime = "video/wvc1"; break;
+        case VLC_CODEC_VC1:
+            /* Android has no VC-1 profiles */
+            i_profile = -1;
+            mime = "video/wvc1";
+            break;
         case VLC_CODEC_VP8:
             if (es_format_HasVpxAlpha(p_dec->fmt_in)) // contains alpha extradata
                 return VLC_ENOTSUP;
@@ -1458,6 +1464,10 @@ static void CleanDecoder(decoder_sys_t *p_sys)
         case VIDEO_ES:
             if (p_sys->video.surfacetexture)
                 vlc_asurfacetexture_Delete(p_sys->video.surfacetexture);
+
+            if (p_sys->video.awh != NULL)
+                AWindowHandler_releaseANativeWindow(p_sys->video.awh,
+                                                    AWindow_Video);
 
             if (p_sys->video.timestamp_fifo)
                 timestamp_FifoRelease(p_sys->video.timestamp_fifo);
@@ -2311,7 +2321,12 @@ static int VideoVC1_OnNewBlock(decoder_t *p_dec, block_t **pp_block)
 {
     block_t *p_block = *pp_block;
 
-    /* Adding frame start code */
+    /* Adding frame start code, unless the block already begins with one. */
+    static const uint8_t vc1_start_code_prefix[3] = {0x00, 0x00, 0x01};
+    if (p_block->i_buffer >= 4
+     && !memcmp(p_block->p_buffer, vc1_start_code_prefix, 3))
+        return Video_OnNewBlock(p_dec, pp_block);
+
     p_block = *pp_block = block_Realloc(p_block, 4, p_block->i_buffer);
     if (p_block == NULL)
         return VLC_ENOMEM;

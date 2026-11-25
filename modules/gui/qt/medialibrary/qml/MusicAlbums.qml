@@ -104,6 +104,8 @@ MainViewLoader {
             basePictureWidth: VLCStyle.gridCover_music_width
             basePictureHeight: VLCStyle.gridCover_music_height
 
+            focus: true
+
             activeFocusOnTab:true
 
             headerDelegate: root.header
@@ -139,7 +141,8 @@ MainViewLoader {
                 }
 
                 Behavior on opacity {
-                    OpacityAnimator {
+                    // NOTE: Do not use `OpacityAnimator` here, interrupting the fade stalls the UI (QTBUG-151700).
+                    NumberAnimation {
                         duration: VLCStyle.duration_short
                     }
                 }

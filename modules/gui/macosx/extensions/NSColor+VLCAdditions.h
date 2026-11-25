@@ -31,6 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (class, readonly) NSColor *VLClibrarySubtitleColor;
 @property (class, readonly) NSColor *VLClibraryAnnotationColor;
 @property (class, readonly) NSColor *VLClibraryAnnotationBackgroundColor;
+@property (class, readonly) NSColor *VLCLibraryCardBackgroundColor;
 @property (class, readonly) NSColor *VLClibrarySeparatorLightColor;
 @property (class, readonly) NSColor *VLClibrarySeparatorDarkColor;
 @property (class, readonly) NSColor *VLClibraryProgressIndicatorBackgroundColor;
@@ -40,6 +41,16 @@ NS_ASSUME_NONNULL_BEGIN
 @property (class, readonly) NSColor *VLCLightSubtleBorderColor;
 @property (class, readonly) NSColor *VLCDarkSubtleBorderColor;
 @property (class, readonly) NSColor *VLCSubtleBorderColor;
+
+@property (class, readonly) NSColor *VLCActionButtonBackgroundColor;
+@property (class, readonly) NSColor *VLCActionButtonPressedBackgroundColor;
+@property (class, readonly) NSColor *VLCActionButtonPressedBorderColor;
+@property (class, readonly) NSColor *VLCDropTargetBackgroundColor;
+@property (class, readonly) NSColor *VLCDropTargetHighlightColor;
+@property (class, readonly) NSColor *VLCDropTargetBorderColor;
+
+@property (nonatomic, readonly) NSColor *VLCSubtleTintColor;
+@property (nonatomic, readonly) NSColor *VLCHighlightedTintColor;
 
 @end
 

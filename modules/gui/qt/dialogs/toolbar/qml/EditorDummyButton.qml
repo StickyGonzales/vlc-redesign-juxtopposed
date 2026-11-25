@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
-// TabBar / Label: upstream dropped QtQuick.Controls (fc71047387) but still uses them
-import QtQuick.Controls.Basic
+import QtQuick.Templates as T
+
 import VLC.Style
 
-Label {
+T.Label {
     font.pixelSize: VLCStyle.icon_medium
     font.family: VLCIcons.fontFamily
 

@@ -105,6 +105,7 @@ static int Create( filter_t *p_filter )
     if( p_filter->p_sys == NULL )
         return VLC_ENOMEM;
     p_sys = p_filter->p_sys;
+    p_sys->p_mask = NULL;
 
     config_ChainParse( p_filter, CFG_PREFIX, ppsz_filter_options,
                        p_filter->p_cfg );
@@ -118,8 +119,6 @@ static int Create( filter_t *p_filter )
             msg_Err( p_filter, "Error while loading mask (%s).",
                      psz_string );
     }
-    else
-       p_sys->p_mask = NULL;
     free( psz_string );
 
     vlc_mutex_init( &p_sys->mask_lock );
@@ -148,6 +147,11 @@ static picture_t *Filter( filter_t *p_filter, picture_t *p_pic )
     filter_sys_t *p_sys = p_filter->p_sys;
 
     vlc_mutex_lock( &p_sys->mask_lock );
+    if( p_sys->p_mask == NULL )
+    {
+        vlc_mutex_unlock( &p_sys->mask_lock );
+        return p_pic;
+    }
     plane_t *p_mask = p_sys->p_mask->p+A_PLANE;
     plane_t *p_apic = p_pic->p+A_PLANE;
     if(    p_mask->i_visible_pitch

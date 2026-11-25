@@ -19,6 +19,7 @@ import QtQuick
 // TabBar / Label: upstream dropped QtQuick.Controls (fc71047387) but still uses them
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+import QtQuick.Controls.Basic
 import QtQml.Models
 
 

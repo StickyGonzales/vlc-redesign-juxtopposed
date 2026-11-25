@@ -34,6 +34,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const VLCLibraryTableCellViewIdentifier;
 
+typedef NS_ENUM(NSUInteger, VLCLibraryTableCellDetailMode) {
+    VLCLibraryTableCellDetailModePrimaryDetail,
+    VLCLibraryTableCellDetailModeDuration,
+};
+
+typedef NS_ENUM(NSUInteger, VLCLibraryTableCellImageAspectRatio) {
+    VLCLibraryTableCellImageAspectRatioSquare,
+    VLCLibraryTableCellImageAspectRatioVideo,
+};
+
 @interface VLCLibraryTableCellView : NSTableCellView<VLCLibraryTableCellViewProtocol>
 
 @property (readwrite, weak) IBOutlet VLCTrackingView *trackingView;
@@ -43,9 +53,13 @@ extern NSString * const VLCLibraryTableCellViewIdentifier;
 @property (readwrite, weak) IBOutlet VLCImageView *representedImageView;
 @property (readwrite, weak) IBOutlet NSButton *playInstantlyButton;
 
+@property (readwrite, nonatomic) VLCLibraryTableCellDetailMode detailMode;
+@property (readwrite, nonatomic) VLCLibraryTableCellImageAspectRatio representedImageAspectRatio;
 @property (readwrite, strong, nonatomic) VLCLibraryRepresentedItem *representedItem;
 @property (readwrite, strong, nonatomic) VLCInputItem *representedInputItem;
 @property (readwrite, nonatomic) NSUInteger representedVideoLibrarySection;
+
+- (NSString *)primaryDetailStringForItem:(id<VLCMediaLibraryItemProtocol>)item;
 
 @end
 

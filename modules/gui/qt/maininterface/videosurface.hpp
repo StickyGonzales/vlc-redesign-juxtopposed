@@ -102,12 +102,15 @@ class VideoSurface : public ViewBlockingRectangle
     Q_OBJECT
     Q_PROPERTY(VideoSurfaceProvider* videoSurfaceProvider READ videoSurfaceProvider WRITE setVideoSurfaceProvider NOTIFY videoSurfaceProviderChanged FINAL)
     Q_PROPERTY(Qt::CursorShape cursorShape READ getCursorShape WRITE setCursorShape RESET unsetCursor FINAL)
+    Q_PROPERTY(bool hovered READ hovered NOTIFY hoveredChanged FINAL)
 
 public:
     VideoSurface( QQuickItem* parent = nullptr );
 
     VideoSurfaceProvider* videoSurfaceProvider() const { return m_provider; };
     void setVideoSurfaceProvider(VideoSurfaceProvider *newVideoSurfaceProvider);
+
+    bool hovered() const { return m_hovered; }
 
 protected:
     QSGNode *updatePaintNode(QSGNode *, UpdatePaintNodeData *) override;
@@ -117,7 +120,9 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void hoverEnterEvent(QHoverEvent *event) override;
     void hoverMoveEvent(QHoverEvent *event) override;
+    void hoverLeaveEvent(QHoverEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 #if QT_CONFIG(wheelevent)
@@ -138,6 +143,7 @@ signals:
     void mouseDblClicked( int vlcButton );
     void mouseMoved( float x, float y );
     void keyPressed(int key, Qt::KeyboardModifiers modifier);
+    void hoveredChanged(bool);
 
     void videoSurfaceProviderChanged();
 
@@ -145,6 +151,7 @@ protected slots:
     void synchronize();
 
 private:
+    bool m_hovered = false;
     QPointF m_oldHoverPos;
 
     WheelToVLCConverter m_wheelEventConverter;

@@ -51,6 +51,13 @@ Item {
 
     property int mode: DualKawaseBlur.Mode.FourPass
 
+    // Setting `inhibit` deinitializes the effect.
+    // This property is added for a Qt bug that causes crash when `ShaderEffect` is
+    // destroyed. If you plan to destroy the effect (relevant if `layer.enabled` is
+    // turned off and this effect is used in `layer.effect`), you may want to set
+    // this property to `true` in `Component.onDestruction`.
+    property bool inhibit: false
+
     /// <postprocess>
     // The following property must be set in order to make other properties respected:
     property bool postprocess: false
@@ -271,7 +278,7 @@ Item {
 
     component DefaultShaderEffectSource : ShaderEffectSource {
         // This is necessary to release resources even if `sourceItem` becomes null (non-live case):
-        parent: sourceItem ? root : null
+        parent: (sourceItem && !root.inhibit) ? root : null
 
         visible: false
         live: root.live
@@ -305,9 +312,6 @@ Item {
         wrapMode: (root.mode === DualKawaseBlur.Mode.TwoPass) ? root.visualWrapMode : ShaderEffectSource.ClampToEdge
 
         function scheduleChainedUpdate() {
-            if (!ds1layer) // context is lost, Qt bug (reproduced with 6.2)
-                return
-
             // Common for both four and two pass mode:
             ds1layer.parent = root
             ds1layer.scheduleUpdate()
@@ -340,7 +344,7 @@ Item {
         }
 
         // Qt uses reference counting, otherwise ds1layer may not be released, even if it has no parent (see `QQuickItemPrivate::derefWindow()`):
-        source: ((root.mode === DualKawaseBlur.Mode.TwoPass) || !ds1layer.parent) ? null : ds1layer
+        source: ((root.mode === DualKawaseBlur.Mode.TwoPass) || !ds1layer.parent || root.inhibit) ? null : ds1layer
     }
 
     DefaultShaderEffectSource {
@@ -356,9 +360,6 @@ Item {
         property bool inhibitParent: false
 
         function scheduleChainedUpdate() {
-            if (!ds2layer) // context is lost, Qt bug (reproduced with 6.2)
-                return
-
             if (root._window) {
                 root._window.afterAnimating.disconnect(ds2layer, ds2layer.scheduleChainedUpdate)
             }
@@ -394,7 +395,7 @@ Item {
         }
 
         // Qt uses reference counting, otherwise ds2layer may not be released, even if it has no parent (see `QQuickItemPrivate::derefWindow()`):
-        source: ((root.mode !== DualKawaseBlur.Mode.SixPass) || !ds2layer.parent) ? null : ds2layer
+        source: ((root.mode !== DualKawaseBlur.Mode.SixPass) || !ds2layer.parent || root.inhibit) ? null : ds2layer
     }
 
     DefaultShaderEffectSource {
@@ -410,9 +411,6 @@ Item {
         property bool inhibitParent: false
 
         function scheduleChainedUpdate() {
-            if (!ds3layer) // context is lost, Qt bug (reproduced with 6.2)
-                return
-
             if (root._window) {
                 root._window.afterAnimating.disconnect(ds3layer, ds3layer.scheduleChainedUpdate)
             }
@@ -444,7 +442,7 @@ Item {
         }
 
         // Qt uses reference counting, otherwise ds3layer may not be released, even if it has no parent (see `QQuickItemPrivate::derefWindow()`):
-        source: ((root.mode !== DualKawaseBlur.Mode.SixPass) || !ds3layer.parent) ? null : ds3layer
+        source: ((root.mode !== DualKawaseBlur.Mode.SixPass) || !ds3layer.parent || root.inhibit) ? null : ds3layer
     }
 
     DefaultShaderEffectSource {
@@ -460,9 +458,6 @@ Item {
         property bool inhibitParent: false
 
         function scheduleChainedUpdate() {
-            if (!us0layer) // context is lost, Qt bug (reproduced with 6.2)
-                return
-
             if (root._window) {
                 root._window.afterAnimating.disconnect(us0layer, us0layer.scheduleChainedUpdate)
             }
@@ -507,6 +502,9 @@ Item {
 
         // Qt uses reference counting, otherwise ds2layer may not be released, even if it has no parent (see `QQuickItemPrivate::derefWindow()`):
         source: {
+            if (root.inhibit)
+                return null
+
             switch (root.mode) {
             case DualKawaseBlur.Mode.FourPass:
                 if (ds2layer.parent)
@@ -541,9 +539,6 @@ Item {
         wrapMode: (root.mode !== DualKawaseBlur.Mode.TwoPass) ? root.visualWrapMode : ShaderEffectSource.ClampToEdge
 
         function scheduleChainedUpdate() {
-            if (!us1layer) // context is lost, Qt bug (reproduced with 6.2)
-                return
-
             if (root._window) {
                 root._window.afterAnimating.disconnect(us1layer, us1layer.scheduleChainedUpdate)
             }
@@ -562,9 +557,6 @@ Item {
         }
 
         function releaseResourcesOfIntermediateLayers() {
-            if (!ds1layer || !ds2layer) // context is lost, Qt bug (reproduced with 6.2)
-                return
-
             if (root._window) {
                 root._window.afterAnimating.disconnect(us1layer, us1layer.releaseResourcesOfIntermediateLayers)
                 root._window = null
@@ -638,7 +630,8 @@ Item {
 
         visible: tpObserver.isValid && root.available
 
-        source: (root.mode === DualKawaseBlur.Mode.TwoPass) ? ds1layer : us1layer
+        source: !root.inhibit ? ((root.mode === DualKawaseBlur.Mode.TwoPass) ? ds1layer : us1layer)
+                              : null
 
         property alias tint: root.tint
         property alias tintStrength: root.tintStrength

@@ -58,12 +58,13 @@ qt: qtbase-everywhere-src-$(QTBASE_VERSION_FULL).tar.xz .sum-qt
 	$(APPLY) $(SRC)/qt/0001-macos-guard-text-html.patch
 	$(APPLY) $(SRC)/qt/0001-QEventDispatcherWin32-treat-posted-events-fairly.patch
 	$(APPLY) $(SRC)/qt/0001-rhi-d3d11-Use-DXGI_SWAP_EFFECT_FLIP_DISCARD-only-on-.patch
+	$(APPLY) $(SRC)/qt/0001-qsimd.cpp-add-missing-stdlib.h-for-getenv.patch
+	$(APPLY) $(SRC)/qt/0001-rhi-d3d11-fix-availability-on-Windows-7-with-the-pla.patch
+	$(APPLY) $(SRC)/qt/0001-rhi-d3d11-emulate-constant-buffer-offsetting-if-ther.patch
 	$(MOVE)
 
 ifdef HAVE_WIN32
 QTBASE_CONFIG += -DFEATURE_directwrite=ON -DFEATURE_directwrite3=ON
-else
-QTBASE_CONFIG += -DFEATURE_freetype=ON -DFEATURE_system_freetype=ON
 endif
 
 QTBASE_CONFIG += -DFEATURE_framework=OFF
@@ -101,13 +102,13 @@ QTBASE_CONFIG += -DFEATURE_ltcg=ON
 endif
 
 QTBASE_CONFIG += $(QTBASE_COMMON_CONFIG) \
-    -DFEATURE_gif=OFF \
+    -DFEATURE_gif=OFF -DFEATURE_freetype=ON -DFEATURE_system_freetype=ON \
 	-DFEATURE_harfbuzz=ON -DFEATURE_system_harfbuzz=ON -DFEATURE_jpeg=ON -DFEATURE_system_jpeg=ON \
 	-DFEATURE_png=ON -DFEATURE_system_png=ON -DFEATURE_zlib=ON -DFEATURE_system_zlib=ON \
 	-DFEATURE_movie=OFF -DFEATURE_whatsthis=OFF -DFEATURE_lcdnumber=OFF -DFEATURE_testlib=ON \
 	-DFEATURE_syntaxhighlighter=OFF -DFEATURE_undoview=OFF -DFEATURE_splashscreen=OFF \
 	-DFEATURE_dockwidget=OFF -DFEATURE_statusbar=OFF -DFEATURE_statustip=OFF \
-	-DFEATURE_keysequenceedit=OFF -DFEATURE_mdiarea=OFF \
+	-DFEATURE_keysequenceedit=OFF -DFEATURE_mdiarea=OFF -DFEATURE_tabletevent=OFF \
 	-DCMAKE_TOOLCHAIN_FILE=$(abspath toolchain.cmake) $(QT_HOST_PATH)
 
 QTBASE_NATIVE_CONFIG := $(QTBASE_COMMON_CONFIG) -DQT_BUILD_TESTS=FALSE \

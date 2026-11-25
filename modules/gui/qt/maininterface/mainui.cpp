@@ -104,13 +104,6 @@
 #include "widgets/native/navigation_attached.hpp"
 #include "widgets/native/viewblockingrectangle.hpp"
 #include "widgets/native/rd_eq_curve_item.hpp"
-#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
-#include "widgets/native/doubleclickignoringitem.hpp"
-#else
-// QQuickItem already ignores double click, starting
-// with Qt 6.4.0:
-#define DoubleClickIgnoringItem QQuickItem
-#endif
 
 #include "util/rd_background_queue.hpp"
 #include "util/rd_storage.hpp"
@@ -195,7 +188,6 @@ MainUI::MainUI(qt_intf_t *p_intf, MainCtx *mainCtx, QWindow* interfaceWindow,  Q
     //        reportedly (and evidently) brings back the old behavior, and does not continue
     //        using the new approach with the deceleration set (which is what we want to fix
     //        scrolling when there are sections).
-    if constexpr (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
     {
         const auto envFlickableWheelDeceleration = "QT_QUICK_FLICKABLE_WHEEL_DECELERATION";
         if (qEnvironmentVariableIsEmpty(envFlickableWheelDeceleration))
@@ -228,10 +220,6 @@ bool MainUI::setup(QQmlEngine* engine)
     {
         engine->addImageProvider(MLCustomCover::providerId, new MLCustomCover(m_mainCtx->getMediaLibrary()));
     }
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
-    engine->addImportPath(":/qt/qml");
-#endif
 
     if (!EffectsImageProvider::instance(engine, engine))
         new EffectsImageProvider(engine);
@@ -361,9 +349,6 @@ void MainUI::registerQMLTypes()
         qmlRegisterTypesAndRevisions<vlc::QScreenForeign>(uri, versionMajor);
         qmlRegisterTypesAndRevisions<vlc::QSortFilterProxyModelForeign>( uri, versionMajor );
         qmlRegisterTypesAndRevisions<vlc::QMessageBoxForeign>( uri, versionMajor );
-#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
-        qmlRegisterTypesAndRevisions<vlc::QAbstractItemModelForeign>(uri, versionMajor); // Qt >= 6.5.0, import `QtQml.Models`.
-#endif
 
         qmlRegisterModule(uri, versionMajor, versionMinor);
         qmlProtectModule(uri, versionMajor);
@@ -657,7 +642,6 @@ void MainUI::registerQMLTypes()
         }
 
         qmlRegisterType<ListSelectionModel>( uri, versionMajor, versionMinor, "ListSelectionModel" );
-        qmlRegisterType<DoubleClickIgnoringItem>( uri, versionMajor, versionMinor, "DoubleClickIgnoringItem" );
         qmlRegisterType<TextureProviderObserver>( uri, versionMajor, versionMinor, "TextureProviderObserver" );
         qmlRegisterType<TextureProviderIndirection>( uri, versionMajor, versionMinor, "TextureProviderIndirection" );
         qmlRegisterType<SGManipulator>( uri, versionMajor, versionMinor, "SGManipulator" );

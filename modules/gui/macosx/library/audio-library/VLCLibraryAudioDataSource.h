@@ -26,8 +26,6 @@
 #import "library/VLCLibraryTableViewDataSource.h"
 #import "library/VLCLibraryGroupHeaderDelegate.h"
 
-#include "views/iCarousel/iCarousel.h"
-
 NS_ASSUME_NONNULL_BEGIN
 
 @class VLCLibraryModel;
@@ -58,18 +56,19 @@ extern NSString * const VLCLibraryArtistSortDescriptorKey;
 extern NSString * const VLCLibraryAlbumSortDescriptorKey;
 extern NSString * const VLCLibraryPlayCountSortDescriptorKey;
 extern NSString * const VLCLibraryYearSortDescriptorKey;
+extern NSString * const VLCLibraryRatingSortDescriptorKey;
 
 extern NSString * const VLCLibraryAudioDataSourceDisplayedCollectionChangedNotification;
 
 @class VLCLibraryRepresentedItem;
 
-@interface VLCLibraryAudioDataSource : NSObject <VLCLibraryTableViewDataSource, VLCLibraryCollectionViewDataSource, iCarouselDataSource>
+@interface VLCLibraryAudioDataSource : NSObject <VLCLibraryTableViewDataSource, VLCLibraryCollectionViewDataSource>
 
 @property (readwrite, weak) VLCLibraryModel *libraryModel;
 @property (readwrite, weak, nonatomic) NSTableView *collectionSelectionTableView;
 @property (readwrite, weak, nonatomic) NSTableView *songsTableView;
 @property (readwrite, weak, nonatomic) NSCollectionView *collectionView;
-@property (readwrite, weak, nonatomic) iCarousel *carouselView;
+@property (readwrite, copy, nonatomic) NSUserInterfaceItemIdentifier collectionViewItemIdentifier;
 @property (readwrite, weak, nonatomic) NSTableView *gridModeListTableView;
 @property (readwrite, weak, nullable) id<VLCLibraryGroupHeaderDelegate> headerDelegate;
 

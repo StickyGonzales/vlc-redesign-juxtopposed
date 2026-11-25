@@ -511,18 +511,18 @@ cd ../..
 MCONFIGFLAGS="-Dlua=enabled -Dflac=enabled -Dtheoradec=enabled -Dtheoraenc=enabled \
     -Davcodec=enabled -Dmerge-ffmpeg=true \
     -Dlibass=enabled -Dshout=enabled -Dgoom2=enabled \
-    -Dsse=enabled -Dzvbi=enabled -Dtelx=disabled $MCONFIGFLAGS"
+    -Dsse=enabled -Dvpx=enabled -Dzvbi=enabled -Dtelx=disabled $MCONFIGFLAGS"
 
 MCONFIGFLAGS="$MCONFIGFLAGS --prefer-static"
 if [ "$RELEASE" != "yes" ]; then
      CONFIGFLAGS="$CONFIGFLAGS --enable-debug"
-     MCONFIGFLAGS="$MCONFIGFLAGS --buildtype debugoptimized"
+     MCONFIGFLAGS="$MCONFIGFLAGS --buildtype debugoptimized -Doptimization=g"
 else
     if [ -z "$WITH_LTO" ]; then
         info "Warning: Link Time Optimization not used in Release mode (missing --enable-lto)"
     fi
      CONFIGFLAGS="$CONFIGFLAGS --disable-debug"
-     MCONFIGFLAGS="$MCONFIGFLAGS --buildtype release"
+     MCONFIGFLAGS="$MCONFIGFLAGS --buildtype release -Doptimization=3"
 fi
 if [ "$I18N" != "yes" ]; then
      CONFIGFLAGS="$CONFIGFLAGS --disable-nls"
@@ -691,22 +691,20 @@ if [ -n "$BUILD_MESON" ]; then
     MINSTALLFLAGS="--strip --no-rebuild $MINSTALLFLAGS"
 
     if [ "$INSTALLER" = "n" ]; then
-        VLC_GIT_TAG="$(git describe --tags --long --match '?.*.*' --always)"
-
         meson install -C ${BUILD_PATH}/$SHORTARCH-meson ${MINSTALLFLAGS}
+        ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-win32-7zip
+
         if [ -z "$WINSTORE" ]; then
             # generate .exe installer
             ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-win32-exe
             # generate .msi installer
             ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-msi
         fi
-
-        rm -rf ${BUILD_PATH}/$SHORTARCH-meson/vlc-$SHORTARCH-$VLC_GIT_TAG-debug.7z
-        cd ${BUILD_PATH}/$SHORTARCH-meson && \
-            7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on vlc-$SHORTARCH-$VLC_GIT_TAG-debug.7z vlc-$SHORTARCH
     elif [ "$INSTALLER" = "r" ]; then
         meson dist -C ${BUILD_PATH}/$SHORTARCH-meson -j$JOBS --no-tests
         meson install -C ${BUILD_PATH}/$SHORTARCH-meson ${MINSTALLFLAGS}
+        ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-win32-7zip
+
         if [ -z "$WINSTORE" ]; then
             # generate .exe installer
             ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-win32-exe
@@ -715,12 +713,19 @@ if [ -n "$BUILD_MESON" ]; then
         fi
     elif [ "$INSTALLER" = "u" ]; then
         meson install -C ${BUILD_PATH}/$SHORTARCH-meson ${MINSTALLFLAGS}
+        ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-win32-7zip
+
         if [ -z "$WINSTORE" ]; then
             # generate .exe installer
             ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-win32-exe
             # generate .msi installer
             ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-msi
+            sha512sum vlc-*-*.exe
+            sha512sum vlc-*-*.msi
         fi
+    elif [ "$INSTALLER" = "m" ]; then
+        meson install -C ${BUILD_PATH}/$SHORTARCH-meson ${MINSTALLFLAGS}
+        ninja -C ${BUILD_PATH}/$SHORTARCH-meson package-msi
     elif [ -n "$INSTALL_PATH" ]; then
         meson install -C ${BUILD_PATH}/$SHORTARCH-meson ${MINSTALLFLAGS}
     fi

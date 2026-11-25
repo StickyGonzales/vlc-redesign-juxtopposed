@@ -206,15 +206,6 @@ void video_format_ApplyRotation( video_format_t *restrict out,
     video_format_TransformTo(out, ORIENT_NORMAL);
 }
 
-bool video_format_IsSameChroma( const video_format_t *f1,
-                                const video_format_t *f2 )
-{
-    if( f1->i_chroma != f2->i_chroma )
-        return false;
-
-    return true;
-}
-
 bool video_format_IsSimilar( const video_format_t *f1,
                              const video_format_t *f2 )
 {
@@ -477,7 +468,7 @@ void es_format_LogDifferences(struct vlc_logger *log,
     if (a->i_codec != b->i_codec)
     {
         vlc_fourcc_t a_codec = vlc_fourcc_GetCodec(a->i_cat, a->i_codec);
-        vlc_fourcc_t b_codec = vlc_fourcc_GetCodec(a->i_cat, a->i_codec);
+        vlc_fourcc_t b_codec = vlc_fourcc_GetCodec(b->i_cat, b->i_codec);
         vlc_debug(log, "'%s/%s' codec %4.4s(%4.4s) / %4.4s(%4.4s)",
                   name_a, name_b, (char*)&a_codec, (char*)&a->i_codec, (char*)&b_codec, (char*)&b->i_codec);
     }

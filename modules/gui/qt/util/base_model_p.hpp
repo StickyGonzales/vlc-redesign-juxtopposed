@@ -35,6 +35,7 @@ public:
     virtual void validateCache() const = 0;
     virtual void resetCache() = 0;
     virtual void invalidateCache() = 0;
+    virtual void updateCache() = 0;
     virtual bool loading() const = 0;
 
     virtual unsigned int getLoadedCount() const = 0;
@@ -116,6 +117,7 @@ protected:
     QString m_sortCriteria = {};
     unsigned int m_limit = 0;
     unsigned int m_offset = 0;
+    unsigned int m_chunkSize = 100;
     bool m_qmlInitializing = false;
 };
 
@@ -130,6 +132,7 @@ public:
     void validateCache() const override;
     void resetCache() override;
     void invalidateCache() override;
+    void updateCache() override;
 
     bool loading() const override;
 
@@ -212,7 +215,7 @@ void BaseModelPrivateT<T>::validateCache() const
         return;
 
     auto loader = createLoader();
-    m_cache = std::make_unique<ListCache<T>>(std::move(loader), false, m_limit, m_offset);
+    m_cache = std::make_unique<ListCache<T>>(std::move(loader), false, m_limit, m_offset, m_chunkSize);
     validateCacheImpl(m_cache.get());
 }
 
@@ -227,6 +230,15 @@ template<typename T>
 void BaseModelPrivateT<T>::invalidateCache()
 {
     invalidateCacheImpl(m_cache);
+}
+
+template<typename T>
+void BaseModelPrivateT<T>::updateCache()
+{
+    if (!m_cache)
+        return;
+    m_cache->setLimit(m_limit);
+    m_cache->setOffset(m_offset);
 }
 
 template<typename T>

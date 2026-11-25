@@ -556,6 +556,15 @@ ucrt_version_test = '''
         # DEP, ASLR, NO SEH
         add_project_link_arguments('-Wl,--nxcompat', '-Wl,--no-seh', '-Wl,--dynamicbase',
             language: ['c', 'cpp'])
+
+        if host_machine.cpu_family() == 'x86_64' or host_machine.cpu_family() == 'aarch64' or host_machine.cpu() == 'arm64'
+            if cc.has_link_argument('-Wl,--high-entropy-va')
+                add_project_link_arguments('-Wl,--high-entropy-va', language: ['c', 'cpp'])
+            endif
+            if cc.has_link_argument('-Wl,--image-base,0x140000000')
+                add_project_link_arguments('-Wl,--image-base,0x140000000', language: ['c', 'cpp'])
+            endif
+        endif
     endif
 
     # Check if we are building for Windows Store
@@ -708,6 +717,7 @@ check_functions = [
     ['fork',             '#include <unistd.h>'],
     ['getmntent_r',      '#include <mntent.h>'],
     ['getpwuid_r',       '#include <pwd.h>'],
+    ['getrandom',        '#include <sys/random.h>'],
     ['isatty',           '#include <unistd.h>'],
     ['isatty',           '#include <io.h>'],
     ['memalign',         '#include <malloc.h>'],
@@ -1284,6 +1294,17 @@ subdir('compat')
 subdir('include')
 
 if host_system == 'windows'
+    if host_machine.cpu_family() == 'aarch64' or host_machine.cpu() == 'arm64'
+        manifest_arch = 'arm64'
+    elif host_machine.cpu_family() == 'x86_64'
+        manifest_arch = 'amd64'
+    elif host_machine.cpu_family() == 'arm'
+        manifest_arch = 'arm'
+    else
+        manifest_arch = 'x86'
+    endif
+    cdata.set('MANIFEST_ARCH', manifest_arch)
+
     windows_rc = import('windows')
     # not quoted values
     rc_conf = configuration_data()

@@ -283,7 +283,7 @@ ColumnLayout {
 
                 padding: 0 // we use spacing instead of paddings here
 
-                ButtonGroup.group: buttonGroup
+                T.ButtonGroup.group: buttonGroup
             }
         }
     }

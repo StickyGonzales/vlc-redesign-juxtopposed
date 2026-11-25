@@ -80,16 +80,6 @@ MainViewLoader {
     // Events
     //---------------------------------------------------------------------------------------------
 
-    // NOTE: Define the initial position and selection. This is done on activeFocus rather than
-    //       Component.onCompleted because selectionModel.selectedGroup update itself after this
-    //       event.
-    onActiveFocusChanged: {
-        if (activeFocus == false || model.count === 0 || selectionModel.hasSelection)
-            return;
-
-        resetFocus()
-    }
-
     Component.onCompleted: {
         root.Keys.deletePressed.connect(root.deleteSelectedPlaylists)
     }
@@ -287,6 +277,8 @@ MainViewLoader {
             //-------------------------------------------------------------------------------------
             // Settings
 
+            focus: true
+
             basePictureWidth: isMusic ? VLCStyle.gridCover_music_width : VLCStyle.gridCover_video_width
             basePictureHeight: isMusic ? VLCStyle.gridCover_music_height : VLCStyle.gridCover_video_height
 
@@ -381,16 +373,6 @@ MainViewLoader {
 
             //-------------------------------------------------------------------------------------
             // Events
-
-            // NOTE: Define the initial position and selection. This is done on activeFocus rather
-            //       than Component.onCompleted because selectionModel.selectedGroup update itself
-            //       after this event.
-            onActiveFocusChanged: {
-                if (activeFocus == false || model.count === 0 || selectionModel.hasSelection)
-                    return;
-
-                selectionModel.select(model.index(0,0), ItemSelectionModel.ClearAndSelect)
-            }
 
             onActionAtIndex: _actionAtIndex()
 
@@ -516,13 +498,6 @@ MainViewLoader {
 
                 titleCover_radius: (isMusic) ? VLCStyle.trackListAlbumCover_radius
                                              : VLCStyle.listAlbumCover_radius
-
-                //---------------------------------------------------------------------------------
-
-                // NOTE: This makes sure we display the playlist count on the item.
-                function titlecoverLabels(model) {
-                    return [];
-                }
             }
         }
     }

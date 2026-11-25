@@ -141,8 +141,6 @@ Item {
     // Implementation
     //---------------------------------------------------------------------------------------------
 
-    parent: T.Overlay.overlay
-
     visible: false
 
     Drag.dragType: Drag.None
@@ -198,7 +196,7 @@ Item {
         _covers = covers
 
         if (mimeData.length > 0) {
-            Drag.mimeData = MainCtx.urlListToMimeData(mimeData)
+            Drag.mimeData = {"text/uri-list": mimeData}
         }
     }
 

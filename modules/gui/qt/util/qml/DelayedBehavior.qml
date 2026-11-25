@@ -25,8 +25,7 @@ import VLC.Style
 Behavior {
     id: behavior
 
-    // FIXME: Making this property `required` causes weird issues with Qt 6.2 when repeater is involved:
-    property bool delayedEnabled: false // modifying `enabled` is not permitted, this property should be used instead
+    required property bool delayedEnabled // modifying `enabled` is not permitted, this property should be used instead
 
     // `delayedEnabled`, applied once the event queue is cleared (false until then)
     property bool _delayedEnabled: false

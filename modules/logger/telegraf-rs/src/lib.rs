@@ -38,15 +38,18 @@ struct TelegrafTracer {
 }
 
 impl TracerCapability for TelegrafTracer {
-    fn open(_obj: &mut vlcrs_core::object::Object) -> Option<impl TracerCapability>
+    fn open(_obj: &mut vlcrs_core::object::Object) -> Option<Self>
     where
         Self: Sized,
     {
         let endpoint_address =
             std::env::var("VLC_TELEGRAF_ENDPOINT").unwrap_or(String::from("tcp://localhost:8094"));
         let endpoint = Client::new(&endpoint_address)
+            .inspect_err(|err| {
+                eprintln!(" cannot connect to {}: {}", endpoint_address, err)
+            })
             .map(Mutex::new)
-            .unwrap();
+            .ok()?;
         Some(Self { endpoint })
     }
 

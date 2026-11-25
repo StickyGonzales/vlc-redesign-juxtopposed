@@ -155,7 +155,7 @@ endif
 
 $(win32_destdir)/NSIS/nsProcess.dll: extras/package/win32/NSIS/nsProcess/nsProcess.c extras/package/win32/NSIS/nsProcess/nsis/pluginapi.c
 	mkdir -p "$(win32_destdir)/NSIS/"
-if HAVE_WIN64
+if HAVE_ARM64
 	i686-w64-mingw32-gcc $^ -shared -o $@ -static-libgcc -D_UNICODE=1 -DUNICODE=1
 	i686-w64-mingw32-strip $@
 else
@@ -258,9 +258,9 @@ endif
 .PHONY: package-win-install package-win-common package-win-strip package-win32-src package-win32-exe package-win32-zip package-win32-zip-staged package-win32-exe-staged package-win32-debug-zip package-win32-7zip package-win32-debug-7zip package-win32-cleanup package-win32 package-win32-debug
 
 EXTRA_DIST += \
-	extras/package/win32/vlc.exe.manifest \
-	extras/package/win32/libvlc.dll.manifest \
-	extras/package/win32/libvlccore.dll.manifest \
+	extras/package/win32/vlc.exe.manifest.in \
+	extras/package/win32/libvlc.dll.manifest.in \
+	extras/package/win32/libvlccore.dll.manifest.in \
 	extras/package/win32/configure.sh \
 	extras/package/win32/NSIS/vlc.win32.nsi.in \
 	extras/package/win32/NSIS/spad.nsi.in \

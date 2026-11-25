@@ -206,6 +206,11 @@ static void get_dovi_config(es_format_t *fmt, const AVStream *s)
     fmt->video.dovi.rpu_present = cfg->rpu_present_flag;
     fmt->video.dovi.el_present = cfg->el_present_flag;
     fmt->video.dovi.bl_present = cfg->bl_present_flag;
+    fmt->video.dovi.bl_signal_compatibility_id =
+        cfg->dv_bl_signal_compatibility_id;
+#if LIBAVUTIL_VERSION_CHECK( 59, 30, 100 )
+    fmt->video.dovi.md_compression = cfg->dv_md_compression;
+#endif
 #endif
 }
 
@@ -1062,15 +1067,18 @@ static block_t *BuildSsaFrame( const AVPacket *p_pkt, unsigned i_order )
     int i_layer;
     int h0, m0, s0, c0;
     int h1, m1, s1, c1;
-    int i_position = 0;
-    if( sscanf( buffer, "Dialogue: %d,%d:%d:%d.%d,%d:%d:%d.%d,%n", &i_layer,
+    ptrdiff_t i_position = 0;
+
+    if( sscanf( buffer, "Dialogue: %d,%d:%d:%d.%d,%d:%d:%d.%d,%tn", &i_layer,
                 &h0, &m0, &s0, &c0, &h1, &m1, &s1, &c1, &i_position ) < 9 )
         return NULL;
-    if( i_position <= 0 || (unsigned)i_position >= i_buffer_size )
+    if( i_position <= 0 || (size_t)i_position >= i_buffer_size )
         return NULL;
 
     char *p;
-    if( asprintf( &p, "%u,%d,%.*s", i_order, i_layer, p_pkt->size - i_position, p_pkt->data + i_position ) < 0 )
+    if( asprintf( &p, "%u,%d,%.*s", i_order, i_layer,
+                  (int)(p_pkt->size - i_position),
+                  p_pkt->data + i_position ) < 0 )
         return NULL;
 
     block_t *p_frame = block_heap_Alloc( p, strlen(p) + 1 );
