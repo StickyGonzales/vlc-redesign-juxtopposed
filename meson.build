@@ -113,7 +113,9 @@ if get_option('brand') == 'public'
     foreach f : ['cone-logo.svg', 'cone-logo-16.svg', 'cone-logo-24.svg',
                  'cone-16.png', 'cone-24.png', 'cone-32.png', 'cone-48.png',
                  'cone-64.png', 'cone-128.png', 'cone-256.png',
-                 'prefs-sample-modern.png', 'prefs-sample-classic.png']
+                 'prefs-sample-modern.png', 'prefs-sample-classic.png',
+                 'spref-interface.png', 'spref-audio.png', 'spref-video.png', 'spref-subtitles.png',
+                 'spref-input.png', 'spref-hotkeys.png', 'spref-medialibrary.png']
         if not brand_fs.is_file('modules/gui/qt/pixmaps/brand/public' / f)
             error('-Dbrand=public needs the Cone logo file modules/gui/qt/pixmaps/brand/public/' + f
                   + '; build with -Dbrand=vlc until it is added')

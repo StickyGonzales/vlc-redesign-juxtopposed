@@ -236,8 +236,9 @@ SPrefsCatList::SPrefsCatList( qt_intf_t *_p_intf, QWidget *_parent ) :
     auto addCategory = [&]( QString label, QString ltooltip, QString icon, int numb) {
         QToolButton * button = new QToolButton( this );
 #ifdef VLC_BRAND_PUBLIC
-        /* redesign (Decision 70): the Cone logo for each of VLC's cone pictures */
-        icon = QStringLiteral( ":/brand/cone-128.png" );
+        /* redesign (Decision 70): Cone's own category icons (the ones of its Settings) in place
+         * of VLC's cone pictures, one per tab: ":/prefsmenu/spref_audio.png" -> ":/brand/spref-audio.png" */
+        icon.replace( QStringLiteral( ":/prefsmenu/spref_" ), QStringLiteral( ":/brand/spref-" ) );
 #endif
         /* Scale icon to non native size outside of toolbutton to avoid widget size */
         /* computation using native size */
