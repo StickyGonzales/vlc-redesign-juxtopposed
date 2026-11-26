@@ -35,6 +35,7 @@
 #include "util/proxycolumnmodel.hpp"
 #include "medialibrary/mlrecentmediamodel.hpp"
 #include "util/brand.hpp"
+#include "util/imagehelper.hpp"
 
 #include <vlc_config_cat.h>
 #include <vlc_configuration.h>
@@ -64,6 +65,11 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QRegularExpression>
+#include <QBuffer>
+#include <QFile>
+#include <QFileInfo>
+#include <QImageIOHandler>
+#include <QScopedPointer>
 
 #include <cassert>
 #include <math.h>
@@ -221,6 +227,48 @@ private:
 /*********************************************************************
  * The List of categories
  *********************************************************************/
+#ifdef VLC_BRAND_PUBLIC
+/* the Cone Settings icon for a VLC tab picture (":/prefsmenu/spref_audio.png" -> ":/rd/audio.svg"),
+ * drawn in the accent color; a null pixmap when the icon or the SVG plugin is missing */
+static QPixmap accentIcon( const QString &vlcIcon, const QColor &accent, int height, qreal dpr )
+{
+    static const struct { const char *vlc; const char *rd; } icons[] = {
+        { "spref_interface", "interface" }, { "spref_audio", "audio" },
+        { "spref_video", "video" }, { "spref_subtitles", "subtitles" },
+        { "spref_input", "file" }, { "spref_hotkeys", "hotkeys" },
+        { "spref_medialibrary", "folder" },
+    };
+    const QString base = QFileInfo( vlcIcon ).completeBaseName();
+    const char *rd = nullptr;
+    for( const auto &i : icons )
+        if( base == QLatin1String( i.vlc ) )
+            rd = i.rd;
+    if( !rd )
+        return {};
+
+    QFile file( QStringLiteral( ":/rd/%1.svg" ).arg( QLatin1String( rd ) ) );
+    if( !file.open( QFile::ReadOnly ) )
+        return {};
+    QByteArray svg = file.readAll();
+    /* #FF00FF is the redesign icons' color slot (util/color_svg_image_provider.cpp) */
+    svg.replace( "#FF00FF", accent.name( QColor::HexRgb ).toLatin1() );
+
+    const QScopedPointer<QImageIOHandler> handler( ImageHelper::createSvgImageIOHandler() );
+    if( !handler )
+        return {};
+    QBuffer buffer( &svg );
+    if( !buffer.open( QIODevice::ReadOnly ) )
+        return {};
+    handler->setDevice( &buffer );
+    const int side = qRound( height * dpr );
+    handler->setOption( QImageIOHandler::ScaledSize, QSize( side, side ) );
+    QImage image;
+    if( !handler->canRead() || !handler->read( &image ) )
+        return {};
+    return QPixmap::fromImage( image );
+}
+#endif
+
 SPrefsCatList::SPrefsCatList( qt_intf_t *_p_intf, QWidget *_parent ) :
                                   QWidget( _parent ), p_intf( _p_intf )
 {
@@ -232,18 +280,26 @@ SPrefsCatList::SPrefsCatList( qt_intf_t *_p_intf, QWidget *_parent ) :
     QSignalMapper *mapper = new QSignalMapper( layout );
     connect( mapper, &QSignalMapper::mappedInt, this, &SPrefsCatList::switchPanel );
     qreal dpr = devicePixelRatioF();
+#ifdef VLC_BRAND_PUBLIC
+    const QColor accent = ( p_intf->p_mi && p_intf->p_mi->accentColor().isValid() )
+                        ? p_intf->p_mi->accentColor() : QColor( 0xD3, 0x79, 0x18 );
+#endif
 
     auto addCategory = [&]( QString label, QString ltooltip, QString icon, int numb) {
         QToolButton * button = new QToolButton( this );
 #ifdef VLC_BRAND_PUBLIC
-        /* redesign (Decision 70): Cone's own category icons (the ones of its Settings) in place
-         * of VLC's cone pictures, one per tab: ":/prefsmenu/spref_audio.png" -> ":/brand/spref-audio.png" */
-        icon.replace( QStringLiteral( ":/prefsmenu/spref_" ), QStringLiteral( ":/brand/spref-" ) );
-#endif
+        /* redesign (Decision 70): Cone's own category icons (the ones of its Settings) in the
+         * accent color in place of VLC's cone pictures */
+        QPixmap scaled = accentIcon( icon, accent, ICON_HEIGHT, dpr );
+        if( scaled.isNull() )
+            scaled = QPixmap( QStringLiteral( ":/brand/cone-128.png" ) )
+                  .scaledToHeight( ICON_HEIGHT * dpr, Qt::SmoothTransformation );
+#else
         /* Scale icon to non native size outside of toolbutton to avoid widget size */
         /* computation using native size */
         QPixmap scaled = QPixmap( icon )
               .scaledToHeight( ICON_HEIGHT * dpr, Qt::SmoothTransformation );
+#endif
         scaled.setDevicePixelRatio( dpr );
         button->setIcon( scaled );
         button->setText( label );
